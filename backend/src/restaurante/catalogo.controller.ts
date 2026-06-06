@@ -5,6 +5,18 @@ import { SupabaseService } from '../supabase/supabase.service';
 export class CatalogoController {
   constructor(private supabase: SupabaseService) {}
 
+  @Get()
+  async listarRestaurantes() {
+    const { data, error } = await this.supabase.client
+      .from('restaurants')
+      .select('id, name, address, logo_url, slug')
+      .not('slug', 'is', null)
+      .order('name');
+
+    if (error) throw error;
+    return { restaurantes: data ?? [] };
+  }
+
   @Get(':slug')
   async cardapio(@Param('slug') slug: string) {
     const { data: restaurante } = await this.supabase.client

@@ -29,6 +29,16 @@ export class PedidosController {
     });
   }
 
+  // Cliente: seus próprios pedidos
+  @Get('meus')
+  @UseGuards(JwtGuard)
+  meusPedidos(@Req() req: any, @Query('limite') limite?: string) {
+    return this.service.listar({
+      user_id: req.userId,
+      limite: limite ? parseInt(limite) : 20,
+    });
+  }
+
   // Admin ou dono do pedido
   @Get(':id')
   @UseGuards(JwtGuard)

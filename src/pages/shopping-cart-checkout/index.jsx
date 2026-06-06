@@ -1,409 +1,216 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
-import BrandedHeader from '../../components/ui/BrandedHeader';
-import BottomTabNavigation from '../../components/ui/BottomTabNavigation';
-import CartItemCard from './components/CartItemCard';
-import DeliveryMethodSelector from './components/DeliveryMethodSelector';
-import AddressSelector from './components/AddressSelector';
-import CouponInput from './components/CouponInput';
-import PaymentMethodSelector from './components/PaymentMethodSelector';
-import OrderSummary from './components/OrderSummary';
+
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+const PAYMENT_LABELS = {
+  pix: 'PIX',
+  credit_card: 'Cartão de Crédito',
+  debit_card: 'Cartão de Débito',
+  cash: 'Dinheiro',
+};
 
 const ShoppingCartCheckout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useAuth();
+
+  // Carrinho vem do RestauranteCatalogo via location.state
+  const { carrinho = [], restauranteId, restauranteSlug } = location.state ?? {};
+
+  const [itens, setItens] = useState(carrinho);
+  const [paymentMethod, setPaymentMethod] = useState('pix');
   const [loading, setLoading] = useState(false);
-  const [orderNotes, setOrderNotes] = useState('');
-  
-  // Cart state
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Pizza Margherita Grande',
-      price: 32.90,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400',
-      extras: [
-        { name: 'Borda Catupiry', price: 5.00 },
-        { name: 'Extra Queijo', price: 3.50 }
-      ],
-      instructions: 'Massa bem assada, por favor'
-    },
-    {
-      id: 2,
-      name: 'Hambúrguer Artesanal',
-      price: 28.50,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400',
-      extras: [
-        { name: 'Bacon Extra', price: 4.00 },
-        { name: 'Batata Rústica', price: 6.00 }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Refrigerante Lata 350ml',
-      price: 4.50,
-      quantity: 3,
-      image: 'https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=400',
-      extras: []
-    }
-  ]);
+  const [erro, setErro] = useState(null);
 
-  // Delivery state
-  const [deliveryMethod, setDeliveryMethod] = useState('delivery');
-  const [selectedAddress, setSelectedAddress] = useState(null);
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: 'home',
-      street: 'Rua das Flores',
-      number: '123',
-      complement: 'Apto 45',
-      neighborhood: 'Centro',
-      city: 'São Paulo',
-      zipCode: '01234-567',
-      reference: 'Próximo ao mercado Extra',
-      fullAddress: 'Rua das Flores, 123, Apto 45, Centro, São Paulo'
-    },
-    {
-      id: 2,
-      type: 'work',
-      street: 'Av. Paulista',
-      number: '1000',
-      complement: 'Sala 1205',
-      neighborhood: 'Bela Vista',
-      city: 'São Paulo',
-      zipCode: '01310-100',
-      reference: 'Edifício comercial azul',
-      fullAddress: 'Av. Paulista, 1000, Sala 1205, Bela Vista, São Paulo'
-    }
-  ]);
-
-  // Payment state
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-
-  // Restaurant branding
-  const primaryColor = '#2563EB';
-  const restaurantName = 'Sabor & Arte';
-  const restaurantLogo = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=100';
+  const total = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
 
   useEffect(() => {
-    // Set default address
-    if (addresses?.length > 0 && !selectedAddress) {
-      setSelectedAddress(addresses?.[0]);
+    if (!isAuthenticated()) {
+      navigate('/customer-registration-login', {
+        state: { from: '/shopping-cart-checkout' },
+        replace: true,
+      });
     }
-  }, [addresses, selectedAddress]);
+  }, []);
 
-  const handleUpdateQuantity = (itemId, newQuantity) => {
-    setCartItems(prev => 
-      prev?.map(item => 
-        item?.id === itemId 
-          ? { ...item, quantity: newQuantity }
-          : item
-      )
+  useEffect(() => {
+    if (!restauranteId && !restauranteSlug) {
+      navigate('/menu-catalog-product-browse', { replace: true });
+    }
+  }, []);
+
+  const remover = (prodId) =>
+    setItens((prev) => prev.filter((i) => i.id !== prodId));
+
+  const altQtd = (prodId, delta) =>
+    setItens((prev) =>
+      prev
+        .map((i) => (i.id === prodId ? { ...i, qtd: i.qtd + delta } : i))
+        .filter((i) => i.qtd > 0),
     );
-  };
 
-  const handleRemoveItem = (itemId) => {
-    setCartItems(prev => prev?.filter(item => item?.id !== itemId));
-  };
-
-  const handleEditItem = (item) => {
-    // In a real app, this would open the product customization modal
-    console.log('Edit item:', item);
-  };
-
-  const handleAddNewAddress = (newAddress) => {
-    setAddresses(prev => [...prev, newAddress]);
-    setSelectedAddress(newAddress);
-  };
-
-  const handleApplyCoupon = (coupon) => {
-    setAppliedCoupon(coupon);
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-  };
-
-  const handlePlaceOrder = async () => {
-    // Validation
-    if (cartItems?.length === 0) {
-      alert('Seu carrinho está vazio');
-      return;
-    }
-
-    if (deliveryMethod === 'delivery' && !selectedAddress) {
-      alert('Selecione um endereço de entrega');
-      return;
-    }
-
-    if (!paymentMethod) {
-      alert('Selecione uma forma de pagamento');
-      return;
-    }
+  const handleFinalizar = async () => {
+    if (itens.length === 0) return;
+    if (!restauranteId) { setErro('Dados do restaurante ausentes'); return; }
 
     setLoading(true);
+    setErro(null);
 
     try {
-      // Simulate order placement
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Navigate to order tracking
-      navigate('/order-tracking-status', {
-        state: {
-          orderId: `ORD-${Date.now()}`,
-          items: cartItems,
-          deliveryMethod,
-          address: selectedAddress,
-          paymentMethod,
-          appliedCoupon,
-          orderNotes
-        }
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      if (!token) throw new Error('Sessão expirada. Faça login.');
+
+      const body = {
+        restaurant_id: restauranteId,
+        payment_method: paymentMethod,
+        itens: itens.map((i) => ({ product_id: i.id, quantity: i.qtd })),
+      };
+
+      const res = await fetch('/api/pedidos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
       });
-    } catch (error) {
-      alert('Erro ao finalizar pedido. Tente novamente.');
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message ?? `HTTP ${res.status}`);
+
+      navigate('/order-tracking-status', {
+        state: { orderId: data.id, restauranteSlug },
+        replace: true,
+      });
+    } catch (err) {
+      setErro(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateTotal = () => {
-    const subtotal = cartItems?.reduce((total, item) => {
-      const itemPrice = item?.price + (item?.extras?.reduce((sum, extra) => sum + extra?.price, 0) || 0);
-      return total + (itemPrice * item?.quantity);
-    }, 0);
-
-    const deliveryFee = deliveryMethod === 'delivery' ? 5.99 : 0;
-    
-    let discount = 0;
-    if (appliedCoupon) {
-      if (appliedCoupon?.type === 'percentage') {
-        discount = (subtotal * appliedCoupon?.discount) / 100;
-      } else {
-        discount = appliedCoupon?.discount;
-      }
-    }
-
-    return subtotal + deliveryFee - discount;
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })?.format(price);
-  };
-
-  if (cartItems?.length === 0) {
+  if (itens.length === 0 && !loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <BrandedHeader
-          restaurantName={restaurantName}
-          restaurantLogo={restaurantLogo}
-          primaryColor={primaryColor}
-          cartItemCount={0}
-          onCartClick={() => navigate('/shopping-cart-checkout')}
-          onMenuClick={() => navigate('/menu-catalog-product-browse')}
-        />
-        
-        <BottomTabNavigation
-          cartItemCount={0}
-          primaryColor={primaryColor}
-        />
-
-        <div className="container mx-auto px-4 py-8 pb-20 md:pb-8">
-          <div className="max-w-md mx-auto text-center">
-            <div 
-              className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center bg-current/10"
-              style={{ backgroundColor: `${primaryColor}10` }}
-            >
-              <Icon name="ShoppingCart" size={40} style={{ color: primaryColor }} />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-foreground mb-4">
-              Seu carrinho está vazio
-            </h2>
-            
-            <p className="text-muted-foreground mb-8">
-              Adicione alguns itens deliciosos do nosso cardápio para começar seu pedido.
-            </p>
-            
-            <Button
-              onClick={() => navigate('/menu-catalog-product-browse')}
-              style={{ backgroundColor: primaryColor }}
-              iconName="UtensilsCrossed"
-              iconPosition="left"
-              className="w-full"
-            >
-              Ver Cardápio
-            </Button>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
+        <Icon name="ShoppingCart" size={48} className="text-gray-300 mb-4" />
+        <p className="text-gray-500 font-medium">Carrinho vazio</p>
+        <button
+          onClick={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : '/menu-catalog-product-browse')}
+          className="mt-4 px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600"
+        >
+          {restauranteSlug ? 'Voltar ao cardápio' : 'Ver restaurantes'}
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <BrandedHeader
-        restaurantName={restaurantName}
-        restaurantLogo={restaurantLogo}
-        primaryColor={primaryColor}
-        cartItemCount={cartItems?.reduce((sum, item) => sum + item?.quantity, 0)}
-        onCartClick={() => navigate('/shopping-cart-checkout')}
-        onMenuClick={() => navigate('/menu-catalog-product-browse')}
-      />
-      <BottomTabNavigation
-        cartItemCount={cartItems?.reduce((sum, item) => sum + item?.quantity, 0)}
-        primaryColor={primaryColor}
-      />
-      {/* Breadcrumb */}
-      <div className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center space-x-2 text-sm">
-            <button
-              onClick={() => navigate('/menu-catalog-product-browse')}
-              className="text-muted-foreground hover:text-foreground transition-colors duration-200"
-            >
-              Cardápio
-            </button>
-            <Icon name="ChevronRight" size={16} className="text-muted-foreground" />
-            <span className="text-foreground font-medium">Carrinho & Checkout</span>
-          </div>
-        </div>
-      </div>
-      <div className="container mx-auto px-4 py-6 pb-32 md:pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Cart Items & Forms */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Cart Items */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-foreground">
-                  Seu Pedido
-                </h1>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/menu-catalog-product-browse')}
-                  iconName="Plus"
-                  iconPosition="left"
-                  size="sm"
-                >
-                  Adicionar Itens
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                {cartItems?.map((item) => (
-                  <CartItemCard
-                    key={item?.id}
-                    item={item}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onRemoveItem={handleRemoveItem}
-                    onEditItem={handleEditItem}
-                    primaryColor={primaryColor}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Delivery Method */}
-            <DeliveryMethodSelector
-              selectedMethod={deliveryMethod}
-              onMethodChange={setDeliveryMethod}
-              primaryColor={primaryColor}
-            />
-
-            {/* Address Selection */}
-            {deliveryMethod === 'delivery' && (
-              <AddressSelector
-                selectedAddress={selectedAddress}
-                onAddressChange={setSelectedAddress}
-                addresses={addresses}
-                onAddNewAddress={handleAddNewAddress}
-                primaryColor={primaryColor}
-              />
-            )}
-
-            {/* Coupon Input */}
-            <CouponInput
-              appliedCoupon={appliedCoupon}
-              onApplyCoupon={handleApplyCoupon}
-              onRemoveCoupon={handleRemoveCoupon}
-              primaryColor={primaryColor}
-            />
-
-            {/* Payment Method */}
-            <PaymentMethodSelector
-              selectedMethod={paymentMethod}
-              onMethodChange={setPaymentMethod}
-              primaryColor={primaryColor}
-            />
-
-            {/* Order Notes */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-foreground">
-                Observações do Pedido
-              </h3>
-              <Input
-                type="text"
-                placeholder="Alguma observação especial? (opcional)"
-                value={orderNotes}
-                onChange={(e) => setOrderNotes(e?.target?.value)}
-                description="Ex: sem cebola, ponto da carne, etc."
-              />
-            </div>
-          </div>
-
-          {/* Right Column - Order Summary */}
-          <div className="lg:col-span-1">
-            <OrderSummary
-              items={cartItems}
-              deliveryMethod={deliveryMethod}
-              appliedCoupon={appliedCoupon}
-              primaryColor={primaryColor}
-            />
-          </div>
-        </div>
-      </div>
-      {/* Sticky Bottom Bar - Mobile */}
-      <div className="lg:hidden fixed bottom-16 left-0 right-0 z-50 bg-card border-t border-border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-muted-foreground">Total do pedido:</span>
-          <span className="text-lg font-bold text-foreground">
-            {formatPrice(calculateTotal())}
-          </span>
-        </div>
-        
-        <Button
-          onClick={handlePlaceOrder}
-          loading={loading}
-          fullWidth
-          style={{ backgroundColor: primaryColor }}
-          iconName="CreditCard"
-          iconPosition="left"
+    <div className="min-h-screen bg-gray-50 pb-32">
+      {/* Header */}
+      <header className="bg-white border-b px-4 py-4 flex items-center gap-3">
+        <button
+          onClick={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : -1)}
+          className="p-2 rounded-lg hover:bg-gray-100"
         >
-          {loading ? 'Processando...' : 'Finalizar Pedido'}
-        </Button>
-      </div>
-      {/* Desktop Place Order Button */}
-      <div className="hidden lg:block fixed bottom-8 right-8 z-50">
-        <Button
-          onClick={handlePlaceOrder}
-          loading={loading}
-          size="lg"
-          style={{ backgroundColor: primaryColor }}
-          iconName="CreditCard"
-          iconPosition="left"
-          className="shadow-lg"
+          <Icon name="ArrowLeft" size={20} className="text-gray-600" />
+        </button>
+        <h1 className="text-lg font-bold text-gray-900">Finalizar Pedido</h1>
+      </header>
+
+      <main className="p-4 max-w-lg mx-auto space-y-4">
+        {/* Itens */}
+        <section className="bg-white rounded-xl border p-4">
+          <h2 className="font-semibold text-gray-900 mb-3">Itens do pedido</h2>
+          <div className="space-y-3">
+            {itens.map((item) => (
+              <div key={item.id} className="flex items-center gap-3">
+                {item.image_url && (
+                  <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
+                  <p className="text-xs text-orange-600">{fmt(item.price)} cada</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => altQtd(item.id, -1)}
+                    className="w-6 h-6 bg-gray-100 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-200"
+                  >
+                    −
+                  </button>
+                  <span className="w-4 text-center text-sm">{item.qtd}</span>
+                  <button
+                    onClick={() => altQtd(item.id, +1)}
+                    className="w-6 h-6 bg-orange-500 rounded-full text-sm font-bold text-white hover:bg-orange-600"
+                  >
+                    +
+                  </button>
+                  <button onClick={() => remover(item.id)} className="ml-1 text-red-400 hover:text-red-600">
+                    <Icon name="X" size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Pagamento */}
+        <section className="bg-white rounded-xl border p-4">
+          <h2 className="font-semibold text-gray-900 mb-3">Forma de pagamento</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.entries(PAYMENT_LABELS).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPaymentMethod(key)}
+                className={`py-2.5 px-3 rounded-lg text-sm font-medium border transition-colors ${
+                  paymentMethod === key
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Resumo */}
+        <section className="bg-white rounded-xl border p-4 space-y-2">
+          <h2 className="font-semibold text-gray-900 mb-2">Resumo</h2>
+          {itens.map((i) => (
+            <div key={i.id} className="flex justify-between text-sm text-gray-600">
+              <span>{i.name} × {i.qtd}</span>
+              <span>{fmt(i.price * i.qtd)}</span>
+            </div>
+          ))}
+          <div className="border-t pt-2 flex justify-between font-bold text-gray-900">
+            <span>Total</span>
+            <span className="text-orange-600">{fmt(total)}</span>
+          </div>
+        </section>
+
+        {erro && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            {erro}
+          </div>
+        )}
+      </main>
+
+      {/* Botão fixo */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg">
+        <button
+          onClick={handleFinalizar}
+          disabled={loading || itens.length === 0}
+          className="w-full max-w-lg mx-auto flex items-center justify-between bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-5 py-3 font-semibold disabled:opacity-50"
         >
-          {loading ? 'Processando...' : `Finalizar Pedido - ${formatPrice(calculateTotal())}`}
-        </Button>
+          <span>{loading ? 'Enviando...' : 'Confirmar pedido'}</span>
+          <span>{fmt(total)}</span>
+        </button>
       </div>
     </div>
   );
