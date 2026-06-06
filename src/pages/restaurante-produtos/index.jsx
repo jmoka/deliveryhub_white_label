@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', image_url: '', category_id: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tipo: 'normal', destaque: false };
 
 const RestauranteProdutos = () => {
   const navigate = useNavigate();
@@ -57,8 +57,11 @@ const RestauranteProdutos = () => {
         name: form.name,
         description: form.description || undefined,
         price: parseFloat(form.price),
+        preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : undefined,
         image_url: form.image_url || undefined,
         category_id: parseInt(form.category_id),
+        tipo: form.tipo,
+        destaque: form.destaque,
       });
       setProdutos((prev) => [...prev, novo]);
       setForm(EMPTY_FORM);
@@ -95,6 +98,7 @@ const RestauranteProdutos = () => {
           <button onClick={() => navigate('/restaurante/produtos')} className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg">Produtos</button>
           <button onClick={() => navigate('/restaurante/pedidos')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Pedidos</button>
           <button onClick={() => navigate('/restaurante/clientes')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Clientes</button>
+          <button onClick={() => navigate('/restaurante/aparencia')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Aparência</button>
           <button onClick={() => navigate('/restaurante/config')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Config</button>
           <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }} className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
         </nav>
@@ -165,18 +169,33 @@ const RestauranteProdutos = () => {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-gray-900 truncate">{p.name}</p>
-                    <button
-                      onClick={() => handleToggle(p)}
-                      className={`flex-shrink-0 text-xs px-2 py-1 rounded-full font-medium ${
-                        p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                      }`}
-                    >
-                      {p.is_active ? 'Ativo' : 'Inativo'}
-                    </button>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{p.name}</p>
+                      {p.destaque && <span className="text-xs">⭐</span>}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {p.tipo !== 'normal' && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${p.tipo === 'promo' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {p.tipo === 'promo' ? 'PROMO' : 'COMBO'}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleToggle(p)}
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {p.is_active ? 'Ativo' : 'Inativo'}
+                      </button>
+                    </div>
                   </div>
                   {p.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{p.description}</p>}
-                  <p className="text-sm font-semibold text-orange-600 mt-1">{fmt(p.price)}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm font-semibold text-orange-600">{fmt(p.price)}</p>
+                    {p.tipo === 'promo' && p.preco_promo && (
+                      <p className="text-xs text-green-600 font-semibold">{fmt(p.preco_promo)} promo</p>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400">{catMap[p.category_id] ?? 'Sem categoria'}</p>
                 </div>
               </div>
@@ -249,6 +268,39 @@ const RestauranteProdutos = () => {
                   placeholder="https://..."
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <select
+                  value={form.tipo}
+                  onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="promo">Promoção</option>
+                  <option value="combo">Combo</option>
+                </select>
+              </div>
+              {form.tipo === 'promo' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço promocional (R$)</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={form.preco_promo}
+                    onChange={(e) => setForm((f) => ({ ...f, preco_promo: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="Preço com desconto"
+                  />
+                </div>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.destaque}
+                  onChange={(e) => setForm((f) => ({ ...f, destaque: e.target.checked }))}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-sm text-gray-700">⭐ Destacar produto</span>
+              </label>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"

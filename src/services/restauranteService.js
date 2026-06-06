@@ -67,6 +67,10 @@ export const criarCliente = (data) =>
 export const atualizarCliente = (id, data) =>
   apiFetch(`/clientes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 
+export const getAparencia = () => apiFetch('/aparencia');
+export const updateAparencia = (data) =>
+  apiFetch('/aparencia', { method: 'PATCH', body: JSON.stringify(data) });
+
 export const getConfig = () => apiFetch('/config');
 
 export const updateConfig = (data) =>

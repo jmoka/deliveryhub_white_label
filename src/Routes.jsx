@@ -21,6 +21,7 @@ import RestaurantePedidos from './pages/restaurante-pedidos';
 import RestauranteCatalogo from './pages/restaurante-catalogo';
 import RestauranteConfig from './pages/restaurante-config';
 import RestauranteClientes from './pages/restaurante-clientes';
+import RestauranteAparencia from './pages/restaurante-aparencia';
 
 const Routes = () => {
   return (
@@ -51,6 +52,7 @@ const Routes = () => {
         <Route path="/restaurante/pedidos" element={<RestauranteGuard><RestaurantePedidos /></RestauranteGuard>} />
         <Route path="/restaurante/config" element={<RestauranteGuard><RestauranteConfig /></RestauranteGuard>} />
         <Route path="/restaurante/clientes" element={<RestauranteGuard><RestauranteClientes /></RestauranteGuard>} />
+        <Route path="/restaurante/aparencia" element={<RestauranteGuard><RestauranteAparencia /></RestauranteGuard>} />
 
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>

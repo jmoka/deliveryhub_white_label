@@ -21,7 +21,7 @@ export class CatalogoController {
   async cardapio(@Param('slug') slug: string) {
     const { data: restaurante } = await this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, business_hours, slug')
+      .select('id, name, address, logo_url, business_hours, slug, aparencia')
       .eq('slug', slug)
       .maybeSingle();
 
@@ -35,19 +35,21 @@ export class CatalogoController {
 
     const { data: produtos } = await this.supabase.client
       .from('products')
-      .select('id, name, description, price, image_url, category_id')
+      .select('id, name, description, price, preco_promo, image_url, category_id, tipo, destaque')
       .eq('is_active', true)
-      .in(
-        'category_id',
-        (categorias ?? []).map((c) => c.id),
-      )
+      .in('category_id', (categorias ?? []).map((c) => c.id))
+      .order('destaque', { ascending: false })
       .order('name');
 
     const cardapio = (categorias ?? []).map((cat) => ({
       ...cat,
-      produtos: (produtos ?? []).filter((p) => p.category_id === cat.id),
+      produtos: (produtos ?? []).filter((p) => p.category_id === cat.id && p.tipo === 'normal'),
     })).filter((cat) => cat.produtos.length > 0);
 
-    return { restaurante, cardapio };
+    const destaques = (produtos ?? []).filter((p) => p.destaque);
+    const promos = (produtos ?? []).filter((p) => p.tipo === 'promo');
+    const combos = (produtos ?? []).filter((p) => p.tipo === 'combo');
+
+    return { restaurante, cardapio, destaques, promos, combos };
   }
 }

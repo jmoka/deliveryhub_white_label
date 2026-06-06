@@ -67,12 +67,30 @@ export class RestauranteService {
   }
 
   async meusProdutos(restaurantId: number) {
-    return this.produtos.listarPorEmpresa(restaurantId);
+    const { data, error } = await this.supabase.client
+      .from('products')
+      .select('id, name, description, price, preco_promo, image_url, is_active, category_id, tipo, destaque, created_at')
+      .in(
+        'category_id',
+        (await this.supabase.client
+          .from('categories')
+          .select('id')
+          .eq('restaurant_id', restaurantId)
+          .then((r) => (r.data ?? []).map((c) => c.id))),
+      )
+      .order('destaque', { ascending: false })
+      .order('name');
+
+    if (error) throw error;
+    return { produtos: data ?? [] };
   }
 
   async criarProduto(
     restaurantId: number,
-    body: { name: string; description?: string; price: number; image_url?: string; category_id: number },
+    body: {
+      name: string; description?: string; price: number; image_url?: string;
+      category_id: number; tipo?: string; preco_promo?: number; destaque?: boolean;
+    },
   ) {
     const { data: cat } = await this.supabase.client
       .from('categories')
@@ -83,7 +101,24 @@ export class RestauranteService {
 
     if (!cat) throw new NotFoundException('Categoria não pertence a este restaurante');
 
-    return this.produtos.criar(body);
+    const { data, error } = await this.supabase.client
+      .from('products')
+      .insert({
+        name: body.name,
+        description: body.description ?? null,
+        price: body.price,
+        preco_promo: body.preco_promo ?? null,
+        image_url: body.image_url ?? null,
+        category_id: body.category_id,
+        tipo: body.tipo ?? 'normal',
+        destaque: body.destaque ?? false,
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async toggleProduto(produtoId: number, restaurantId: number, ativo: boolean) {
@@ -177,6 +212,33 @@ export class RestauranteService {
 
     if (error) throw error;
     return data;
+  }
+
+  async getAparencia(restaurantId: number) {
+    const { data } = await this.supabase.client
+      .from('restaurants')
+      .select('aparencia')
+      .eq('id', restaurantId)
+      .maybeSingle();
+    return (data?.aparencia ?? {}) as Record<string, any>;
+  }
+
+  async updateAparencia(restaurantId: number, body: Record<string, any>) {
+    const { data: atual } = await this.supabase.client
+      .from('restaurants')
+      .select('aparencia')
+      .eq('id', restaurantId)
+      .maybeSingle();
+
+    const nova = { ...(atual?.aparencia ?? {}), ...body };
+
+    const { error } = await this.supabase.client
+      .from('restaurants')
+      .update({ aparencia: nova, updated_at: new Date().toISOString() })
+      .eq('id', restaurantId);
+
+    if (error) throw error;
+    return nova;
   }
 
   async getConfig(restaurantId: number) {
