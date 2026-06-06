@@ -214,6 +214,7 @@ const AdminEmpresas = () => {
                   <tr className="border-b bg-gray-50">
                     <th className="px-4 py-3 text-left font-medium text-gray-600">ID</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600">Nome</th>
+                    <th className="px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Slug / Link</th>
                     <th className="px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Endereço</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">Comissão</th>
                     <th className="px-4 py-3 text-right font-medium text-gray-600">Cadastro</th>
@@ -225,6 +226,20 @@ const AdminEmpresas = () => {
                     <tr key={e.id} className="border-b last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3 text-gray-400">#{e.id}</td>
                       <td className="px-4 py-3 font-medium text-gray-900">{e.name}</td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {e.slug ? (
+                          <a
+                            href={`/r/${e.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline font-mono"
+                          >
+                            /r/{e.slug}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-gray-500 hidden md:table-cell max-w-xs truncate">
                         {e.address ?? '—'}
                       </td>

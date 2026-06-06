@@ -113,6 +113,31 @@ const RestauranteDashboard = () => {
       </header>
 
       <main className="p-6 max-w-5xl mx-auto">
+        {empresa?.slug && (
+          <div className="mb-6 bg-orange-50 border border-orange-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-orange-800">Link do seu cardápio</p>
+              <p className="text-xs text-orange-600 font-mono mt-0.5">{window.location.origin}/r/{empresa.slug}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigator.clipboard.writeText(`${window.location.origin}/r/${empresa.slug}`)}
+                className="px-3 py-1.5 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                Copiar
+              </button>
+              <a
+                href={`/r/${empresa.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-100"
+              >
+                Abrir
+              </a>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card label="Total Pedidos" value={metricas?.total_pedidos ?? 0} color="blue" />
           <Card label="Pendentes" value={metricas?.pedidos_pendentes ?? 0} color="orange" />

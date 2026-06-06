@@ -5,10 +5,14 @@ import { SupabaseService } from '../supabase/supabase.service';
 export class EmpresasService {
   constructor(private supabase: SupabaseService) {}
 
+  private gerarSlug(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
+  }
+
   async listar(apenasAtivo?: boolean) {
     let query = this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, comissao_pct, user_id, created_at')
+      .select('id, name, address, logo_url, comissao_pct, user_id, slug, created_at')
       .order('name');
 
     const { data, error } = await query;
@@ -19,7 +23,7 @@ export class EmpresasService {
   async buscar(id: number) {
     const { data, error } = await this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, business_hours, payment_config, comissao_pct, user_id, created_at')
+      .select('id, name, address, logo_url, business_hours, payment_config, comissao_pct, user_id, slug, created_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -51,6 +55,7 @@ export class EmpresasService {
     logo_url?: string;
     comissao_pct?: number;
     user_id?: string;
+    slug?: string;
   }) {
     const { data, error } = await this.supabase.client
       .from('restaurants')
@@ -60,6 +65,7 @@ export class EmpresasService {
         logo_url: body.logo_url ?? null,
         comissao_pct: body.comissao_pct ?? 5.0,
         user_id: body.user_id ?? null,
+        slug: body.slug || this.gerarSlug(body.name),
       })
       .select()
       .single();

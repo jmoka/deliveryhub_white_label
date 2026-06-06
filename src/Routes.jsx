@@ -17,6 +17,7 @@ import RestauranteGuard from './components/RestauranteGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
 import RestauranteProdutos from './pages/restaurante-produtos';
 import RestaurantePedidos from './pages/restaurante-pedidos';
+import RestauranteCatalogo from './pages/restaurante-catalogo';
 
 const Routes = () => {
   return (
@@ -36,6 +37,9 @@ const Routes = () => {
         <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
         <Route path="/admin/empresas" element={<AdminGuard><AdminEmpresas /></AdminGuard>} />
         <Route path="/admin/comissoes" element={<AdminGuard><AdminComissoes /></AdminGuard>} />
+
+        {/* Cardápio público por slug — sem auth */}
+        <Route path="/r/:slug" element={<RestauranteCatalogo />} />
 
         {/* Restaurante — requer role=restaurant_owner */}
         <Route path="/restaurante" element={<RestauranteGuard><RestauranteDashboard /></RestauranteGuard>} />

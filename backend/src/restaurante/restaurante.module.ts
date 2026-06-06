@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RestauranteController } from './restaurante.controller';
 import { OnboardingController } from './onboarding.controller';
+import { CatalogoController } from './catalogo.controller';
 import { RestauranteService } from './restaurante.service';
 import { AuthModule } from '../auth/auth.module';
 import { SupabaseModule } from '../supabase/supabase.module';
@@ -10,7 +11,7 @@ import { PedidosModule } from '../pedidos/pedidos.module';
 
 @Module({
   imports: [AuthModule, SupabaseModule, CategoriasModule, ProdutosModule, PedidosModule],
-  controllers: [RestauranteController, OnboardingController],
+  controllers: [RestauranteController, OnboardingController, CatalogoController],
   providers: [RestauranteService],
 })
 export class RestauranteModule {}

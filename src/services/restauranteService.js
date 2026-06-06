@@ -55,3 +55,15 @@ export const getMinhasCategorias = () => apiFetch('/categorias');
 
 export const criarCategoria = (name) =>
   apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name }) });
+
+// Endpoint público — sem auth
+export const getCardapioPorSlug = async (slug) => {
+  const res = await fetch(`/api/r/${slug}`);
+  const contentType = res.headers.get('content-type') ?? '';
+  const isJson = contentType.includes('application/json');
+  if (!res.ok) {
+    const err = isJson ? await res.json().catch(() => ({})) : {};
+    throw new Error(err?.message ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+};
