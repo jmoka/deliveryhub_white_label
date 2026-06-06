@@ -50,6 +50,11 @@ export const criarEmpresa = (data) => apiFetch('/empresas', { method: 'POST', bo
 export const atualizarEmpresa = (id, data) => apiFetch(`/empresas/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerEmpresa = (id) => apiFetch(`/empresas/${id}`, { method: 'DELETE' });
 
+// Config pagamentos por empresa
+export const getEmpresaConfig = (id) => apiFetch(`/empresas/${id}/config`);
+export const updateEmpresaConfig = (id, data) =>
+  apiFetch(`/empresas/${id}/config`, { method: 'PATCH', body: JSON.stringify(data) });
+
 // Pedidos
 export const getPedidos = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
