@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMetricas, getComissoes } from '../../services/adminService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtNum = (v) => new Intl.NumberFormat('pt-BR').format(v ?? 0);
@@ -23,6 +24,7 @@ const Card = ({ label, value, sub, color = 'blue' }) => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { signOut, userProfile } = useAuth();
   const [metricas, setMetricas] = useState(null);
   const [comissoes, setComissoes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,26 +63,23 @@ const AdminDashboard = () => {
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Painel Dev-Admin</h1>
-          <p className="text-sm text-gray-500">Plataforma Delivery</p>
+          <p className="text-sm text-gray-500">{userProfile?.name || 'Plataforma Delivery'}</p>
         </div>
-        <nav className="flex gap-3">
-          <button
-            onClick={() => navigate('/admin')}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg"
-          >
+        <nav className="flex gap-3 items-center">
+          <button onClick={() => navigate('/admin')} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">
             Dashboard
           </button>
-          <button
-            onClick={() => navigate('/admin/empresas')}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-          >
+          <button onClick={() => navigate('/admin/empresas')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Empresas
           </button>
-          <button
-            onClick={() => navigate('/admin/comissoes')}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-          >
+          <button onClick={() => navigate('/admin/comissoes')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Comissões
+          </button>
+          <button
+            onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+            className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+          >
+            Sair
           </button>
         </nav>
       </header>

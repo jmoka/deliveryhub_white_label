@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getComissoes, getEmpresas } from '../../services/adminService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const AdminComissoes = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [comissoes, setComissoes] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [total, setTotal] = useState(0);
@@ -60,6 +62,12 @@ const AdminComissoes = () => {
               {l.label}
             </button>
           ))}
+          <button
+            onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+            className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+          >
+            Sair
+          </button>
         </nav>
       </header>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMeusPedidos, atualizarStatusPedido } from '../../services/restauranteService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -24,6 +25,7 @@ const FILTROS = ['', 'pending', 'confirmed', 'ready', 'out_for_delivery', 'deliv
 
 const RestaurantePedidos = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -64,6 +66,7 @@ const RestaurantePedidos = () => {
           <button onClick={() => navigate('/restaurante')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</button>
           <button onClick={() => navigate('/restaurante/produtos')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Produtos</button>
           <button onClick={() => navigate('/restaurante/pedidos')} className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg">Pedidos</button>
+          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }} className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
         </nav>
       </header>
 

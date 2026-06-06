@@ -2,37 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
-import Image from '../../components/AppImage';
-import SocialLoginButtons from './components/SocialLoginButtons';
-import AuthTabs from './components/AuthTabs';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
-import WhatsAppVerification from './components/WhatsAppVerification';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
+import { authService } from '../../services/authService';
+
+const TAB_LOGIN = 'login';
+const TAB_REGISTER = 'register';
 
 const CustomerRegistrationLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Mock restaurant data
-  const restaurantData = {
-    name: "Sabor Brasileiro",
-    logo: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=200&h=200&fit=crop&crop=center",
-    primaryColor: "#D97706",
-    description: "Comida caseira com sabor de casa"
-  };
-
-  // State management
-  const [activeTab, setActiveTab] = useState('login');
-  const [currentStep, setCurrentStep] = useState('auth'); // 'auth', 'verification'
+  const [activeTab, setActiveTab] = useState(TAB_LOGIN);
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [pendingRegistration, setPendingRegistration] = useState(null);
 
   const { signIn, signUp, isAuthenticated, isAdmin, isRestaurantOwner } = useAuth();
 
   const getRedirectUrl = (from) => {
-    if (from) return from;
+    if (from && from !== '/customer-registration-login') return from;
     if (isAdmin()) return '/admin';
     if (isRestaurantOwner()) return '/restaurante';
     return '/menu-catalog-product-browse';
@@ -42,15 +31,14 @@ const CustomerRegistrationLogin = () => {
     if (isAuthenticated()) {
       navigate(getRedirectUrl(location?.state?.from));
     }
-  }, [navigate, location, isAuthenticated, isAdmin, isRestaurantOwner]);
+  }, [isAuthenticated()]);
 
   const handleLogin = async (formData) => {
+    setErro(null);
     setLoading(true);
     try {
       const result = await signIn(formData?.emailOrPhone, formData?.password);
-      if (!result?.success) {
-        throw new Error(result?.error || 'Credenciais inválidas');
-      }
+      if (!result?.success) throw new Error(result?.error || 'Credenciais inválidas');
       navigate(getRedirectUrl(location?.state?.from));
     } catch (error) {
       throw error;
@@ -60,15 +48,15 @@ const CustomerRegistrationLogin = () => {
   };
 
   const handleRegister = async (formData) => {
+    setErro(null);
     setLoading(true);
     try {
       const result = await signUp(formData?.email, formData?.password, {
         name: formData?.name,
         role: 'customer',
       });
-      if (!result?.success) {
-        throw new Error(result?.error || 'Erro ao criar conta');
-      }
+      if (!result?.success) throw new Error(result?.error || 'Erro ao criar conta');
+      // Após registro, redireciona por role (perfil carregado via AuthContext)
       navigate('/menu-catalog-product-browse');
     } catch (error) {
       throw new Error(error?.message || 'Erro ao criar conta. Tente novamente.');
@@ -77,194 +65,124 @@ const CustomerRegistrationLogin = () => {
     }
   };
 
-  const handleWhatsAppVerification = async (code) => {
-    setLoading(true);
-    
-    try {
-      // Simulate verification
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (code !== '123456') {
-        throw new Error('Código inválido');
-      }
-
-      // Complete registration
-      localStorage.setItem('customerAuth', JSON.stringify({
-        id: 2,
-        name: pendingRegistration?.name,
-        email: pendingRegistration?.email,
-        phone: pendingRegistration?.phone,
-        loginTime: new Date()?.toISOString()
-      }));
-
-      // Redirect to menu
-      navigate('/menu-catalog-product-browse');
-      
-    } catch (error) {
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendCode = async () => {
-    // Simulate resend
-    await new Promise(resolve => setTimeout(resolve, 500));
-  };
-
-  const handleSocialLogin = async (provider) => {
-    setLoading(true);
-    
-    try {
-      // Simulate social login
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      localStorage.setItem('customerAuth', JSON.stringify({
-        id: 3,
-        name: `Usuário ${provider}`,
-        email: `usuario@${provider?.toLowerCase()}.com`,
-        phone: "(11) 98888-8888",
-        provider: provider,
-        loginTime: new Date()?.toISOString()
-      }));
-
-      const returnUrl = location?.state?.from || '/menu-catalog-product-browse';
-      navigate(returnUrl);
-      
-    } catch (error) {
-      console.error(`Erro no login com ${provider}:`, error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleForgotPassword = async (email) => {
-    // Simulate password reset
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  };
-
-  const handleBackToAuth = () => {
-    setCurrentStep('auth');
-    setPendingRegistration(null);
-  };
-
-  const handleGoBack = () => {
-    if (location?.state?.from) {
-      navigate(location?.state?.from);
-    } else {
-      navigate('/menu-catalog-product-browse');
-    }
+    await authService.resetPassword(email);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="h-16 px-4 flex items-center justify-between">
-          <button
-            onClick={handleGoBack}
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            aria-label="Voltar"
-          >
-            <Icon name="ArrowLeft" size={24} className="text-gray-600" />
-          </button>
-          
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-gray-100">
-              <Image
-                src={restaurantData?.logo}
-                alt={`${restaurantData?.name} logo`}
-                className="w-full h-full object-cover"
-              />
+      <header className="bg-white border-b px-4 py-4 flex items-center justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 -ml-2 rounded-lg hover:bg-gray-100"
+          aria-label="Voltar"
+        >
+          <Icon name="ArrowLeft" size={24} className="text-gray-600" />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <Icon name="Utensils" size={18} className="text-white" />
+          </div>
+          <span className="text-sm font-semibold text-gray-900">DeliveryHub</span>
+        </div>
+        <div className="w-10" />
+      </header>
+
+      <main className="flex-1 px-4 py-8">
+        <div className="max-w-md mx-auto space-y-6">
+
+          {/* Card principal */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                {activeTab === TAB_LOGIN ? 'Entrar na sua conta' : 'Criar conta'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {activeTab === TAB_LOGIN
+                  ? 'Acesse para acompanhar seus pedidos'
+                  : 'Cadastre-se para fazer pedidos'}
+              </p>
             </div>
-            <div>
-              <h1 className="text-sm font-semibold text-gray-900">
-                {restaurantData?.name}
-              </h1>
+
+            {/* Tabs */}
+            <div className="flex border border-gray-200 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setActiveTab(TAB_LOGIN)}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === TAB_LOGIN
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Entrar
+              </button>
+              <button
+                onClick={() => setActiveTab(TAB_REGISTER)}
+                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === TAB_REGISTER
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                Cadastrar
+              </button>
+            </div>
+
+            {erro && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{erro}</p>
+              </div>
+            )}
+
+            {activeTab === TAB_LOGIN ? (
+              <LoginForm
+                onLogin={handleLogin}
+                onForgotPassword={() => setShowForgotPassword(true)}
+                loading={loading}
+                primaryColor="#2563EB"
+              />
+            ) : (
+              <RegisterForm
+                onRegister={handleRegister}
+                loading={loading}
+                primaryColor="#2563EB"
+              />
+            )}
+
+            {/* Hint dev */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800 font-medium mb-1">Conta admin (desenvolvimento):</p>
+              <p className="text-xs text-blue-700">Email: admin@test.com · Senha: Test@1234</p>
             </div>
           </div>
-          
-          <div className="w-10"></div>
-        </div>
-      </header>
-      {/* Main Content */}
-      <main className="flex-1 px-4 py-8">
-        <div className="max-w-md mx-auto">
-          {currentStep === 'auth' ? (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-              {/* Welcome Section */}
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full overflow-hidden bg-gray-100 mb-4">
-                  <Image
-                    src={restaurantData?.logo}
-                    alt={`${restaurantData?.name} logo`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Bem-vindo ao {restaurantData?.name}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {restaurantData?.description}
-                </p>
-              </div>
 
-              {/* Social Login */}
-              <SocialLoginButtons
-                onGoogleLogin={() => handleSocialLogin('Google')}
-                onFacebookLogin={() => handleSocialLogin('Facebook')}
-                loading={loading}
-              />
+          {/* Separador */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">É um restaurante?</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
 
-              {/* Auth Tabs */}
-              <AuthTabs
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                primaryColor={restaurantData?.primaryColor}
-              />
-
-              {/* Forms */}
-              {activeTab === 'login' ? (
-                <LoginForm
-                  onLogin={handleLogin}
-                  onForgotPassword={() => setShowForgotPassword(true)}
-                  loading={loading}
-                  primaryColor={restaurantData?.primaryColor}
-                />
-              ) : (
-                <RegisterForm
-                  onRegister={handleRegister}
-                  loading={loading}
-                  primaryColor={restaurantData?.primaryColor}
-                />
-              )}
-
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800 font-medium mb-1">Conta de teste (admin):</p>
-                <p className="text-xs text-blue-700">Email: admin@test.com</p>
-                <p className="text-xs text-blue-700">Senha: Test@1234</p>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <WhatsAppVerification
-                phoneNumber={pendingRegistration?.phone || ''}
-                onVerify={handleWhatsAppVerification}
-                onResendCode={handleResendCode}
-                onBack={handleBackToAuth}
-                loading={loading}
-                primaryColor={restaurantData?.primaryColor}
-              />
-            </div>
-          )}
+          {/* CTA Restaurante */}
+          <button
+            onClick={() => navigate('/restaurant-registration-setup')}
+            className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
+          >
+            <Icon name="Store" size={18} className="text-white" />
+            Cadastrar meu restaurante
+          </button>
+          <p className="text-center text-xs text-gray-400">
+            Você precisará estar logado para completar o cadastro do restaurante.
+          </p>
         </div>
       </main>
-      {/* Forgot Password Modal */}
+
       <ForgotPasswordModal
         isOpen={showForgotPassword}
         onClose={() => setShowForgotPassword(false)}
         onResetPassword={handleForgotPassword}
-        primaryColor={restaurantData?.primaryColor}
+        primaryColor="#2563EB"
       />
     </div>
   );

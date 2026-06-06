@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMinhaEmpresa, getMeusPedidos, atualizarStatusPedido } from '../../services/restauranteService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -37,6 +38,7 @@ const Card = ({ label, value, color = 'blue' }) => {
 
 const RestauranteDashboard = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [empresa, setEmpresa] = useState(null);
   const [metricas, setMetricas] = useState(null);
   const [pedidos, setPedidos] = useState([]);
@@ -91,24 +93,21 @@ const RestauranteDashboard = () => {
           <h1 className="text-xl font-bold text-gray-900">{empresa?.name ?? 'Meu Restaurante'}</h1>
           <p className="text-sm text-gray-500">Painel do Restaurante</p>
         </div>
-        <nav className="flex gap-3">
-          <button
-            onClick={() => navigate('/restaurante')}
-            className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg"
-          >
+        <nav className="flex gap-3 items-center">
+          <button onClick={() => navigate('/restaurante')} className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg">
             Dashboard
           </button>
-          <button
-            onClick={() => navigate('/restaurante/produtos')}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-          >
+          <button onClick={() => navigate('/restaurante/produtos')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Produtos
           </button>
-          <button
-            onClick={() => navigate('/restaurante/pedidos')}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
-          >
+          <button onClick={() => navigate('/restaurante/pedidos')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Pedidos
+          </button>
+          <button
+            onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+            className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+          >
+            Sair
           </button>
         </nav>
       </header>

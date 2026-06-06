@@ -1,31 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa } from '../../services/adminService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const AdminNav = ({ active }) => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const links = [
     { label: 'Dashboard', path: '/admin' },
     { label: 'Empresas', path: '/admin/empresas' },
     { label: 'Comissões', path: '/admin/comissoes' },
   ];
   return (
-    <nav className="flex gap-3">
+    <nav className="flex gap-3 items-center">
       {links.map((l) => (
         <button
           key={l.path}
           onClick={() => navigate(l.path)}
           className={`px-4 py-2 text-sm font-medium rounded-lg ${
-            active === l.path
-              ? 'text-white bg-blue-600'
-              : 'text-gray-700 hover:bg-gray-100'
+            active === l.path ? 'text-white bg-blue-600' : 'text-gray-700 hover:bg-gray-100'
           }`}
         >
           {l.label}
         </button>
       ))}
+      <button
+        onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+        className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+      >
+        Sair
+      </button>
     </nav>
   );
 };
@@ -35,6 +41,7 @@ const Modal = ({ empresa, onClose, onSave }) => {
     name: empresa?.name ?? '',
     address: empresa?.address ?? '',
     comissao_pct: empresa?.comissao_pct ?? 5,
+    user_id: empresa?.user_id ?? '',
   });
   const [salvando, setSalvando] = useState(false);
 
@@ -88,6 +95,20 @@ const Modal = ({ empresa, onClose, onSave }) => {
               value={form.comissao_pct}
               onChange={(e) => setForm({ ...form, comissao_pct: parseFloat(e.target.value) })}
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              UUID do dono (restaurant_owner)
+            </label>
+            <input
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              value={form.user_id}
+              onChange={(e) => setForm({ ...form, user_id: e.target.value.trim() })}
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              UUID do usuário cadastrado como restaurant_owner. Deixe vazio se não houver dono ainda.
+            </p>
           </div>
           <div className="flex gap-3 pt-2">
             <button
