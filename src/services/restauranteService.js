@@ -56,6 +56,11 @@ export const getMinhasCategorias = () => apiFetch('/categorias');
 export const criarCategoria = (name) =>
   apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name }) });
 
+export const getConfig = () => apiFetch('/config');
+
+export const updateConfig = (data) =>
+  apiFetch('/config', { method: 'PATCH', body: JSON.stringify(data) });
+
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {
   const res = await fetch(`/api/r/${slug}`);

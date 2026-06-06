@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { EmpresasService } from './empresas.service';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -39,5 +39,15 @@ export class EmpresasController {
   @Delete(':id')
   remover(@Param('id', ParseIntPipe) id: number) {
     return this.service.remover(id);
+  }
+
+  @Get(':id/config')
+  getConfig(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getConfig(id);
+  }
+
+  @Patch(':id/config')
+  updateConfig(@Param('id', ParseIntPipe) id: number, @Body() body: any) {
+    return this.service.updateConfig(id, body);
   }
 }

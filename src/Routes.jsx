@@ -18,6 +18,7 @@ import RestauranteDashboard from './pages/restaurante-dashboard';
 import RestauranteProdutos from './pages/restaurante-produtos';
 import RestaurantePedidos from './pages/restaurante-pedidos';
 import RestauranteCatalogo from './pages/restaurante-catalogo';
+import RestauranteConfig from './pages/restaurante-config';
 
 const Routes = () => {
   return (
@@ -45,6 +46,7 @@ const Routes = () => {
         <Route path="/restaurante" element={<RestauranteGuard><RestauranteDashboard /></RestauranteGuard>} />
         <Route path="/restaurante/produtos" element={<RestauranteGuard><RestauranteProdutos /></RestauranteGuard>} />
         <Route path="/restaurante/pedidos" element={<RestauranteGuard><RestaurantePedidos /></RestauranteGuard>} />
+        <Route path="/restaurante/config" element={<RestauranteGuard><RestauranteConfig /></RestauranteGuard>} />
 
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>

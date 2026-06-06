@@ -7,18 +7,10 @@ const STATUS_PAGOS = ['PAID', 'COMPLETED', 'AVAILABLE'];
 
 @Injectable()
 export class PagamentosService {
-  private pagbank: PagBankClient;
-  private webhookUrl: string;
-
   constructor(
     private supabase: SupabaseService,
     private config: ConfigService,
-  ) {
-    const token = this.config.get('PAGBANK_TOKEN') ?? '';
-    const sandbox = this.config.get('PAGBANK_SANDBOX') !== 'false';
-    this.webhookUrl = this.config.get('PAGBANK_WEBHOOK_URL') ?? 'http://localhost:3002/pagamentos/webhook';
-    this.pagbank = new PagBankClient(token, sandbox);
-  }
+  ) {}
 
   private async buscarPedido(orderId: number) {
     const { data, error } = await this.supabase.client
@@ -30,6 +22,25 @@ export class PagamentosService {
     if (error) throw error;
     if (!data) throw new NotFoundException(`Pedido ${orderId} não encontrado`);
     return data;
+  }
+
+  private async getPagBankClient(restaurantId: number): Promise<{ client: PagBankClient; webhookUrl: string }> {
+    const { data } = await this.supabase.client
+      .from('restaurants')
+      .select('payment_config')
+      .eq('id', restaurantId)
+      .maybeSingle();
+
+    const cfg = (data?.payment_config ?? {}) as Record<string, any>;
+    const token = cfg.pagbank_token || this.config.get('PAGBANK_TOKEN') || '';
+    const sandbox = cfg.pagbank_sandbox !== undefined
+      ? cfg.pagbank_sandbox
+      : this.config.get('PAGBANK_SANDBOX') !== 'false';
+    const webhookUrl = cfg.pagbank_webhook_url
+      || this.config.get('PAGBANK_WEBHOOK_URL')
+      || 'http://localhost:3002/pagamentos/webhook';
+
+    return { client: new PagBankClient(token, sandbox), webhookUrl };
   }
 
   private limparCpf(cpf: string) {
@@ -48,8 +59,9 @@ export class PagamentosService {
 
     const valorCentavos = Math.round(pedido.total * 100);
     const refId = `DELIVERY_${pedido.id}_${Date.now()}`;
+    const { client: pagbank, webhookUrl } = await this.getPagBankClient(pedido.restaurant_id);
 
-    const resposta = await this.pagbank.criarOrdemPix({
+    const resposta = await pagbank.criarOrdemPix({
       reference_id: refId,
       valor_centavos: valorCentavos,
       customer: {
@@ -58,7 +70,7 @@ export class PagamentosService {
         tax_id: this.limparCpf(body.customer.tax_id),
       },
       itens: [{ name: `Pedido #${pedido.id}`, quantity: 1, unit_amount: valorCentavos }],
-      webhook_url: this.webhookUrl,
+      webhook_url: webhookUrl,
     });
 
     const qrCode = resposta?.qr_codes?.[0];
@@ -106,8 +118,9 @@ export class PagamentosService {
     const valorCentavos = Math.round(pedido.total * 100);
     const refId = `DELIVERY_${pedido.id}_${Date.now()}`;
     const tipo = body.tipo ?? 'CREDIT_CARD';
+    const { client: pagbank, webhookUrl } = await this.getPagBankClient(pedido.restaurant_id);
 
-    const resposta = await this.pagbank.criarOrdemCartao({
+    const resposta = await pagbank.criarOrdemCartao({
       reference_id: refId,
       valor_centavos: valorCentavos,
       customer: {
@@ -119,7 +132,7 @@ export class PagamentosService {
       card_encrypted: body.card_encrypted,
       parcelas: body.parcelas ?? 1,
       tipo,
-      webhook_url: this.webhookUrl,
+      webhook_url: webhookUrl,
     });
 
     const charge = resposta?.charges?.[0];

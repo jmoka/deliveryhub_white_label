@@ -1,6 +1,6 @@
 import {
   Body, Controller, Get, Param, ParseIntPipe,
-  Patch, Post, Query, Req, UseGuards,
+  Patch, Post, Put, Query, Req, UseGuards,
 } from '@nestjs/common';
 import { RestauranteService } from './restaurante.service';
 import { RestaurantOwnerGuard } from '../auth/restaurant-owner.guard';
@@ -63,5 +63,15 @@ export class RestauranteController {
   @Post('categorias')
   criarCategoria(@Req() req: any, @Body() body: { name: string }) {
     return this.service.criarCategoria(req.restaurantId, body);
+  }
+
+  @Get('config')
+  getConfig(@Req() req: any) {
+    return this.service.getConfig(req.restaurantId);
+  }
+
+  @Patch('config')
+  updateConfig(@Req() req: any, @Body() body: any) {
+    return this.service.updateConfig(req.restaurantId, body);
   }
 }

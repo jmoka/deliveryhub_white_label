@@ -104,4 +104,51 @@ export class EmpresasService {
     if (error) throw error;
     return { mensagem: `Empresa ${id} removida` };
   }
+
+  async getConfig(id: number) {
+    const { data } = await this.supabase.client
+      .from('restaurants')
+      .select('payment_config')
+      .eq('id', id)
+      .maybeSingle();
+
+    const cfg = (data?.payment_config ?? {}) as Record<string, any>;
+
+    return {
+      pagbank_sandbox: cfg.pagbank_sandbox ?? true,
+      pagbank_webhook_url: cfg.pagbank_webhook_url ?? '',
+      pagbank_token_masked: cfg.pagbank_token
+        ? `${'•'.repeat(8)}${String(cfg.pagbank_token).slice(-4)}`
+        : null,
+      configurado: !!cfg.pagbank_token,
+    };
+  }
+
+  async updateConfig(
+    id: number,
+    body: { pagbank_token?: string; pagbank_sandbox?: boolean; pagbank_webhook_url?: string },
+  ) {
+    const { data: atual } = await this.supabase.client
+      .from('restaurants')
+      .select('payment_config')
+      .eq('id', id)
+      .maybeSingle();
+
+    const cfg = (atual?.payment_config ?? {}) as Record<string, any>;
+    const novo: Record<string, any> = { ...cfg };
+
+    if (body.pagbank_token !== undefined && body.pagbank_token !== '') {
+      novo.pagbank_token = body.pagbank_token;
+    }
+    if (body.pagbank_sandbox !== undefined) novo.pagbank_sandbox = body.pagbank_sandbox;
+    if (body.pagbank_webhook_url !== undefined) novo.pagbank_webhook_url = body.pagbank_webhook_url;
+
+    const { error } = await this.supabase.client
+      .from('restaurants')
+      .update({ payment_config: novo, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+    return this.getConfig(id);
+  }
 }
