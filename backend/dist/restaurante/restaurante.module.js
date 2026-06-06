@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RestauranteModule = void 0;
 const common_1 = require("@nestjs/common");
 const restaurante_controller_1 = require("./restaurante.controller");
+const onboarding_controller_1 = require("./onboarding.controller");
 const restaurante_service_1 = require("./restaurante.service");
 const auth_module_1 = require("../auth/auth.module");
 const supabase_module_1 = require("../supabase/supabase.module");
@@ -21,7 +22,7 @@ exports.RestauranteModule = RestauranteModule;
 exports.RestauranteModule = RestauranteModule = __decorate([
     (0, common_1.Module)({
         imports: [auth_module_1.AuthModule, supabase_module_1.SupabaseModule, categorias_module_1.CategoriasModule, produtos_module_1.ProdutosModule, pedidos_module_1.PedidosModule],
-        controllers: [restaurante_controller_1.RestauranteController],
+        controllers: [restaurante_controller_1.RestauranteController, onboarding_controller_1.OnboardingController],
         providers: [restaurante_service_1.RestauranteService],
     })
 ], RestauranteModule);

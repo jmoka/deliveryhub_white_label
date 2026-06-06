@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import Image from '../../components/AppImage';
 import SocialLoginButtons from './components/SocialLoginButtons';
@@ -28,51 +29,29 @@ const CustomerRegistrationLogin = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState(null);
 
-  // Mock credentials for testing
-  const mockCredentials = {
-    email: "cliente@exemplo.com",
-    password: "123456",
-    phone: "(11) 99999-9999"
+  const { signIn, signUp, isAuthenticated, isAdmin, isRestaurantOwner } = useAuth();
+
+  const getRedirectUrl = (from) => {
+    if (from) return from;
+    if (isAdmin()) return '/admin';
+    if (isRestaurantOwner()) return '/restaurante';
+    return '/menu-catalog-product-browse';
   };
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const isAuthenticated = localStorage.getItem('customerAuth');
-    if (isAuthenticated) {
-      const returnUrl = location?.state?.from || '/menu-catalog-product-browse';
-      navigate(returnUrl);
+    if (isAuthenticated()) {
+      navigate(getRedirectUrl(location?.state?.from));
     }
-  }, [navigate, location]);
+  }, [navigate, location, isAuthenticated, isAdmin, isRestaurantOwner]);
 
   const handleLogin = async (formData) => {
     setLoading(true);
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock validation
-      const isValidEmail = formData?.emailOrPhone === mockCredentials?.email;
-      const isValidPhone = formData?.emailOrPhone === mockCredentials?.phone;
-      const isValidPassword = formData?.password === mockCredentials?.password;
-      
-      if (!(isValidEmail || isValidPhone) || !isValidPassword) {
-        throw new Error(`Credenciais inválidas. Use: ${mockCredentials.email} / ${mockCredentials.phone} e senha: ${mockCredentials.password}`);
+      const result = await signIn(formData?.emailOrPhone, formData?.password);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Credenciais inválidas');
       }
-
-      // Store authentication
-      localStorage.setItem('customerAuth', JSON.stringify({
-        id: 1,
-        name: "João Silva",
-        email: mockCredentials?.email,
-        phone: mockCredentials?.phone,
-        loginTime: new Date()?.toISOString()
-      }));
-
-      // Redirect to intended page or menu
-      const returnUrl = location?.state?.from || '/menu-catalog-product-browse';
-      navigate(returnUrl);
-      
+      navigate(getRedirectUrl(location?.state?.from));
     } catch (error) {
       throw error;
     } finally {
@@ -82,17 +61,17 @@ const CustomerRegistrationLogin = () => {
 
   const handleRegister = async (formData) => {
     setLoading(true);
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Store pending registration for WhatsApp verification
-      setPendingRegistration(formData);
-      setCurrentStep('verification');
-      
+      const result = await signUp(formData?.email, formData?.password, {
+        name: formData?.name,
+        role: 'customer',
+      });
+      if (!result?.success) {
+        throw new Error(result?.error || 'Erro ao criar conta');
+      }
+      navigate('/menu-catalog-product-browse');
     } catch (error) {
-      throw new Error('Erro ao criar conta. Tente novamente.');
+      throw new Error(error?.message || 'Erro ao criar conta. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -260,13 +239,10 @@ const CustomerRegistrationLogin = () => {
                 />
               )}
 
-              {/* Mock Credentials Info */}
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800 font-medium mb-1">Credenciais para teste:</p>
-                <p className="text-xs text-blue-700">Email: {mockCredentials?.email}</p>
-                <p className="text-xs text-blue-700">Telefone: {mockCredentials?.phone}</p>
-                <p className="text-xs text-blue-700">Senha: {mockCredentials?.password}</p>
-                <p className="text-xs text-blue-700">Código WhatsApp: 123456</p>
+                <p className="text-xs text-blue-800 font-medium mb-1">Conta de teste (admin):</p>
+                <p className="text-xs text-blue-700">Email: admin@test.com</p>
+                <p className="text-xs text-blue-700">Senha: Test@1234</p>
               </div>
             </div>
           ) : (

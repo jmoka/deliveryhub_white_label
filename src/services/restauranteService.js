@@ -30,6 +30,9 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+export const registrarRestaurante = (data) =>
+  apiFetch('/registrar', { method: 'POST', body: JSON.stringify(data) });
+
 export const getMinhaEmpresa = () => apiFetch('/minha-empresa');
 
 export const getMeusPedidos = (params = {}) => {
