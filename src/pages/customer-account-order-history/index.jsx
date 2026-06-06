@@ -74,6 +74,22 @@ const CustomerAccountOrderHistory = () => {
       </header>
 
       <main className="p-4 max-w-2xl mx-auto">
+        {/* CTA restaurante — só aparece para role=customer */}
+        {userProfile?.role === 'customer' && (
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-orange-800">Tem um restaurante?</p>
+              <p className="text-xs text-orange-600 mt-0.5">Cadastre e comece a receber pedidos agora</p>
+            </div>
+            <button
+              onClick={() => navigate('/restaurant-registration-setup')}
+              className="flex-shrink-0 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
+            >
+              Cadastrar restaurante
+            </button>
+          </div>
+        )}
+
         {/* Perfil */}
         <div className="bg-white rounded-xl border p-4 mb-5 flex items-center gap-4">
           <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
