@@ -65,6 +65,32 @@ export class RestauranteController {
     return this.service.criarCategoria(req.restaurantId, body);
   }
 
+  @Get('clientes')
+  listarClientes(
+    @Req() req: any,
+    @Query('busca') busca?: string,
+    @Query('limite') limite?: string,
+  ) {
+    return this.service.listarClientes(req.restaurantId, {
+      busca,
+      limite: limite ? parseInt(limite) : undefined,
+    });
+  }
+
+  @Post('clientes')
+  criarCliente(@Req() req: any, @Body() body: any) {
+    return this.service.criarCliente(req.restaurantId, body);
+  }
+
+  @Patch('clientes/:id')
+  atualizarCliente(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    return this.service.atualizarCliente(id, req.restaurantId, body);
+  }
+
   @Get('config')
   getConfig(@Req() req: any) {
     return this.service.getConfig(req.restaurantId);

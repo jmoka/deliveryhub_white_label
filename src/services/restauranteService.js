@@ -56,6 +56,17 @@ export const getMinhasCategorias = () => apiFetch('/categorias');
 export const criarCategoria = (name) =>
   apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name }) });
 
+export const getClientes = (params = {}) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return apiFetch(`/clientes${qs ? `?${qs}` : ''}`);
+};
+
+export const criarCliente = (data) =>
+  apiFetch('/clientes', { method: 'POST', body: JSON.stringify(data) });
+
+export const atualizarCliente = (id, data) =>
+  apiFetch(`/clientes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
 export const getConfig = () => apiFetch('/config');
 
 export const updateConfig = (data) =>

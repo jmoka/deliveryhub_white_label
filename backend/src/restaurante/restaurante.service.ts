@@ -115,6 +115,70 @@ export class RestauranteService {
     return this.categorias.criar({ name: body.name, restaurant_id: restaurantId });
   }
 
+  async listarClientes(restaurantId: number, filtros: { busca?: string; limite?: number }) {
+    let query = this.supabase.client
+      .from('customers')
+      .select('id, name, email, phone_e164, address_json, notes, user_id, created_at')
+      .eq('restaurant_id', restaurantId)
+      .order('name');
+
+    if (filtros.busca) {
+      query = query.or(`name.ilike.%${filtros.busca}%,email.ilike.%${filtros.busca}%`);
+    }
+
+    if (filtros.limite) query = query.limit(filtros.limite);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return { clientes: data ?? [], total: data?.length ?? 0 };
+  }
+
+  async criarCliente(
+    restaurantId: number,
+    body: { name: string; email?: string; phone_e164?: string; address_json?: object; notes?: string },
+  ) {
+    const { data, error } = await this.supabase.client
+      .from('customers')
+      .insert({
+        name: body.name,
+        email: body.email ?? null,
+        phone_e164: body.phone_e164 ?? null,
+        address_json: body.address_json ?? {},
+        notes: body.notes ?? null,
+        restaurant_id: restaurantId,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async atualizarCliente(
+    clienteId: number,
+    restaurantId: number,
+    body: Partial<{ name: string; email: string; phone_e164: string; address_json: object; notes: string }>,
+  ) {
+    const { data: existente } = await this.supabase.client
+      .from('customers')
+      .select('id')
+      .eq('id', clienteId)
+      .eq('restaurant_id', restaurantId)
+      .maybeSingle();
+
+    if (!existente) throw new NotFoundException('Cliente não encontrado neste restaurante');
+
+    const { data, error } = await this.supabase.client
+      .from('customers')
+      .update({ ...body, updated_at: new Date().toISOString() })
+      .eq('id', clienteId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   async getConfig(restaurantId: number) {
     const { data } = await this.supabase.client
       .from('restaurants')
