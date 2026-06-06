@@ -1,0 +1,82 @@
+import { PedidosService } from './pedidos.service';
+export declare class PedidosController {
+    private service;
+    constructor(service: PedidosService);
+    listar(empresaId?: string, status?: string, dataInicio?: string, dataFim?: string, limite?: string): Promise<{
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            restaurant_id: any;
+            customer_id: any;
+            user_id: any;
+            created_at: any;
+        }[];
+        total: number;
+    }>;
+    buscar(id: number): Promise<{
+        pedido: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            restaurant_id: any;
+            customer_id: any;
+            user_id: any;
+            created_at: any;
+            updated_at: any;
+        };
+        itens: {
+            id: any;
+            quantity: any;
+            unit_price: any;
+            product_id: any;
+        }[];
+        cliente: {
+            id: any;
+            name: any;
+            email: any;
+            phone_e164: any;
+            address_json: any;
+        } | null;
+        empresa: {
+            id: any;
+            name: any;
+            comissao_pct: any;
+        } | null;
+    }>;
+    criar(body: {
+        restaurant_id: number;
+        customer_id?: number;
+        payment_method: string;
+        itens: {
+            product_id: number;
+            quantity: number;
+        }[];
+    }, req: any): Promise<{
+        pedido: any;
+        itens: {
+            order_id: any;
+            product_id: number;
+            quantity: number;
+            unit_price: any;
+        }[];
+    }>;
+    atualizarStatus(id: number, body: {
+        status: string;
+    }): Promise<{
+        id: any;
+        status: any;
+        total: any;
+        restaurant_id: any;
+        updated_at: any;
+    }>;
+    cancelar(id: number): Promise<{
+        id: any;
+        status: any;
+        total: any;
+        restaurant_id: any;
+        updated_at: any;
+    }>;
+}

@@ -147,6 +147,10 @@ export const AuthProvider = ({ children }) => {
     return userProfile?.role === 'admin'
   }
 
+  const isRestaurantOwner = () => {
+    return userProfile?.role === 'restaurant_owner'
+  }
+
   const isAuthenticated = () => {
     return !!user
   }
@@ -161,6 +165,7 @@ export const AuthProvider = ({ children }) => {
     signOut,
     clearError,
     isAdmin,
+    isRestaurantOwner,
     isAuthenticated
   }
 

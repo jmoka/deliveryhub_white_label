@@ -1,0 +1,91 @@
+import { SupabaseService } from '../supabase/supabase.service';
+declare const STATUS_VALIDOS: readonly ["pending", "confirmed", "ready", "out_for_delivery", "delivered", "canceled"];
+type Status = typeof STATUS_VALIDOS[number];
+export declare class PedidosService {
+    private supabase;
+    constructor(supabase: SupabaseService);
+    listar(filtros: {
+        empresa_id?: number;
+        status?: string;
+        user_id?: string;
+        data_inicio?: string;
+        data_fim?: string;
+        limite?: number;
+    }): Promise<{
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            restaurant_id: any;
+            customer_id: any;
+            user_id: any;
+            created_at: any;
+        }[];
+        total: number;
+    }>;
+    buscar(id: number): Promise<{
+        pedido: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            restaurant_id: any;
+            customer_id: any;
+            user_id: any;
+            created_at: any;
+            updated_at: any;
+        };
+        itens: {
+            id: any;
+            quantity: any;
+            unit_price: any;
+            product_id: any;
+        }[];
+        cliente: {
+            id: any;
+            name: any;
+            email: any;
+            phone_e164: any;
+            address_json: any;
+        } | null;
+        empresa: {
+            id: any;
+            name: any;
+            comissao_pct: any;
+        } | null;
+    }>;
+    criar(body: {
+        restaurant_id: number;
+        customer_id?: number;
+        payment_method: string;
+        user_id: string;
+        itens: {
+            product_id: number;
+            quantity: number;
+        }[];
+    }): Promise<{
+        pedido: any;
+        itens: {
+            order_id: any;
+            product_id: number;
+            quantity: number;
+            unit_price: any;
+        }[];
+    }>;
+    atualizarStatus(id: number, status: Status): Promise<{
+        id: any;
+        status: any;
+        total: any;
+        restaurant_id: any;
+        updated_at: any;
+    }>;
+    cancelar(id: number): Promise<{
+        id: any;
+        status: any;
+        total: any;
+        restaurant_id: any;
+        updated_at: any;
+    }>;
+}
+export {};
