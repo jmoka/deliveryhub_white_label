@@ -17,7 +17,7 @@ const NavRestaurante = () => {
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Aparência', path: '/restaurante/aparencia' },
+    { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },
   ];
   return (

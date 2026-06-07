@@ -16,7 +16,7 @@ export class RestauranteService {
   async minhaEmpresa(userId: string) {
     const { data, error } = await this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, business_hours, payment_config, comissao_pct, created_at')
+      .select('id, name, address, logo_url, slug, business_hours, payment_config, comissao_pct, created_at')
       .eq('user_id', userId)
       .maybeSingle();
 

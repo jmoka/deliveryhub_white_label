@@ -37,28 +37,34 @@ const SkeletonCard = ({ list }) => (
 /* ── Card restaurante (grid) ─────────────────────────────────────── */
 const RestCardGrid = ({ r, i }) => {
   const navigate = useNavigate();
-  const nota  = r.nota ?? (4.0 + (i % 5) * 0.2).toFixed(1);
-  const tempo = r.tempo ?? `${20 + (i % 5) * 5}-${35 + (i % 5) * 5} min`;
+  const nota   = r.nota ?? (4.0 + (i % 5) * 0.2).toFixed(1);
+  const tempo  = r.tempo ?? `${20 + (i % 5) * 5}-${35 + (i % 5) * 5} min`;
   const gratis = !r.frete || r.frete === 0;
+  const aberto = r.aparencia?.aberto !== false;
 
   return (
     <motion.button
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: i * 0.06, duration: 0.3 }}
-      whileHover={{ y: -3, transition: { duration: 0.15 } }}
+      whileHover={{ y: aberto ? -3 : 0, transition: { duration: 0.15 } }}
       onClick={() => navigate(`/r/${r.slug}`)}
-      className="w-full bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden hover:shadow-lg hover:border-[#FF441F]/30 transition-all text-left"
+      className={`w-full bg-white rounded-2xl border overflow-hidden transition-all text-left ${
+        aberto
+          ? 'border-[#E4E4E7] hover:shadow-lg hover:border-[#FF441F]/30'
+          : 'border-red-300 opacity-80'
+      }`}
     >
       <div className="relative h-44 overflow-hidden bg-[#F4F4F5]">
         {r.logo_url
-          ? <img src={r.logo_url} alt={r.name} className="w-full h-full object-cover" />
+          ? <img src={r.logo_url} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
           : <div className="w-full h-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center">
               <Icon name="Store" size={52} className="text-[#FF441F]/25" />
             </div>}
         <div className="absolute top-2 left-2 flex gap-1">
-          {gratis && <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full shadow">Grátis</span>}
-          {i < 3   && <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full shadow">Novo</span>}
+          {!aberto && <span className="text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full shadow">Fechado</span>}
+          {aberto && gratis && <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full shadow">Grátis</span>}
+          {aberto && i < 3   && <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full shadow">Novo</span>}
         </div>
         <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm rounded-lg px-1.5 py-0.5 shadow">
           <Icon name="Star" size={11} className="text-yellow-400" fill="currentColor" />
@@ -82,27 +88,35 @@ const RestCardGrid = ({ r, i }) => {
 /* ── Card restaurante (lista) ────────────────────────────────────── */
 const RestCardList = ({ r, i }) => {
   const navigate = useNavigate();
-  const nota  = r.nota ?? (4.0 + (i % 5) * 0.2).toFixed(1);
-  const tempo = r.tempo ?? `${20 + (i % 5) * 5}-${35 + (i % 5) * 5} min`;
+  const nota   = r.nota ?? (4.0 + (i % 5) * 0.2).toFixed(1);
+  const tempo  = r.tempo ?? `${20 + (i % 5) * 5}-${35 + (i % 5) * 5} min`;
   const gratis = !r.frete || r.frete === 0;
+  const aberto = r.aparencia?.aberto !== false;
 
   return (
     <motion.button
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: i * 0.05, duration: 0.25 }}
-      whileHover={{ x: 4 }}
+      whileHover={{ x: aberto ? 4 : 0 }}
       onClick={() => navigate(`/r/${r.slug}`)}
-      className="w-full flex gap-4 bg-white rounded-2xl border border-[#E4E4E7] p-4 hover:border-[#FF441F]/40 hover:shadow-md transition-all text-left"
+      className={`w-full flex gap-4 bg-white rounded-2xl border p-4 transition-all text-left ${
+        aberto
+          ? 'border-[#E4E4E7] hover:border-[#FF441F]/40 hover:shadow-md'
+          : 'border-red-300 opacity-80'
+      }`}
     >
       <div className="w-28 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F4F4F5]">
         {r.logo_url
-          ? <img src={r.logo_url} alt={r.name} className="w-full h-full object-cover" />
+          ? <img src={r.logo_url} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
           : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={32} className="text-[#FF441F]/30" /></div>}
       </div>
       <div className="flex-1 min-w-0 py-1">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-bold text-[#18181B] text-sm leading-tight">{r.name}</p>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <p className="font-bold text-[#18181B] text-sm leading-tight truncate">{r.name}</p>
+            {!aberto && <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex-shrink-0">Fechado</span>}
+          </div>
           <div className="flex items-center gap-0.5 flex-shrink-0 bg-yellow-50 rounded-lg px-1.5 py-0.5">
             <Icon name="Star" size={11} className="text-yellow-400" fill="currentColor" />
             <span className="text-xs font-bold text-yellow-700">{nota}</span>
@@ -127,41 +141,61 @@ const ProdutoCompCard = ({ produto, i, navigate }) => {
   const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
+  const restFechado = rest?.aparencia?.aberto === false;
 
   return (
     <motion.button
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: (i % 12) * 0.04, duration: 0.25 }}
-      whileHover={{ y: -2, transition: { duration: 0.12 } }}
-      onClick={() => rest && navigate(`/r/${rest.slug}`)}
-      className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden hover:shadow-md hover:border-[#FF441F]/20 transition-all text-left w-full"
+      whileHover={restFechado ? {} : { y: -2, transition: { duration: 0.12 } }}
+      onClick={() => rest && !restFechado && navigate(`/r/${rest.slug}`)}
+      className={`bg-white rounded-2xl border overflow-hidden transition-all text-left w-full ${
+        restFechado
+          ? 'border-red-200 opacity-70 cursor-not-allowed'
+          : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20'
+      }`}
     >
       <div className="relative h-36 bg-[#F4F4F5] overflow-hidden">
         {produto.image_url
-          ? <img src={produto.image_url} alt={produto.name} className="w-full h-full object-cover" />
+          ? <img src={produto.image_url} alt={produto.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
           : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={36} className="text-[#E4E4E7]" /></div>}
-        {temPromo && (
-          <span className="absolute top-2 left-2 text-[10px] font-bold bg-[#FF441F] text-white px-2 py-0.5 rounded-full shadow">PROMO</span>
+        {/* Tags */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {restFechado && (
+            <span className="text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full shadow">Fechado</span>
+          )}
+          {!restFechado && temPromo && (
+            <span className="text-[10px] font-bold bg-[#FF441F] text-white px-2 py-0.5 rounded-full shadow">PROMO</span>
+          )}
+        </div>
+        {restFechado && (
+          <div className="absolute inset-0 bg-white/30 flex items-end justify-center pb-3">
+            <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded-lg border border-red-200">
+              Restaurante fechado
+            </span>
+          </div>
         )}
       </div>
       <div className="p-3">
         <p className="text-xs font-bold text-[#18181B] leading-tight line-clamp-2">{produto.name}</p>
         <div className="mt-1.5 flex items-center justify-between">
           <div>
-            {temPromo && <p className="text-[10px] line-through text-[#71717A]">{fmt(produto.price)}</p>}
-            <p className={`text-sm font-black ${temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>{fmt(preco)}</p>
+            {!restFechado && temPromo && <p className="text-[10px] line-through text-[#71717A]">{fmt(produto.price)}</p>}
+            <p className={`text-sm font-black ${restFechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+              {restFechado ? 'Indisponível' : fmt(preco)}
+            </p>
           </div>
         </div>
-        {/* Badge restaurante */}
         {rest && (
           <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#F4F4F5]">
             <div className="w-5 h-5 rounded-md overflow-hidden bg-[#F4F4F5] flex-shrink-0">
               {rest.logo_url
-                ? <img src={rest.logo_url} alt={rest.name} className="w-full h-full object-cover" />
+                ? <img src={rest.logo_url} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
             </div>
             <p className="text-[10px] text-[#71717A] font-medium truncate">{rest.name}</p>
+            {restFechado && <span className="text-[9px] text-red-500 font-bold flex-shrink-0">• Fechado</span>}
           </div>
         )}
       </div>

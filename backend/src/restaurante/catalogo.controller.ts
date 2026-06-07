@@ -9,7 +9,7 @@ export class CatalogoController {
   async listarRestaurantes() {
     const { data, error } = await this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, slug')
+      .select('id, name, address, logo_url, slug, aparencia')
       .not('slug', 'is', null)
       .order('name');
 
@@ -21,7 +21,7 @@ export class CatalogoController {
   async todosOsProdutos() {
     const { data: restaurantes } = await this.supabase.client
       .from('restaurants')
-      .select('id, name, logo_url, slug')
+      .select('id, name, logo_url, slug, aparencia')
       .not('slug', 'is', null);
 
     if (!restaurantes?.length) return { produtos: [] };

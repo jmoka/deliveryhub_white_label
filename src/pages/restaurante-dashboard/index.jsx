@@ -106,6 +106,9 @@ const RestauranteDashboard = () => {
           <button onClick={() => navigate('/restaurante/clientes')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Clientes
           </button>
+          <button onClick={() => navigate('/restaurante/aparencia')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+            Designer
+          </button>
           <button onClick={() => navigate('/restaurante/config')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Config
           </button>
