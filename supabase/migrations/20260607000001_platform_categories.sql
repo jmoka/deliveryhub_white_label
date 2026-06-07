@@ -22,6 +22,13 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- RLS: leitura pública de categorias globais
-CREATE POLICY IF NOT EXISTS "categorias_globais_public_read"
-  ON public.categories FOR SELECT
-  USING (restaurant_id IS NULL);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'categories'
+      AND policyname = 'categorias_globais_public_read'
+  ) THEN
+    EXECUTE 'CREATE POLICY "categorias_globais_public_read" ON public.categories FOR SELECT USING (restaurant_id IS NULL)';
+  END IF;
+END $$;
