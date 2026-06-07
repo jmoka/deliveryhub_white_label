@@ -12,6 +12,7 @@ import { PlataformaModule } from './plataforma/plataforma.module';
 import { PagamentosModule } from './pagamentos/pagamentos.module';
 import { RestauranteModule } from './restaurante/restaurante.module';
 import { MotoboyModule } from './motoboy/motoboy.module';
+import { PerfilModule } from './perfil/perfil.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MotoboyModule } from './motoboy/motoboy.module';
     PagamentosModule,
     RestauranteModule,
     MotoboyModule,
+    PerfilModule,
   ],
 })
 export class AppModule {}

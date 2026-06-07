@@ -88,11 +88,21 @@ let PedidosService = class PedidosService {
         const total = body.itens.reduce((acc, item) => {
             return acc + prodMap[item.product_id].price * item.quantity;
         }, 0);
+        let customerId = body.customer_id ?? null;
+        if (!customerId && body.user_id) {
+            const { data: c } = await this.supabase.client
+                .from('customers')
+                .select('id')
+                .eq('user_id', body.user_id)
+                .maybeSingle();
+            if (c)
+                customerId = c.id;
+        }
         const { data: pedido, error: errPedido } = await this.supabase.client
             .from('orders')
             .insert({
             restaurant_id: body.restaurant_id,
-            customer_id: body.customer_id ?? null,
+            customer_id: customerId,
             payment_method: body.payment_method,
             user_id: body.user_id,
             total: parseFloat(total.toFixed(2)),

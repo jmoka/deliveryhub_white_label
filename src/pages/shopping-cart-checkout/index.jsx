@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
+import StepEndereco from './StepEndereco';
+import { getPerfil } from '../../services/perfilService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -39,7 +41,7 @@ const ProgressBar = ({ etapa, total }) => (
   </div>
 );
 
-const LABELS_ETAPA = ['Seus itens', 'Pagamento', 'Confirmar'];
+const LABELS_ETAPA = ['Seus itens', 'Endereço', 'Pagamento', 'Confirmar'];
 
 /* ── Tela PIX ─────────────────────────────────────────────────────  */
 const PixScreen = ({ pixData, total, onIrAcompanhar }) => {
@@ -221,10 +223,29 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, onNext, o
 );
 
 /* ── Step 3: Confirmar ───────────────────────────────────────────── */
-const StepConfirmar = ({ itens, paymentMethod, total, loading, erro, onConfirmar, onBack }) => {
+const StepConfirmar = ({ itens, paymentMethod, total, perfil, loading, erro, onConfirmar, onBack }) => {
   const payOpt = PAYMENT_OPTIONS.find((o) => o.key === paymentMethod);
+  const addr = perfil?.address_json ?? {};
+  const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
+  const linhaCompl = [addr.complemento, addr.bairro].filter(Boolean).join(' — ');
+  const linhaCidade = [addr.cidade, addr.estado].filter(Boolean).join(', ');
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+      {/* Endereço entrega */}
+      {perfil && (
+        <div className="bg-white rounded-2xl border border-[#E4E4E7] px-4 py-3 flex items-start gap-3">
+          <div className="w-9 h-9 bg-[#FF441F]/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Icon name="MapPin" size={16} className="text-[#FF441F]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-[#71717A]">Entregar para: <span className="text-[#18181B]">{perfil.name}</span></p>
+            {linhaRua && <p className="text-sm text-[#18181B] font-medium mt-0.5">{linhaRua}</p>}
+            {linhaCompl && <p className="text-xs text-[#71717A]">{linhaCompl}</p>}
+            {linhaCidade && <p className="text-xs text-[#71717A]">{linhaCidade}</p>}
+            {perfil.phone_e164 && <p className="text-xs text-[#71717A] mt-0.5">{perfil.phone_e164}</p>}
+          </div>
+        </div>
+      )}
       {/* Itens resumo */}
       <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
         <p className="text-sm font-semibold text-[#18181B] mb-3">Resumo do pedido</p>
@@ -292,13 +313,18 @@ const ShoppingCartCheckout = () => {
   const { carrinho = [], restauranteId, restauranteSlug } = restored;
 
   const [itens, setItens] = useState(carrinho);
+  const [perfil, setPerfil] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [pixData, setPixData] = useState(null);
   const [orderId, setOrderId] = useState(null);
-  const [etapa, setEtapa] = useState(0); // 0=itens, 1=pagamento, 2=confirmar
+  const [etapa, setEtapa] = useState(0); // 0=itens 1=endereço 2=pagamento 3=confirmar
+
+  useEffect(() => {
+    getPerfil().then(setPerfil).catch(() => {});
+  }, []);
 
   const total = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
 
@@ -417,7 +443,7 @@ const ShoppingCartCheckout = () => {
       {/* Progress */}
       <div className="bg-white border-b border-[#E4E4E7]">
         <div className="max-w-lg mx-auto">
-          <ProgressBar etapa={etapa} total={3} />
+          <ProgressBar etapa={etapa} total={4} />
           <div className="flex justify-between px-4 pb-2">
             {LABELS_ETAPA.map((l, i) => (
               <span key={i} className={`text-[10px] font-medium ${i === etapa ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
@@ -441,26 +467,35 @@ const ShoppingCartCheckout = () => {
             />
           )}
           {etapa === 1 && (
+            <StepEndereco
+              key="endereco"
+              perfil={perfil}
+              onNext={(updated) => { setPerfil(updated); irParaStep(2); }}
+              onBack={() => irParaStep(0)}
+            />
+          )}
+          {etapa === 2 && (
             <StepPagamento
               key="pagamento"
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}
               cpf={cpf}
               setCpf={setCpf}
-              onNext={() => { if (!validarPagamento()) return; irParaStep(2); }}
-              onBack={() => irParaStep(0)}
+              onNext={() => { if (!validarPagamento()) return; irParaStep(3); }}
+              onBack={() => irParaStep(1)}
             />
           )}
-          {etapa === 2 && (
+          {etapa === 3 && (
             <StepConfirmar
               key="confirmar"
               itens={itens}
               paymentMethod={paymentMethod}
               total={total}
+              perfil={perfil}
               loading={loading}
               erro={erro}
               onConfirmar={handleFinalizar}
-              onBack={() => irParaStep(1)}
+              onBack={() => irParaStep(2)}
             />
           )}
         </AnimatePresence>

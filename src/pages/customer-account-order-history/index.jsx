@@ -95,11 +95,18 @@ const CustomerAccountOrderHistory = () => {
           <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
             <Icon name="User" size={24} className="text-orange-500" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="font-semibold text-gray-900">{userProfile?.name ?? user?.email ?? 'Usuário'}</p>
             <p className="text-sm text-gray-500">{user?.email}</p>
             <p className="text-xs text-gray-400 mt-0.5 capitalize">{userProfile?.role ?? 'customer'}</p>
           </div>
+          <button
+            onClick={() => navigate('/customer-profile')}
+            className="flex-shrink-0 px-3 py-2 text-xs font-medium text-[#FF441F] border border-[#FF441F]/30 rounded-xl hover:bg-[#FF441F]/5 flex items-center gap-1.5"
+          >
+            <Icon name="Settings" size={13} />
+            Meu Perfil
+          </button>
         </div>
 
         {/* Pedidos */}
