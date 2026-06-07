@@ -506,8 +506,8 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
       <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-          <div className="flex gap-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
             {CATEGORIAS.map((c, i) => {
               const ativo = catAtiva === c.id;
               return (
