@@ -8,15 +8,15 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 
 /* ── Categorias ─────────────────────────────────────────────────── */
 const CATEGORIAS = [
-  { id: 'todos',      label: 'Todos',      icon: 'LayoutGrid',      bg: 'from-[#FF441F] to-[#FF7A00]', shadow: 'shadow-[#FF441F]/40' },
-  { id: 'pizza',      label: 'Pizza',       icon: 'Pizza',           bg: 'from-[#FF6B35] to-[#FF8C42]', shadow: 'shadow-[#FF6B35]/40' },
-  { id: 'hamburguer', label: 'Hambúrguer',  icon: 'Sandwich',        bg: 'from-[#E63946] to-[#FF6B6B]', shadow: 'shadow-[#E63946]/40' },
-  { id: 'japones',    label: 'Japonesa',    icon: 'Fish',            bg: 'from-[#0EA5E9] to-[#38BDF8]', shadow: 'shadow-[#0EA5E9]/40' },
-  { id: 'acai',       label: 'Açaí',        icon: 'GlassWater',      bg: 'from-[#7C3AED] to-[#A855F7]', shadow: 'shadow-[#7C3AED]/40' },
-  { id: 'marmita',    label: 'Marmita',     icon: 'UtensilsCrossed', bg: 'from-[#059669] to-[#10B981]', shadow: 'shadow-[#059669]/40' },
-  { id: 'saudavel',   label: 'Saudável',    icon: 'Leaf',            bg: 'from-[#16A34A] to-[#4ADE80]', shadow: 'shadow-[#16A34A]/40' },
-  { id: 'sorvete',    label: 'Sorvetes',    icon: 'Dessert',         bg: 'from-[#DB2777] to-[#F472B6]', shadow: 'shadow-[#DB2777]/40' },
-  { id: 'padaria',    label: 'Padaria',     icon: 'Coffee',          bg: 'from-[#92400E] to-[#D97706]', shadow: 'shadow-[#92400E]/40' },
+  { id: 'todos',      label: 'Todos',      icon: 'LayoutGrid',      c1: '#FF441F', c2: '#FF7A00' },
+  { id: 'pizza',      label: 'Pizza',       icon: 'Pizza',           c1: '#FF6B35', c2: '#FF8C42' },
+  { id: 'hamburguer', label: 'Hambúrguer',  icon: 'Sandwich',        c1: '#E63946', c2: '#FF6B6B' },
+  { id: 'japones',    label: 'Japonesa',    icon: 'Fish',            c1: '#0EA5E9', c2: '#38BDF8' },
+  { id: 'acai',       label: 'Açaí',        icon: 'GlassWater',      c1: '#7C3AED', c2: '#A855F7' },
+  { id: 'marmita',    label: 'Marmita',     icon: 'UtensilsCrossed', c1: '#059669', c2: '#10B981' },
+  { id: 'saudavel',   label: 'Saudável',    icon: 'Leaf',            c1: '#16A34A', c2: '#4ADE80' },
+  { id: 'sorvete',    label: 'Sorvetes',    icon: 'Dessert',         c1: '#DB2777', c2: '#F472B6' },
+  { id: 'padaria',    label: 'Padaria',     icon: 'Coffee',          c1: '#92400E', c2: '#D97706' },
 ];
 
 /* ── Skeleton ────────────────────────────────────────────────────── */
@@ -229,11 +229,12 @@ const SidebarLeft = ({ catAtiva, setCatAtiva }) => (
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
             ativo ? 'text-white shadow-md' : 'text-[#27272A] hover:bg-white hover:shadow-sm'
           }`}
-          style={ativo ? { background: `linear-gradient(135deg, ${c.bg.includes('from-[') ? c.bg.match(/from-\[([^\]]+)\]/)?.[1] : '#FF441F'}, ${c.bg.match(/to-\[([^\]]+)\]/)?.[1] ?? '#FF7A00'})` } : {}}
+          style={ativo ? { background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` } : {}}
         >
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            ativo ? 'bg-white/20' : `bg-gradient-to-br ${c.bg}`
-          }`}>
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={ativo ? { background: 'rgba(255,255,255,0.2)' } : { background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` }}
+          >
             <Icon name={c.icon} size={15} className={ativo ? 'text-white' : 'text-white'} />
           </div>
           {c.label}
@@ -465,8 +466,8 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Hero ────────────────────────────────────────────────── */}
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} />
 
-      {/* ── Ícones de categorias coloridos ───────────────────────── */}
-      <div className="bg-white border-b border-[#E4E4E7]">
+      {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
+      <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
           <div className="flex gap-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {CATEGORIAS.map((c, i) => {
@@ -487,11 +488,12 @@ const MenuCatalogProductBrowse = () => {
                   <motion.div
                     animate={ativo ? { rotate: [0, -8, 8, 0] } : {}}
                     transition={{ duration: 0.4 }}
-                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${c.bg} flex items-center justify-center text-white transition-all ${
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all ${
                       ativo
-                        ? `shadow-lg ${c.shadow} ring-2 ring-white ring-offset-2`
-                        : `shadow-md ${c.shadow} opacity-75 group-hover:opacity-100 group-hover:shadow-lg`
+                        ? 'shadow-lg ring-2 ring-white ring-offset-2'
+                        : 'shadow-md opacity-75 group-hover:opacity-100 group-hover:shadow-lg'
                     }`}
+                    style={{ background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` }}
                   >
                     <Icon name={c.icon} size={24} />
                   </motion.div>
@@ -537,9 +539,12 @@ const MenuCatalogProductBrowse = () => {
                 onClick={() => setCatAtiva(c.id)}
                 className="flex-shrink-0 flex flex-col items-center gap-1.5"
               >
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${c.bg} flex items-center justify-center text-white shadow-md transition-all ${
-                  ativo ? `${c.shadow} ring-2 ring-white ring-offset-1` : 'opacity-70'
-                }`}>
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-all ${
+                    ativo ? 'ring-2 ring-white ring-offset-1' : 'opacity-70'
+                  }`}
+                  style={{ background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` }}
+                >
                   <Icon name={c.icon} size={20} />
                 </div>
                 <span className={`text-[10px] font-bold whitespace-nowrap ${ativo ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
