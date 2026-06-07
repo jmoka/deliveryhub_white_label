@@ -119,6 +119,21 @@ const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onA
 
       <p className="text-xs text-[#71717A]">Pagamento: <span className="font-medium text-[#18181B]">{pedido.payment_method === 'cash' ? 'Dinheiro' : pedido.payment_method}</span></p>
 
+      {/* Ocorrência do motoboy */}
+      {pedido.delivery_occurrence && pedido.delivery_notes && (
+        <div className={`rounded-xl px-3 py-2.5 border text-xs ${
+          pedido.delivery_occurrence === 'cancelada'
+            ? 'bg-red-50 border-red-200 text-red-700'
+            : 'bg-orange-50 border-orange-200 text-orange-700'
+        }`}>
+          <p className="font-bold flex items-center gap-1 mb-1">
+            <Icon name={pedido.delivery_occurrence === 'cancelada' ? 'XCircle' : 'Clock'} size={13} />
+            Ocorrência: {pedido.delivery_occurrence === 'cancelada' ? 'Entrega cancelada' : 'Entrega pendente'}
+          </p>
+          <p className="leading-relaxed">{pedido.delivery_notes}</p>
+        </div>
+      )}
+
       {/* Avançar (pending → confirmed → ready) */}
       {proxSemMotoboy && (
         <button

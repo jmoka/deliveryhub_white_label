@@ -70,7 +70,7 @@ let MotoboyService = class MotoboyService {
     async meusPedidos(motoboyId) {
         const { data, error } = await this.supabase.client
             .from('orders')
-            .select('id, total, status, payment_method, created_at, updated_at, motoboy_lat, motoboy_lng, customer_id')
+            .select('id, total, status, payment_method, created_at, updated_at, motoboy_lat, motoboy_lng, customer_id, delivery_notes, delivery_occurrence')
             .eq('motoboy_id', motoboyId)
             .not('status', 'in', '("delivered","canceled")')
             .order('created_at', { ascending: false });
@@ -130,6 +130,30 @@ let MotoboyService = class MotoboyService {
         if (error)
             throw error;
         return { ok: true, pedido_id: pedidoId, status: 'delivered' };
+    }
+    async registrarOcorrencia(pedidoId, motoboyId, tipo, motivo) {
+        const { data: pedido } = await this.supabase.client
+            .from('orders')
+            .select('id, status')
+            .eq('id', pedidoId)
+            .eq('motoboy_id', motoboyId)
+            .maybeSingle();
+        if (!pedido)
+            throw new common_1.NotFoundException('Pedido não encontrado ou não atribuído a você');
+        const update = {
+            delivery_notes: motivo.trim(),
+            delivery_occurrence: tipo,
+            updated_at: new Date().toISOString(),
+        };
+        if (tipo === 'cancelada')
+            update.status = 'canceled';
+        const { error } = await this.supabase.client
+            .from('orders')
+            .update(update)
+            .eq('id', pedidoId);
+        if (error)
+            throw error;
+        return { ok: true, pedido_id: pedidoId, tipo, status: update.status ?? pedido.status };
     }
     async infoMotoboy(motoboyId) {
         const { data } = await this.supabase.client

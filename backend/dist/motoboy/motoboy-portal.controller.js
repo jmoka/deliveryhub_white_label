@@ -33,6 +33,9 @@ let MotoboyPortalController = class MotoboyPortalController {
     entregar(id, req) {
         return this.service.confirmarEntrega(id, req.motoboyId);
     }
+    ocorrencia(id, body, req) {
+        return this.service.registrarOcorrencia(id, req.motoboyId, body.tipo, body.motivo);
+    }
 };
 exports.MotoboyPortalController = MotoboyPortalController;
 __decorate([
@@ -66,6 +69,15 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], MotoboyPortalController.prototype, "entregar", null);
+__decorate([
+    (0, common_1.Post)('pedidos/:id/ocorrencia'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], MotoboyPortalController.prototype, "ocorrencia", null);
 exports.MotoboyPortalController = MotoboyPortalController = __decorate([
     (0, common_1.Controller)('motoboy'),
     (0, common_1.UseGuards)(motoboy_guard_1.MotoboyGuard),

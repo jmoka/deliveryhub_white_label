@@ -37,6 +37,12 @@ export declare class PedidosController {
             restaurant_id: any;
             customer_id: any;
             user_id: any;
+            motoboy_id: any;
+            motoboy_lat: any;
+            motoboy_lng: any;
+            motoboy_location_at: any;
+            delivery_notes: any;
+            delivery_occurrence: any;
             created_at: any;
             updated_at: any;
         };

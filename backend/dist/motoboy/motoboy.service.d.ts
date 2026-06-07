@@ -43,6 +43,8 @@ export declare class MotoboyService {
             motoboy_lat: any;
             motoboy_lng: any;
             customer_id: any;
+            delivery_notes: any;
+            delivery_occurrence: any;
         }[];
     }>;
     atualizarLocalizacao(pedidoId: number, motoboyId: number, lat: number, lng: number): Promise<{
@@ -52,6 +54,12 @@ export declare class MotoboyService {
         ok: boolean;
         pedido_id: number;
         status: string;
+    }>;
+    registrarOcorrencia(pedidoId: number, motoboyId: number, tipo: 'pendente' | 'cancelada', motivo: string): Promise<{
+        ok: boolean;
+        pedido_id: number;
+        tipo: "pendente" | "cancelada";
+        status: any;
     }>;
     infoMotoboy(motoboyId: number): Promise<{
         id: any;

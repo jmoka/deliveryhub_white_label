@@ -30,4 +30,13 @@ export class MotoboyPortalController {
   entregar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.confirmarEntrega(id, req.motoboyId);
   }
+
+  @Post('pedidos/:id/ocorrencia')
+  ocorrencia(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { tipo: 'pendente' | 'cancelada'; motivo: string },
+    @Req() req: any,
+  ) {
+    return this.service.registrarOcorrencia(id, req.motoboyId, body.tipo, body.motivo);
+  }
 }
