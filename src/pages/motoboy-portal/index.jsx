@@ -290,29 +290,67 @@ const MotoboyPortal = () => {
               <p className="text-sm font-bold text-[#FF441F]">{fmt(p.total)}</p>
             </div>
 
-            {p.cliente && (
-              <div className="bg-[#FAFAFA] rounded-xl p-3">
-                <p className="text-xs font-semibold text-[#71717A] mb-1">Entregar para</p>
-                <p className="text-sm font-medium text-[#18181B]">{p.cliente.name}</p>
-                {p.cliente.phone_e164 && (
-                  <a href={`tel:${p.cliente.phone_e164}`} className="text-xs text-[#FF441F] font-medium flex items-center gap-1 mt-0.5">
-                    <Icon name="Phone" size={11} /> {p.cliente.phone_e164}
-                  </a>
-                )}
-                {p.cliente.address_json?.logradouro && (
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      [p.cliente.address_json.logradouro, p.cliente.address_json.numero, p.cliente.address_json.bairro, p.cliente.address_json.cidade].filter(Boolean).join(', ')
-                    )}`}
-                    target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-blue-600 flex items-center gap-1 mt-1"
-                  >
-                    <Icon name="Navigation" size={11} />
-                    {p.cliente.address_json.logradouro}{p.cliente.address_json.numero ? `, ${p.cliente.address_json.numero}` : ''}
-                  </a>
-                )}
-              </div>
-            )}
+            {p.cliente && (() => {
+              const addr = p.cliente.address_json ?? {};
+              const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
+              const linhaCompl = [addr.complemento, addr.bairro].filter(Boolean).join(' — ');
+              const linhaCidade = [addr.cidade, addr.estado, addr.cep].filter(Boolean).join(', ');
+              const enderecoCompleto = [linhaRua, linhaCompl, linhaCidade].filter(Boolean).join(', ');
+              const mapsUrl = enderecoCompleto
+                ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(enderecoCompleto)}`
+                : null;
+              return (
+                <div className="border-2 border-blue-100 bg-blue-50 rounded-2xl overflow-hidden">
+                  {/* Header */}
+                  <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Icon name="User" size={16} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">Entregar para</p>
+                      <p className="text-base font-black text-[#18181B] leading-tight truncate">{p.cliente.name}</p>
+                    </div>
+                    {p.cliente.phone_e164 && (
+                      <a href={`tel:${p.cliente.phone_e164}`}
+                        className="flex-shrink-0 w-9 h-9 bg-white rounded-xl border border-blue-200 flex items-center justify-center hover:bg-blue-100 transition-colors">
+                        <Icon name="Phone" size={16} className="text-blue-600" />
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Endereço */}
+                  {enderecoCompleto ? (
+                    <div className="px-4 pb-3">
+                      <div className="bg-white rounded-xl border border-blue-100 p-3 mb-3">
+                        <div className="flex items-start gap-2">
+                          <Icon name="MapPin" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            {linhaRua && <p className="text-sm font-bold text-[#18181B]">{linhaRua}</p>}
+                            {linhaCompl && <p className="text-xs text-[#71717A] mt-0.5">{linhaCompl}</p>}
+                            {linhaCidade && <p className="text-xs text-[#71717A]">{linhaCidade}</p>}
+                            {addr.referencia && (
+                              <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                                <Icon name="Info" size={11} /> {addr.referencia}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {mapsUrl && (
+                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md shadow-blue-200">
+                          <Icon name="Navigation" size={16} />
+                          Como chegar
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="px-4 pb-3 text-xs text-[#71717A]">Endereço não informado</p>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Itens do pedido */}
             {p.itens?.length > 0 && (
