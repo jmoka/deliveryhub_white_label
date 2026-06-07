@@ -2,6 +2,22 @@ import { PlataformaService } from './plataforma.service';
 export declare class PlataformaController {
     private service;
     constructor(service: PlataformaService);
+    getConfig(): Promise<{
+        pagbank_platform_account_id: any;
+        pagbank_sandbox: any;
+        pagbank_platform_token_masked: string | null;
+        configurado: boolean;
+    }>;
+    updateConfig(body: {
+        pagbank_platform_token?: string;
+        pagbank_platform_account_id?: string;
+        pagbank_sandbox?: boolean;
+    }): Promise<{
+        pagbank_platform_account_id: any;
+        pagbank_sandbox: any;
+        pagbank_platform_token_masked: string | null;
+        configurado: boolean;
+    }>;
     metricas(): Promise<{
         resumo: {
             total_empresas: number;

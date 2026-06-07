@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { getAparencia, updateAparencia, getMinhaEmpresa } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
@@ -78,10 +77,6 @@ const RestauranteAparencia = () => {
     background_color: '#FF441F',
     banner_url: '',
     carousel_images: [],
-    aberto: true,
-    caixa_aberto: false,
-    caixa_valor_inicial: '',
-    caixa_aberto_em: null,
   });
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -90,17 +85,12 @@ const RestauranteAparencia = () => {
     Promise.all([getAparencia(), getMinhaEmpresa()])
       .then(([ap, emp]) => {
         setSlug(emp.empresa?.slug ?? '');
-        const caixa_valor = ap.caixa_valor_inicial != null ? String(ap.caixa_valor_inicial) : '';
         setForm({
           descricao: ap.descricao ?? '',
           background_url: ap.background_url ?? '',
           background_color: ap.background_color ?? '#FF441F',
           banner_url: ap.banner_url ?? '',
           carousel_images: ap.carousel_images ?? [],
-          aberto: ap.aberto !== false,
-          caixa_aberto: ap.caixa_aberto ?? false,
-          caixa_valor_inicial: caixa_valor,
-          caixa_aberto_em: ap.caixa_aberto_em ?? null,
         });
         if (ap.background_url) setFundoTipo('imagem');
         else if (ap.background_color && ap.background_color !== '#FF441F') setFundoTipo('cor');
@@ -117,7 +107,6 @@ const RestauranteAparencia = () => {
     try {
       const payload = {
         ...form,
-        caixa_valor_inicial: form.caixa_valor_inicial ? Number(form.caixa_valor_inicial) : null,
         background_url: fundoTipo === 'imagem' ? form.background_url : '',
         background_color: fundoTipo === 'cor' ? form.background_color : '',
       };
@@ -129,34 +118,6 @@ const RestauranteAparencia = () => {
     } finally {
       setSalvando(false);
     }
-  };
-
-  const abrirCaixa = async () => {
-    const agora = new Date().toISOString();
-    const updated = { ...form, caixa_aberto: true, caixa_aberto_em: agora,
-      caixa_valor_inicial: form.caixa_valor_inicial ? Number(form.caixa_valor_inicial) : 0 };
-    setForm(updated);
-    try {
-      await updateAparencia({
-        caixa_aberto: true, caixa_aberto_em: agora,
-        caixa_valor_inicial: updated.caixa_valor_inicial,
-      });
-      setMsg({ tipo: 'ok', texto: 'Caixa aberto!' });
-    } catch (err) {
-      setMsg({ tipo: 'erro', texto: err.message });
-    }
-    setTimeout(() => setMsg(null), 2500);
-  };
-
-  const fecharCaixa = async () => {
-    setForm((f) => ({ ...f, caixa_aberto: false }));
-    try {
-      await updateAparencia({ caixa_aberto: false });
-      setMsg({ tipo: 'ok', texto: 'Caixa fechado.' });
-    } catch (err) {
-      setMsg({ tipo: 'erro', texto: err.message });
-    }
-    setTimeout(() => setMsg(null), 2500);
   };
 
   const copiarLink = () => {
@@ -197,74 +158,6 @@ const RestauranteAparencia = () => {
 
       <main className="max-w-2xl mx-auto px-4 py-6">
         <form onSubmit={handleSalvar} className="space-y-4">
-
-          {/* ── Status do restaurante ──────────────────────────────── */}
-          <motion.div
-            animate={{ borderColor: form.aberto ? '#22C55E' : '#EF4444' }}
-            className={`rounded-2xl border-2 p-5 transition-colors ${form.aberto ? 'bg-green-50' : 'bg-red-50'}`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-black text-lg text-[#18181B]">
-                  {form.aberto ? '🟢 Restaurante ABERTO' : '🔴 Restaurante FECHADO'}
-                </p>
-                <p className="text-xs text-[#71717A] mt-0.5">
-                  {form.aberto ? 'Clientes podem fazer pedidos agora.' : 'Pedidos pausados para os clientes.'}
-                </p>
-              </div>
-              <button type="button" onClick={() => set('aberto', !form.aberto)}
-                className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ${form.aberto ? 'bg-green-500' : 'bg-red-400'}`}>
-                <span className={`absolute top-1.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.aberto ? 'left-8' : 'left-1.5'}`} />
-              </button>
-            </div>
-          </motion.div>
-
-          {/* ── Caixa ─────────────────────────────────────────────── */}
-          <Section icon="Wallet" title="Caixa">
-            <div className={`rounded-xl p-4 mb-4 ${form.caixa_aberto ? 'bg-green-50 border border-green-200' : 'bg-[#F4F4F5] border border-[#E4E4E7]'}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-[#18181B]">
-                    {form.caixa_aberto ? '✅ Caixa aberto' : '⏸ Caixa fechado'}
-                  </p>
-                  {form.caixa_aberto && form.caixa_aberto_em && (
-                    <p className="text-xs text-[#71717A] mt-0.5">
-                      Aberto em {new Date(form.caixa_aberto_em).toLocaleString('pt-BR')}
-                    </p>
-                  )}
-                  {form.caixa_aberto && form.caixa_valor_inicial && (
-                    <p className="text-xs text-green-700 font-semibold mt-0.5">
-                      Valor inicial: {fmt(Number(form.caixa_valor_inicial))}
-                    </p>
-                  )}
-                </div>
-                {form.caixa_aberto ? (
-                  <button type="button" onClick={fecharCaixa}
-                    className="px-4 py-2 bg-red-500 text-white text-xs font-bold rounded-xl hover:bg-red-600 transition-colors">
-                    Fechar caixa
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            {!form.caixa_aberto && (
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="block text-xs font-medium text-[#71717A] mb-1">Valor inicial (R$)</label>
-                  <input type="number" min="0" step="0.01" value={form.caixa_valor_inicial}
-                    onChange={(e) => set('caixa_valor_inicial', e.target.value)}
-                    placeholder="0,00"
-                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-                </div>
-                <div className="flex items-end">
-                  <button type="button" onClick={abrirCaixa}
-                    className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] transition-colors">
-                    Abrir caixa
-                  </button>
-                </div>
-              </div>
-            )}
-          </Section>
 
           {/* ── Link para compartilhar ─────────────────────────────── */}
           {slug && (

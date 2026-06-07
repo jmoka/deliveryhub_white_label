@@ -15,6 +15,19 @@ export declare class PedidosController {
         }[];
         total: number;
     }>;
+    meusPedidos(req: any, limite?: string): Promise<{
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            restaurant_id: any;
+            customer_id: any;
+            user_id: any;
+            created_at: any;
+        }[];
+        total: number;
+    }>;
     buscar(id: number): Promise<{
         pedido: {
             id: any;

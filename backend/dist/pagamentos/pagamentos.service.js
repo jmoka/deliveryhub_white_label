@@ -18,15 +18,9 @@ const STATUS_PAGOS = ['PAID', 'COMPLETED', 'AVAILABLE'];
 let PagamentosService = class PagamentosService {
     supabase;
     config;
-    pagbank;
-    webhookUrl;
     constructor(supabase, config) {
         this.supabase = supabase;
         this.config = config;
-        const token = this.config.get('PAGBANK_TOKEN') ?? '';
-        const sandbox = this.config.get('PAGBANK_SANDBOX') !== 'false';
-        this.webhookUrl = this.config.get('PAGBANK_WEBHOOK_URL') ?? 'http://localhost:3002/pagamentos/webhook';
-        this.pagbank = new pagbank_client_1.PagBankClient(token, sandbox);
     }
     async buscarPedido(orderId) {
         const { data, error } = await this.supabase.client
@@ -40,6 +34,57 @@ let PagamentosService = class PagamentosService {
             throw new common_1.NotFoundException(`Pedido ${orderId} não encontrado`);
         return data;
     }
+    async getPagBankClient(restaurantId) {
+        const [{ data: restData }, { data: platData }] = await Promise.all([
+            this.supabase.client
+                .from('restaurants')
+                .select('payment_config, comissao_pct')
+                .eq('id', restaurantId)
+                .maybeSingle(),
+            this.supabase.client
+                .from('platform_settings')
+                .select('config')
+                .eq('id', 1)
+                .maybeSingle(),
+        ]);
+        const cfg = (restData?.payment_config ?? {});
+        const platCfg = (platData?.config ?? {});
+        const comissaoPct = restData?.comissao_pct ?? 5;
+        const platformToken = platCfg.pagbank_platform_token ||
+            this.config.get('PAGBANK_PLATFORM_TOKEN') ||
+            '';
+        const platformAccountId = platCfg.pagbank_platform_account_id ||
+            this.config.get('PAGBANK_PLATFORM_ACCOUNT_ID') ||
+            '';
+        const sellerAccountId = cfg.pagbank_seller_account_id ?? '';
+        const sandbox = platCfg.pagbank_sandbox ??
+            (cfg.pagbank_sandbox !== undefined
+                ? cfg.pagbank_sandbox
+                : this.config.get('PAGBANK_SANDBOX') !== 'false');
+        const webhookUrl = cfg.pagbank_webhook_url ||
+            this.config.get('PAGBANK_WEBHOOK_URL') ||
+            'http://localhost:3002/pagamentos/webhook';
+        if (platformToken && platformAccountId && sellerAccountId) {
+            return {
+                client: new pagbank_client_1.PagBankClient(platformToken, sandbox),
+                webhookUrl,
+                splitConfig: { sellerAccountId, platformAccountId, comissaoPct },
+            };
+        }
+        const token = cfg.pagbank_token || this.config.get('PAGBANK_TOKEN') || '';
+        return { client: new pagbank_client_1.PagBankClient(token, sandbox), webhookUrl };
+    }
+    buildSplits(valorCentavos, split) {
+        const adminAmount = Math.round(valorCentavos * split.comissaoPct / 100);
+        const sellerAmount = valorCentavos - adminAmount;
+        return [{
+                method: 'FIXED',
+                receivers: [
+                    { account: { id: split.sellerAccountId }, amount: { value: sellerAmount } },
+                    { account: { id: split.platformAccountId }, amount: { value: adminAmount } },
+                ],
+            }];
+    }
     limparCpf(cpf) {
         return cpf.replace(/\D/g, '');
     }
@@ -50,7 +95,9 @@ let PagamentosService = class PagamentosService {
         }
         const valorCentavos = Math.round(pedido.total * 100);
         const refId = `DELIVERY_${pedido.id}_${Date.now()}`;
-        const resposta = await this.pagbank.criarOrdemPix({
+        const { client: pagbank, webhookUrl, splitConfig } = await this.getPagBankClient(pedido.restaurant_id);
+        const splits = splitConfig ? this.buildSplits(valorCentavos, splitConfig) : undefined;
+        const resposta = await pagbank.criarOrdemPix({
             reference_id: refId,
             valor_centavos: valorCentavos,
             customer: {
@@ -59,7 +106,8 @@ let PagamentosService = class PagamentosService {
                 tax_id: this.limparCpf(body.customer.tax_id),
             },
             itens: [{ name: `Pedido #${pedido.id}`, quantity: 1, unit_amount: valorCentavos }],
-            webhook_url: this.webhookUrl,
+            webhook_url: webhookUrl,
+            splits,
         });
         const qrCode = resposta?.qr_codes?.[0];
         const pixCode = qrCode?.text ?? null;
@@ -84,6 +132,7 @@ let PagamentosService = class PagamentosService {
             pix_code: pixCode,
             pix_qr_url: pixQrUrl,
             pagbank_order_id: resposta.id,
+            split_ativo: !!splitConfig,
             expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         };
     }
@@ -95,7 +144,9 @@ let PagamentosService = class PagamentosService {
         const valorCentavos = Math.round(pedido.total * 100);
         const refId = `DELIVERY_${pedido.id}_${Date.now()}`;
         const tipo = body.tipo ?? 'CREDIT_CARD';
-        const resposta = await this.pagbank.criarOrdemCartao({
+        const { client: pagbank, webhookUrl, splitConfig } = await this.getPagBankClient(pedido.restaurant_id);
+        const splits = splitConfig ? this.buildSplits(valorCentavos, splitConfig) : undefined;
+        const resposta = await pagbank.criarOrdemCartao({
             reference_id: refId,
             valor_centavos: valorCentavos,
             customer: {
@@ -107,7 +158,8 @@ let PagamentosService = class PagamentosService {
             card_encrypted: body.card_encrypted,
             parcelas: body.parcelas ?? 1,
             tipo,
-            webhook_url: this.webhookUrl,
+            webhook_url: webhookUrl,
+            splits,
         });
         const charge = resposta?.charges?.[0];
         const statusPagamento = STATUS_PAGOS.includes(charge?.status) ? 'paid' : 'pending';
@@ -137,6 +189,7 @@ let PagamentosService = class PagamentosService {
             status: statusPagamento,
             pagbank_order_id: resposta.id,
             charge_id: charge?.id,
+            split_ativo: !!splitConfig,
         };
     }
     async buscarPorPedido(orderId) {

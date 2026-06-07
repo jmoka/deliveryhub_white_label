@@ -17,10 +17,13 @@ let EmpresasService = class EmpresasService {
     constructor(supabase) {
         this.supabase = supabase;
     }
+    gerarSlug(name) {
+        return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
+    }
     async listar(apenasAtivo) {
         let query = this.supabase.client
             .from('restaurants')
-            .select('id, name, address, logo_url, comissao_pct, user_id, created_at')
+            .select('id, name, address, logo_url, comissao_pct, user_id, slug, created_at')
             .order('name');
         const { data, error } = await query;
         if (error)
@@ -30,7 +33,7 @@ let EmpresasService = class EmpresasService {
     async buscar(id) {
         const { data, error } = await this.supabase.client
             .from('restaurants')
-            .select('id, name, address, logo_url, business_hours, payment_config, comissao_pct, user_id, created_at')
+            .select('id, name, address, logo_url, business_hours, payment_config, comissao_pct, user_id, slug, created_at')
             .eq('id', id)
             .maybeSingle();
         if (error)
@@ -62,6 +65,7 @@ let EmpresasService = class EmpresasService {
             logo_url: body.logo_url ?? null,
             comissao_pct: body.comissao_pct ?? 5.0,
             user_id: body.user_id ?? null,
+            slug: body.slug || this.gerarSlug(body.name),
         })
             .select()
             .single();
@@ -90,6 +94,45 @@ let EmpresasService = class EmpresasService {
         if (error)
             throw error;
         return { mensagem: `Empresa ${id} removida` };
+    }
+    async getConfig(id) {
+        const { data } = await this.supabase.client
+            .from('restaurants')
+            .select('payment_config')
+            .eq('id', id)
+            .maybeSingle();
+        const cfg = (data?.payment_config ?? {});
+        return {
+            pagbank_sandbox: cfg.pagbank_sandbox ?? true,
+            pagbank_webhook_url: cfg.pagbank_webhook_url ?? '',
+            pagbank_token_masked: cfg.pagbank_token
+                ? `${'•'.repeat(8)}${String(cfg.pagbank_token).slice(-4)}`
+                : null,
+            configurado: !!cfg.pagbank_token,
+        };
+    }
+    async updateConfig(id, body) {
+        const { data: atual } = await this.supabase.client
+            .from('restaurants')
+            .select('payment_config')
+            .eq('id', id)
+            .maybeSingle();
+        const cfg = (atual?.payment_config ?? {});
+        const novo = { ...cfg };
+        if (body.pagbank_token !== undefined && body.pagbank_token !== '') {
+            novo.pagbank_token = body.pagbank_token;
+        }
+        if (body.pagbank_sandbox !== undefined)
+            novo.pagbank_sandbox = body.pagbank_sandbox;
+        if (body.pagbank_webhook_url !== undefined)
+            novo.pagbank_webhook_url = body.pagbank_webhook_url;
+        const { error } = await this.supabase.client
+            .from('restaurants')
+            .update({ payment_config: novo, updated_at: new Date().toISOString() })
+            .eq('id', id);
+        if (error)
+            throw error;
+        return this.getConfig(id);
     }
 };
 exports.EmpresasService = EmpresasService;

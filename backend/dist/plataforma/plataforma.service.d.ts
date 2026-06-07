@@ -37,6 +37,22 @@ export declare class PlataformaService {
         total_registros: number;
         total_comissao: number;
     }>;
+    getConfig(): Promise<{
+        pagbank_platform_account_id: any;
+        pagbank_sandbox: any;
+        pagbank_platform_token_masked: string | null;
+        configurado: boolean;
+    }>;
+    updateConfig(body: {
+        pagbank_platform_token?: string;
+        pagbank_platform_account_id?: string;
+        pagbank_sandbox?: boolean;
+    }): Promise<{
+        pagbank_platform_account_id: any;
+        pagbank_sandbox: any;
+        pagbank_platform_token_masked: string | null;
+        configurado: boolean;
+    }>;
     comissoesPorEmpresa(empresaId: number): Promise<{
         empresa: {
             id: any;

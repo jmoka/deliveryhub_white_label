@@ -21,6 +21,12 @@ let PlataformaController = class PlataformaController {
     constructor(service) {
         this.service = service;
     }
+    getConfig() {
+        return this.service.getConfig();
+    }
+    updateConfig(body) {
+        return this.service.updateConfig(body);
+    }
     metricas() {
         return this.service.metricas();
     }
@@ -37,6 +43,19 @@ let PlataformaController = class PlataformaController {
     }
 };
 exports.PlataformaController = PlataformaController;
+__decorate([
+    (0, common_1.Get)('config'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], PlataformaController.prototype, "getConfig", null);
+__decorate([
+    (0, common_1.Patch)('config'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PlataformaController.prototype, "updateConfig", null);
 __decorate([
     (0, common_1.Get)('metricas'),
     __metadata("design:type", Function),

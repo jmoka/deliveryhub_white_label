@@ -30,6 +30,7 @@ let OnboardingController = class OnboardingController {
             .maybeSingle();
         if (existing)
             return { restaurant: existing, already_registered: true };
+        const slug = body.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
         const { data: restaurant, error } = await this.supabase.client
             .from('restaurants')
             .insert({
@@ -38,6 +39,7 @@ let OnboardingController = class OnboardingController {
             business_hours: body.business_hours ?? {},
             user_id: userId,
             comissao_pct: 5.0,
+            slug,
         })
             .select()
             .single();

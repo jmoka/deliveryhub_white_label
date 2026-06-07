@@ -21,6 +21,18 @@ let CategoriasController = class CategoriasController {
     constructor(service) {
         this.service = service;
     }
+    listarGlobais() {
+        return this.service.listarGlobais();
+    }
+    criarGlobal(body) {
+        return this.service.criarGlobal(body);
+    }
+    atualizarGlobal(id, body) {
+        return this.service.atualizarGlobal(id, body);
+    }
+    removerGlobal(id) {
+        return this.service.remover(id);
+    }
     listar(empresaId) {
         return this.service.listarPorEmpresa(empresaId);
     }
@@ -36,7 +48,39 @@ let CategoriasController = class CategoriasController {
 };
 exports.CategoriasController = CategoriasController;
 __decorate([
+    (0, common_1.Get)('categorias/globais'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CategoriasController.prototype, "listarGlobais", null);
+__decorate([
+    (0, common_1.Post)('categorias/globais'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], CategoriasController.prototype, "criarGlobal", null);
+__decorate([
+    (0, common_1.Patch)('categorias/globais/:id'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], CategoriasController.prototype, "atualizarGlobal", null);
+__decorate([
+    (0, common_1.Delete)('categorias/globais/:id'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], CategoriasController.prototype, "removerGlobal", null);
+__decorate([
     (0, common_1.Get)('empresas/:empresaId/categorias'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Param)('empresaId', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -44,6 +88,7 @@ __decorate([
 ], CategoriasController.prototype, "listar", null);
 __decorate([
     (0, common_1.Post)('categorias'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -51,6 +96,7 @@ __decorate([
 ], CategoriasController.prototype, "criar", null);
 __decorate([
     (0, common_1.Patch)('categorias/:id'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -59,6 +105,7 @@ __decorate([
 ], CategoriasController.prototype, "atualizar", null);
 __decorate([
     (0, common_1.Delete)('categorias/:id'),
+    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
@@ -66,7 +113,6 @@ __decorate([
 ], CategoriasController.prototype, "remover", null);
 exports.CategoriasController = CategoriasController = __decorate([
     (0, common_1.Controller)(),
-    (0, common_1.UseGuards)(admin_guard_1.AdminGuard),
     __metadata("design:paramtypes", [categorias_service_1.CategoriasService])
 ], CategoriasController);
 //# sourceMappingURL=categorias.controller.js.map

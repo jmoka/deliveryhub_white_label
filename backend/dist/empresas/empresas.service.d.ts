@@ -2,6 +2,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 export declare class EmpresasService {
     private supabase;
     constructor(supabase: SupabaseService);
+    private gerarSlug;
     listar(apenasAtivo?: boolean): Promise<{
         empresas: {
             id: any;
@@ -10,6 +11,7 @@ export declare class EmpresasService {
             logo_url: any;
             comissao_pct: any;
             user_id: any;
+            slug: any;
             created_at: any;
         }[];
         total: number;
@@ -24,6 +26,7 @@ export declare class EmpresasService {
             payment_config: any;
             comissao_pct: any;
             user_id: any;
+            slug: any;
             created_at: any;
         };
         metricas: {
@@ -39,6 +42,7 @@ export declare class EmpresasService {
         logo_url?: string;
         comissao_pct?: number;
         user_id?: string;
+        slug?: string;
     }): Promise<any>;
     atualizar(id: number, body: Partial<{
         name: string;
@@ -51,5 +55,21 @@ export declare class EmpresasService {
     }>): Promise<any>;
     remover(id: number): Promise<{
         mensagem: string;
+    }>;
+    getConfig(id: number): Promise<{
+        pagbank_sandbox: any;
+        pagbank_webhook_url: any;
+        pagbank_token_masked: string | null;
+        configurado: boolean;
+    }>;
+    updateConfig(id: number, body: {
+        pagbank_token?: string;
+        pagbank_sandbox?: boolean;
+        pagbank_webhook_url?: string;
+    }): Promise<{
+        pagbank_sandbox: any;
+        pagbank_webhook_url: any;
+        pagbank_token_masked: string | null;
+        configurado: boolean;
     }>;
 }

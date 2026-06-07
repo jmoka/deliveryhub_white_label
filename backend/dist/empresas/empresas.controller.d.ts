@@ -10,6 +10,7 @@ export declare class EmpresasController {
             logo_url: any;
             comissao_pct: any;
             user_id: any;
+            slug: any;
             created_at: any;
         }[];
         total: number;
@@ -24,6 +25,7 @@ export declare class EmpresasController {
             payment_config: any;
             comissao_pct: any;
             user_id: any;
+            slug: any;
             created_at: any;
         };
         metricas: {
@@ -43,5 +45,17 @@ export declare class EmpresasController {
     atualizar(id: number, body: any): Promise<any>;
     remover(id: number): Promise<{
         mensagem: string;
+    }>;
+    getConfig(id: number): Promise<{
+        pagbank_sandbox: any;
+        pagbank_webhook_url: any;
+        pagbank_token_masked: string | null;
+        configurado: boolean;
+    }>;
+    updateConfig(id: number, body: any): Promise<{
+        pagbank_sandbox: any;
+        pagbank_webhook_url: any;
+        pagbank_token_masked: string | null;
+        configurado: boolean;
     }>;
 }

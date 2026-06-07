@@ -18,6 +18,17 @@ export declare class PagBankClient {
             unit_amount: number;
         }[];
         webhook_url: string;
+        splits?: Array<{
+            method: 'FIXED' | 'PERCENTAGE';
+            receivers: Array<{
+                account: {
+                    id: string;
+                };
+                amount: {
+                    value: number;
+                };
+            }>;
+        }>;
     }): Promise<any>;
     criarOrdemCartao(params: {
         reference_id: string;
@@ -36,6 +47,17 @@ export declare class PagBankClient {
         parcelas: number;
         tipo: 'CREDIT_CARD' | 'DEBIT_CARD';
         webhook_url: string;
+        splits?: Array<{
+            method: 'FIXED' | 'PERCENTAGE';
+            receivers: Array<{
+                account: {
+                    id: string;
+                };
+                amount: {
+                    value: number;
+                };
+            }>;
+        }>;
     }): Promise<any>;
     buscarOrdem(pagbankOrderId: string): Promise<any>;
 }

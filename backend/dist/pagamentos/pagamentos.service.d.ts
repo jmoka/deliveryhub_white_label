@@ -3,10 +3,10 @@ import { SupabaseService } from '../supabase/supabase.service';
 export declare class PagamentosService {
     private supabase;
     private config;
-    private pagbank;
-    private webhookUrl;
     constructor(supabase: SupabaseService, config: ConfigService);
     private buscarPedido;
+    private getPagBankClient;
+    private buildSplits;
     private limparCpf;
     criarPix(body: {
         order_id: number;
@@ -20,6 +20,7 @@ export declare class PagamentosService {
         pix_code: any;
         pix_qr_url: any;
         pagbank_order_id: any;
+        split_ativo: boolean;
         expira_em: string;
     }>;
     criarCartao(body: {
@@ -37,6 +38,7 @@ export declare class PagamentosService {
         status: string;
         pagbank_order_id: any;
         charge_id: any;
+        split_ativo: boolean;
     }>;
     buscarPorPedido(orderId: number): Promise<{
         pagamentos: {

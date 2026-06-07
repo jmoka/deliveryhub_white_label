@@ -9,6 +9,7 @@ export declare class CatalogoController {
             address: any;
             logo_url: any;
             slug: any;
+            aparencia: any;
         }[];
     }>;
     todosOsProdutos(): Promise<{

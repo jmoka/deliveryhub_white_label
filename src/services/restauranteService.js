@@ -83,6 +83,22 @@ export const getConfig = () => apiFetch('/config');
 export const updateConfig = (data) =>
   apiFetch('/config', { method: 'PATCH', body: JSON.stringify(data) });
 
+export const toggleStatusRestaurante = (aberto) =>
+  apiFetch('/status', { method: 'PATCH', body: JSON.stringify({ aberto }) });
+
+export const getCaixa = () => apiFetch('/caixa');
+
+export const abrirCaixa = (valor_inicial) =>
+  apiFetch('/caixa/abrir', { method: 'POST', body: JSON.stringify({ valor_inicial }) });
+
+export const fecharCaixa = () =>
+  apiFetch('/caixa/fechar', { method: 'POST' });
+
+export const adicionarSaida = (data) =>
+  apiFetch('/caixa/saida', { method: 'POST', body: JSON.stringify(data) });
+
+export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
+
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {
   const res = await fetch(`/api/r/${slug}`);

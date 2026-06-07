@@ -14,6 +14,7 @@ export declare class PagamentosController {
         pix_code: any;
         pix_qr_url: any;
         pagbank_order_id: any;
+        split_ativo: boolean;
         expira_em: string;
     }>;
     criarCartao(body: {
@@ -31,6 +32,7 @@ export declare class PagamentosController {
         status: string;
         pagbank_order_id: any;
         charge_id: any;
+        split_ativo: boolean;
     }>;
     buscarPorPedido(id: number): Promise<{
         pagamentos: {

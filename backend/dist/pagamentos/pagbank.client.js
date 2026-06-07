@@ -33,16 +33,20 @@ class PagBankClient {
     }
     async criarOrdemPix(params) {
         const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        return this.request('POST', '/orders', {
+        const payload = {
             reference_id: params.reference_id,
             customer: params.customer,
             items: params.itens,
             qr_codes: [{ amount: { value: params.valor_centavos }, expiration_date: expiracao }],
             notification_urls: [params.webhook_url],
-        });
+        };
+        if (params.splits?.length) {
+            payload.splits = params.splits;
+        }
+        return this.request('POST', '/orders', payload);
     }
     async criarOrdemCartao(params) {
-        return this.request('POST', '/orders', {
+        const payload = {
             reference_id: params.reference_id,
             customer: params.customer,
             items: params.itens,
@@ -58,7 +62,11 @@ class PagBankClient {
                         card: { encrypted: params.card_encrypted },
                     },
                 }],
-        });
+        };
+        if (params.splits?.length) {
+            payload.splits = params.splits;
+        }
+        return this.request('POST', '/orders', payload);
     }
     async buscarOrdem(pagbankOrderId) {
         return this.request('GET', `/orders/${pagbankOrderId}`);

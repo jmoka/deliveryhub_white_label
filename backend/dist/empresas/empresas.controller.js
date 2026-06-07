@@ -36,6 +36,12 @@ let EmpresasController = class EmpresasController {
     remover(id) {
         return this.service.remover(id);
     }
+    getConfig(id) {
+        return this.service.getConfig(id);
+    }
+    updateConfig(id, body) {
+        return this.service.updateConfig(id, body);
+    }
 };
 exports.EmpresasController = EmpresasController;
 __decorate([
@@ -73,6 +79,21 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], EmpresasController.prototype, "remover", null);
+__decorate([
+    (0, common_1.Get)(':id/config'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], EmpresasController.prototype, "getConfig", null);
+__decorate([
+    (0, common_1.Patch)(':id/config'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], EmpresasController.prototype, "updateConfig", null);
 exports.EmpresasController = EmpresasController = __decorate([
     (0, common_1.Controller)('empresas'),
     (0, common_1.UseGuards)(admin_guard_1.AdminGuard),

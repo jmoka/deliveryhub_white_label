@@ -115,4 +115,34 @@ export class RestauranteController {
   updateConfig(@Req() req: any, @Body() body: any) {
     return this.service.updateConfig(req.restaurantId, body);
   }
+
+  @Patch('status')
+  toggleStatus(@Req() req: any, @Body() body: { aberto: boolean }) {
+    return this.service.toggleStatus(req.restaurantId, body.aberto);
+  }
+
+  @Get('caixa')
+  getCaixa(@Req() req: any) {
+    return this.service.getCaixa(req.restaurantId);
+  }
+
+  @Post('caixa/abrir')
+  abrirCaixa(@Req() req: any, @Body() body: { valor_inicial?: number }) {
+    return this.service.abrirCaixa(req.restaurantId, body.valor_inicial ?? 0);
+  }
+
+  @Post('caixa/fechar')
+  fecharCaixa(@Req() req: any) {
+    return this.service.fecharCaixa(req.restaurantId);
+  }
+
+  @Post('caixa/saida')
+  adicionarSaida(@Req() req: any, @Body() body: { descricao: string; valor: number }) {
+    return this.service.adicionarSaida(req.restaurantId, body);
+  }
+
+  @Get('pedidos/:id/detalhe')
+  buscarPedidoDetalhe(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.buscarPedidoDoRestaurante(req.restaurantId, id);
+  }
 }

@@ -307,4 +307,171 @@ export class RestauranteService {
     if (error) throw error;
     return this.getConfig(restaurantId);
   }
+
+  async toggleStatus(restaurantId: number, aberto: boolean) {
+    await this.updateAparencia(restaurantId, { aberto });
+    return { aberto };
+  }
+
+  async getCaixa(restaurantId: number) {
+    const { data } = await this.supabase.client
+      .from('restaurants')
+      .select('aparencia')
+      .eq('id', restaurantId)
+      .maybeSingle();
+
+    const ap = data?.aparencia ?? {};
+    const status_restaurante: boolean = ap.aberto !== false;
+    const aberto: boolean = ap.caixa_aberto ?? false;
+    const aberto_em: string | null = ap.caixa_aberto_em ?? null;
+    const valor_inicial: number = ap.caixa_valor_inicial ?? 0;
+    const saidas: Array<{ descricao: string; valor: number; criado_em: string }> = ap.caixa_saidas ?? [];
+
+    if (!aberto || !aberto_em) {
+      return { status_restaurante, aberto: false, aberto_em: null, valor_inicial, saidas, pedidos: [], resumo: null };
+    }
+
+    const { data: ordersData } = await this.supabase.client
+      .from('orders')
+      .select('id, total, status, payment_method, created_at, customer_id')
+      .eq('restaurant_id', restaurantId)
+      .gte('created_at', aberto_em)
+      .order('created_at', { ascending: false });
+
+    const pedidos = ordersData ?? [];
+    const entregues = pedidos.filter((p) => p.status === 'delivered');
+    const em_andamento = pedidos.filter((p) =>
+      ['pending', 'confirmed', 'ready', 'out_for_delivery'].includes(p.status),
+    );
+    const total_vendas = entregues.reduce((s: number, p: any) => s + (p.total ?? 0), 0);
+    const total_saidas = saidas.reduce((s: number, e) => s + (e.valor ?? 0), 0);
+
+    return {
+      status_restaurante,
+      aberto: true,
+      aberto_em,
+      valor_inicial,
+      saidas,
+      pedidos,
+      resumo: {
+        total_pedidos: pedidos.length,
+        entregues: entregues.length,
+        em_andamento: em_andamento.length,
+        cancelados: pedidos.filter((p: any) => p.status === 'canceled').length,
+        total_vendas,
+        total_saidas,
+        saldo: valor_inicial + total_vendas - total_saidas,
+      },
+    };
+  }
+
+  async abrirCaixa(restaurantId: number, valor_inicial: number) {
+    await this.updateAparencia(restaurantId, {
+      caixa_aberto: true,
+      caixa_aberto_em: new Date().toISOString(),
+      caixa_valor_inicial: valor_inicial,
+      caixa_saidas: [],
+    });
+    return this.getCaixa(restaurantId);
+  }
+
+  async fecharCaixa(restaurantId: number) {
+    const { data } = await this.supabase.client
+      .from('restaurants')
+      .select('aparencia')
+      .eq('id', restaurantId)
+      .maybeSingle();
+
+    const ap = data?.aparencia ?? {};
+    const aberto_em: string | null = ap.caixa_aberto_em ?? null;
+    const saidas: Array<{ descricao: string; valor: number; criado_em: string }> = ap.caixa_saidas ?? [];
+    const historico: any[] = ap.caixa_historico ?? [];
+    let resumo: Record<string, any> | null = null;
+    let pedidos: any[] = [];
+
+    if (aberto_em) {
+      const { data: ordersData } = await this.supabase.client
+        .from('orders')
+        .select('id, total, status, payment_method, created_at')
+        .eq('restaurant_id', restaurantId)
+        .gte('created_at', aberto_em);
+
+      pedidos = ordersData ?? [];
+      const entregues = pedidos.filter((p) => p.status === 'delivered');
+      const total_vendas = entregues.reduce((s: number, p: any) => s + (p.total ?? 0), 0);
+      const total_saidas = saidas.reduce((s: number, e) => s + (e.valor ?? 0), 0);
+
+      resumo = {
+        total_pedidos: pedidos.length,
+        entregues: entregues.length,
+        em_andamento: pedidos.filter((p: any) =>
+          ['pending', 'confirmed', 'ready', 'out_for_delivery'].includes(p.status),
+        ).length,
+        cancelados: pedidos.filter((p: any) => p.status === 'canceled').length,
+        total_vendas,
+        total_saidas,
+        valor_inicial: ap.caixa_valor_inicial ?? 0,
+        saldo: (ap.caixa_valor_inicial ?? 0) + total_vendas - total_saidas,
+      };
+    }
+
+    const fechamento = {
+      fechado_em: new Date().toISOString(),
+      aberto_em,
+      valor_inicial: ap.caixa_valor_inicial ?? 0,
+      saidas,
+      resumo,
+    };
+
+    const nova = {
+      ...ap,
+      caixa_aberto: false,
+      caixa_aberto_em: null,
+      caixa_valor_inicial: 0,
+      caixa_saidas: [],
+      caixa_historico: [fechamento, ...historico.slice(0, 29)],
+    };
+
+    await this.supabase.client
+      .from('restaurants')
+      .update({ aparencia: nova, updated_at: new Date().toISOString() })
+      .eq('id', restaurantId);
+
+    return { ...fechamento, pedidos };
+  }
+
+  async adicionarSaida(restaurantId: number, body: { descricao: string; valor: number }) {
+    const { data } = await this.supabase.client
+      .from('restaurants')
+      .select('aparencia')
+      .eq('id', restaurantId)
+      .maybeSingle();
+
+    const saidas = (data?.aparencia?.caixa_saidas ?? []) as any[];
+    const nova = { descricao: body.descricao, valor: body.valor, criado_em: new Date().toISOString() };
+    await this.updateAparencia(restaurantId, { caixa_saidas: [...saidas, nova] });
+    return nova;
+  }
+
+  async buscarPedidoDoRestaurante(restaurantId: number, pedidoId: number) {
+    const resultado = await this.pedidos.buscar(pedidoId);
+    if (resultado.pedido.restaurant_id !== restaurantId) {
+      throw new NotFoundException('Pedido não encontrado neste restaurante');
+    }
+
+    if (resultado.itens.length > 0) {
+      const prodIds = resultado.itens.map((i: any) => i.product_id);
+      const { data: produtos } = await this.supabase.client
+        .from('products')
+        .select('id, name')
+        .in('id', prodIds);
+      const prodMap = Object.fromEntries((produtos ?? []).map((p: any) => [p.id, p.name]));
+      resultado.itens = resultado.itens.map((i: any) => ({
+        ...i,
+        product_name: prodMap[i.product_id] ?? `Produto #${i.product_id}`,
+      }));
+    }
+
+    return resultado;
+  }
 }
