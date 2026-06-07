@@ -56,20 +56,34 @@ const RestaurantePedidos = () => {
     }
   };
 
+  const links = [
+    { label: 'Dashboard', path: '/restaurante' },
+    { label: 'Produtos', path: '/restaurante/produtos' },
+    { label: 'Pedidos', path: '/restaurante/pedidos' },
+    { label: 'Clientes', path: '/restaurante/clientes' },
+    { label: 'Designer', path: '/restaurante/aparencia' },
+    { label: 'Config', path: '/restaurante/config' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Pedidos</h1>
-        </div>
-        <nav className="flex gap-3">
-          <button onClick={() => navigate('/restaurante')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</button>
-          <button onClick={() => navigate('/restaurante/produtos')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Produtos</button>
-          <button onClick={() => navigate('/restaurante/pedidos')} className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg">Pedidos</button>
-          <button onClick={() => navigate('/restaurante/clientes')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Clientes</button>
-          <button onClick={() => navigate('/restaurante/aparencia')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Designer</button>
-          <button onClick={() => navigate('/restaurante/config')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Config</button>
-          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }} className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-[#18181B]">Pedidos</h1>
+        <nav className="flex gap-1.5 flex-wrap">
+          {links.map((l) => (
+            <button key={l.path} onClick={() => navigate(l.path)}
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                l.path === '/restaurante/pedidos'
+                  ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
+                  : 'text-[#27272A] hover:bg-[#F4F4F5]'
+              }`}>
+              {l.label}
+            </button>
+          ))}
+          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+            className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
+            Sair
+          </button>
         </nav>
       </header>
 
@@ -94,7 +108,7 @@ const RestaurantePedidos = () => {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : pedidos.length === 0 ? (
           <div className="bg-white rounded-xl border p-12 text-center">
@@ -119,7 +133,7 @@ const RestaurantePedidos = () => {
                       <button
                         disabled={atualizando === p.id}
                         onClick={() => avancarStatus(p)}
-                        className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+                        className="text-xs px-3 py-1.5 bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
                       >
                         {atualizando === p.id ? '...' : `→ ${STATUS_LABELS[proximo]?.label}`}
                       </button>

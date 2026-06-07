@@ -15,6 +15,11 @@ export class RestauranteController {
     return this.service.minhaEmpresa(req.userId);
   }
 
+  @Patch('minha-empresa')
+  updateEmpresa(@Req() req: any, @Body() body: any) {
+    return this.service.updateEmpresa(req.restaurantId, body);
+  }
+
   @Get('pedidos')
   meusPedidos(
     @Req() req: any,

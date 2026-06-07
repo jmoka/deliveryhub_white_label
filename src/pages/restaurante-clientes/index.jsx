@@ -90,7 +90,7 @@ const Modal = ({ cliente, onClose, onSave }) => {
             <button
               type="submit"
               disabled={salvando}
-              className="flex-1 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50"
+              className="flex-1 py-2 bg-[#FF441F] text-white rounded-lg text-sm hover:bg-[#e03b1a] disabled:opacity-50"
             >
               {salvando ? 'Salvando...' : 'Salvar'}
             </button>
@@ -129,21 +129,37 @@ const RestauranteClientes = () => {
     return () => clearTimeout(t);
   }, [carregar]);
 
+  const links = [
+    { label: 'Dashboard', path: '/restaurante' },
+    { label: 'Produtos', path: '/restaurante/produtos' },
+    { label: 'Pedidos', path: '/restaurante/pedidos' },
+    { label: 'Clientes', path: '/restaurante/clientes' },
+    { label: 'Designer', path: '/restaurante/aparencia' },
+    { label: 'Config', path: '/restaurante/config' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-sm text-gray-500">{total} cadastrado(s)</p>
+          <h1 className="text-xl font-bold text-[#18181B]">Clientes</h1>
+          <p className="text-sm text-[#71717A]">{total} cadastrado(s)</p>
         </div>
-        <nav className="flex gap-2 flex-wrap justify-end">
-          <button onClick={() => navigate('/restaurante')} className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</button>
-          <button onClick={() => navigate('/restaurante/produtos')} className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Produtos</button>
-          <button onClick={() => navigate('/restaurante/pedidos')} className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Pedidos</button>
-          <button onClick={() => navigate('/restaurante/clientes')} className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg">Clientes</button>
-          <button onClick={() => navigate('/restaurante/aparencia')} className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Designer</button>
-          <button onClick={() => navigate('/restaurante/config')} className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Config</button>
-          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }} className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
+        <nav className="flex gap-1.5 flex-wrap justify-end">
+          {links.map((l) => (
+            <button key={l.path} onClick={() => navigate(l.path)}
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                l.path === '/restaurante/clientes'
+                  ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
+                  : 'text-[#27272A] hover:bg-[#F4F4F5]'
+              }`}>
+              {l.label}
+            </button>
+          ))}
+          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+            className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
+            Sair
+          </button>
         </nav>
       </header>
 
@@ -157,7 +173,7 @@ const RestauranteClientes = () => {
           />
           <button
             onClick={() => setModal('novo')}
-            className="px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 bg-[#FF441F] text-white text-sm font-semibold rounded-lg hover:bg-[#e03b1a]"
           >
             + Novo cliente
           </button>
@@ -167,7 +183,7 @@ const RestauranteClientes = () => {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : clientes.length === 0 ? (
           <div className="bg-white rounded-xl border p-12 text-center">
@@ -175,7 +191,7 @@ const RestauranteClientes = () => {
               {busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </p>
             {!busca && (
-              <button onClick={() => setModal('novo')} className="text-sm text-orange-500 hover:underline">
+              <button onClick={() => setModal('novo')} className="text-sm text-[#FF441F] hover:underline">
                 Cadastrar primeiro cliente →
               </button>
             )}

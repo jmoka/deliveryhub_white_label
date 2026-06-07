@@ -89,18 +89,34 @@ const RestauranteProdutos = () => {
 
   const catMap = Object.fromEntries(categorias.map((c) => [c.id, c.name]));
 
+  const links = [
+    { label: 'Dashboard', path: '/restaurante' },
+    { label: 'Produtos', path: '/restaurante/produtos' },
+    { label: 'Pedidos', path: '/restaurante/pedidos' },
+    { label: 'Clientes', path: '/restaurante/clientes' },
+    { label: 'Designer', path: '/restaurante/aparencia' },
+    { label: 'Config', path: '/restaurante/config' },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Produtos</h1>
-        <nav className="flex gap-3">
-          <button onClick={() => navigate('/restaurante')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Dashboard</button>
-          <button onClick={() => navigate('/restaurante/produtos')} className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg">Produtos</button>
-          <button onClick={() => navigate('/restaurante/pedidos')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Pedidos</button>
-          <button onClick={() => navigate('/restaurante/clientes')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Clientes</button>
-          <button onClick={() => navigate('/restaurante/aparencia')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Designer</button>
-          <button onClick={() => navigate('/restaurante/config')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Config</button>
-          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }} className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
+        <h1 className="text-xl font-bold text-[#18181B]">Produtos</h1>
+        <nav className="flex gap-1.5 flex-wrap">
+          {links.map((l) => (
+            <button key={l.path} onClick={() => navigate(l.path)}
+              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                l.path === '/restaurante/produtos'
+                  ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
+                  : 'text-[#27272A] hover:bg-[#F4F4F5]'
+              }`}>
+              {l.label}
+            </button>
+          ))}
+          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+            className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
+            Sair
+          </button>
         </nav>
       </header>
 
@@ -109,10 +125,10 @@ const RestauranteProdutos = () => {
 
         {/* Categorias */}
         <section className="bg-white rounded-xl border p-5 mb-6">
-          <h2 className="font-semibold text-gray-900 mb-3">Categorias</h2>
+          <h2 className="font-semibold text-[#18181B] mb-3">Categorias</h2>
           <div className="flex flex-wrap gap-2 mb-3">
             {categorias.map((c) => (
-              <span key={c.id} className="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-sm">
+              <span key={c.id} className="px-3 py-1 bg-[#FFF4F1] text-[#FF441F] rounded-full text-sm">
                 {c.name} ({c.total_produtos ?? 0})
               </span>
             ))}
@@ -129,7 +145,7 @@ const RestauranteProdutos = () => {
             <button
               onClick={handleCriarCategoria}
               disabled={criandoCategoria || !novaCategoria.trim()}
-              className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
             >
               {criandoCategoria ? '...' : 'Adicionar'}
             </button>
@@ -138,12 +154,12 @@ const RestauranteProdutos = () => {
 
         {/* Produtos */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">
+          <h2 className="font-semibold text-[#18181B]">
             Produtos <span className="text-gray-400 font-normal">({produtos.length})</span>
           </h2>
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+            className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a]"
           >
             + Novo produto
           </button>
@@ -151,12 +167,12 @@ const RestauranteProdutos = () => {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : produtos.length === 0 ? (
           <div className="bg-white rounded-xl border p-12 text-center">
             <p className="text-gray-400 mb-3">Nenhum produto cadastrado</p>
-            <button onClick={() => setShowModal(true)} className="text-sm text-orange-500 hover:underline">
+            <button onClick={() => setShowModal(true)} className="text-sm text-[#FF441F] hover:underline">
               Criar primeiro produto →
             </button>
           </div>
@@ -191,7 +207,7 @@ const RestauranteProdutos = () => {
                   </div>
                   {p.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{p.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-sm font-semibold text-orange-600">{fmt(p.price)}</p>
+                    <p className="text-sm font-semibold text-[#FF441F]">{fmt(p.price)}</p>
                     {p.tipo === 'promo' && p.preco_promo && (
                       <p className="text-xs text-green-600 font-semibold">{fmt(p.preco_promo)} promo</p>
                     )}
@@ -208,7 +224,7 @@ const RestauranteProdutos = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Novo Produto</h2>
+            <h2 className="text-lg font-bold text-[#18181B] mb-4">Novo Produto</h2>
             <form onSubmit={handleSalvar} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
@@ -297,7 +313,7 @@ const RestauranteProdutos = () => {
                   type="checkbox"
                   checked={form.destaque}
                   onChange={(e) => setForm((f) => ({ ...f, destaque: e.target.checked }))}
-                  className="w-4 h-4 accent-orange-500"
+                  className="w-4 h-4 accent-[#FF441F]"
                 />
                 <span className="text-sm text-gray-700">⭐ Destacar produto</span>
               </label>
@@ -312,7 +328,7 @@ const RestauranteProdutos = () => {
                 <button
                   type="submit"
                   disabled={salvando}
-                  className="flex-1 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+                  className="flex-1 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
                 >
                   {salvando ? 'Salvando...' : 'Salvar'}
                 </button>

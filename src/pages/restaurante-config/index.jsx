@@ -21,15 +21,19 @@ const NavRestaurante = () => {
     { label: 'Config', path: '/restaurante/config' },
   ];
   return (
-    <nav className="flex gap-2 flex-wrap justify-end">
+    <nav className="flex gap-1.5 flex-wrap justify-end">
       {links.map((l) => (
         <button key={l.path} onClick={() => navigate(l.path)}
-          className={`px-3 py-2 text-sm font-medium rounded-lg ${l.path === '/restaurante/config' ? 'text-white bg-orange-500' : 'text-gray-700 hover:bg-gray-100'}`}>
+          className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+            l.path === '/restaurante/config'
+              ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
+              : 'text-[#27272A] hover:bg-[#F4F4F5]'
+          }`}>
           {l.label}
         </button>
       ))}
       <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
+        className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
         Sair
       </button>
     </nav>
@@ -188,11 +192,11 @@ const RestauranteConfig = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Configurações de Pagamento</h1>
-          <p className="text-sm text-gray-500">Integração PagBank</p>
+          <h1 className="text-xl font-bold text-[#18181B]">Configurações de Pagamento</h1>
+          <p className="text-sm text-[#71717A]">Integração PagBank</p>
         </div>
         <NavRestaurante />
       </header>
@@ -200,7 +204,7 @@ const RestauranteConfig = () => {
       <main className="p-6 max-w-2xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <div className="space-y-5">
@@ -229,7 +233,7 @@ const RestauranteConfig = () => {
 
             {/* Formulário — limpo */}
             <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-gray-900 mb-4">Suas credenciais</h2>
+              <h2 className="font-semibold text-[#18181B] mb-4">Suas credenciais</h2>
 
               <form onSubmit={handleSalvar} className="space-y-4">
                 {/* Token */}
@@ -280,7 +284,7 @@ const RestauranteConfig = () => {
                 <div className="flex items-center gap-3">
                   <button type="button"
                     onClick={() => setForm((f) => ({ ...f, pagbank_sandbox: !f.pagbank_sandbox }))}
-                    className={`relative w-10 h-6 rounded-full transition-colors ${form.pagbank_sandbox ? 'bg-orange-400' : 'bg-green-500'}`}>
+                    className={`relative w-10 h-6 rounded-full transition-colors ${form.pagbank_sandbox ? 'bg-[#FF441F]' : 'bg-green-500'}`}>
                     <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.pagbank_sandbox ? 'left-1' : 'left-5'}`} />
                   </button>
                   <span className="text-sm text-gray-700">
@@ -298,7 +302,7 @@ const RestauranteConfig = () => {
                 )}
 
                 <button type="submit" disabled={salvando}
-                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50">
+                  className="w-full py-2.5 bg-[#FF441F] text-white rounded-lg font-semibold text-sm hover:bg-[#e03b1a] disabled:opacity-50">
                   {salvando ? 'Salvando...' : 'Salvar configurações'}
                 </button>
               </form>

@@ -214,6 +214,23 @@ export class RestauranteService {
     return data;
   }
 
+  async updateEmpresa(restaurantId: number, body: { name?: string; address?: string; logo_url?: string }) {
+    const campos: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (body.name !== undefined) campos.name = body.name;
+    if (body.address !== undefined) campos.address = body.address;
+    if (body.logo_url !== undefined) campos.logo_url = body.logo_url;
+
+    const { data, error } = await this.supabase.client
+      .from('restaurants')
+      .update(campos)
+      .eq('id', restaurantId)
+      .select('id, name, address, logo_url, slug')
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+
   async getAparencia(restaurantId: number) {
     const { data } = await this.supabase.client
       .from('restaurants')
