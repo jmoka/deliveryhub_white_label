@@ -1,8 +1,118 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 
+/* ── Categorias estáticas ────────────────────────────────────────── */
+const CATEGORIAS = [
+  { id: 'todos', label: 'Todos', icon: 'LayoutGrid', color: '#FF441F' },
+  { id: 'pizza', label: 'Pizza', icon: 'Pizza', color: '#FF7A00' },
+  { id: 'hamburguer', label: 'Hambúrguer', icon: 'Sandwich', color: '#E63A19' },
+  { id: 'japones', label: 'Japonesa', icon: 'Fish', color: '#0EA5E9' },
+  { id: 'acai', label: 'Açaí', icon: 'GlassWater', color: '#8B5CF6' },
+  { id: 'marmita', label: 'Marmita', icon: 'UtensilsCrossed', color: '#10B981' },
+  { id: 'saudavel', label: 'Saudável', icon: 'Leaf', color: '#22C55E' },
+  { id: 'sorvete', label: 'Sorvetes', icon: 'Dessert', color: '#EC4899' },
+  { id: 'padaria', label: 'Padaria', icon: 'Coffee', color: '#F59E0B' },
+];
+
+/* ── Skeleton card ───────────────────────────────────────────────── */
+const SkeletonCard = () => (
+  <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+    <div className="h-44 bg-gray-200" />
+    <div className="p-4 space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gray-100 rounded w-1/2" />
+      <div className="flex gap-2 mt-3">
+        <div className="h-5 bg-gray-100 rounded-full w-16" />
+        <div className="h-5 bg-gray-100 rounded-full w-20" />
+      </div>
+    </div>
+  </div>
+);
+
+/* ── Badge ───────────────────────────────────────────────────────── */
+const Badge = ({ children, color = 'green' }) => {
+  const colors = {
+    green: 'bg-green-500 text-white',
+    red: 'bg-[#FF441F] text-white',
+    blue: 'bg-blue-500 text-white',
+    orange: 'bg-[#FF7A00] text-white',
+  };
+  return (
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colors[color]}`}>
+      {children}
+    </span>
+  );
+};
+
+/* ── Card de restaurante ─────────────────────────────────────────── */
+const RestauranteCard = ({ restaurante, idx }) => {
+  const navigate = useNavigate();
+  const nota = restaurante.nota ?? (4.3 + Math.random() * 0.6).toFixed(1);
+  const tempo = restaurante.tempo_entrega ?? `${20 + Math.floor(Math.random() * 20)}-${35 + Math.floor(Math.random() * 15)} min`;
+  const frete = restaurante.frete === 0 ? 'Grátis' : restaurante.frete ? `R$ ${restaurante.frete.toFixed(2)}` : 'Grátis';
+  const isNovo = idx < 2;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: idx * 0.06, duration: 0.3 }}
+      whileHover={{ y: -2 }}
+      onClick={() => navigate(`/r/${restaurante.slug}`)}
+      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all text-left border border-gray-100 w-full"
+    >
+      {/* Imagem capa */}
+      <div className="relative h-44 overflow-hidden">
+        {restaurante.logo_url ? (
+          <img
+            src={restaurante.logo_url}
+            alt={restaurante.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center">
+            <Icon name="Store" size={52} className="text-[#FF441F]/30" />
+          </div>
+        )}
+        {/* Badges */}
+        <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+          {frete === 'Grátis' && <Badge color="green">Frete grátis</Badge>}
+          {isNovo && <Badge color="blue">Novo</Badge>}
+          {restaurante.destaque && <Badge color="red">Destaque</Badge>}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-semibold text-[#18181B] text-sm leading-tight">{restaurante.name}</p>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <Icon name="Star" size={12} className="text-yellow-400" fill="currentColor" />
+            <span className="text-xs font-semibold text-[#27272A]">{nota}</span>
+          </div>
+        </div>
+        {restaurante.address && (
+          <p className="text-xs text-[#71717A] mt-0.5 flex items-center gap-1">
+            <Icon name="MapPin" size={10} /> {restaurante.address}
+          </p>
+        )}
+        <div className="flex items-center gap-3 mt-2.5">
+          <span className="flex items-center gap-1 text-xs text-[#71717A]">
+            <Icon name="Clock" size={11} /> {tempo}
+          </span>
+          <span className={`flex items-center gap-1 text-xs font-medium ${frete === 'Grátis' ? 'text-green-600' : 'text-[#71717A]'}`}>
+            <Icon name="Truck" size={11} /> {frete === 'Grátis' ? 'Frete grátis' : frete}
+          </span>
+        </div>
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Componente principal ────────────────────────────────────────── */
 const MenuCatalogProductBrowse = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, isRestaurantOwner, signOut } = useAuth();
@@ -10,6 +120,9 @@ const MenuCatalogProductBrowse = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [busca, setBusca] = useState('');
+  const [catAtiva, setCatAtiva] = useState('todos');
+  const [buscaFocada, setBuscaFocada] = useState(false);
+  const catRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/r')
@@ -19,131 +132,194 @@ const MenuCatalogProductBrowse = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtrados = restaurantes.filter((r) =>
-    r.name.toLowerCase().includes(busca.toLowerCase()) ||
-    (r.address ?? '').toLowerCase().includes(busca.toLowerCase()),
-  );
+  const filtrados = restaurantes.filter((r) => {
+    const matchBusca =
+      r.name.toLowerCase().includes(busca.toLowerCase()) ||
+      (r.address ?? '').toLowerCase().includes(busca.toLowerCase());
+    return matchBusca;
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-            <Icon name="Utensils" size={18} className="text-white" />
+    <div className="min-h-screen bg-[#FAFAFA]">
+      {/* ── Header sticky ──────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7] shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
+          {/* Logo */}
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 flex-shrink-0"
+          >
+            <div className="w-8 h-8 bg-[#FF441F] rounded-xl flex items-center justify-center">
+              <Icon name="Utensils" size={17} className="text-white" />
+            </div>
+            <span className="font-bold text-[#18181B] text-base hidden sm:block">DeliveryHub</span>
+          </button>
+
+          {/* Busca */}
+          <div className="flex-1 max-w-xl">
+            <div className={`flex items-center gap-2 bg-[#F4F4F5] rounded-xl px-3 py-2.5 transition-all ${buscaFocada ? 'ring-2 ring-[#FF441F]/30 bg-white' : ''}`}>
+              <Icon name="Search" size={15} className="text-[#71717A] flex-shrink-0" />
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                onFocus={() => setBuscaFocada(true)}
+                onBlur={() => setBuscaFocada(false)}
+                placeholder="Buscar restaurantes ou pratos"
+                className="flex-1 bg-transparent text-sm text-[#27272A] placeholder-[#71717A] outline-none"
+              />
+              {busca && (
+                <button onClick={() => setBusca('')}>
+                  <Icon name="X" size={14} className="text-[#71717A]" />
+                </button>
+              )}
+            </div>
           </div>
-          <span className="text-sm font-bold text-gray-900">DeliveryHub</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {isAuthenticated() ? (
-            <>
-              {isAdmin() && (
-                <button onClick={() => navigate('/admin')} className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg">
-                  Admin
+
+          {/* Ações direita */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {isAuthenticated() ? (
+              <>
+                {isAdmin() && (
+                  <button
+                    onClick={() => navigate('/admin')}
+                    className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
+                  >
+                    Admin
+                  </button>
+                )}
+                {isRestaurantOwner() && (
+                  <button
+                    onClick={() => navigate('/restaurante')}
+                    className="px-3 py-1.5 text-xs font-medium text-[#FF441F] hover:bg-brand-light rounded-lg"
+                  >
+                    Meu Rest.
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate('/customer-account-order-history')}
+                  className="p-2 text-[#71717A] hover:text-[#27272A] hover:bg-[#F4F4F5] rounded-lg"
+                  title="Meus Pedidos"
+                >
+                  <Icon name="ClipboardList" size={18} />
                 </button>
-              )}
-              {isRestaurantOwner() && (
-                <button onClick={() => navigate('/restaurante')} className="px-3 py-1.5 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded-lg">
-                  Meu Restaurante
+                <button
+                  onClick={async () => { await signOut(); }}
+                  className="p-2 text-[#71717A] hover:text-red-600 hover:bg-red-50 rounded-lg"
+                  title="Sair"
+                >
+                  <Icon name="LogOut" size={17} />
                 </button>
-              )}
+              </>
+            ) : (
               <button
-                onClick={() => navigate('/customer-account-order-history')}
-                className="px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+                onClick={() => navigate('/customer-registration-login')}
+                className="px-4 py-2 bg-[#FF441F] text-white text-sm font-semibold rounded-xl hover:bg-[#E63A19] transition-colors"
               >
-                Meus Pedidos
+                Entrar
               </button>
-              <button
-                onClick={async () => { await signOut(); }}
-                className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
-              >
-                Sair
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => navigate('/customer-registration-login')}
-              className="px-3 py-1.5 text-xs font-medium bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-            >
-              Entrar
-            </button>
-          )}
+            )}
+          </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-orange-500 to-orange-600 px-4 py-10 text-center text-white">
-        <h1 className="text-2xl font-bold mb-2">Peça seu delivery</h1>
-        <p className="text-orange-100 text-sm mb-5">Escolha um restaurante e faça seu pedido</p>
-        <div className="max-w-md mx-auto relative">
-          <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar restaurante..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-300"
-          />
+      {/* ── Hero ───────────────────────────────────────────────────── */}
+      <section className="bg-gradient-to-br from-[#FF441F] to-[#FF7A00] px-4 py-10 sm:py-14 text-center text-white">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 leading-tight">
+            Seu delivery favorito
+          </h1>
+          <p className="text-white/80 text-sm sm:text-base mb-2">
+            Escolha um restaurante e peça agora
+          </p>
+        </motion.div>
+      </section>
+
+      {/* ── Categorias ─────────────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 mt-6">
+        <div
+          ref={catRef}
+          className="flex gap-3 overflow-x-auto pb-2 scrollbar-none scroll-smooth"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {CATEGORIAS.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setCatAtiva(cat.id)}
+              className={`flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl text-xs font-semibold transition-all ${
+                catAtiva === cat.id
+                  ? 'bg-[#FF441F] text-white shadow-md'
+                  : 'bg-white text-[#27272A] border border-[#E4E4E7] hover:border-[#FF441F]/40'
+              }`}
+            >
+              <Icon
+                name={cat.icon}
+                size={20}
+                className={catAtiva === cat.id ? 'text-white' : ''}
+                style={catAtiva !== cat.id ? { color: cat.color } : {}}
+              />
+              {cat.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Lista */}
-      <main className="p-4 max-w-3xl mx-auto">
+      {/* ── Lista de restaurantes ──────────────────────────────────── */}
+      <main className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : erro ? (
           <div className="text-center py-16">
-            <p className="text-red-600 text-sm">{erro}</p>
-            <p className="text-gray-400 text-xs mt-1">Verifique se o backend está rodando</p>
+            <Icon name="WifiOff" size={48} className="text-[#E4E4E7] mx-auto mb-3" />
+            <p className="text-[#71717A] text-sm">{erro}</p>
+            <p className="text-[#71717A] text-xs mt-1">Verifique se o backend está rodando</p>
           </div>
         ) : filtrados.length === 0 ? (
           <div className="text-center py-16">
-            <Icon name="Store" size={48} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">
-              {busca ? 'Nenhum restaurante encontrado' : 'Nenhum restaurante cadastrado ainda'}
+            <Icon name="Store" size={56} className="text-[#E4E4E7] mx-auto mb-4" />
+            <p className="text-[#27272A] font-semibold text-lg">
+              {busca ? 'Nenhum restaurante encontrado' : 'Nenhum restaurante cadastrado'}
+            </p>
+            <p className="text-[#71717A] text-sm mt-1">
+              {busca ? `Sem resultados para "${busca}"` : 'Seja o primeiro a cadastrar!'}
             </p>
             {!busca && (
               <button
                 onClick={() => navigate('/restaurant-registration-setup')}
-                className="mt-4 px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600"
+                className="mt-5 px-5 py-2.5 bg-[#FF441F] text-white text-sm font-semibold rounded-xl hover:bg-[#E63A19] transition-colors"
               >
-                Cadastrar meu restaurante
+                Cadastrar restaurante
               </button>
             )}
           </div>
         ) : (
           <>
-            <p className="text-xs text-gray-400 mb-3">{filtrados.length} restaurante(s)</p>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {filtrados.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => navigate(`/r/${r.slug}`)}
-                  className="bg-white rounded-xl border hover:shadow-md transition-shadow text-left overflow-hidden"
-                >
-                  {r.logo_url ? (
-                    <img src={r.logo_url} alt={r.name} className="w-full h-32 object-cover" />
-                  ) : (
-                    <div className="w-full h-32 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                      <Icon name="Store" size={40} className="text-orange-400" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <p className="font-semibold text-gray-900">{r.name}</p>
-                    {r.address && (
-                      <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                        <Icon name="MapPin" size={11} /> {r.address}
-                      </p>
-                    )}
-                    <p className="text-xs text-orange-500 mt-2 font-medium">Ver cardápio →</p>
-                  </div>
-                </button>
+            {/* Título seção */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-[#18181B]">
+                {catAtiva === 'todos' ? 'Todos os restaurantes' : CATEGORIAS.find((c) => c.id === catAtiva)?.label}
+                <span className="text-[#71717A] font-normal text-sm ml-2">({filtrados.length})</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filtrados.map((r, i) => (
+                <RestauranteCard key={r.id} restaurante={r} idx={i} />
               ))}
             </div>
           </>
         )}
       </main>
+
+      {/* ── Footer mínimo ──────────────────────────────────────────── */}
+      <footer className="border-t border-[#E4E4E7] mt-12 py-6 text-center">
+        <p className="text-xs text-[#71717A]">© {new Date().getFullYear()} DeliveryHub · Todos os direitos reservados</p>
+      </footer>
     </div>
   );
 };

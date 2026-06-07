@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const PAYMENT_LABELS = {
-  pix: 'PIX',
-  credit_card: 'Cartão de Crédito',
-  debit_card: 'Cartão de Débito',
-  cash: 'Dinheiro',
-};
+const PAYMENT_OPTIONS = [
+  { key: 'pix', label: 'PIX', icon: 'QrCode', desc: 'Aprovação instantânea' },
+  { key: 'credit_card', label: 'Cartão de crédito', icon: 'CreditCard', desc: 'Débito em 1-2 dias' },
+  { key: 'debit_card', label: 'Cartão de débito', icon: 'Landmark', desc: 'Débito imediato' },
+  { key: 'cash', label: 'Dinheiro', icon: 'Banknote', desc: 'Pague na entrega' },
+];
 
 const formatCpf = (v) =>
   v.replace(/\D/g, '').slice(0, 11)
@@ -18,75 +19,263 @@ const formatCpf = (v) =>
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 
-/* ── Tela PIX ─────────────────────────────────────────────────── */
+/* ── Progress ────────────────────────────────────────────────────── */
+const ProgressBar = ({ etapa, total }) => (
+  <div className="flex items-center gap-2 px-4 py-3">
+    {Array.from({ length: total }).map((_, i) => (
+      <React.Fragment key={i}>
+        <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-colors ${
+          i < etapa ? 'bg-[#FF441F] text-white'
+          : i === etapa ? 'bg-[#FF441F] text-white ring-4 ring-[#FF441F]/20'
+          : 'bg-[#F4F4F5] text-[#71717A]'
+        }`}>
+          {i < etapa ? <Icon name="Check" size={13} /> : i + 1}
+        </div>
+        {i < total - 1 && (
+          <div className={`flex-1 h-0.5 rounded-full ${i < etapa ? 'bg-[#FF441F]' : 'bg-[#E4E4E7]'}`} />
+        )}
+      </React.Fragment>
+    ))}
+  </div>
+);
+
+const LABELS_ETAPA = ['Seus itens', 'Pagamento', 'Confirmar'];
+
+/* ── Tela PIX ─────────────────────────────────────────────────────  */
 const PixScreen = ({ pixData, total, onIrAcompanhar }) => {
   const [copiado, setCopiado] = useState(false);
-
   const copiar = () => {
     navigator.clipboard.writeText(pixData.pix_code).then(() => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2500);
     });
   };
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-white rounded-2xl border shadow-sm p-6 text-center space-y-5">
+    <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-sm bg-white rounded-3xl border border-[#E4E4E7] shadow-lg p-6 text-center space-y-5"
+      >
         <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto">
           <Icon name="QrCode" size={28} className="text-green-600" />
         </div>
-
         <div>
-          <h1 className="text-lg font-bold text-gray-900">PIX gerado!</h1>
-          <p className="text-sm text-gray-500 mt-1">Escaneie o QR code ou copie o código</p>
-          <p className="text-xl font-bold text-orange-600 mt-1">{fmt(total)}</p>
+          <h1 className="text-lg font-bold text-[#18181B]">PIX gerado!</h1>
+          <p className="text-sm text-[#71717A] mt-1">Escaneie o QR code ou copie o código</p>
+          <p className="text-2xl font-bold text-[#FF441F] mt-1">{fmt(total)}</p>
         </div>
-
-        {/* QR code */}
         {pixData.pix_qr_url && (
-          <img
-            src={pixData.pix_qr_url}
-            alt="QR Code PIX"
-            className="w-48 h-48 mx-auto border rounded-xl object-contain"
-          />
+          <img src={pixData.pix_qr_url} alt="QR Code PIX"
+            className="w-48 h-48 mx-auto border border-[#E4E4E7] rounded-2xl object-contain" />
         )}
-
-        {/* Código copia e cola */}
         {pixData.pix_code && (
           <div className="space-y-2">
-            <p className="text-xs text-gray-500">Código PIX (copia e cola)</p>
-            <div className="bg-gray-50 border rounded-xl p-3 text-xs font-mono text-gray-700 break-all text-left max-h-24 overflow-y-auto">
+            <p className="text-xs text-[#71717A]">Código PIX (copia e cola)</p>
+            <div className="bg-[#F4F4F5] border border-[#E4E4E7] rounded-xl p-3 text-xs font-mono text-[#27272A] break-all text-left max-h-24 overflow-y-auto">
               {pixData.pix_code}
             </div>
-            <button
-              onClick={copiar}
-              className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                copiado
-                  ? 'bg-green-500 text-white'
-                  : 'bg-orange-500 hover:bg-orange-600 text-white'
-              }`}
-            >
+            <button onClick={copiar}
+              className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                copiado ? 'bg-green-500 text-white' : 'bg-[#FF441F] hover:bg-[#E63A19] text-white'
+              }`}>
               {copiado ? '✓ Copiado!' : 'Copiar código'}
             </button>
           </div>
         )}
-
         <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 text-left">
-          Após o pagamento, seu pedido será confirmado automaticamente. Validade: 24h.
+          Após o pagamento, seu pedido é confirmado automaticamente. Válido por 24h.
         </div>
-
-        <button
-          onClick={onIrAcompanhar}
-          className="w-full py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
+        <button onClick={onIrAcompanhar}
+          className="w-full py-3 border border-[#E4E4E7] rounded-2xl text-sm font-semibold text-[#27272A] hover:bg-[#F4F4F5]">
           Acompanhar pedido
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
-/* ── Checkout principal ───────────────────────────────────────── */
+/* ── Step 1: Itens ───────────────────────────────────────────────── */
+const StepItens = ({ itens, setItens, onNext, total }) => {
+  const remover = (id) => setItens((p) => p.filter((i) => i.id !== id));
+  const altQtd = (id, delta) =>
+    setItens((p) => p.map((i) => i.id === id ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
+
+  return (
+    <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+      <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
+        {itens.map((item) => (
+          <div key={item.id} className="flex items-center gap-3">
+            {item.image_url && (
+              <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[#18181B] truncate">{item.name}</p>
+              <p className="text-xs text-[#FF441F] font-medium">{fmt(item.price)}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button onClick={() => altQtd(item.id, -1)}
+                className="w-7 h-7 bg-[#F4F4F5] rounded-full font-bold text-[#27272A] flex items-center justify-center hover:bg-[#E4E4E7] text-base">
+                −
+              </button>
+              <span className="text-sm font-bold text-[#18181B] w-4 text-center">{item.qtd}</span>
+              <button onClick={() => altQtd(item.id, +1)}
+                className="w-7 h-7 bg-[#FF441F] rounded-full font-bold text-white flex items-center justify-center hover:bg-[#E63A19] text-base">
+                +
+              </button>
+              <button onClick={() => remover(item.id)} className="ml-1 p-1 text-[#71717A] hover:text-red-500">
+                <Icon name="Trash2" size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Subtotal */}
+      <div className="bg-white rounded-2xl border border-[#E4E4E7] px-4 py-3 flex justify-between">
+        <span className="text-sm text-[#71717A]">Subtotal ({itens.reduce((a, i) => a + i.qtd, 0)} itens)</span>
+        <span className="text-sm font-bold text-[#18181B]">{fmt(total)}</span>
+      </div>
+
+      <button onClick={onNext}
+        className="w-full py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] transition-colors">
+        Continuar
+      </button>
+    </motion.div>
+  );
+};
+
+/* ── Step 2: Pagamento ───────────────────────────────────────────── */
+const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, onNext, onBack }) => (
+  <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+      <p className="text-sm font-semibold text-[#18181B] mb-3">Forma de pagamento</p>
+      <div className="space-y-2">
+        {PAYMENT_OPTIONS.map((op) => (
+          <button key={op.key} onClick={() => setPaymentMethod(op.key)}
+            className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
+              paymentMethod === op.key
+                ? 'border-[#FF441F] bg-[#FF441F]/5'
+                : 'border-[#E4E4E7] hover:border-[#FF441F]/40'
+            }`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              paymentMethod === op.key ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
+            }`}>
+              <Icon name={op.icon} size={18} />
+            </div>
+            <div className="flex-1">
+              <p className={`text-sm font-semibold ${paymentMethod === op.key ? 'text-[#FF441F]' : 'text-[#18181B]'}`}>
+                {op.label}
+              </p>
+              <p className="text-xs text-[#71717A]">{op.desc}</p>
+            </div>
+            <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+              paymentMethod === op.key ? 'border-[#FF441F] bg-[#FF441F]' : 'border-[#E4E4E7]'
+            }`}>
+              {paymentMethod === op.key && <div className="w-2 h-2 bg-white rounded-full m-auto mt-0.5" />}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* CPF para PIX */}
+      <AnimatePresence>
+        {paymentMethod === 'pix' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 pt-4 border-t border-[#E4E4E7]">
+              <label className="block text-sm font-medium text-[#27272A] mb-1.5">
+                CPF do pagador <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={cpf}
+                onChange={(e) => setCpf(formatCpf(e.target.value))}
+                placeholder="000.000.000-00"
+                maxLength={14}
+                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
+              />
+              <p className="text-xs text-[#71717A] mt-1">Necessário para gerar o código PIX</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+
+    <div className="flex gap-3">
+      <button onClick={onBack}
+        className="flex-1 py-3.5 border border-[#E4E4E7] text-[#27272A] font-semibold rounded-2xl hover:bg-[#F4F4F5] transition-colors text-sm">
+        Voltar
+      </button>
+      <button onClick={onNext}
+        className="flex-[2] py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] transition-colors">
+        Revisar pedido
+      </button>
+    </div>
+  </motion.div>
+);
+
+/* ── Step 3: Confirmar ───────────────────────────────────────────── */
+const StepConfirmar = ({ itens, paymentMethod, total, loading, erro, onConfirmar, onBack }) => {
+  const payOpt = PAYMENT_OPTIONS.find((o) => o.key === paymentMethod);
+  return (
+    <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+      {/* Itens resumo */}
+      <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+        <p className="text-sm font-semibold text-[#18181B] mb-3">Resumo do pedido</p>
+        <div className="space-y-2">
+          {itens.map((i) => (
+            <div key={i.id} className="flex justify-between text-sm">
+              <span className="text-[#71717A]">{i.name} × {i.qtd}</span>
+              <span className="text-[#27272A] font-medium">{fmt(i.price * i.qtd)}</span>
+            </div>
+          ))}
+          <div className="border-t border-[#E4E4E7] pt-2 flex justify-between font-bold">
+            <span className="text-[#18181B]">Total</span>
+            <span className="text-[#FF441F] text-lg">{fmt(total)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Pagamento */}
+      <div className="bg-white rounded-2xl border border-[#E4E4E7] px-4 py-3 flex items-center gap-3">
+        <div className="w-9 h-9 bg-[#FF441F]/10 rounded-xl flex items-center justify-center">
+          <Icon name={payOpt?.icon ?? 'CreditCard'} size={18} className="text-[#FF441F]" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-[#18181B]">{payOpt?.label}</p>
+          <p className="text-xs text-[#71717A]">{payOpt?.desc}</p>
+        </div>
+      </div>
+
+      {erro && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+          {erro}
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <button onClick={onBack}
+          className="flex-1 py-3.5 border border-[#E4E4E7] text-[#27272A] font-semibold rounded-2xl hover:bg-[#F4F4F5] transition-colors text-sm">
+          Voltar
+        </button>
+        <button onClick={onConfirmar} disabled={loading}
+          className="flex-[2] py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] disabled:opacity-50 transition-colors">
+          {loading
+            ? 'Processando...'
+            : paymentMethod === 'pix' ? 'Gerar PIX' : 'Confirmar pedido'}
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+/* ── Checkout principal ───────────────────────────────────────────  */
 const ShoppingCartCheckout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -107,33 +296,26 @@ const ShoppingCartCheckout = () => {
   const [cpf, setCpf] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
-  const [pixData, setPixData] = useState(null);   // null = ainda não gerado
+  const [pixData, setPixData] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [etapa, setEtapa] = useState(0); // 0=itens, 1=pagamento, 2=confirmar
 
   const total = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
 
-  useEffect(() => {
-    if (!restauranteId && !restauranteSlug) {
-      navigate('/menu-catalog-product-browse', { replace: true });
-    }
-  }, []);
+  const irParaStep = (n) => { setErro(null); setEtapa(n); };
 
-  const remover = (prodId) =>
-    setItens((prev) => prev.filter((i) => i.id !== prodId));
-
-  const altQtd = (prodId, delta) =>
-    setItens((prev) =>
-      prev.map((i) => (i.id === prodId ? { ...i, qtd: i.qtd + delta } : i))
-         .filter((i) => i.qtd > 0),
-    );
-
-  const handleFinalizar = async () => {
-    if (itens.length === 0) return;
-    if (!restauranteId) { setErro('Dados do restaurante ausentes'); return; }
+  const validarPagamento = () => {
     if (paymentMethod === 'pix' && cpf.replace(/\D/g, '').length !== 11) {
       setErro('CPF inválido. Informe os 11 dígitos para gerar o PIX.');
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleFinalizar = async () => {
+    if (!validarPagamento()) return;
+    if (itens.length === 0) return;
+    if (!restauranteId) { setErro('Dados do restaurante ausentes'); return; }
 
     setLoading(true);
     setErro(null);
@@ -143,7 +325,6 @@ const ShoppingCartCheckout = () => {
       const token = sessionResult?.data?.session?.access_token;
       if (!token) throw new Error('Sessão expirada. Faça login.');
 
-      // 1. Criar pedido
       const resP = await fetch('/api/pedidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -159,7 +340,6 @@ const ShoppingCartCheckout = () => {
       const newOrderId = pedido.pedido?.id ?? pedido.id;
       setOrderId(newOrderId);
 
-      // 2. Se PIX → gerar cobrança
       if (paymentMethod === 'pix') {
         const user = (await supabase.auth.getUser())?.data?.user;
         const resPix = await fetch('/api/pagamentos/pix', {
@@ -176,8 +356,6 @@ const ShoppingCartCheckout = () => {
         });
         const pixResp = await resPix.json();
         if (!resPix.ok) {
-          // PIX falhou mas pedido criado — vai pro tracking mesmo assim
-          console.error('PIX falhou:', pixResp);
           navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
           return;
         }
@@ -185,11 +363,7 @@ const ShoppingCartCheckout = () => {
         return;
       }
 
-      // 3. Outros métodos → ir pro tracking
-      navigate('/order-tracking-status', {
-        state: { orderId: newOrderId, restauranteSlug },
-        replace: true,
-      });
+      navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -197,7 +371,6 @@ const ShoppingCartCheckout = () => {
     }
   };
 
-  // Tela PIX gerado
   if (pixData) {
     return (
       <PixScreen
@@ -212,12 +385,12 @@ const ShoppingCartCheckout = () => {
 
   if (itens.length === 0 && !loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-        <Icon name="ShoppingCart" size={48} className="text-gray-300 mb-4" />
-        <p className="text-gray-500 font-medium">Carrinho vazio</p>
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center">
+        <Icon name="ShoppingCart" size={52} className="text-[#E4E4E7] mb-4" />
+        <p className="text-[#27272A] font-semibold text-lg">Carrinho vazio</p>
         <button
-          onClick={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : '/menu-catalog-product-browse')}
-          className="mt-4 px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600"
+          onClick={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : '/')}
+          className="mt-5 px-5 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]"
         >
           {restauranteSlug ? 'Voltar ao cardápio' : 'Ver restaurantes'}
         </button>
@@ -226,123 +399,72 @@ const ShoppingCartCheckout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
-      <header className="bg-white border-b px-4 py-4 flex items-center gap-3">
+    <div className="min-h-screen bg-[#FAFAFA]">
+      {/* Header */}
+      <header className="bg-white border-b border-[#E4E4E7] px-4 py-3 flex items-center gap-3">
         <button
-          onClick={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : -1)}
-          className="p-2 rounded-lg hover:bg-gray-100"
+          onClick={() => etapa > 0 ? irParaStep(etapa - 1) : navigate(restauranteSlug ? `/r/${restauranteSlug}` : -1)}
+          className="p-2 rounded-xl hover:bg-[#F4F4F5]"
         >
-          <Icon name="ArrowLeft" size={20} className="text-gray-600" />
+          <Icon name="ArrowLeft" size={20} className="text-[#27272A]" />
         </button>
-        <h1 className="text-lg font-bold text-gray-900">Finalizar Pedido</h1>
+        <div>
+          <h1 className="text-base font-bold text-[#18181B]">Finalizar Pedido</h1>
+          <p className="text-xs text-[#71717A]">{LABELS_ETAPA[etapa]}</p>
+        </div>
       </header>
 
-      <main className="p-4 max-w-lg mx-auto space-y-4">
-        {/* Itens */}
-        <section className="bg-white rounded-xl border p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Itens do pedido</h2>
-          <div className="space-y-3">
-            {itens.map((item) => (
-              <div key={item.id} className="flex items-center gap-3">
-                {item.image_url && (
-                  <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                  <p className="text-xs text-orange-600">{fmt(item.price)} cada</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => altQtd(item.id, -1)}
-                    className="w-6 h-6 bg-gray-100 rounded-full text-sm font-bold text-gray-700 hover:bg-gray-200">−</button>
-                  <span className="w-4 text-center text-sm">{item.qtd}</span>
-                  <button onClick={() => altQtd(item.id, +1)}
-                    className="w-6 h-6 bg-orange-500 rounded-full text-sm font-bold text-white hover:bg-orange-600">+</button>
-                  <button onClick={() => remover(item.id)} className="ml-1 text-red-400 hover:text-red-600">
-                    <Icon name="X" size={14} />
-                  </button>
-                </div>
-              </div>
+      {/* Progress */}
+      <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="max-w-lg mx-auto">
+          <ProgressBar etapa={etapa} total={3} />
+          <div className="flex justify-between px-4 pb-2">
+            {LABELS_ETAPA.map((l, i) => (
+              <span key={i} className={`text-[10px] font-medium ${i === etapa ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
+                {l}
+              </span>
             ))}
           </div>
-        </section>
-
-        {/* Forma de pagamento */}
-        <section className="bg-white rounded-xl border p-4">
-          <h2 className="font-semibold text-gray-900 mb-3">Forma de pagamento</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.entries(PAYMENT_LABELS).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => { setPaymentMethod(key); setErro(null); }}
-                className={`py-2.5 px-3 rounded-lg text-sm font-medium border transition-colors ${
-                  paymentMethod === key
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* CPF — obrigatório apenas para PIX */}
-          {paymentMethod === 'pix' && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                CPF do pagador <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={cpf}
-                onChange={(e) => setCpf(formatCpf(e.target.value))}
-                placeholder="000.000.000-00"
-                className="w-full border rounded-lg px-3 py-2 text-sm"
-                maxLength={14}
-              />
-              <p className="text-xs text-gray-400 mt-1">Necessário para gerar o código PIX</p>
-            </div>
-          )}
-        </section>
-
-        {/* Resumo */}
-        <section className="bg-white rounded-xl border p-4 space-y-2">
-          <h2 className="font-semibold text-gray-900 mb-2">Resumo</h2>
-          {itens.map((i) => (
-            <div key={i.id} className="flex justify-between text-sm text-gray-600">
-              <span>{i.name} × {i.qtd}</span>
-              <span>{fmt(i.price * i.qtd)}</span>
-            </div>
-          ))}
-          <div className="border-t pt-2 flex justify-between font-bold text-gray-900">
-            <span>Total</span>
-            <span className="text-orange-600">{fmt(total)}</span>
-          </div>
-        </section>
-
-        {erro && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
-            {erro}
-          </div>
-        )}
-      </main>
-
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg">
-        <button
-          onClick={handleFinalizar}
-          disabled={loading || itens.length === 0}
-          className="w-full max-w-lg mx-auto flex items-center justify-between bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-5 py-3 font-semibold disabled:opacity-50"
-        >
-          <span>
-            {loading
-              ? 'Processando...'
-              : paymentMethod === 'pix'
-              ? 'Gerar PIX'
-              : 'Confirmar pedido'}
-          </span>
-          <span>{fmt(total)}</span>
-        </button>
+        </div>
       </div>
+
+      {/* Conteúdo */}
+      <main className="p-4 max-w-lg mx-auto">
+        <AnimatePresence mode="wait">
+          {etapa === 0 && (
+            <StepItens
+              key="itens"
+              itens={itens}
+              setItens={setItens}
+              total={total}
+              onNext={() => irParaStep(1)}
+            />
+          )}
+          {etapa === 1 && (
+            <StepPagamento
+              key="pagamento"
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              cpf={cpf}
+              setCpf={setCpf}
+              onNext={() => { if (!validarPagamento()) return; irParaStep(2); }}
+              onBack={() => irParaStep(0)}
+            />
+          )}
+          {etapa === 2 && (
+            <StepConfirmar
+              key="confirmar"
+              itens={itens}
+              paymentMethod={paymentMethod}
+              total={total}
+              loading={loading}
+              erro={erro}
+              onConfirmar={handleFinalizar}
+              onBack={() => irParaStep(1)}
+            />
+          )}
+        </AnimatePresence>
+      </main>
     </div>
   );
 };

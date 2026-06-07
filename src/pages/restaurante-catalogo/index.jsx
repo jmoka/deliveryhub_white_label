@@ -1,101 +1,257 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getCardapioPorSlug } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-/* ── Carrossel ────────────────────────────────────────────────── */
-const Carousel = ({ images }) => {
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    if (images.length < 2) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 4000);
-    return () => clearInterval(t);
-  }, [images.length]);
-  if (!images?.length) return null;
-  return (
-    <div className="relative w-full h-48 sm:h-64 overflow-hidden rounded-xl mb-6">
-      {images.map((src, i) => (
-        <img
-          key={i}
-          src={src}
-          alt=""
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === idx ? 'opacity-100' : 'opacity-0'}`}
-        />
-      ))}
-      {images.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-          {images.map((_, i) => (
-            <button key={i} onClick={() => setIdx(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${i === idx ? 'bg-white' : 'bg-white/50'}`} />
-          ))}
-        </div>
-      )}
+/* ── Skeleton produto ────────────────────────────────────────────── */
+const SkeletonProduto = () => (
+  <div className="flex gap-4 p-4 bg-white rounded-2xl border border-[#E4E4E7] animate-pulse">
+    <div className="flex-1 space-y-2">
+      <div className="h-4 bg-gray-200 rounded w-3/4" />
+      <div className="h-3 bg-gray-100 rounded w-full" />
+      <div className="h-3 bg-gray-100 rounded w-2/3" />
+      <div className="h-5 bg-gray-200 rounded w-20 mt-3" />
     </div>
-  );
-};
+    <div className="w-28 h-24 bg-gray-200 rounded-xl flex-shrink-0" />
+  </div>
+);
 
-/* ── Seção de produtos ────────────────────────────────────────── */
-const ProdutoCard = ({ produto, dark, onAdicionar, qtd }) => {
+/* ── Card de produto ─────────────────────────────────────────────── */
+const ProdutoCard = ({ produto, onAdicionar, qtd }) => {
   const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+  const indisponivel = produto.disponivel === false;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
 
   return (
-    <div className={`rounded-2xl border overflow-hidden flex flex-col sm:flex-row gap-0 ${dark ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-white'} shadow-sm`}>
-      {produto.image_url && (
-        <img src={produto.image_url} alt={produto.name}
-          className="w-full sm:w-32 h-40 sm:h-auto object-cover flex-shrink-0" />
-      )}
-      <div className="flex-1 p-4 flex flex-col justify-between">
+    <motion.div
+      layout
+      className={`flex gap-4 p-4 bg-white rounded-2xl border transition-shadow ${
+        indisponivel ? 'border-[#E4E4E7] opacity-60' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20'
+      }`}
+    >
+      {/* Texto */}
+      <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <p className={`font-semibold text-sm leading-tight ${dark ? 'text-white' : 'text-gray-900'}`}>{produto.name}</p>
+          <div className="flex items-start gap-2">
+            <p className="font-semibold text-[#18181B] text-sm leading-snug flex-1">{produto.name}</p>
             {produto.destaque && (
-              <span className="flex-shrink-0 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded font-bold">⭐</span>
+              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-yellow-400/20 text-yellow-700 rounded font-bold">⭐ Destaque</span>
             )}
             {produto.tipo === 'combo' && (
-              <span className="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-500 text-white rounded font-bold">COMBO</span>
+              <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold">COMBO</span>
             )}
           </div>
           {produto.description && (
-            <p className={`text-xs line-clamp-2 ${dark ? 'text-white/60' : 'text-gray-500'}`}>{produto.description}</p>
+            <p className="text-xs text-[#71717A] mt-1 line-clamp-2">{produto.description}</p>
           )}
         </div>
+
         <div className="flex items-center justify-between mt-3">
+          {/* Preço */}
           <div>
             {temPromo && (
-              <p className={`text-xs line-through ${dark ? 'text-white/40' : 'text-gray-400'}`}>{fmt(produto.price)}</p>
+              <p className="text-xs line-through text-[#71717A]">{fmt(produto.price)}</p>
             )}
-            <p className={`text-base font-bold ${temPromo ? 'text-green-500' : dark ? 'text-orange-400' : 'text-orange-600'}`}>
-              {fmt(precoFinal)}
-              {temPromo && <span className="ml-1 text-xs bg-green-500 text-white px-1 rounded">PROMO</span>}
-            </p>
+            <div className="flex items-center gap-1.5">
+              <p className={`text-base font-bold ${temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+                {fmt(precoFinal)}
+              </p>
+              {temPromo && (
+                <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">PROMO</span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {qtd === 0 ? (
-              <button onClick={() => onAdicionar(produto, precoFinal)}
-                className="px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-xl hover:bg-orange-600 transition-colors">
-                Adicionar
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button onClick={() => onAdicionar(produto, precoFinal, -1)}
-                  className="w-7 h-7 bg-gray-200 dark:bg-white/20 rounded-full font-bold text-gray-700 dark:text-white flex items-center justify-center hover:bg-gray-300">−</button>
-                <span className={`text-sm font-bold w-4 text-center ${dark ? 'text-white' : 'text-gray-900'}`}>{qtd}</span>
-                <button onClick={() => onAdicionar(produto, precoFinal, +1)}
-                  className="w-7 h-7 bg-orange-500 rounded-full font-bold text-white flex items-center justify-center hover:bg-orange-600">+</button>
-              </div>
-            )}
-          </div>
+
+          {/* Controles */}
+          {!indisponivel && (
+            <div className="flex items-center gap-2">
+              {qtd === 0 ? (
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => onAdicionar(produto, precoFinal)}
+                  className="px-3.5 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] transition-colors"
+                >
+                  Adicionar
+                </motion.button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onAdicionar(produto, precoFinal, -1)}
+                    className="w-7 h-7 bg-[#F4F4F5] rounded-full font-bold text-[#27272A] flex items-center justify-center hover:bg-[#E4E4E7] text-base"
+                  >
+                    −
+                  </button>
+                  <span className="text-sm font-bold text-[#18181B] w-5 text-center">{qtd}</span>
+                  <button
+                    onClick={() => onAdicionar(produto, precoFinal, +1)}
+                    className="w-7 h-7 bg-[#FF441F] rounded-full font-bold text-white flex items-center justify-center hover:bg-[#E63A19] text-base"
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {indisponivel && (
+            <span className="text-xs text-[#71717A] bg-[#F4F4F5] px-2 py-1 rounded-lg">Indisponível</span>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* Imagem */}
+      {produto.image_url && (
+        <div className="relative flex-shrink-0 w-28 h-24">
+          <img
+            src={produto.image_url}
+            alt={produto.name}
+            className="w-full h-full object-cover rounded-xl"
+          />
+          {indisponivel && (
+            <div className="absolute inset-0 bg-white/60 rounded-xl flex items-center justify-center">
+              <span className="text-[10px] text-[#71717A] font-semibold">Indisponível</span>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
   );
 };
 
-/* ── Componente principal ─────────────────────────────────────── */
+/* ── Drawer / Bottom Sheet do carrinho ───────────────────────────── */
+const CarrinhoDrawer = ({ carrinho, onAdicionar, onFechar, restauranteId, restauranteSlug, isAuthenticated, navigate }) => {
+  const totalItens = carrinho.reduce((acc, i) => acc + i.qtd, 0);
+  const totalValor = carrinho.reduce((acc, i) => acc + i.price * i.qtd, 0);
+
+  const irParaCheckout = () => {
+    if (!isAuthenticated()) {
+      sessionStorage.setItem('pending_cart', JSON.stringify({
+        carrinho, restauranteSlug, restauranteId,
+      }));
+      navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
+      return;
+    }
+    navigate('/shopping-cart-checkout', {
+      state: { carrinho, restauranteSlug, restauranteId },
+    });
+  };
+
+  return (
+    <>
+      {/* Backdrop mobile */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onFechar}
+        className="fixed inset-0 bg-black/40 z-40 md:hidden"
+      />
+
+      {/* Drawer */}
+      <motion.div
+        initial={{ y: '100%', x: 0 }}
+        animate={{ y: 0, x: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl md:hidden max-h-[80vh] flex flex-col"
+      >
+        <DrawerConteudo
+          carrinho={carrinho}
+          onAdicionar={onAdicionar}
+          totalItens={totalItens}
+          totalValor={totalValor}
+          onFechar={onFechar}
+          onCheckout={irParaCheckout}
+        />
+      </motion.div>
+
+      {/* Desktop: drawer lateral */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: 0 }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="hidden md:flex fixed top-0 right-0 bottom-0 w-80 z-50 bg-white shadow-2xl flex-col"
+      >
+        <DrawerConteudo
+          carrinho={carrinho}
+          onAdicionar={onAdicionar}
+          totalItens={totalItens}
+          totalValor={totalValor}
+          onFechar={onFechar}
+          onCheckout={irParaCheckout}
+        />
+      </motion.div>
+    </>
+  );
+};
+
+const DrawerConteudo = ({ carrinho, onAdicionar, totalItens, totalValor, onFechar, onCheckout }) => (
+  <>
+    {/* Handle / Header */}
+    <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E4E4E7]">
+      <div className="md:hidden w-10 h-1 bg-[#E4E4E7] rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
+      <h3 className="font-bold text-[#18181B] text-base">Carrinho ({totalItens})</h3>
+      <button onClick={onFechar} className="p-1.5 hover:bg-[#F4F4F5] rounded-lg">
+        <Icon name="X" size={18} className="text-[#71717A]" />
+      </button>
+    </div>
+
+    {/* Itens */}
+    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+      {carrinho.map((item) => (
+        <div key={item.id} className="flex items-center gap-3">
+          {item.image_url && (
+            <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-[#18181B] truncate">{item.name}</p>
+            <p className="text-xs text-[#71717A]">{fmt(item.price)}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => onAdicionar(item, item.price, -1)}
+              className="w-6 h-6 bg-[#F4F4F5] rounded-full text-sm font-bold text-[#27272A] flex items-center justify-center"
+            >
+              −
+            </button>
+            <span className="text-sm font-bold text-[#18181B] w-4 text-center">{item.qtd}</span>
+            <button
+              onClick={() => onAdicionar(item, item.price, +1)}
+              className="w-6 h-6 bg-[#FF441F] rounded-full text-sm font-bold text-white flex items-center justify-center"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Total + CTA */}
+    <div className="px-5 py-4 border-t border-[#E4E4E7]">
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-[#71717A]">Subtotal</span>
+        <span className="font-medium text-[#27272A]">{fmt(totalValor)}</span>
+      </div>
+      <div className="flex justify-between text-base font-bold mb-4">
+        <span className="text-[#18181B]">Total</span>
+        <span className="text-[#FF441F]">{fmt(totalValor)}</span>
+      </div>
+      <button
+        onClick={onCheckout}
+        className="w-full py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] transition-colors text-sm"
+      >
+        Finalizar pedido
+      </button>
+    </div>
+  </>
+);
+
+/* ── Componente principal ────────────────────────────────────────── */
 const RestauranteCatalogo = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -105,7 +261,7 @@ const RestauranteCatalogo = () => {
   const [erro, setErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
   const [catAtiva, setCatAtiva] = useState('destaques');
-  const [dark, setDark] = useState(false);
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const catBarRef = useRef(null);
 
   useEffect(() => {
@@ -113,9 +269,8 @@ const RestauranteCatalogo = () => {
     getCardapioPorSlug(slug)
       .then((d) => {
         setData(d);
-        const ap = d.restaurante?.aparencia ?? {};
-        if (ap.dark_mode) setDark(true);
-        const primeiraTab = d.destaques?.length ? 'destaques'
+        const primeiraTab =
+          d.destaques?.length ? 'destaques'
           : d.promos?.length ? 'promos'
           : d.combos?.length ? 'combos'
           : d.cardapio?.[0]?.id ?? null;
@@ -141,31 +296,32 @@ const RestauranteCatalogo = () => {
   };
 
   const qtdNoCarrinho = (id) => carrinho.find((i) => i.id === id)?.qtd ?? 0;
-  const totalCarrinho = carrinho.reduce((acc, i) => acc + i.price * i.qtd, 0);
   const totalItens = carrinho.reduce((acc, i) => acc + i.qtd, 0);
+  const totalValor = carrinho.reduce((acc, i) => acc + i.price * i.qtd, 0);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-[#FAFAFA]">
+      <div className="h-56 bg-gradient-to-br from-[#FF441F] to-[#FF7A00] animate-pulse" />
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+        {[...Array(4)].map((_, i) => <SkeletonProduto key={i} />)}
+      </div>
     </div>
   );
 
   if (erro) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
-      <Icon name="Store" size={48} className="text-gray-300 mb-4" />
-      <p className="text-lg font-semibold text-gray-700">Restaurante não encontrado</p>
-      <p className="text-sm text-gray-400 mt-1">{erro}</p>
-      <button onClick={() => navigate(-1)} className="mt-6 px-4 py-2 bg-orange-500 text-white rounded-lg text-sm">Voltar</button>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#FAFAFA] p-6 text-center">
+      <Icon name="Store" size={56} className="text-[#E4E4E7] mb-4" />
+      <p className="text-lg font-semibold text-[#27272A]">Restaurante não encontrado</p>
+      <p className="text-sm text-[#71717A] mt-1">{erro}</p>
+      <button onClick={() => navigate(-1)} className="mt-6 px-4 py-2.5 bg-[#FF441F] text-white rounded-xl text-sm font-semibold">
+        Voltar
+      </button>
     </div>
   );
 
   const { restaurante, cardapio, destaques, promos, combos } = data;
   const ap = restaurante.aparencia ?? {};
-  const bgStyle = ap.background_url
-    ? { backgroundImage: `url(${ap.background_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : {};
 
-  // Tabs dinâmicas
   const tabs = [
     ...(destaques?.length ? [{ id: 'destaques', label: '⭐ Destaques' }] : []),
     ...(promos?.length ? [{ id: 'promos', label: '🔥 Promoções' }] : []),
@@ -180,71 +336,86 @@ const RestauranteCatalogo = () => {
     return cardapio.find((c) => c.id === catAtiva)?.produtos ?? [];
   };
 
-  const bg = dark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900';
-  const headerBg = dark ? 'bg-gray-900 border-white/10' : 'bg-white border-gray-200';
-
   return (
-    <div className={`min-h-screen ${bg} pb-32 transition-colors duration-300`}>
-      {/* Hero */}
-      <div className="relative" style={bgStyle}>
-        <div className={`${ap.background_url ? 'bg-black/60' : dark ? 'bg-gray-900' : 'bg-gradient-to-br from-orange-500 to-orange-700'} px-4 pt-10 pb-6`}>
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                {restaurante.logo_url ? (
-                  <img src={restaurante.logo_url} alt={restaurante.name}
-                    className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 flex-shrink-0" />
-                ) : (
-                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                    <Icon name="Store" size={28} className="text-white" />
-                  </div>
-                )}
-                <div>
-                  <h1 className="text-2xl font-bold text-white">{restaurante.name}</h1>
-                  {restaurante.address && (
-                    <p className="text-white/70 text-sm flex items-center gap-1 mt-0.5">
-                      <Icon name="MapPin" size={12} /> {restaurante.address}
-                    </p>
-                  )}
-                  {ap.descricao && <p className="text-white/80 text-sm mt-1">{ap.descricao}</p>}
+    <div className="min-h-screen bg-[#FAFAFA] pb-32">
+      {/* ── Hero capa ──────────────────────────────────────────────── */}
+      <div className="relative">
+        {/* Imagem de fundo ou gradiente */}
+        {ap.background_url || ap.banner_url ? (
+          <img
+            src={ap.background_url ?? ap.banner_url}
+            alt={restaurante.name}
+            className="w-full h-52 sm:h-64 object-cover"
+          />
+        ) : (
+          <div className="w-full h-52 sm:h-64 bg-gradient-to-br from-[#FF441F] to-[#FF7A00]" />
+        )}
+        <div className="absolute inset-0 bg-black/40" />
+
+        {/* Botão voltar */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 left-4 w-9 h-9 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
+        >
+          <Icon name="ArrowLeft" size={18} className="text-white" />
+        </button>
+
+        {/* Info restaurante sobre o hero */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-5">
+          <div className="max-w-2xl mx-auto flex items-end gap-4">
+            {/* Logo */}
+            <div className="flex-shrink-0 w-16 h-16 rounded-2xl border-2 border-white overflow-hidden bg-white">
+              {restaurante.logo_url ? (
+                <img src={restaurante.logo_url} alt={restaurante.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#F4F4F5] flex items-center justify-center">
+                  <Icon name="Store" size={28} className="text-[#FF441F]" />
                 </div>
-              </div>
-              <button onClick={() => setDark((d) => !d)}
-                className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center backdrop-blur-sm"
-                title={dark ? 'Modo claro' : 'Modo escuro'}>
-                <Icon name={dark ? 'Sun' : 'Moon'} size={16} className="text-white" />
-              </button>
+              )}
+            </div>
+            {/* Nome + info */}
+            <div className="flex-1 pb-1">
+              <h1 className="text-xl font-bold text-white leading-tight">{restaurante.name}</h1>
+              {restaurante.address && (
+                <p className="text-white/70 text-xs flex items-center gap-1 mt-0.5">
+                  <Icon name="MapPin" size={10} /> {restaurante.address}
+                </p>
+              )}
+              {ap.descricao && (
+                <p className="text-white/80 text-xs mt-0.5 line-clamp-1">{ap.descricao}</p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Banner */}
-      {ap.banner_url && (
-        <div className="max-w-2xl mx-auto px-4 mt-4">
-          <img src={ap.banner_url} alt="Banner" className="w-full rounded-2xl object-cover max-h-40" />
-        </div>
-      )}
-
-      {/* Carrossel */}
+      {/* ── Carrossel imagens ───────────────────────────────────────── */}
       {ap.carousel_images?.length > 0 && (
         <div className="max-w-2xl mx-auto px-4 mt-4">
-          <Carousel images={ap.carousel_images} />
+          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+            {ap.carousel_images.map((src, i) => (
+              <img key={i} src={src} alt="" className="h-28 w-48 object-cover rounded-2xl flex-shrink-0" />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Nav categorias */}
-      <div className={`sticky top-0 z-10 border-b ${headerBg} backdrop-blur-sm`}>
+      {/* ── Nav categorias sticky ───────────────────────────────────── */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7] shadow-sm">
         <div className="max-w-2xl mx-auto px-4">
-          <div ref={catBarRef} className="flex gap-2 overflow-x-auto py-3 scrollbar-none">
+          <div
+            ref={catBarRef}
+            className="flex gap-2 overflow-x-auto py-3 scrollbar-none"
+            style={{ scrollbarWidth: 'none' }}
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setCatAtiva(tab.id)}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
                   catAtiva === tab.id
-                    ? 'bg-orange-500 text-white'
-                    : dark ? 'bg-white/10 text-white/80 hover:bg-white/20' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-[#FF441F] text-white'
+                    : 'bg-[#F4F4F5] text-[#71717A] hover:bg-[#E4E4E7]'
                 }`}
               >
                 {tab.label}
@@ -254,57 +425,66 @@ const RestauranteCatalogo = () => {
         </div>
       </div>
 
-      {/* Produtos */}
+      {/* ── Produtos ───────────────────────────────────────────────── */}
       <main className="px-4 py-5 max-w-2xl mx-auto">
         {tabs.length === 0 ? (
-          <div className="text-center py-16 opacity-50">
-            <Icon name="UtensilsCrossed" size={40} className="mx-auto mb-3" />
+          <div className="text-center py-16 text-[#71717A]">
+            <Icon name="UtensilsCrossed" size={44} className="mx-auto mb-3 text-[#E4E4E7]" />
             <p>Cardápio em breve</p>
           </div>
         ) : produtosDaTab().length === 0 ? (
-          <div className="text-center py-10 opacity-40">
+          <div className="text-center py-10 text-[#71717A]">
             <p className="text-sm">Nenhum produto nesta categoria</p>
           </div>
         ) : (
-          <>
-            <h2 className={`text-lg font-bold mb-4 ${dark ? 'text-white' : 'text-gray-900'}`}>
-              {tabs.find((t) => t.id === catAtiva)?.label}
-            </h2>
-            <div className="space-y-3">
-              {produtosDaTab().map((p) => (
-                <ProdutoCard key={p.id} produto={p} dark={dark}
-                  qtd={qtdNoCarrinho(p.id)}
-                  onAdicionar={altCarrinho} />
-              ))}
-            </div>
-          </>
+          <div className="space-y-3">
+            {produtosDaTab().map((p) => (
+              <ProdutoCard
+                key={p.id}
+                produto={p}
+                qtd={qtdNoCarrinho(p.id)}
+                onAdicionar={altCarrinho}
+              />
+            ))}
+          </div>
         )}
       </main>
 
-      {/* Barra carrinho */}
-      {totalItens > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-xl">
-          <button
-            onClick={() => {
-              if (!isAuthenticated()) {
-                sessionStorage.setItem('pending_cart', JSON.stringify({
-                  carrinho, restauranteSlug: slug, restauranteId: restaurante.id,
-                }));
-                navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
-                return;
-              }
-              navigate('/shopping-cart-checkout', {
-                state: { carrinho, restauranteSlug: slug, restauranteId: restaurante.id },
-              });
-            }}
-            className="w-full max-w-2xl mx-auto flex items-center justify-between bg-orange-500 hover:bg-orange-600 text-white rounded-2xl px-5 py-3.5 font-semibold shadow-lg"
+      {/* ── Botão flutuante carrinho ────────────────────────────────── */}
+      <AnimatePresence>
+        {totalItens > 0 && !carrinhoAberto && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            className="fixed bottom-6 left-4 right-4 z-30 max-w-2xl mx-auto"
           >
-            <span className="bg-orange-600 rounded-xl px-2.5 py-0.5 text-sm font-bold">{totalItens}</span>
-            <span>Ver carrinho</span>
-            <span className="text-orange-200">{fmt(totalCarrinho)}</span>
-          </button>
-        </div>
-      )}
+            <button
+              onClick={() => setCarrinhoAberto(true)}
+              className="w-full flex items-center justify-between bg-[#FF441F] hover:bg-[#E63A19] text-white rounded-2xl px-5 py-3.5 font-bold shadow-lg shadow-[#FF441F]/30 transition-colors"
+            >
+              <span className="bg-[#E63A19] rounded-xl px-2.5 py-0.5 text-sm font-bold">{totalItens}</span>
+              <span>Ver carrinho</span>
+              <span className="text-white/80 text-sm">{fmt(totalValor)}</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Drawer carrinho ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {carrinhoAberto && (
+          <CarrinhoDrawer
+            carrinho={carrinho}
+            onAdicionar={altCarrinho}
+            onFechar={() => setCarrinhoAberto(false)}
+            restauranteId={restaurante.id}
+            restauranteSlug={slug}
+            isAuthenticated={isAuthenticated}
+            navigate={navigate}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
