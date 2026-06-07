@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCardapioPorSlug } from '../../services/restauranteService';
+import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -98,6 +99,7 @@ const ProdutoCard = ({ produto, dark, onAdicionar, qtd }) => {
 const RestauranteCatalogo = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -283,9 +285,18 @@ const RestauranteCatalogo = () => {
       {totalItens > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-xl">
           <button
-            onClick={() => navigate('/shopping-cart-checkout', {
-              state: { carrinho, restauranteSlug: slug, restauranteId: restaurante.id },
-            })}
+            onClick={() => {
+              if (!isAuthenticated()) {
+                sessionStorage.setItem('pending_cart', JSON.stringify({
+                  carrinho, restauranteSlug: slug, restauranteId: restaurante.id,
+                }));
+                navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
+                return;
+              }
+              navigate('/shopping-cart-checkout', {
+                state: { carrinho, restauranteSlug: slug, restauranteId: restaurante.id },
+              });
+            }}
             className="w-full max-w-2xl mx-auto flex items-center justify-between bg-orange-500 hover:bg-orange-600 text-white rounded-2xl px-5 py-3.5 font-semibold shadow-lg"
           >
             <span className="bg-orange-600 rounded-xl px-2.5 py-0.5 text-sm font-bold">{totalItens}</span>

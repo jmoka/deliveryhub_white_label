@@ -36,6 +36,9 @@ async function apiFetch(path, options = {}) {
 }
 
 // Plataforma
+export const getPlataformaConfig = () => apiFetch('/plataforma/config');
+export const updatePlataformaConfig = (data) =>
+  apiFetch('/plataforma/config', { method: 'PATCH', body: JSON.stringify(data) });
 export const getMetricas = () => apiFetch('/plataforma/metricas');
 export const getComissoes = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();

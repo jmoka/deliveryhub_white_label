@@ -84,6 +84,58 @@ export class PlataformaService {
     };
   }
 
+  async getConfig() {
+    const { data } = await this.supabase.client
+      .from('platform_settings')
+      .select('config')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const cfg = (data?.config ?? {}) as Record<string, any>;
+
+    return {
+      pagbank_platform_account_id: cfg.pagbank_platform_account_id ?? '',
+      pagbank_sandbox: cfg.pagbank_sandbox ?? true,
+      pagbank_platform_token_masked: cfg.pagbank_platform_token
+        ? `${'•'.repeat(8)}${String(cfg.pagbank_platform_token).slice(-4)}`
+        : null,
+      configurado: !!(cfg.pagbank_platform_token && cfg.pagbank_platform_account_id),
+    };
+  }
+
+  async updateConfig(body: {
+    pagbank_platform_token?: string;
+    pagbank_platform_account_id?: string;
+    pagbank_sandbox?: boolean;
+  }) {
+    const { data: atual } = await this.supabase.client
+      .from('platform_settings')
+      .select('config')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const cfg = (atual?.config ?? {}) as Record<string, any>;
+    const novo: Record<string, any> = { ...cfg };
+
+    if (body.pagbank_platform_token?.trim()) {
+      novo.pagbank_platform_token = body.pagbank_platform_token.trim();
+    }
+    if (body.pagbank_platform_account_id !== undefined) {
+      novo.pagbank_platform_account_id = body.pagbank_platform_account_id;
+    }
+    if (body.pagbank_sandbox !== undefined) {
+      novo.pagbank_sandbox = body.pagbank_sandbox;
+    }
+
+    const { error } = await this.supabase.client
+      .from('platform_settings')
+      .update({ config: novo, updated_at: new Date().toISOString() })
+      .eq('id', 1);
+
+    if (error) throw error;
+    return this.getConfig();
+  }
+
   async comissoesPorEmpresa(empresaId: number) {
     const [{ data: empresa }, { data: comissoes }, { data: pedidos }] = await Promise.all([
       this.supabase.client

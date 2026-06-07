@@ -13,6 +13,7 @@ import AdminDashboard from './pages/admin-dashboard';
 import AdminEmpresas from './pages/admin-empresas';
 import AdminComissoes from './pages/admin-comissoes';
 import AdminGuard from './components/AdminGuard';
+import AdminConfiguracoes from './pages/admin-configuracoes';
 import AdminEmpresaDetalhe from './pages/admin-empresa-detalhe';
 import RestauranteGuard from './components/RestauranteGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
@@ -29,7 +30,7 @@ const Routes = () => {
       <ErrorBoundary>
       <ScrollToTop />
       <RouterRoutes>
-        <Route path="/" element={<CustomerAccountOrderHistory />} />
+        <Route path="/" element={<MenuCatalogProductBrowse />} />
         <Route path="/shopping-cart-checkout" element={<ShoppingCartCheckout />} />
         <Route path="/menu-catalog-product-browse" element={<MenuCatalogProductBrowse />} />
         <Route path="/customer-account-order-history" element={<CustomerAccountOrderHistory />} />
@@ -42,6 +43,7 @@ const Routes = () => {
         <Route path="/admin/empresas" element={<AdminGuard><AdminEmpresas /></AdminGuard>} />
         <Route path="/admin/empresas/:id" element={<AdminGuard><AdminEmpresaDetalhe /></AdminGuard>} />
         <Route path="/admin/comissoes" element={<AdminGuard><AdminComissoes /></AdminGuard>} />
+        <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
 
         {/* Cardápio público por slug — sem auth */}
         <Route path="/r/:slug" element={<RestauranteCatalogo />} />

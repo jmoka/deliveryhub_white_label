@@ -12,6 +12,7 @@ const AdminNav = ({ active }) => {
     { label: 'Dashboard', path: '/admin' },
     { label: 'Empresas', path: '/admin/empresas' },
     { label: 'Comissões', path: '/admin/comissoes' },
+    { label: 'Configurações', path: '/admin/configuracoes' },
   ];
   return (
     <nav className="flex gap-3 items-center">

@@ -37,25 +37,37 @@ export class PagBankClient {
   }
 
   // Cria ordem PIX — retorna qr_code e link
+  // splits (opcional): distribui o valor entre vendedor e plataforma automaticamente
   async criarOrdemPix(params: {
     reference_id: string;
     valor_centavos: number;
     customer: { name: string; email: string; tax_id: string };
     itens: { name: string; quantity: number; unit_amount: number }[];
     webhook_url: string;
+    splits?: Array<{
+      method: 'FIXED' | 'PERCENTAGE';
+      receivers: Array<{ account: { id: string }; amount: { value: number } }>;
+    }>;
   }) {
     const expiracao = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    return this.request<any>('POST', '/orders', {
+    const payload: Record<string, any> = {
       reference_id: params.reference_id,
       customer: params.customer,
       items: params.itens,
       qr_codes: [{ amount: { value: params.valor_centavos }, expiration_date: expiracao }],
       notification_urls: [params.webhook_url],
-    });
+    };
+
+    if (params.splits?.length) {
+      payload.splits = params.splits;
+    }
+
+    return this.request<any>('POST', '/orders', payload);
   }
 
   // Cria ordem cartão — card.encrypted vem do PagBank.js no frontend
+  // splits (opcional): distribui o valor entre vendedor e plataforma automaticamente
   async criarOrdemCartao(params: {
     reference_id: string;
     valor_centavos: number;
@@ -65,8 +77,12 @@ export class PagBankClient {
     parcelas: number;
     tipo: 'CREDIT_CARD' | 'DEBIT_CARD';
     webhook_url: string;
+    splits?: Array<{
+      method: 'FIXED' | 'PERCENTAGE';
+      receivers: Array<{ account: { id: string }; amount: { value: number } }>;
+    }>;
   }) {
-    return this.request<any>('POST', '/orders', {
+    const payload: Record<string, any> = {
       reference_id: params.reference_id,
       customer: params.customer,
       items: params.itens,
@@ -82,7 +98,13 @@ export class PagBankClient {
           card: { encrypted: params.card_encrypted },
         },
       }],
-    });
+    };
+
+    if (params.splits?.length) {
+      payload.splits = params.splits;
+    }
+
+    return this.request<any>('POST', '/orders', payload);
   }
 
   async buscarOrdem(pagbankOrderId: string) {

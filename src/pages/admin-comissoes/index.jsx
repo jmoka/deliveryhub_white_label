@@ -49,6 +49,7 @@ const AdminComissoes = () => {
             { label: 'Dashboard', path: '/admin' },
             { label: 'Empresas', path: '/admin/empresas' },
             { label: 'Comissões', path: '/admin/comissoes' },
+            { label: 'Configurações', path: '/admin/configuracoes' },
           ].map((l) => (
             <button
               key={l.path}

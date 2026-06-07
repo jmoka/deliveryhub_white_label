@@ -5,6 +5,18 @@ import { PagBankClient } from './pagbank.client';
 
 const STATUS_PAGOS = ['PAID', 'COMPLETED', 'AVAILABLE'];
 
+type SplitConfig = {
+  sellerAccountId: string;
+  platformAccountId: string;
+  comissaoPct: number;
+};
+
+type ClienteInfo = {
+  client: PagBankClient;
+  webhookUrl: string;
+  splitConfig?: SplitConfig;
+};
+
 @Injectable()
 export class PagamentosService {
   constructor(
@@ -24,23 +36,73 @@ export class PagamentosService {
     return data;
   }
 
-  private async getPagBankClient(restaurantId: number): Promise<{ client: PagBankClient; webhookUrl: string }> {
-    const { data } = await this.supabase.client
-      .from('restaurants')
-      .select('payment_config')
-      .eq('id', restaurantId)
-      .maybeSingle();
+  private async getPagBankClient(restaurantId: number): Promise<ClienteInfo> {
+    // Busca config do restaurante e config global da plataforma em paralelo
+    const [{ data: restData }, { data: platData }] = await Promise.all([
+      this.supabase.client
+        .from('restaurants')
+        .select('payment_config, comissao_pct')
+        .eq('id', restaurantId)
+        .maybeSingle(),
+      this.supabase.client
+        .from('platform_settings')
+        .select('config')
+        .eq('id', 1)
+        .maybeSingle(),
+    ]);
 
-    const cfg = (data?.payment_config ?? {}) as Record<string, any>;
+    const cfg = (restData?.payment_config ?? {}) as Record<string, any>;
+    const platCfg = (platData?.config ?? {}) as Record<string, any>;
+    const comissaoPct: number = restData?.comissao_pct ?? 5;
+
+    // Platform token: DB tem prioridade sobre .env
+    const platformToken =
+      platCfg.pagbank_platform_token ||
+      this.config.get<string>('PAGBANK_PLATFORM_TOKEN') ||
+      '';
+    const platformAccountId =
+      platCfg.pagbank_platform_account_id ||
+      this.config.get<string>('PAGBANK_PLATFORM_ACCOUNT_ID') ||
+      '';
+    const sellerAccountId: string = cfg.pagbank_seller_account_id ?? '';
+
+    const sandbox =
+      platCfg.pagbank_sandbox ??
+      (cfg.pagbank_sandbox !== undefined
+        ? cfg.pagbank_sandbox
+        : this.config.get('PAGBANK_SANDBOX') !== 'false');
+
+    const webhookUrl =
+      cfg.pagbank_webhook_url ||
+      this.config.get('PAGBANK_WEBHOOK_URL') ||
+      'http://localhost:3002/pagamentos/webhook';
+
+    // Split habilitado: plataforma tem token + ambas as contas configuradas
+    if (platformToken && platformAccountId && sellerAccountId) {
+      return {
+        client: new PagBankClient(platformToken, sandbox),
+        webhookUrl,
+        splitConfig: { sellerAccountId, platformAccountId, comissaoPct },
+      };
+    }
+
+    // Fallback: token próprio do restaurante (sem split automático)
     const token = cfg.pagbank_token || this.config.get('PAGBANK_TOKEN') || '';
-    const sandbox = cfg.pagbank_sandbox !== undefined
-      ? cfg.pagbank_sandbox
-      : this.config.get('PAGBANK_SANDBOX') !== 'false';
-    const webhookUrl = cfg.pagbank_webhook_url
-      || this.config.get('PAGBANK_WEBHOOK_URL')
-      || 'http://localhost:3002/pagamentos/webhook';
-
     return { client: new PagBankClient(token, sandbox), webhookUrl };
+  }
+
+  // Calcula splits em centavos: vendedor recebe (100 - comissao)%, plataforma recebe comissao%
+  private buildSplits(valorCentavos: number, split: SplitConfig) {
+    const adminAmount = Math.round(valorCentavos * split.comissaoPct / 100);
+    const sellerAmount = valorCentavos - adminAmount; // resto para evitar erro de arredondamento
+
+    return [{
+      method: 'FIXED' as const,
+      receivers: [
+        { account: { id: split.sellerAccountId }, amount: { value: sellerAmount } },
+        { account: { id: split.platformAccountId }, amount: { value: adminAmount } },
+      ],
+    }];
   }
 
   private limparCpf(cpf: string) {
@@ -59,7 +121,9 @@ export class PagamentosService {
 
     const valorCentavos = Math.round(pedido.total * 100);
     const refId = `DELIVERY_${pedido.id}_${Date.now()}`;
-    const { client: pagbank, webhookUrl } = await this.getPagBankClient(pedido.restaurant_id);
+    const { client: pagbank, webhookUrl, splitConfig } = await this.getPagBankClient(pedido.restaurant_id);
+
+    const splits = splitConfig ? this.buildSplits(valorCentavos, splitConfig) : undefined;
 
     const resposta = await pagbank.criarOrdemPix({
       reference_id: refId,
@@ -71,6 +135,7 @@ export class PagamentosService {
       },
       itens: [{ name: `Pedido #${pedido.id}`, quantity: 1, unit_amount: valorCentavos }],
       webhook_url: webhookUrl,
+      splits,
     });
 
     const qrCode = resposta?.qr_codes?.[0];
@@ -98,6 +163,7 @@ export class PagamentosService {
       pix_code: pixCode,
       pix_qr_url: pixQrUrl,
       pagbank_order_id: resposta.id,
+      split_ativo: !!splitConfig,
       expira_em: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
   }
@@ -118,7 +184,9 @@ export class PagamentosService {
     const valorCentavos = Math.round(pedido.total * 100);
     const refId = `DELIVERY_${pedido.id}_${Date.now()}`;
     const tipo = body.tipo ?? 'CREDIT_CARD';
-    const { client: pagbank, webhookUrl } = await this.getPagBankClient(pedido.restaurant_id);
+    const { client: pagbank, webhookUrl, splitConfig } = await this.getPagBankClient(pedido.restaurant_id);
+
+    const splits = splitConfig ? this.buildSplits(valorCentavos, splitConfig) : undefined;
 
     const resposta = await pagbank.criarOrdemCartao({
       reference_id: refId,
@@ -133,6 +201,7 @@ export class PagamentosService {
       parcelas: body.parcelas ?? 1,
       tipo,
       webhook_url: webhookUrl,
+      splits,
     });
 
     const charge = resposta?.charges?.[0];
@@ -154,7 +223,6 @@ export class PagamentosService {
 
     if (error) throw error;
 
-    // Pagamento aprovado instantaneamente → confirma pedido
     if (statusPagamento === 'paid') {
       await this.supabase.client
         .from('orders')
@@ -167,6 +235,7 @@ export class PagamentosService {
       status: statusPagamento,
       pagbank_order_id: resposta.id,
       charge_id: charge?.id,
+      split_ativo: !!splitConfig,
     };
   }
 
@@ -182,7 +251,6 @@ export class PagamentosService {
   }
 
   async processarWebhook(evento: any) {
-    // Extrai dados do evento (estrutura pode vir em data ou direto)
     const payload = evento?.data ?? evento;
     const pagbankOrderId: string = payload?.id ?? payload?.reference_id;
     const charges: any[] = payload?.charges ?? [];
@@ -194,7 +262,6 @@ export class PagamentosService {
     const statusPagbank: string = detalhe?.status ?? payload?.status ?? '';
     const pago = STATUS_PAGOS.includes(statusPagbank);
 
-    // Busca registro de pagamento pelo pagbank_order_id
     const { data: pagamento } = await this.supabase.client
       .from('pagamentos')
       .select('id, order_id, status')
@@ -217,7 +284,6 @@ export class PagamentosService {
       })
       .eq('id', pagamento.id);
 
-    // Atualiza status do pedido
     if (pago) {
       await this.supabase.client
         .from('orders')

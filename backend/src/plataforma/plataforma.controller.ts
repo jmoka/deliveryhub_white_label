@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { PlataformaService } from './plataforma.service';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -6,6 +6,22 @@ import { AdminGuard } from '../auth/admin.guard';
 @UseGuards(AdminGuard)
 export class PlataformaController {
   constructor(private service: PlataformaService) {}
+
+  @Get('config')
+  getConfig() {
+    return this.service.getConfig();
+  }
+
+  @Patch('config')
+  updateConfig(
+    @Body() body: {
+      pagbank_platform_token?: string;
+      pagbank_platform_account_id?: string;
+      pagbank_sandbox?: boolean;
+    },
+  ) {
+    return this.service.updateConfig(body);
+  }
 
   @Get('metricas')
   metricas() {
