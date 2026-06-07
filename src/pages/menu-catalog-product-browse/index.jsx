@@ -410,7 +410,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Header sticky ───────────────────────────────────────── */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7] shadow-sm">
-        <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
+        <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 flex-shrink-0">
             <div className="w-9 h-9 bg-[#FF441F] rounded-xl flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
               <Icon name="Utensils" size={18} className="text-white" />
@@ -427,8 +427,6 @@ const MenuCatalogProductBrowse = () => {
               {busca && <button onClick={() => setBusca('')}><Icon name="X" size={13} className="text-[#71717A]" /></button>}
             </div>
           </div>
-
-          <div className="flex-1 md:hidden" />
 
           <div className="flex items-center gap-1 flex-shrink-0">
             {isAuthenticated() ? (
