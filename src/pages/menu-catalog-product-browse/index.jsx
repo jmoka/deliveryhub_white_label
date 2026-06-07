@@ -430,6 +430,10 @@ const MenuCatalogProductBrowse = () => {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
+            <button onClick={() => navigate('/shopping-cart-checkout')}
+              className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
+              <Icon name="ShoppingCart" size={20} />
+            </button>
             {isAuthenticated() ? (
               <>
                 {isAdmin() && (
