@@ -77,14 +77,30 @@ let MotoboyService = class MotoboyService {
         if (error)
             throw error;
         const pedidos = await Promise.all((data ?? []).map(async (p) => {
-            if (!p.customer_id)
-                return p;
-            const { data: c } = await this.supabase.client
-                .from('customers')
-                .select('name, phone_e164, address_json')
-                .eq('id', p.customer_id)
-                .maybeSingle();
-            return { ...p, cliente: c };
+            const [{ data: c }, { data: itensRaw }] = await Promise.all([
+                p.customer_id
+                    ? this.supabase.client
+                        .from('customers')
+                        .select('name, phone_e164, address_json')
+                        .eq('id', p.customer_id)
+                        .maybeSingle()
+                    : Promise.resolve({ data: null }),
+                this.supabase.client
+                    .from('order_items')
+                    .select('id, quantity, unit_price, product_id')
+                    .eq('order_id', p.id),
+            ]);
+            let itens = itensRaw ?? [];
+            if (itens.length > 0) {
+                const prodIds = itens.map((i) => i.product_id);
+                const { data: prods } = await this.supabase.client
+                    .from('products')
+                    .select('id, name')
+                    .in('id', prodIds);
+                const prodMap = Object.fromEntries((prods ?? []).map((pr) => [pr.id, pr.name]));
+                itens = itens.map((i) => ({ ...i, product_name: prodMap[i.product_id] ?? `Produto #${i.product_id}` }));
+            }
+            return { ...p, cliente: c, itens };
         }));
         return { pedidos };
     }

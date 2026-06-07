@@ -224,6 +224,28 @@ const MotoboyPortal = () => {
               </div>
             )}
 
+            {/* Itens do pedido */}
+            {p.itens?.length > 0 && (
+              <div className="border border-[#E4E4E7] rounded-xl p-3">
+                <p className="text-xs font-semibold text-[#71717A] mb-2">Itens</p>
+                <div className="space-y-1">
+                  {p.itens.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-[#18181B]">
+                        <span className="font-bold text-[#FF441F]">{item.quantity}×</span>{' '}
+                        {item.product_name}
+                      </span>
+                      <span className="text-[#71717A]">{fmt(item.unit_price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between mt-2 pt-2 border-t border-[#F4F4F5] text-sm font-bold text-[#18181B]">
+                  <span>Total</span>
+                  <span className="text-[#FF441F]">{fmt(p.total)}</span>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 text-xs text-[#71717A]">
               <Icon name="CreditCard" size={12} />
               <span>Pagamento: <strong className="text-[#18181B]">{p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method}</strong></span>

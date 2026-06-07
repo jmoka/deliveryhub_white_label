@@ -22,22 +22,18 @@ export declare class MotoboyService {
         status: string;
     }>;
     meusPedidos(motoboyId: number): Promise<{
-        pedidos: ({
-            id: any;
-            total: any;
-            status: any;
-            payment_method: any;
-            created_at: any;
-            updated_at: any;
-            motoboy_lat: any;
-            motoboy_lng: any;
-            customer_id: any;
-        } | {
+        pedidos: {
             cliente: {
                 name: any;
                 phone_e164: any;
                 address_json: any;
             } | null;
+            itens: {
+                id: any;
+                quantity: any;
+                unit_price: any;
+                product_id: any;
+            }[];
             id: any;
             total: any;
             status: any;
@@ -47,7 +43,7 @@ export declare class MotoboyService {
             motoboy_lat: any;
             motoboy_lng: any;
             customer_id: any;
-        })[];
+        }[];
     }>;
     atualizarLocalizacao(pedidoId: number, motoboyId: number, lat: number, lng: number): Promise<{
         ok: boolean;
