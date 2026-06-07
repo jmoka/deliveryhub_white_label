@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, toggleProduto,
-  getMinhasCategorias, criarCategoria,
+  getCategoriasGlobais,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -20,12 +20,9 @@ const RestauranteProdutos = () => {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
-  const [novaCategoria, setNovaCategoria] = useState('');
-  const [criandoCategoria, setCriandoCategoria] = useState(false);
-
   const carregar = () => {
     setLoading(true);
-    Promise.all([getMeusProdutos(), getMinhasCategorias()])
+    Promise.all([getMeusProdutos(), getCategoriasGlobais()])
       .then(([p, c]) => {
         setProdutos(p.produtos ?? []);
         setCategorias(c.categorias ?? []);
@@ -73,20 +70,6 @@ const RestauranteProdutos = () => {
     }
   };
 
-  const handleCriarCategoria = async () => {
-    if (!novaCategoria.trim()) return;
-    setCriandoCategoria(true);
-    try {
-      const nova = await criarCategoria(novaCategoria.trim());
-      setCategorias((prev) => [...prev, nova]);
-      setNovaCategoria('');
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setCriandoCategoria(false);
-    }
-  };
-
   const catMap = Object.fromEntries(categorias.map((c) => [c.id, c.name]));
 
   const links = [
@@ -123,32 +106,21 @@ const RestauranteProdutos = () => {
       <main className="p-6 max-w-4xl mx-auto">
         {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
 
-        {/* Categorias */}
-        <section className="bg-white rounded-xl border p-5 mb-6">
-          <h2 className="font-semibold text-[#18181B] mb-3">Categorias</h2>
-          <div className="flex flex-wrap gap-2 mb-3">
+        {/* Categorias globais */}
+        <section className="bg-white rounded-xl border border-[#E4E4E7] p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-[#18181B]">Categorias da plataforma</h2>
+            <p className="text-xs text-[#71717A]">Gerenciadas pelo admin</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             {categorias.map((c) => (
-              <span key={c.id} className="px-3 py-1 bg-[#FFF4F1] text-[#FF441F] rounded-full text-sm">
-                {c.name} ({c.total_produtos ?? 0})
+              <span key={c.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white shadow-sm"
+                style={{ background: `linear-gradient(135deg, ${c.color_primary ?? '#FF441F'}, ${c.color_secondary ?? '#FF7A00'})` }}>
+                <span className="text-xs">{c.icon_name}</span>
+                {c.name}
               </span>
             ))}
-            {categorias.length === 0 && <p className="text-sm text-gray-400">Nenhuma categoria</p>}
-          </div>
-          <div className="flex gap-2">
-            <input
-              value={novaCategoria}
-              onChange={(e) => setNovaCategoria(e.target.value)}
-              placeholder="Nova categoria..."
-              className="flex-1 border rounded-lg px-3 py-2 text-sm"
-              onKeyDown={(e) => e.key === 'Enter' && handleCriarCategoria()}
-            />
-            <button
-              onClick={handleCriarCategoria}
-              disabled={criandoCategoria || !novaCategoria.trim()}
-              className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
-            >
-              {criandoCategoria ? '...' : 'Adicionar'}
-            </button>
+            {categorias.length === 0 && <p className="text-sm text-[#71717A]">Nenhuma categoria cadastrada</p>}
           </div>
         </section>
 

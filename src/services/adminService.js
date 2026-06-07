@@ -72,5 +72,14 @@ export const getProdutos = (empresaId, apenasAtivos = false) =>
 export const toggleProduto = (id, ativo) =>
   apiFetch(`/produtos/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 
-// Categorias
+// Categorias por empresa
 export const getCategorias = (empresaId) => apiFetch(`/empresas/${empresaId}/categorias`);
+
+// Categorias globais (plataforma) — admin
+export const getCategoriasGlobais = () => apiFetch('/categorias/globais');
+export const criarCategoriaGlobal = (data) =>
+  apiFetch('/categorias/globais', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarCategoriaGlobal = (id, data) =>
+  apiFetch(`/categorias/globais/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerCategoriaGlobal = (id) =>
+  apiFetch(`/categorias/globais/${id}`, { method: 'DELETE' });

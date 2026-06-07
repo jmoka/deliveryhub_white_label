@@ -6,17 +6,9 @@ import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-/* ── Categorias ─────────────────────────────────────────────────── */
-const CATEGORIAS = [
-  { id: 'todos',      label: 'Todos',      icon: 'LayoutGrid',      c1: '#FF441F', c2: '#FF7A00' },
-  { id: 'pizza',      label: 'Pizza',       icon: 'Pizza',           c1: '#FF6B35', c2: '#FF8C42' },
-  { id: 'hamburguer', label: 'Hambúrguer',  icon: 'Sandwich',        c1: '#E63946', c2: '#FF6B6B' },
-  { id: 'japones',    label: 'Japonesa',    icon: 'Fish',            c1: '#0EA5E9', c2: '#38BDF8' },
-  { id: 'acai',       label: 'Açaí',        icon: 'GlassWater',      c1: '#7C3AED', c2: '#A855F7' },
-  { id: 'marmita',    label: 'Marmita',     icon: 'UtensilsCrossed', c1: '#059669', c2: '#10B981' },
-  { id: 'saudavel',   label: 'Saudável',    icon: 'Leaf',            c1: '#16A34A', c2: '#4ADE80' },
-  { id: 'sorvete',    label: 'Sorvetes',    icon: 'Dessert',         c1: '#DB2777', c2: '#F472B6' },
-  { id: 'padaria',    label: 'Padaria',     icon: 'Coffee',          c1: '#92400E', c2: '#D97706' },
+/* ── Fallback local (usado até a API responder) ─────────────────── */
+const CATEGORIAS_FALLBACK = [
+  { id: 'todos', name: 'Todos', icon_name: 'LayoutGrid', color_primary: '#FF441F', color_secondary: '#FF7A00' },
 ];
 
 /* ── Skeleton ────────────────────────────────────────────────────── */
@@ -249,29 +241,29 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
 };
 
 /* ── Sidebar esquerda ────────────────────────────────────────────── */
-const SidebarLeft = ({ catAtiva, setCatAtiva }) => (
+const SidebarLeft = ({ categorias, catAtiva, setCatAtiva }) => (
   <aside className="hidden lg:flex flex-col gap-1 w-52 xl:w-60 flex-shrink-0">
     <p className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider px-3 mb-2">Categorias</p>
-    {CATEGORIAS.map((c) => {
+    {categorias.map((c) => {
       const ativo = catAtiva === c.id;
       return (
         <motion.button
           key={c.id}
           whileHover={{ x: 3 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => setCatAtiva(c.id)}
+          onClick={() => setCatAtiva(ativo ? null : c.id)}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
             ativo ? 'text-white shadow-md' : 'text-[#27272A] hover:bg-white hover:shadow-sm'
           }`}
-          style={ativo ? { background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` } : {}}
+          style={ativo ? { background: `linear-gradient(135deg, ${c.color_primary}, ${c.color_secondary})` } : {}}
         >
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={ativo ? { background: 'rgba(255,255,255,0.2)' } : { background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` }}
+            style={ativo ? { background: 'rgba(255,255,255,0.2)' } : { background: `linear-gradient(135deg, ${c.color_primary}, ${c.color_secondary})` }}
           >
-            <Icon name={c.icon} size={15} className={ativo ? 'text-white' : 'text-white'} />
+            <Icon name={c.icon_name ?? 'Tag'} size={15} className="text-white" />
           </div>
-          {c.label}
+          {c.name}
         </motion.button>
       );
     })}
@@ -402,11 +394,12 @@ const MenuCatalogProductBrowse = () => {
 
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
+  const [categorias, setCategorias]     = useState(CATEGORIAS_FALLBACK);
   const [loading, setLoading]           = useState(true);
   const [loadProd, setLoadProd]         = useState(true);
   const [erro, setErro]                 = useState(null);
   const [busca, setBusca]               = useState('');
-  const [catAtiva, setCatAtiva]         = useState('todos');
+  const [catAtiva, setCatAtiva]         = useState(null); // null = "todos" (primeiro da lista)
   const [viewMode, setViewMode]         = useState('grid');
 
   /* Stats reais */
@@ -426,6 +419,14 @@ const MenuCatalogProductBrowse = () => {
       .then((d) => setProdutos(d.produtos ?? []))
       .catch(() => setProdutos([]))
       .finally(() => setLoadProd(false));
+
+    fetch('/api/categorias/globais')
+      .then((r) => r.json())
+      .then((d) => {
+        const cats = d.categorias ?? [];
+        if (cats.length > 0) setCategorias(cats);
+      })
+      .catch(() => {});
   }, []);
 
   const filtrados = restaurantes.filter((r) =>
@@ -508,7 +509,7 @@ const MenuCatalogProductBrowse = () => {
       <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
-            {CATEGORIAS.map((c, i) => {
+            {categorias.map((c, i) => {
               const ativo = catAtiva === c.id;
               return (
                 <motion.button
@@ -518,11 +519,10 @@ const MenuCatalogProductBrowse = () => {
                   transition={{ delay: i * 0.06, type: 'spring', stiffness: 260, damping: 18 }}
                   whileHover={{ scale: 1.18, y: -3 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => setCatAtiva(c.id)}
-                  title={c.label}
+                  onClick={() => setCatAtiva(ativo ? null : c.id)}
+                  title={c.name}
                   className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
                 >
-                  {/* Ícone com gradiente */}
                   <motion.div
                     animate={ativo ? { rotate: [0, -8, 8, 0] } : {}}
                     transition={{ duration: 0.4 }}
@@ -531,12 +531,10 @@ const MenuCatalogProductBrowse = () => {
                         ? 'shadow-lg ring-2 ring-white ring-offset-2'
                         : 'shadow-md opacity-75 group-hover:opacity-100 group-hover:shadow-lg'
                     }`}
-                    style={{ background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` }}
+                    style={{ background: `linear-gradient(135deg, ${c.color_primary}, ${c.color_secondary})` }}
                   >
-                    <Icon name={c.icon} size={24} />
+                    <Icon name={c.icon_name ?? 'Tag'} size={24} />
                   </motion.div>
-
-                  {/* Dot indicador ativo */}
                   <motion.div
                     animate={{ scale: ativo ? 1 : 0, opacity: ativo ? 1 : 0 }}
                     transition={{ duration: 0.2 }}
@@ -565,7 +563,7 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
         <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {CATEGORIAS.map((c, i) => {
+          {categorias.map((c, i) => {
             const ativo = catAtiva === c.id;
             return (
               <motion.button
@@ -574,19 +572,19 @@ const MenuCatalogProductBrowse = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.04 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setCatAtiva(c.id)}
+                onClick={() => setCatAtiva(ativo ? null : c.id)}
                 className="flex-shrink-0 flex flex-col items-center gap-1.5"
               >
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-md transition-all ${
                     ativo ? 'ring-2 ring-white ring-offset-1' : 'opacity-70'
                   }`}
-                  style={{ background: `linear-gradient(135deg, ${c.c1}, ${c.c2})` }}
+                  style={{ background: `linear-gradient(135deg, ${c.color_primary}, ${c.color_secondary})` }}
                 >
-                  <Icon name={c.icon} size={20} />
+                  <Icon name={c.icon_name ?? 'Tag'} size={20} />
                 </div>
                 <span className={`text-[10px] font-bold whitespace-nowrap ${ativo ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
-                  {c.label}
+                  {c.name}
                 </span>
               </motion.button>
             );
@@ -597,7 +595,7 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Layout 3 colunas ─────────────────────────────────────── */}
       <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 flex gap-6 items-start">
 
-        <SidebarLeft catAtiva={catAtiva} setCatAtiva={setCatAtiva} />
+        <SidebarLeft categorias={categorias} catAtiva={catAtiva} setCatAtiva={setCatAtiva} />
 
         {/* Centro */}
         <main className="flex-1 min-w-0 space-y-8">
@@ -618,7 +616,7 @@ const MenuCatalogProductBrowse = () => {
             <div className="flex items-center justify-between mb-4 gap-3">
               <div>
                 <h2 className="font-bold text-[#18181B] text-base">
-                  {catAtiva === 'todos' ? 'Todos os restaurantes' : CATEGORIAS.find((c) => c.id === catAtiva)?.label}
+                  {catAtiva === null ? 'Todos os restaurantes' : categorias.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
                 </h2>
                 {!loading && (
                   <p className="text-xs text-[#71717A] mt-0.5">

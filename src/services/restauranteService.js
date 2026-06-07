@@ -51,6 +51,10 @@ export const criarProduto = (data) =>
 export const toggleProduto = (id, ativo) =>
   apiFetch(`/produtos/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 
+// Categorias globais da plataforma (sem auth — endpoint público)
+export const getCategoriasGlobais = () =>
+  fetch('/api/categorias/globais').then((r) => r.json());
+
 export const getMinhasCategorias = () => apiFetch('/categorias');
 
 export const criarCategoria = (name) =>
