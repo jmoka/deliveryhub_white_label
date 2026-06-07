@@ -456,6 +456,33 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Hero ────────────────────────────────────────────────── */}
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} />
 
+      {/* ── Ícones de categorias (strip acima de populares) ──────── */}
+      <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-4">
+          <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            {CATEGORIAS.map((c, i) => (
+              <motion.button
+                key={c.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.04 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCatAtiva(c.id)}
+                title={c.label}
+                className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm ${
+                  catAtiva === c.id
+                    ? 'bg-[#FF441F] text-white shadow-md shadow-[#FF441F]/30'
+                    : 'bg-[#F4F4F5] text-[#27272A] hover:bg-[#E4E4E7]'
+                }`}
+              >
+                <Icon name={c.icon} size={20} />
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ── Carrossel restaurantes populares ─────────────────────── */}
       {restaurantes.length > 0 && (
         <div className="bg-white border-b border-[#E4E4E7]">
