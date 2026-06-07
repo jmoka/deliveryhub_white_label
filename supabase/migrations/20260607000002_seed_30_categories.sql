@@ -1,0 +1,35 @@
+-- Remove categorias globais anteriores (seed inicial tinha 9)
+DELETE FROM public.categories WHERE restaurant_id IS NULL;
+
+-- Insere 30 categorias globais da plataforma
+INSERT INTO public.categories (name, icon_name, color_primary, color_secondary, restaurant_id) VALUES
+  ('Todos',           'LayoutGrid',       '#FF441F', '#FF7A00', NULL),
+  ('Pizza',           'Pizza',            '#FF6B35', '#FF8C42', NULL),
+  ('Hambúrguer',      'Sandwich',         '#E63946', '#FF6B6B', NULL),
+  ('Japonesa',        'Fish',             '#0EA5E9', '#38BDF8', NULL),
+  ('Açaí',            'GlassWater',       '#7C3AED', '#A855F7', NULL),
+  ('Marmita',         'UtensilsCrossed',  '#059669', '#10B981', NULL),
+  ('Saudável',        'Leaf',             '#16A34A', '#4ADE80', NULL),
+  ('Sorvetes',        'IceCream',         '#DB2777', '#F472B6', NULL),
+  ('Padaria',         'Coffee',           '#92400E', '#D97706', NULL),
+  ('Churrasco',       'Beef',             '#B45309', '#F59E0B', NULL),
+  ('Mexicana',        'Flame',            '#DC2626', '#EF4444', NULL),
+  ('Italiana',        'ChefHat',          '#15803D', '#4ADE80', NULL),
+  ('Frango',          'Drumstick',        '#D97706', '#FCD34D', NULL),
+  ('Bebidas',         'Wine',             '#6D28D9', '#C4B5FD', NULL),
+  ('Doces',           'Cake',             '#BE185D', '#F9A8D4', NULL),
+  ('Fast Food',       'Zap',              '#EA580C', '#FB923C', NULL),
+  ('Tapioca',         'Wheat',            '#A16207', '#FDE68A', NULL),
+  ('Massas',          'Utensils',         '#0369A1', '#7DD3FC', NULL),
+  ('Saladas',         'Salad',            '#047857', '#6EE7B7', NULL),
+  ('Sopas',           'Soup',             '#78350F', '#FBBF24', NULL),
+  ('Árabe',           'Globe',            '#0F766E', '#2DD4BF', NULL),
+  ('Lanches',         'Package',          '#4338CA', '#818CF8', NULL),
+  ('Confeitaria',     'Cookie',           '#9D174D', '#F472B6', NULL),
+  ('Café da Manhã',   'Egg',              '#F59E0B', '#FDE68A', NULL),
+  ('Petiscos',        'Star',             '#7E22CE', '#D8B4FE', NULL),
+  ('Vegano',          'Apple',            '#166534', '#86EFAC', NULL),
+  ('Frutos do Mar',   'Lemon',            '#0C4A6E', '#38BDF8', NULL),
+  ('Chinesa',         'Sparkles',         '#9F1239', '#FB7185', NULL),
+  ('Kids',            'Heart',            '#EC4899', '#FDA4AF', NULL),
+  ('Promoções',       'Tag',              '#1D4ED8', '#93C5FD', NULL);
