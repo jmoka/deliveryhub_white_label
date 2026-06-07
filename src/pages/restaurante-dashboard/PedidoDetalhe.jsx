@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 
@@ -13,15 +13,33 @@ const STATUS_INFO = {
   delivered:        { label: 'Entregue',    icon: 'CheckCircle2', color: 'text-green-600' },
   canceled:         { label: 'Cancelado',   icon: 'XCircle',      color: 'text-red-500' },
 };
-const PROXIMOS = { pending: 'confirmed', confirmed: 'ready', ready: 'out_for_delivery', out_for_delivery: 'delivered' };
 
-const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose }) => {
+// ready → assign motoboy → out_for_delivery (skips normal avancar)
+const PROXIMOS_SEM_MOTOBOY = { pending: 'confirmed', confirmed: 'ready' };
+const PRECISA_MOTOBOY = ['ready'];
+
+const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onAtribuir }) => {
+  const [motoboyId, setMotoboyId] = useState('');
+  const [atribuindo, setAtribuindo] = useState(false);
+
   if (!detalhe) return null;
   const { pedido, itens, cliente } = detalhe;
   const si = STATUS_INFO[pedido.status] ?? { label: pedido.status, icon: 'Circle', color: 'text-gray-500' };
-  const proximo = PROXIMOS[pedido.status];
   const isCanceled = pedido.status === 'canceled';
   const stepIdx = STATUS_FLOW.indexOf(pedido.status);
+  const proxSemMotoboy = PROXIMOS_SEM_MOTOBOY[pedido.status];
+  const needsMotoboy = PRECISA_MOTOBOY.includes(pedido.status);
+  const activeMotoboys = (motoboys ?? []).filter((m) => m.is_active);
+
+  const handleAtribuir = async () => {
+    if (!motoboyId) return;
+    setAtribuindo(true);
+    try {
+      await onAtribuir(pedido.id, parseInt(motoboyId, 10));
+    } finally {
+      setAtribuindo(false);
+    }
+  };
 
   return (
     <motion.div
@@ -99,18 +117,49 @@ const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose }) => {
         </div>
       </div>
 
-      {/* Pagamento */}
-      <p className="text-xs text-[#71717A]">Pagamento: <span className="font-medium text-[#18181B]">{pedido.payment_method}</span></p>
+      <p className="text-xs text-[#71717A]">Pagamento: <span className="font-medium text-[#18181B]">{pedido.payment_method === 'cash' ? 'Dinheiro' : pedido.payment_method}</span></p>
 
-      {/* Avançar */}
-      {proximo && (
+      {/* Avançar (pending → confirmed → ready) */}
+      {proxSemMotoboy && (
         <button
           disabled={atualizando === pedido.id}
-          onClick={() => onAvancar(pedido, proximo)}
+          onClick={() => onAvancar(pedido, proxSemMotoboy)}
           className="w-full py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 transition-colors"
         >
-          {atualizando === pedido.id ? '...' : `Avançar → ${STATUS_INFO[proximo]?.label}`}
+          {atualizando === pedido.id ? '...' : `Avançar → ${STATUS_INFO[proxSemMotoboy]?.label}`}
         </button>
+      )}
+
+      {/* Atribuir motoboy (ready → out_for_delivery) */}
+      {needsMotoboy && activeMotoboys.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-[#71717A]">Enviar com motoboy</p>
+          <select
+            value={motoboyId}
+            onChange={(e) => setMotoboyId(e.target.value)}
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+          >
+            <option value="">Selecionar motoboy...</option>
+            {activeMotoboys.map((m) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+          <button
+            disabled={!motoboyId || atribuindo}
+            onClick={handleAtribuir}
+            className="w-full py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Icon name="Bike" size={14} />
+            {atribuindo ? 'Atribuindo...' : 'Enviar para motoboy'}
+          </button>
+        </div>
+      )}
+
+      {needsMotoboy && activeMotoboys.length === 0 && (
+        <p className="text-xs text-orange-600 bg-orange-50 rounded-xl px-3 py-2 flex items-center gap-2">
+          <Icon name="AlertTriangle" size={14} />
+          Nenhum motoboy ativo. Cadastre em <strong>Motoboys</strong>.
+        </p>
       )}
     </motion.div>
   );

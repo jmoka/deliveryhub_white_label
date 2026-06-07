@@ -37,7 +37,8 @@ const OrderTrackingStatus = () => {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setPedido(data);
+      // API returns { pedido:{...}, itens:[], cliente:{...}, empresa:{...} }
+      setPedido({ ...data.pedido, itens: data.itens ?? [] });
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -51,7 +52,6 @@ const OrderTrackingStatus = () => {
       return;
     }
     buscarPedido();
-    // Poll a cada 30s enquanto pedido não finalizado
     const interval = setInterval(() => {
       if (pedido?.status !== 'delivered' && pedido?.status !== 'canceled') {
         buscarPedido();
@@ -130,6 +130,28 @@ const OrderTrackingStatus = () => {
           </div>
         )}
 
+        {/* Posição do motoboy quando em entrega */}
+        {pedido.status === 'out_for_delivery' && pedido.motoboy_lat && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Icon name="Bike" size={18} className="text-indigo-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-indigo-800">Motoboy a caminho</p>
+              <p className="text-xs text-indigo-500 mt-0.5">
+                Posição às {new Date(pedido.motoboy_location_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+            <a
+              href={`https://www.google.com/maps?q=${pedido.motoboy_lat},${pedido.motoboy_lng}`}
+              target="_blank" rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 flex items-center gap-1 whitespace-nowrap"
+            >
+              <Icon name="MapPin" size={11} /> Ver no mapa
+            </a>
+          </div>
+        )}
+
         {/* Itens */}
         {pedido.itens?.length > 0 && (
           <div className="bg-white rounded-xl border p-4">
@@ -137,7 +159,7 @@ const OrderTrackingStatus = () => {
             <div className="space-y-2">
               {pedido.itens.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm text-gray-600">
-                  <span>{item.nome ?? `Produto #${item.product_id}`} × {item.quantity}</span>
+                  <span>{item.nome ?? item.product_name ?? `Produto #${item.product_id}`} × {item.quantity}</span>
                   <span>{fmt(item.unit_price * item.quantity)}</span>
                 </div>
               ))}

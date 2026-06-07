@@ -20,6 +20,7 @@ const pedidos_module_1 = require("./pedidos/pedidos.module");
 const plataforma_module_1 = require("./plataforma/plataforma.module");
 const pagamentos_module_1 = require("./pagamentos/pagamentos.module");
 const restaurante_module_1 = require("./restaurante/restaurante.module");
+const motoboy_module_1 = require("./motoboy/motoboy.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -44,6 +45,7 @@ exports.AppModule = AppModule = __decorate([
             plataforma_module_1.PlataformaModule,
             pagamentos_module_1.PagamentosModule,
             restaurante_module_1.RestauranteModule,
+            motoboy_module_1.MotoboyModule,
         ],
     })
 ], AppModule);

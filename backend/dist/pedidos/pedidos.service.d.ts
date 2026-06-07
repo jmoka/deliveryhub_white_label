@@ -33,6 +33,10 @@ export declare class PedidosService {
             restaurant_id: any;
             customer_id: any;
             user_id: any;
+            motoboy_id: any;
+            motoboy_lat: any;
+            motoboy_lng: any;
+            motoboy_location_at: any;
             created_at: any;
             updated_at: any;
         };

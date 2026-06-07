@@ -11,13 +11,14 @@ const common_1 = require("@nestjs/common");
 const jwt_guard_1 = require("./jwt.guard");
 const admin_guard_1 = require("./admin.guard");
 const restaurant_owner_guard_1 = require("./restaurant-owner.guard");
+const motoboy_guard_1 = require("./motoboy.guard");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
-        providers: [jwt_guard_1.JwtGuard, admin_guard_1.AdminGuard, restaurant_owner_guard_1.RestaurantOwnerGuard],
-        exports: [jwt_guard_1.JwtGuard, admin_guard_1.AdminGuard, restaurant_owner_guard_1.RestaurantOwnerGuard],
+        providers: [jwt_guard_1.JwtGuard, admin_guard_1.AdminGuard, restaurant_owner_guard_1.RestaurantOwnerGuard, motoboy_guard_1.MotoboyGuard],
+        exports: [jwt_guard_1.JwtGuard, admin_guard_1.AdminGuard, restaurant_owner_guard_1.RestaurantOwnerGuard, motoboy_guard_1.MotoboyGuard],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

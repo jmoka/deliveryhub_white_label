@@ -99,6 +99,15 @@ export const adicionarSaida = (data) =>
 
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 
+// Motoboys
+export const listarMotoboys = () => apiFetch('/motoboys');
+export const criarMotoboy = (data) =>
+  apiFetch('/motoboys', { method: 'POST', body: JSON.stringify(data) });
+export const toggleMotoboy = (id, ativo) =>
+  apiFetch(`/motoboys/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
+export const atribuirMotoboy = (pedidoId, motoboyId) =>
+  apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
+
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {
   const res = await fetch(`/api/r/${slug}`);

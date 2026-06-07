@@ -1,0 +1,117 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
+
+@Injectable()
+export class MotoboyService {
+  constructor(private supabase: SupabaseService) {}
+
+  async listar(restaurantId: number) {
+    const { data, error } = await this.supabase.client
+      .from('motoboys')
+      .select('id, name, phone, access_token, is_active, created_at')
+      .eq('restaurant_id', restaurantId)
+      .order('name');
+    if (error) throw error;
+    return { motoboys: data ?? [] };
+  }
+
+  async criar(restaurantId: number, body: { name: string; phone?: string }) {
+    const { data, error } = await this.supabase.client
+      .from('motoboys')
+      .insert({ restaurant_id: restaurantId, name: body.name, phone: body.phone ?? null })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async toggle(id: number, restaurantId: number, ativo: boolean) {
+    const { data, error } = await this.supabase.client
+      .from('motoboys')
+      .update({ is_active: ativo })
+      .eq('id', id)
+      .eq('restaurant_id', restaurantId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async atribuir(pedidoId: number, restaurantId: number, motoboyId: number) {
+    const { data: mb } = await this.supabase.client
+      .from('motoboys')
+      .select('id')
+      .eq('id', motoboyId)
+      .eq('restaurant_id', restaurantId)
+      .maybeSingle();
+    if (!mb) throw new NotFoundException('Motoboy não encontrado neste restaurante');
+
+    const { error } = await this.supabase.client
+      .from('orders')
+      .update({ motoboy_id: motoboyId, status: 'out_for_delivery', updated_at: new Date().toISOString() })
+      .eq('id', pedidoId)
+      .eq('restaurant_id', restaurantId);
+    if (error) throw error;
+    return { ok: true, status: 'out_for_delivery' };
+  }
+
+  // Motoboy portal
+  async meusPedidos(motoboyId: number) {
+    const { data, error } = await this.supabase.client
+      .from('orders')
+      .select('id, total, status, payment_method, created_at, updated_at, motoboy_lat, motoboy_lng, customer_id')
+      .eq('motoboy_id', motoboyId)
+      .not('status', 'in', '("delivered","canceled")')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const pedidos = await Promise.all(
+      (data ?? []).map(async (p) => {
+        if (!p.customer_id) return p;
+        const { data: c } = await this.supabase.client
+          .from('customers')
+          .select('name, phone_e164, address_json')
+          .eq('id', p.customer_id)
+          .maybeSingle();
+        return { ...p, cliente: c };
+      }),
+    );
+    return { pedidos };
+  }
+
+  async atualizarLocalizacao(pedidoId: number, motoboyId: number, lat: number, lng: number) {
+    const { error } = await this.supabase.client
+      .from('orders')
+      .update({ motoboy_lat: lat, motoboy_lng: lng, motoboy_location_at: new Date().toISOString() })
+      .eq('id', pedidoId)
+      .eq('motoboy_id', motoboyId);
+    if (error) throw error;
+    return { ok: true };
+  }
+
+  async confirmarEntrega(pedidoId: number, motoboyId: number) {
+    const { data: pedido } = await this.supabase.client
+      .from('orders')
+      .select('id, status')
+      .eq('id', pedidoId)
+      .eq('motoboy_id', motoboyId)
+      .maybeSingle();
+    if (!pedido) throw new NotFoundException('Pedido não encontrado ou não atribuído a você');
+
+    const { error } = await this.supabase.client
+      .from('orders')
+      .update({ status: 'delivered', updated_at: new Date().toISOString() })
+      .eq('id', pedidoId);
+    if (error) throw error;
+    return { ok: true, pedido_id: pedidoId, status: 'delivered' };
+  }
+
+  async infoMotoboy(motoboyId: number) {
+    const { data } = await this.supabase.client
+      .from('motoboys')
+      .select('id, name, phone, restaurant_id')
+      .eq('id', motoboyId)
+      .maybeSingle();
+    return data;
+  }
+}

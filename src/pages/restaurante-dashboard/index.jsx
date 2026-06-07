@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa,
   adicionarSaida, buscarPedidoDetalhe, atualizarStatusPedido, toggleStatusRestaurante,
+  listarMotoboys, atribuirMotoboy,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
@@ -40,6 +41,7 @@ const LINKS = [
   { label: 'Dashboard', path: '/restaurante' },
   { label: 'Produtos', path: '/restaurante/produtos' },
   { label: 'Pedidos', path: '/restaurante/pedidos' },
+  { label: 'Motoboys', path: '/restaurante/motoboys' },
   { label: 'Clientes', path: '/restaurante/clientes' },
   { label: 'Designer', path: '/restaurante/aparencia' },
   { label: 'Config', path: '/restaurante/config' },
@@ -66,13 +68,17 @@ const RestauranteDashboard = () => {
   const [showFechar, setShowFechar] = useState(false);
   const [fechando, setFechando] = useState(false);
   const [fechamento, setFechamento] = useState(null);
+  const [motoboys, setMotoboys] = useState([]);
 
   const carregar = async () => {
     try {
-      const [emp, caixaData] = await Promise.all([getMinhaEmpresa(), getCaixa()]);
+      const [emp, caixaData, mbData] = await Promise.all([
+        getMinhaEmpresa(), getCaixa(), listarMotoboys().catch(() => ({ motoboys: [] })),
+      ]);
       setEmpresa(emp.empresa);
       setStatusAberto(caixaData.status_restaurante);
       setCaixa(caixaData);
+      setMotoboys(mbData.motoboys ?? []);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -80,7 +86,21 @@ const RestauranteDashboard = () => {
     }
   };
 
+  const recarregarCaixa = async () => {
+    try {
+      const data = await getCaixa();
+      setCaixa(data);
+    } catch { /* silent */ }
+  };
+
   useEffect(() => { carregar(); }, []);
+
+  // Auto-refresh pedidos quando caixa aberto
+  useEffect(() => {
+    if (!caixa?.aberto) return;
+    const id = setInterval(recarregarCaixa, 30000);
+    return () => clearInterval(id);
+  }, [caixa?.aberto]);
 
   const handleToggleStatus = async (novoStatus) => {
     setStatusAberto(novoStatus);
@@ -114,6 +134,15 @@ const RestauranteDashboard = () => {
       setCaixa(novoCaixa);
       setPedidoDetalhe(novoDetalhe);
     } catch (e) { alert(e.message); } finally { setAtualizando(null); }
+  };
+
+  const handleAtribuirMotoboy = async (pedidoId, motoboyId) => {
+    try {
+      await atribuirMotoboy(pedidoId, motoboyId);
+      const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedidoId)]);
+      setCaixa(novoCaixa);
+      setPedidoDetalhe(novoDetalhe);
+    } catch (e) { alert(e.message); }
   };
 
   const handleAdicionarSaida = async (dados) => {
@@ -304,6 +333,8 @@ const RestauranteDashboard = () => {
                     onAvancar={handleAvancarStatus}
                     atualizando={atualizando}
                     onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
+                    motoboys={motoboys}
+                    onAtribuir={handleAtribuirMotoboy}
                   />
                 )}
               </AnimatePresence>
