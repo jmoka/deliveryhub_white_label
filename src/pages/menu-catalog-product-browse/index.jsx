@@ -8,15 +8,15 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 
 /* ── Categorias ─────────────────────────────────────────────────── */
 const CATEGORIAS = [
-  { id: 'todos',      label: 'Todos',      icon: 'LayoutGrid'      },
-  { id: 'pizza',      label: 'Pizza',       icon: 'Pizza'           },
-  { id: 'hamburguer', label: 'Hambúrguer',  icon: 'Sandwich'        },
-  { id: 'japones',    label: 'Japonesa',    icon: 'Fish'            },
-  { id: 'acai',       label: 'Açaí',        icon: 'GlassWater'      },
-  { id: 'marmita',    label: 'Marmita',     icon: 'UtensilsCrossed' },
-  { id: 'saudavel',   label: 'Saudável',    icon: 'Leaf'            },
-  { id: 'sorvete',    label: 'Sorvetes',    icon: 'Dessert'         },
-  { id: 'padaria',    label: 'Padaria',     icon: 'Coffee'          },
+  { id: 'todos',      label: 'Todos',      icon: 'LayoutGrid',      bg: 'from-[#FF441F] to-[#FF7A00]', shadow: 'shadow-[#FF441F]/40' },
+  { id: 'pizza',      label: 'Pizza',       icon: 'Pizza',           bg: 'from-[#FF6B35] to-[#FF8C42]', shadow: 'shadow-[#FF6B35]/40' },
+  { id: 'hamburguer', label: 'Hambúrguer',  icon: 'Sandwich',        bg: 'from-[#E63946] to-[#FF6B6B]', shadow: 'shadow-[#E63946]/40' },
+  { id: 'japones',    label: 'Japonesa',    icon: 'Fish',            bg: 'from-[#0EA5E9] to-[#38BDF8]', shadow: 'shadow-[#0EA5E9]/40' },
+  { id: 'acai',       label: 'Açaí',        icon: 'GlassWater',      bg: 'from-[#7C3AED] to-[#A855F7]', shadow: 'shadow-[#7C3AED]/40' },
+  { id: 'marmita',    label: 'Marmita',     icon: 'UtensilsCrossed', bg: 'from-[#059669] to-[#10B981]', shadow: 'shadow-[#059669]/40' },
+  { id: 'saudavel',   label: 'Saudável',    icon: 'Leaf',            bg: 'from-[#16A34A] to-[#4ADE80]', shadow: 'shadow-[#16A34A]/40' },
+  { id: 'sorvete',    label: 'Sorvetes',    icon: 'Dessert',         bg: 'from-[#DB2777] to-[#F472B6]', shadow: 'shadow-[#DB2777]/40' },
+  { id: 'padaria',    label: 'Padaria',     icon: 'Coffee',          bg: 'from-[#92400E] to-[#D97706]', shadow: 'shadow-[#92400E]/40' },
 ];
 
 /* ── Skeleton ────────────────────────────────────────────────────── */
@@ -218,17 +218,28 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
 const SidebarLeft = ({ catAtiva, setCatAtiva }) => (
   <aside className="hidden lg:flex flex-col gap-1 w-52 xl:w-60 flex-shrink-0">
     <p className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider px-3 mb-2">Categorias</p>
-    {CATEGORIAS.map((c) => (
-      <button key={c.id} onClick={() => setCatAtiva(c.id)}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
-          catAtiva === c.id
-            ? 'bg-[#FF441F] text-white shadow-md shadow-[#FF441F]/20'
-            : 'text-[#27272A] hover:bg-white hover:shadow-sm'
-        }`}>
-        <Icon name={c.icon} size={17} />
-        {c.label}
-      </button>
-    ))}
+    {CATEGORIAS.map((c) => {
+      const ativo = catAtiva === c.id;
+      return (
+        <motion.button
+          key={c.id}
+          whileHover={{ x: 3 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setCatAtiva(c.id)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
+            ativo ? 'text-white shadow-md' : 'text-[#27272A] hover:bg-white hover:shadow-sm'
+          }`}
+          style={ativo ? { background: `linear-gradient(135deg, ${c.bg.includes('from-[') ? c.bg.match(/from-\[([^\]]+)\]/)?.[1] : '#FF441F'}, ${c.bg.match(/to-\[([^\]]+)\]/)?.[1] ?? '#FF7A00'})` } : {}}
+        >
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            ativo ? 'bg-white/20' : `bg-gradient-to-br ${c.bg}`
+          }`}>
+            <Icon name={c.icon} size={15} className={ativo ? 'text-white' : 'text-white'} />
+          </div>
+          {c.label}
+        </motion.button>
+      );
+    })}
   </aside>
 );
 
@@ -456,29 +467,46 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Hero ────────────────────────────────────────────────── */}
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} />
 
-      {/* ── Ícones de categorias (strip acima de populares) ──────── */}
+      {/* ── Ícones de categorias coloridos ───────────────────────── */}
       <div className="bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-4">
-          <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            {CATEGORIAS.map((c, i) => (
-              <motion.button
-                key={c.id}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.04 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setCatAtiva(c.id)}
-                title={c.label}
-                className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm ${
-                  catAtiva === c.id
-                    ? 'bg-[#FF441F] text-white shadow-md shadow-[#FF441F]/30'
-                    : 'bg-[#F4F4F5] text-[#27272A] hover:bg-[#E4E4E7]'
-                }`}
-              >
-                <Icon name={c.icon} size={20} />
-              </motion.button>
-            ))}
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+          <div className="flex gap-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            {CATEGORIAS.map((c, i) => {
+              const ativo = catAtiva === c.id;
+              return (
+                <motion.button
+                  key={c.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.7 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: i * 0.06, type: 'spring', stiffness: 260, damping: 18 }}
+                  whileHover={{ scale: 1.18, y: -3 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setCatAtiva(c.id)}
+                  title={c.label}
+                  className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
+                >
+                  {/* Ícone com gradiente */}
+                  <motion.div
+                    animate={ativo ? { rotate: [0, -8, 8, 0] } : {}}
+                    transition={{ duration: 0.4 }}
+                    className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${c.bg} flex items-center justify-center text-white transition-all ${
+                      ativo
+                        ? `shadow-lg ${c.shadow} ring-2 ring-white ring-offset-2`
+                        : `shadow-md ${c.shadow} opacity-75 group-hover:opacity-100 group-hover:shadow-lg`
+                    }`}
+                  >
+                    <Icon name={c.icon} size={24} />
+                  </motion.div>
+
+                  {/* Dot indicador ativo */}
+                  <motion.div
+                    animate={{ scale: ativo ? 1 : 0, opacity: ativo ? 1 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-1.5 h-1.5 rounded-full bg-[#FF441F]"
+                  />
+                </motion.button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -496,18 +524,32 @@ const MenuCatalogProductBrowse = () => {
         </div>
       )}
 
-      {/* ── Categorias mobile ────────────────────────────────────── */}
+      {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {CATEGORIAS.map((c) => (
-            <button key={c.id} onClick={() => setCatAtiva(c.id)}
-              className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl min-w-[60px] transition-all ${
-                catAtiva === c.id ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#27272A]'
-              }`}>
-              <Icon name={c.icon} size={18} />
-              <span className="text-[10px] font-semibold whitespace-nowrap">{c.label}</span>
-            </button>
-          ))}
+        <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {CATEGORIAS.map((c, i) => {
+            const ativo = catAtiva === c.id;
+            return (
+              <motion.button
+                key={c.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setCatAtiva(c.id)}
+                className="flex-shrink-0 flex flex-col items-center gap-1.5"
+              >
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${c.bg} flex items-center justify-center text-white shadow-md transition-all ${
+                  ativo ? `${c.shadow} ring-2 ring-white ring-offset-1` : 'opacity-70'
+                }`}>
+                  <Icon name={c.icon} size={20} />
+                </div>
+                <span className={`text-[10px] font-bold whitespace-nowrap ${ativo ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
+                  {c.label}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
 
