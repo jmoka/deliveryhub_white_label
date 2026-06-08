@@ -290,8 +290,9 @@ const MotoboyPortal = () => {
               <p className="text-sm font-bold text-[#FF441F]">{fmt(p.total)}</p>
             </div>
 
-            {p.cliente && (() => {
-              const addr = p.cliente.address_json ?? {};
+            {(() => {
+              const cli = p.cliente ?? {};
+              const addr = cli.address_json ?? {};
               const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
               const linhaCompl = [addr.complemento, addr.bairro].filter(Boolean).join(' — ');
               const linhaCidade = [addr.cidade, addr.estado, addr.cep].filter(Boolean).join(', ');
@@ -308,22 +309,35 @@ const MotoboyPortal = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">Entregar para</p>
-                      <p className="text-base font-black text-[#18181B] leading-tight truncate">{p.cliente.name}</p>
+                      <p className="text-base font-black text-[#18181B] leading-tight truncate">
+                        {cli.name ?? <span className="text-[#A1A1AA] font-normal text-sm">Nome não cadastrado</span>}
+                      </p>
                     </div>
-                    {p.cliente.phone_e164 && (
-                      <a href={`tel:${p.cliente.phone_e164}`}
+                    {cli.phone_e164 ? (
+                      <a href={`tel:${cli.phone_e164}`}
                         className="flex-shrink-0 w-9 h-9 bg-white rounded-xl border border-blue-200 flex items-center justify-center hover:bg-blue-100 transition-colors">
                         <Icon name="Phone" size={16} className="text-blue-600" />
                       </a>
+                    ) : (
+                      <span className="flex-shrink-0 w-9 h-9 bg-[#F4F4F5] rounded-xl border border-[#E4E4E7] flex items-center justify-center opacity-40">
+                        <Icon name="Phone" size={16} className="text-[#71717A]" />
+                      </span>
                     )}
                   </div>
 
+                  {/* Telefone visível */}
+                  {cli.phone_e164 && (
+                    <div className="px-4 pb-1">
+                      <p className="text-xs text-blue-700 font-semibold">{cli.phone_e164}</p>
+                    </div>
+                  )}
+
                   {/* Endereço */}
-                  {enderecoCompleto ? (
-                    <div className="px-4 pb-3">
-                      <div className="bg-white rounded-xl border border-blue-100 p-3 mb-3">
-                        <div className="flex items-start gap-2">
-                          <Icon name="MapPin" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="px-4 pb-3 mt-1">
+                    <div className="bg-white rounded-xl border border-blue-100 p-3 mb-3">
+                      <div className="flex items-start gap-2">
+                        <Icon name="MapPin" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                        {enderecoCompleto ? (
                           <div>
                             {linhaRua && <p className="text-sm font-bold text-[#18181B]">{linhaRua}</p>}
                             {linhaCompl && <p className="text-xs text-[#71717A] mt-0.5">{linhaCompl}</p>}
@@ -334,20 +348,25 @@ const MotoboyPortal = () => {
                               </p>
                             )}
                           </div>
-                        </div>
+                        ) : (
+                          <p className="text-xs text-[#A1A1AA] italic">Endereço não cadastrado</p>
+                        )}
                       </div>
-
-                      {mapsUrl && (
-                        <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md shadow-blue-200">
-                          <Icon name="Navigation" size={16} />
-                          Como chegar
-                        </a>
-                      )}
                     </div>
-                  ) : (
-                    <p className="px-4 pb-3 text-xs text-[#71717A]">Endereço não informado</p>
-                  )}
+
+                    {mapsUrl ? (
+                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md shadow-blue-200">
+                        <Icon name="Navigation" size={16} />
+                        Como chegar
+                      </a>
+                    ) : (
+                      <div className="flex items-center justify-center gap-2 w-full py-3 bg-[#E4E4E7] text-[#A1A1AA] text-sm rounded-xl cursor-not-allowed">
+                        <Icon name="Navigation" size={16} />
+                        Endereço não disponível
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })()}
