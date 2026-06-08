@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
 
 const STATUS_INFO = {
@@ -12,50 +11,85 @@ const STATUS_INFO = {
   preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Confirmado', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
 };
 
+// Barcode value: order ID zero-padded to 8 digits for CODE128 scan reliability
+const barcodeValue = (id) => String(id).padStart(8, '0');
+
 const printComanda = (pedido, itens, restauranteNome) => {
-  const w = window.open('', '_blank', 'width=420,height=600');
+  const w = window.open('', '_blank', 'width=440,height=680');
   if (!w) return;
   const hora = new Date(pedido.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const clienteNome = pedido.customers?.name ?? '';
+  const bc = barcodeValue(pedido.id);
+
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comanda #${pedido.id}</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
-    .center{text-align:center}
-    .big{font-size:28px;font-weight:900;text-align:center;letter-spacing:2px;margin:8px 0}
+    .center{text-align:center;display:block}
+    .big{font-size:30px;font-weight:900;text-align:center;letter-spacing:3px;margin:8px 0}
     .rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
     hr{border:none;border-top:1px dashed #000;margin:8px 0}
     .item{display:flex;gap:8px;padding:4px 0;font-size:15px}
-    .qty{font-weight:900;min-width:28px;color:#000}
-    .nome{flex:1}
-    .foot{font-size:11px;text-align:center;margin-top:8px}
+    .qty{font-weight:900;min-width:28px}
+    .foot{font-size:11px;text-align:center;margin-top:6px}
+    #barcode{display:block;margin:8px auto 4px;max-width:260px}
     @media print{button{display:none!important}}
   </style></head><body>
   <div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
-  <div class="center" style="font-size:11px">COMANDA DE COZINHA</div>
+  <div class="center" style="font-size:11px;letter-spacing:1px">COMANDA DE COZINHA</div>
   <hr/>
   <div class="big">PEDIDO #${pedido.id}</div>
   <div class="center" style="font-size:13px">${hora}</div>
-  ${clienteNome ? `<div class="center" style="font-size:12px;margin-top:2px">${clienteNome}</div>` : ''}
+  ${clienteNome ? `<div class="center" style="font-size:12px;margin-top:2px;font-weight:bold">${clienteNome}</div>` : ''}
   <hr/>
-  ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span class="nome">${i.product_name ?? `Produto #${i.product_id}`}</span></div>`).join('')}
+  ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name ?? `Produto #${i.product_id}`}</span></div>`).join('')}
   <hr/>
-  <div class="center" style="font-size:13px">Pgto: <b>${PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method}</b>${pedido.payment_method === 'cash' ? ' ⚠ COBRAR' : ''}</div>
+  <div class="center" style="font-size:13px">Pgto: <b>${PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method}</b>${pedido.payment_method === 'cash' ? ' &nbsp;⚠ COBRAR' : ''}</div>
+  <hr/>
+  <svg id="barcode"></svg>
   <div class="foot">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
-  <script>window.onload=function(){window.print();setTimeout(function(){window.close()},1000)}</script>
+  <script>
+    function doBarcode() {
+      if (typeof JsBarcode !== 'undefined') {
+        JsBarcode("#barcode","${bc}",{format:"CODE128",width:2,height:56,displayValue:true,fontSize:13,text:"#${pedido.id}",margin:6,background:"#ffffff"});
+      }
+      window.print();
+      setTimeout(function(){window.close()},1500);
+    }
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
+    s.onload=doBarcode;
+    s.onerror=function(){document.getElementById('barcode').style.display='none';doBarcode()};
+    document.head.appendChild(s);
+  </script>
   </body></html>`);
   w.document.close();
 };
 
-const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome }) => {
+const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
   const si = STATUS_INFO[pedido.status];
   const isAtualizando = atualizando === pedido.id;
   const minutos = Math.floor((Date.now() - new Date(pedido.created_at)) / 60000);
+  const isHighlighted = highlighted === pedido.id;
 
   return (
-    <div className={`rounded-2xl border-2 ${si?.color ?? 'border-gray-200 bg-white'} overflow-hidden flex flex-col`}>
+    <div
+      id={`order-${pedido.id}`}
+      className={`rounded-2xl border-2 overflow-hidden flex flex-col transition-all duration-300 ${
+        isHighlighted
+          ? 'border-yellow-400 bg-yellow-50 shadow-xl shadow-yellow-300/40 scale-[1.02]'
+          : si?.color ?? 'border-gray-200 bg-white'
+      }`}
+    >
+      {isHighlighted && (
+        <div className="bg-yellow-400 px-4 py-1.5 flex items-center gap-2">
+          <Icon name="ScanLine" size={14} className="text-yellow-900" />
+          <p className="text-xs font-black text-yellow-900 uppercase tracking-wide">Pedido encontrado via leitura</p>
+        </div>
+      )}
+
       {/* Header do card */}
-      <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2">
+      <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <p className="text-2xl font-black text-[#18181B]">#{pedido.id}</p>
@@ -72,13 +106,19 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome }
             </span>
           </p>
         </div>
-        <button
-          onClick={() => printComanda(pedido, pedido.itens ?? [], restauranteNome)}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E4E4E7] rounded-xl text-xs font-semibold text-[#27272A] hover:bg-[#F4F4F5] transition-colors"
-        >
-          <Icon name="Printer" size={13} />
-          Comanda
-        </button>
+        <div className="flex flex-col gap-1.5 flex-shrink-0">
+          <button
+            onClick={() => printComanda(pedido, pedido.itens ?? [], restauranteNome)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E4E4E7] rounded-xl text-xs font-semibold text-[#27272A] hover:bg-[#F4F4F5] transition-colors"
+          >
+            <Icon name="Printer" size={13} />
+            Comanda
+          </button>
+          <div className="flex items-center justify-center gap-1 px-2 py-1 bg-[#F4F4F5] rounded-lg">
+            <Icon name="Barcode" size={11} className="text-[#71717A]" />
+            <span className="text-[10px] font-mono text-[#71717A]">{barcodeValue(pedido.id)}</span>
+          </div>
+        </div>
       </div>
 
       {/* Itens */}
@@ -136,6 +176,10 @@ const RestauranteCozinha = () => {
   const [atualizando, setAtualizando] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [erro, setErro] = useState(null);
+  const [scanInput, setScanInput] = useState('');
+  const [highlighted, setHighlighted] = useState(null);
+  const [scanMsg, setScanMsg] = useState(null);
+  const scanRef = useRef(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -158,6 +202,32 @@ const RestauranteCozinha = () => {
     const id = setInterval(carregar, 30000);
     return () => clearInterval(id);
   }, [carregar]);
+
+  const buscarPorId = useCallback((rawValue) => {
+    const id = parseInt(rawValue.replace(/\D/g, ''));
+    if (!id) return;
+    const found = pedidos.find((p) => p.id === id);
+    if (found) {
+      setHighlighted(id);
+      setScanMsg({ tipo: 'ok', texto: `Pedido #${id} encontrado` });
+      setTimeout(() => { setHighlighted(null); setScanMsg(null); }, 4000);
+      setTimeout(() => {
+        document.getElementById(`order-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    } else {
+      setScanMsg({ tipo: 'erro', texto: `Pedido #${id} não está na cozinha agora` });
+      setTimeout(() => setScanMsg(null), 3000);
+    }
+    setScanInput('');
+    scanRef.current?.focus();
+  }, [pedidos]);
+
+  const handleScanKey = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      buscarPorId(scanInput);
+    }
+  };
 
   const handleAvancar = async (pedidoId, novoStatus) => {
     setAtualizando(pedidoId);
@@ -183,27 +253,61 @@ const RestauranteCozinha = () => {
   return (
     <div className="min-h-screen bg-[#111111]">
       {/* Header */}
-      <header className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-5 py-3 flex items-center gap-4">
-        <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
-          <Icon name="ArrowLeft" size={18} />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#FF441F] rounded-lg flex items-center justify-center">
-            <Icon name="ChefHat" size={16} className="text-white" />
+      <header className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-5 py-3">
+        <div className="flex items-center gap-4 mb-3">
+          <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+            <Icon name="ArrowLeft" size={18} />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#FF441F] rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon name="ChefHat" size={16} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-black text-base leading-none">Painel da Cozinha</p>
+              <p className="text-[#71717A] text-xs">{restauranteNome}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-white font-black text-base leading-none">Painel da Cozinha</p>
-            <p className="text-[#71717A] text-xs">{restauranteNome}</p>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="flex items-center gap-2 text-xs text-[#71717A]">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              {lastUpdate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) ?? '—'}
+            </div>
+            <button onClick={carregar} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+              <Icon name="RefreshCw" size={16} />
+            </button>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs text-[#71717A]">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            {lastUpdate ? `${lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '—'}
+
+        {/* Scanner / busca por código de barras ou número */}
+        <div className="flex items-center gap-3">
+          <div className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
+            scanMsg?.tipo === 'ok' ? 'border-green-500 bg-green-900/20' :
+            scanMsg?.tipo === 'erro' ? 'border-red-500 bg-red-900/20' :
+            'border-[#2A2A2A] bg-[#111111] focus-within:border-[#FF441F]'
+          }`}>
+            <Icon name="ScanLine" size={16} className={scanMsg?.tipo === 'ok' ? 'text-green-400' : scanMsg?.tipo === 'erro' ? 'text-red-400' : 'text-[#71717A]'} />
+            <input
+              ref={scanRef}
+              type="text"
+              value={scanInput}
+              onChange={(e) => setScanInput(e.target.value)}
+              onKeyDown={handleScanKey}
+              placeholder="Aponte o leitor ou digite o nº do pedido..."
+              className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3A3A3A] outline-none font-mono"
+              autoFocus
+            />
+            {scanInput && (
+              <button onClick={() => buscarPorId(scanInput)}
+                className="flex-shrink-0 px-3 py-1 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19]">
+                Buscar
+              </button>
+            )}
           </div>
-          <button onClick={carregar} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
-            <Icon name="RefreshCw" size={16} />
-          </button>
+          {scanMsg && (
+            <p className={`text-xs font-semibold flex-shrink-0 ${scanMsg.tipo === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+              {scanMsg.texto}
+            </p>
+          )}
         </div>
       </header>
 
@@ -212,7 +316,7 @@ const RestauranteCozinha = () => {
       )}
 
       <main className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
-        {/* Coluna: Confirmados (aguardando preparo) */}
+        {/* Coluna: Aguardando Preparo */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-blue-400" />
@@ -229,13 +333,14 @@ const RestauranteCozinha = () => {
           ) : (
             <div className="space-y-3">
               {confirmados.map((p) => (
-                <OrderCard key={p.id} pedido={p} onAvancar={handleAvancar} onVoltar={handleAvancar} atualizando={atualizando} restauranteNome={restauranteNome} />
+                <OrderCard key={p.id} pedido={p} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                  atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
               ))}
             </div>
           )}
         </div>
 
-        {/* Coluna: Em preparo */}
+        {/* Coluna: Em Preparo */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
@@ -252,7 +357,8 @@ const RestauranteCozinha = () => {
           ) : (
             <div className="space-y-3">
               {preparando.map((p) => (
-                <OrderCard key={p.id} pedido={p} onAvancar={handleAvancar} onVoltar={handleAvancar} atualizando={atualizando} restauranteNome={restauranteNome} />
+                <OrderCard key={p.id} pedido={p} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                  atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
               ))}
             </div>
           )}
