@@ -25,6 +25,17 @@ const STATUS_LABELS = {
   canceled:         { label: 'Cancelado',  color: 'bg-red-100 text-red-800' },
 };
 
+const FILTER_TABS = [
+  { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
+  { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 bg-yellow-100 text-yellow-800' },
+  { value: 'confirmed',        label: 'Confirmado', activeColor: 'border-blue-400 bg-blue-100 text-blue-800' },
+  { value: 'preparing',        label: 'Cozinha',    activeColor: 'border-orange-400 bg-orange-100 text-orange-800' },
+  { value: 'ready',            label: 'Pronto',     activeColor: 'border-purple-400 bg-purple-100 text-purple-800' },
+  { value: 'out_for_delivery', label: 'Em Entrega', activeColor: 'border-indigo-400 bg-indigo-100 text-indigo-800' },
+  { value: 'delivered',        label: 'Entregue',   activeColor: 'border-green-400 bg-green-100 text-green-800' },
+  { value: 'canceled',        label: 'Cancelado',  activeColor: 'border-red-400 bg-red-100 text-red-800' },
+];
+
 const KpiCard = ({ icon, label, value, sub, color = 'gray' }) => {
   const colors = { orange: 'border-orange-200 bg-orange-50 text-orange-700', green: 'border-green-200 bg-green-50 text-green-700', blue: 'border-blue-200 bg-blue-50 text-blue-700', red: 'border-red-200 bg-red-50 text-red-700', gray: 'border-[#E4E4E7] bg-white text-[#18181B]' };
   return (
@@ -72,6 +83,7 @@ const RestauranteDashboard = () => {
   const [fechando, setFechando] = useState(false);
   const [fechamento, setFechamento] = useState(null);
   const [motoboys, setMotoboys] = useState([]);
+  const [filtroStatus, setFiltroStatus] = useState('todos');
 
   const carregar = async () => {
     try {
@@ -292,29 +304,59 @@ const RestauranteDashboard = () => {
             </div>
 
             {/* Pedidos do caixa + detalhe */}
+            {(() => {
+              const todosPedidos = caixa.pedidos ?? [];
+              const contagem = todosPedidos.reduce((acc, p) => { acc[p.status] = (acc[p.status] ?? 0) + 1; return acc; }, {});
+              const pedidosFiltrados = filtroStatus === 'todos' ? todosPedidos : todosPedidos.filter((p) => p.status === filtroStatus);
+              return (
             <div className={`grid gap-4 ${pedidoDetalhe || loadingDetalhe ? 'md:grid-cols-[1fr_340px]' : 'grid-cols-1'}`}>
               <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-[#18181B] flex items-center gap-2">
                     <Icon name="ShoppingBag" size={16} className="text-[#FF441F]" />
                     Pedidos da sessão
-                    <span className="text-xs font-normal text-[#71717A]">({caixa.pedidos?.length ?? 0})</span>
+                    <span className="text-xs font-normal text-[#71717A]">({todosPedidos.length})</span>
                   </h2>
                 </div>
 
-                {(caixa.pedidos?.length ?? 0) === 0 ? (
+                {/* Filtros por status */}
+                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 scrollbar-hide">
+                  {FILTER_TABS.map((tab) => {
+                    const cnt = tab.value === 'todos' ? todosPedidos.length : (contagem[tab.value] ?? 0);
+                    const isActive = filtroStatus === tab.value;
+                    return (
+                      <button key={tab.value} onClick={() => setFiltroStatus(tab.value)}
+                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                          isActive ? tab.activeColor : 'border-[#E4E4E7] bg-white text-[#71717A] hover:bg-[#F4F4F5] hover:border-[#D4D4D8]'
+                        }`}>
+                        {tab.label}
+                        {cnt > 0 && (
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-black/10' : 'bg-[#F4F4F5] text-[#27272A]'}`}>
+                            {cnt}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {todosPedidos.length === 0 ? (
                   <p className="text-sm text-[#71717A] text-center py-8">Nenhum pedido nesta sessão ainda.</p>
+                ) : pedidosFiltrados.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-[#71717A]">Nenhum pedido com status <strong>{FILTER_TABS.find(t => t.value === filtroStatus)?.label}</strong>.</p>
+                    <button onClick={() => setFiltroStatus('todos')} className="mt-2 text-xs text-[#FF441F] font-semibold hover:underline">Ver todos</button>
+                  </div>
                 ) : (
                   <div className="space-y-2">
-                    {caixa.pedidos.map((p) => {
+                    {pedidosFiltrados.map((p) => {
                       const sl = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 text-gray-700' };
                       const selected = pedidoSelecionadoId === p.id;
                       const clienteNome = p.customers?.name ?? null;
-                      const isAtivo = ['pending', 'confirmed', 'ready', 'out_for_delivery'].includes(p.status);
+                      const isAtivo = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(p.status);
                       return (
                         <button key={p.id} onClick={() => handleSelecionarPedido(p.id)}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${selected ? 'border-[#FF441F] bg-[#FFF4F1]' : 'border-[#F4F4F5] hover:border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
-                          {/* Status bar lateral */}
                           <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
                             p.status === 'pending' ? 'bg-yellow-400' :
                             p.status === 'confirmed' ? 'bg-blue-400' :
@@ -363,6 +405,8 @@ const RestauranteDashboard = () => {
                 )}
               </AnimatePresence>
             </div>
+              );
+            })()}
 
             {/* Saídas */}
             {(caixa.saidas?.length ?? 0) > 0 && (
