@@ -15,8 +15,9 @@ import FecharCaixaModal from './FecharCaixaModal';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const STATUS_LABELS = {
-  pending:          { label: 'Pendente',   color: 'bg-yellow-100 text-yellow-800' },
+  pending:          { label: 'Recebido',   color: 'bg-yellow-100 text-yellow-800' },
   confirmed:        { label: 'Confirmado', color: 'bg-blue-100 text-blue-800' },
+  preparing:        { label: 'Em Preparo', color: 'bg-orange-100 text-orange-800' },
   ready:            { label: 'Pronto',     color: 'bg-purple-100 text-purple-800' },
   out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 text-indigo-800' },
   delivered:        { label: 'Entregue',   color: 'bg-green-100 text-green-800' },
@@ -39,6 +40,7 @@ const KpiCard = ({ icon, label, value, sub, color = 'gray' }) => {
 
 const LINKS = [
   { label: 'Dashboard', path: '/restaurante' },
+  { label: 'Cozinha', path: '/restaurante/cozinha' },
   { label: 'Produtos', path: '/restaurante/produtos' },
   { label: 'Pedidos', path: '/restaurante/pedidos' },
   { label: 'Motoboys', path: '/restaurante/motoboys' },
@@ -311,6 +313,7 @@ const RestauranteDashboard = () => {
                           <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
                             p.status === 'pending' ? 'bg-yellow-400' :
                             p.status === 'confirmed' ? 'bg-blue-400' :
+                            p.status === 'preparing' ? 'bg-orange-400' :
                             p.status === 'ready' ? 'bg-purple-400' :
                             p.status === 'out_for_delivery' ? 'bg-indigo-400' :
                             p.status === 'delivered' ? 'bg-green-400' : 'bg-red-300'

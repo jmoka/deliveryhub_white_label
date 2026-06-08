@@ -93,6 +93,9 @@ let RestauranteController = class RestauranteController {
     buscarPedidoDetalhe(id, req) {
         return this.service.buscarPedidoDoRestaurante(req.restaurantId, id);
     }
+    cozinha(req) {
+        return this.service.getCozinha(req.restaurantId);
+    }
 };
 exports.RestauranteController = RestauranteController;
 __decorate([
@@ -269,6 +272,13 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "buscarPedidoDetalhe", null);
+__decorate([
+    (0, common_1.Get)('cozinha'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "cozinha", null);
 exports.RestauranteController = RestauranteController = __decorate([
     (0, common_1.Controller)('restaurante'),
     (0, common_1.UseGuards)(restaurant_owner_guard_1.RestaurantOwnerGuard),

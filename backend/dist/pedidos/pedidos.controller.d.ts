@@ -63,6 +63,13 @@ export declare class PedidosController {
             id: any;
             name: any;
             comissao_pct: any;
+            address: any;
+        } | null;
+        motoboy: {
+            id: any;
+            name: any;
+            phone: any;
+            access_token: any;
         } | null;
     }>;
     criar(body: {

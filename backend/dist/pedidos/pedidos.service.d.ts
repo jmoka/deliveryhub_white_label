@@ -1,5 +1,5 @@
 import { SupabaseService } from '../supabase/supabase.service';
-declare const STATUS_VALIDOS: readonly ["pending", "confirmed", "ready", "out_for_delivery", "delivered", "canceled"];
+declare const STATUS_VALIDOS: readonly ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered", "canceled"];
 type Status = typeof STATUS_VALIDOS[number];
 export declare class PedidosService {
     private supabase;
@@ -59,6 +59,13 @@ export declare class PedidosService {
             id: any;
             name: any;
             comissao_pct: any;
+            address: any;
+        } | null;
+        motoboy: {
+            id: any;
+            name: any;
+            phone: any;
+            access_token: any;
         } | null;
     }>;
     criar(body: {

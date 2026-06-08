@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
-const STATUS_VALIDOS = ['pending', 'confirmed', 'ready', 'out_for_delivery', 'delivered', 'canceled'] as const;
+const STATUS_VALIDOS = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'canceled'] as const;
 type Status = typeof STATUS_VALIDOS[number];
 
 @Injectable()

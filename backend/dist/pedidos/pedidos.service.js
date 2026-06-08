@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PedidosService = void 0;
 const common_1 = require("@nestjs/common");
 const supabase_service_1 = require("../supabase/supabase.service");
-const STATUS_VALIDOS = ['pending', 'confirmed', 'ready', 'out_for_delivery', 'delivered', 'canceled'];
+const STATUS_VALIDOS = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'canceled'];
 let PedidosService = class PedidosService {
     supabase;
     constructor(supabase) {

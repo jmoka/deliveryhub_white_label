@@ -12,6 +12,7 @@ const PAYMENT_LABELS = {
 const STATUS_FLOW = [
   { key: 'pending',          label: 'Recebido',   icon: 'Bell' },
   { key: 'confirmed',        label: 'Confirmado', icon: 'CheckCircle' },
+  { key: 'preparing',        label: 'Preparo',    icon: 'ChefHat' },
   { key: 'ready',            label: 'Pronto',     icon: 'Package' },
   { key: 'out_for_delivery', label: 'Em entrega', icon: 'Bike' },
   { key: 'delivered',        label: 'Entregue',   icon: 'CheckCircle2' },
@@ -20,6 +21,7 @@ const STATUS_FLOW = [
 const STATUS_COLORS = {
   pending:          'bg-yellow-100 text-yellow-800 border-yellow-200',
   confirmed:        'bg-blue-100 text-blue-800 border-blue-200',
+  preparing:        'bg-orange-100 text-orange-800 border-orange-200',
   ready:            'bg-purple-100 text-purple-800 border-purple-200',
   out_for_delivery: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   delivered:        'bg-green-100 text-green-800 border-green-200',
@@ -27,11 +29,12 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABEL = {
-  pending: 'Recebido', confirmed: 'Confirmado', ready: 'Pronto',
-  out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
+  pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo',
+  ready: 'Pronto', out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
 };
 
-const PROXIMOS = { pending: 'confirmed', confirmed: 'ready' };
+const PROXIMOS  = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready' };
+const ANTERIORES = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing' };
 
 const timeAgo = (iso) => {
   if (!iso) return null;
@@ -62,6 +65,7 @@ const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onA
   const isCanceled = pedido.status === 'canceled';
   const stepIdx = STATUS_FLOW.findIndex((s) => s.key === pedido.status);
   const proxStatus = PROXIMOS[pedido.status];
+  const antStatus = ANTERIORES[pedido.status];
   const activeMotoboys = (motoboys ?? []).filter((m) => m.is_active);
   const needsMotoboy = pedido.status === 'ready' && !pedido.motoboy_id;
   const statusBadge = STATUS_COLORS[pedido.status] ?? 'bg-gray-100 text-gray-700 border-gray-200';
@@ -339,16 +343,32 @@ const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onA
 
       {/* Ações */}
       <div className="space-y-2 pb-2">
-        {proxStatus && (
-          <button
-            disabled={atualizando === pedido.id}
-            onClick={() => onAvancar(pedido, proxStatus)}
-            className="w-full py-3 bg-[#FF441F] text-white text-sm font-bold rounded-2xl hover:bg-[#E63A19] disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#FF441F]/20"
-          >
-            <Icon name="ArrowRight" size={15} />
-            {atualizando === pedido.id ? 'Atualizando...' : `Avançar → ${STATUS_LABEL[proxStatus]}`}
-          </button>
-        )}
+        <div className="flex gap-2">
+          {antStatus && (
+            <button
+              disabled={atualizando === pedido.id}
+              onClick={() => onAvancar(pedido, antStatus)}
+              className="flex-1 py-3 bg-[#F4F4F5] text-[#27272A] text-sm font-bold rounded-2xl hover:bg-[#E4E4E7] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <Icon name="ArrowLeft" size={15} />
+              {STATUS_LABEL[antStatus]}
+            </button>
+          )}
+          {proxStatus && (
+            <button
+              disabled={atualizando === pedido.id}
+              onClick={() => onAvancar(pedido, proxStatus)}
+              className={`py-3 text-white text-sm font-bold rounded-2xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg ${antStatus ? 'flex-[2]' : 'flex-1'} ${proxStatus === 'preparing' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-[#FF441F] hover:bg-[#E63A19] shadow-[#FF441F]/20'}`}
+            >
+              {atualizando === pedido.id ? 'Atualizando...' : (
+                <>
+                  <Icon name={proxStatus === 'preparing' ? 'ChefHat' : 'ArrowRight'} size={15} />
+                  {proxStatus === 'preparing' ? 'Enviar p/ Cozinha' : `→ ${STATUS_LABEL[proxStatus]}`}
+                </>
+              )}
+            </button>
+          )}
+        </div>
 
         {needsMotoboy && activeMotoboys.length > 0 && (
           <div className="space-y-2">

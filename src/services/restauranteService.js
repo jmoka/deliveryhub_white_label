@@ -98,6 +98,7 @@ export const adicionarSaida = (data) =>
   apiFetch('/caixa/saida', { method: 'POST', body: JSON.stringify(data) });
 
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
+export const getPedidosCozinha = () => apiFetch('/cozinha');
 
 // Motoboys
 export const listarMotoboys = () => apiFetch('/motoboys');

@@ -278,6 +278,32 @@ let RestauranteService = class RestauranteService {
         await this.updateAparencia(restaurantId, { aberto });
         return { aberto };
     }
+    async getCozinha(restaurantId) {
+        const { data, error } = await this.supabase.client
+            .from('orders')
+            .select('id, total, status, payment_method, created_at, customer_id, customers(name, phone_e164)')
+            .eq('restaurant_id', restaurantId)
+            .in('status', ['confirmed', 'preparing'])
+            .order('created_at', { ascending: true });
+        if (error)
+            throw error;
+        const pedidos = await Promise.all((data ?? []).map(async (o) => {
+            const { data: itensRaw } = await this.supabase.client
+                .from('order_items')
+                .select('id, quantity, unit_price, product_id')
+                .eq('order_id', o.id);
+            let itens = itensRaw ?? [];
+            if (itens.length > 0) {
+                const prodIds = itens.map((i) => i.product_id);
+                const { data: prods } = await this.supabase.client
+                    .from('products').select('id, name').in('id', prodIds);
+                const prodMap = Object.fromEntries((prods ?? []).map((p) => [p.id, p.name]));
+                itens = itens.map((i) => ({ ...i, product_name: prodMap[i.product_id] ?? `Produto #${i.product_id}` }));
+            }
+            return { ...o, itens };
+        }));
+        return { pedidos };
+    }
     async getCaixa(restaurantId) {
         const { data } = await this.supabase.client
             .from('restaurants')

@@ -145,4 +145,9 @@ export class RestauranteController {
   buscarPedidoDetalhe(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.buscarPedidoDoRestaurante(req.restaurantId, id);
   }
+
+  @Get('cozinha')
+  cozinha(@Req() req: any) {
+    return this.service.getCozinha(req.restaurantId);
+  }
 }

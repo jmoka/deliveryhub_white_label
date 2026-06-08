@@ -156,6 +156,11 @@ export declare class RestauranteController {
             payment_method: any;
             created_at: any;
             customer_id: any;
+            motoboy_id: any;
+            customers: {
+                name: any;
+                phone_e164: any;
+            }[];
         }[];
         resumo: {
             total_pedidos: number;
@@ -198,6 +203,11 @@ export declare class RestauranteController {
             payment_method: any;
             created_at: any;
             customer_id: any;
+            motoboy_id: any;
+            customers: {
+                name: any;
+                phone_e164: any;
+            }[];
         }[];
         resumo: {
             total_pedidos: number;
@@ -264,6 +274,16 @@ export declare class RestauranteController {
             id: any;
             name: any;
             comissao_pct: any;
+            address: any;
         } | null;
+        motoboy: {
+            id: any;
+            name: any;
+            phone: any;
+            access_token: any;
+        } | null;
+    }>;
+    cozinha(req: any): Promise<{
+        pedidos: any[];
     }>;
 }

@@ -163,6 +163,9 @@ export declare class RestauranteService {
     toggleStatus(restaurantId: number, aberto: boolean): Promise<{
         aberto: boolean;
     }>;
+    getCozinha(restaurantId: number): Promise<{
+        pedidos: any[];
+    }>;
     getCaixa(restaurantId: number): Promise<{
         status_restaurante: boolean;
         aberto: boolean;
@@ -192,6 +195,11 @@ export declare class RestauranteService {
             payment_method: any;
             created_at: any;
             customer_id: any;
+            motoboy_id: any;
+            customers: {
+                name: any;
+                phone_e164: any;
+            }[];
         }[];
         resumo: {
             total_pedidos: number;
@@ -232,6 +240,11 @@ export declare class RestauranteService {
             payment_method: any;
             created_at: any;
             customer_id: any;
+            motoboy_id: any;
+            customers: {
+                name: any;
+                phone_e164: any;
+            }[];
         }[];
         resumo: {
             total_pedidos: number;
@@ -298,6 +311,13 @@ export declare class RestauranteService {
             id: any;
             name: any;
             comissao_pct: any;
+            address: any;
+        } | null;
+        motoboy: {
+            id: any;
+            name: any;
+            phone: any;
+            access_token: any;
         } | null;
     }>;
 }
