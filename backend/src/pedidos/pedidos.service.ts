@@ -43,24 +43,34 @@ export class PedidosService {
     if (error) throw error;
     if (!pedido) throw new NotFoundException(`Pedido ${id} não encontrado`);
 
-    const [{ data: itens }, { data: cliente }, { data: empresa }] = await Promise.all([
+    const [{ data: itensRaw }, { data: cliente }, { data: empresa }, { data: motoboy }] = await Promise.all([
       this.supabase.client
         .from('order_items')
         .select('id, quantity, unit_price, product_id')
         .eq('order_id', id),
-      this.supabase.client
-        .from('customers')
-        .select('id, name, email, phone_e164, address_json')
-        .eq('id', pedido.customer_id)
-        .maybeSingle(),
+      pedido.customer_id
+        ? this.supabase.client.from('customers').select('id, name, email, phone_e164, address_json').eq('id', pedido.customer_id).maybeSingle()
+        : Promise.resolve({ data: null }),
       this.supabase.client
         .from('restaurants')
-        .select('id, name, comissao_pct')
+        .select('id, name, comissao_pct, address')
         .eq('id', pedido.restaurant_id)
         .maybeSingle(),
+      pedido.motoboy_id
+        ? this.supabase.client.from('motoboys').select('id, name, phone, access_token').eq('id', pedido.motoboy_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
 
-    return { pedido, itens: itens ?? [], cliente, empresa };
+    // Enrich items with product names
+    let itens = itensRaw ?? [];
+    if (itens.length > 0) {
+      const prodIds = itens.map((i: any) => i.product_id);
+      const { data: prods } = await this.supabase.client.from('products').select('id, name').in('id', prodIds);
+      const prodMap = Object.fromEntries((prods ?? []).map((p: any) => [p.id, p.name]));
+      itens = itens.map((i: any) => ({ ...i, product_name: prodMap[i.product_id] ?? `Produto #${i.product_id}` }));
+    }
+
+    return { pedido, itens, cliente, empresa, motoboy };
   }
 
   async criar(body: {

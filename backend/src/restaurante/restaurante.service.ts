@@ -333,7 +333,7 @@ export class RestauranteService {
 
     const { data: ordersData } = await this.supabase.client
       .from('orders')
-      .select('id, total, status, payment_method, created_at, customer_id')
+      .select('id, total, status, payment_method, created_at, customer_id, motoboy_id, customers(name, phone_e164)')
       .eq('restaurant_id', restaurantId)
       .gte('created_at', aberto_em)
       .order('created_at', { ascending: false });

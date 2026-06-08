@@ -302,17 +302,33 @@ const RestauranteDashboard = () => {
                     {caixa.pedidos.map((p) => {
                       const sl = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 text-gray-700' };
                       const selected = pedidoSelecionadoId === p.id;
+                      const clienteNome = p.customers?.name ?? null;
+                      const isAtivo = ['pending', 'confirmed', 'ready', 'out_for_delivery'].includes(p.status);
                       return (
                         <button key={p.id} onClick={() => handleSelecionarPedido(p.id)}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${selected ? 'border-[#FF441F] bg-[#FFF4F1]' : 'border-[#F4F4F5] hover:border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
+                          {/* Status bar lateral */}
+                          <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                            p.status === 'pending' ? 'bg-yellow-400' :
+                            p.status === 'confirmed' ? 'bg-blue-400' :
+                            p.status === 'ready' ? 'bg-purple-400' :
+                            p.status === 'out_for_delivery' ? 'bg-indigo-400' :
+                            p.status === 'delivered' ? 'bg-green-400' : 'bg-red-300'
+                          }`} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold text-[#18181B]">Pedido #{p.id}</p>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <p className="text-sm font-bold text-[#18181B]">#{p.id}</p>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sl.color}`}>{sl.label}</span>
+                              {isAtivo && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-auto flex-shrink-0" />}
                             </div>
-                            <p className="text-xs text-[#71717A] mt-0.5">{fmt(p.total)} · {p.payment_method}</p>
+                            {clienteNome && (
+                              <p className="text-xs font-semibold text-[#27272A] truncate">{clienteNome}</p>
+                            )}
+                            <p className="text-xs text-[#71717A]">{fmt(p.total)} · {p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method === 'pix' ? 'PIX' : 'Cartão'}</p>
                           </div>
-                          <p className="text-xs text-[#71717A] flex-shrink-0">{new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-xs text-[#71717A] flex-shrink-0 tabular-nums">
+                            {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
                         </button>
                       );
                     })}
