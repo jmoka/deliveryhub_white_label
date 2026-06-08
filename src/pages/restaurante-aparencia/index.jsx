@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import ImageUpload from '../../components/ui/ImageUpload';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -68,7 +69,6 @@ const RestauranteAparencia = () => {
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [msg, setMsg] = useState(null); // { tipo: 'ok'|'erro', texto }
-  const [novaImgCarrossel, setNovaImgCarrossel] = useState('');
   const [fundoTipo, setFundoTipo] = useState('gradient'); // gradient | cor | imagem
 
   const [form, setForm] = useState({
@@ -133,13 +133,6 @@ const RestauranteAparencia = () => {
     });
   };
 
-  const adicionarImg = () => {
-    const url = novaImgCarrossel.trim();
-    if (!url) return;
-    set('carousel_images', [...form.carousel_images, url]);
-    setNovaImgCarrossel('');
-  };
-
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
@@ -189,67 +182,35 @@ const RestauranteAparencia = () => {
 
           {/* ── Logo ──────────────────────────────────────────────── */}
           <Section icon="Store" title="Logo do restaurante (aparece nos cards)">
-            <label className="block text-xs font-medium text-[#71717A] mb-1">URL da imagem</label>
-            <input type="url" value={form.logo_url}
-              onChange={(e) => set('logo_url', e.target.value)}
+            <ImageUpload
+              value={form.logo_url}
+              onChange={(url) => set('logo_url', url)}
+              folder="logos"
+              aspect="wide"
               placeholder="https://exemplo.com/logo.jpg"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-
+            />
             {form.logo_url && (
-              <div className="mt-3 flex items-start gap-4">
-                {/* Preview circular (avatar) */}
-                <div className="flex-shrink-0 text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#E4E4E7] bg-[#F4F4F5]">
-                    <img src={form.logo_url} alt="Logo" onError={(e) => (e.target.style.display = 'none')}
-                      className="w-full h-full object-cover" />
-                  </div>
-                  <p className="text-[10px] text-[#71717A] mt-1">Avatar</p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#E4E4E7] flex-shrink-0">
+                  <img src={form.logo_url} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                {/* Preview card mini */}
-                <div className="flex-1 rounded-xl border border-[#E4E4E7] overflow-hidden bg-white">
-                  <div className="h-20 overflow-hidden bg-[#F4F4F5]">
-                    <img src={form.logo_url} alt="Capa" onError={(e) => (e.target.style.display = 'none')}
-                      className="w-full h-full object-cover" />
-                  </div>
-                  <div className="px-3 py-2">
-                    <p className="text-xs font-bold text-[#18181B] truncate">Seu Restaurante</p>
-                    <p className="text-[10px] text-[#71717A]">Como aparece no card</p>
-                  </div>
+                <div className="flex-1 rounded-xl border border-[#E4E4E7] overflow-hidden">
+                  <div className="h-14 overflow-hidden"><img src={form.logo_url} alt="Card" className="w-full h-full object-cover" /></div>
+                  <div className="px-2 py-1.5"><p className="text-[10px] font-bold text-[#18181B]">Preview no card</p></div>
                 </div>
-                <button type="button" onClick={() => set('logo_url', '')}
-                  className="text-red-400 hover:text-red-600 p-1 flex-shrink-0 mt-1">
-                  <Icon name="X" size={15} />
-                </button>
-              </div>
-            )}
-
-            {!form.logo_url && (
-              <div className="mt-3 rounded-xl border-2 border-dashed border-[#E4E4E7] p-5 flex items-center gap-3">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center flex-shrink-0">
-                  <Icon name="Store" size={24} className="text-[#FF441F]/40" />
-                </div>
-                <p className="text-xs text-[#71717A]">Sem logo cadastrada. Os cards exibirão um ícone genérico.</p>
               </div>
             )}
           </Section>
 
           {/* ── Banner ────────────────────────────────────────────── */}
           <Section icon="Image" title="Banner (hero da página)">
-            <label className="block text-xs font-medium text-[#71717A] mb-1">URL do banner</label>
-            <input type="url" value={form.banner_url}
-              onChange={(e) => set('banner_url', e.target.value)}
+            <ImageUpload
+              value={form.banner_url}
+              onChange={(url) => set('banner_url', url)}
+              folder="banners"
+              aspect="banner"
               placeholder="https://exemplo.com/banner.jpg"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-            {form.banner_url && (
-              <div className="mt-2 relative">
-                <img src={form.banner_url} alt="Banner" onError={(e) => (e.target.style.display = 'none')}
-                  className="w-full h-28 object-cover rounded-xl" />
-                <button type="button" onClick={() => set('banner_url', '')}
-                  className="absolute top-2 right-2 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70">
-                  <Icon name="X" size={12} />
-                </button>
-              </div>
-            )}
+            />
           </Section>
 
           {/* ── Fundo ─────────────────────────────────────────────── */}
@@ -283,17 +244,13 @@ const RestauranteAparencia = () => {
             )}
 
             {fundoTipo === 'imagem' && (
-              <>
-                <label className="block text-xs font-medium text-[#71717A] mb-1">URL da imagem de fundo</label>
-                <input type="url" value={form.background_url}
-                  onChange={(e) => set('background_url', e.target.value)}
-                  placeholder="https://exemplo.com/fundo.jpg"
-                  className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-                {form.background_url && (
-                  <img src={form.background_url} alt="Fundo" onError={(e) => (e.target.style.display = 'none')}
-                    className="mt-2 w-full h-20 object-cover rounded-xl" />
-                )}
-              </>
+              <ImageUpload
+                value={form.background_url}
+                onChange={(url) => set('background_url', url)}
+                folder="fundos"
+                aspect="banner"
+                placeholder="https://exemplo.com/fundo.jpg"
+              />
             )}
           </Section>
 
@@ -311,20 +268,13 @@ const RestauranteAparencia = () => {
                   </button>
                 </div>
               ))}
-              <div className="flex gap-2">
-                <input type="url" value={novaImgCarrossel}
-                  onChange={(e) => setNovaImgCarrossel(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), adicionarImg())}
-                  placeholder="URL da imagem..."
-                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-                <button type="button" onClick={adicionarImg}
-                  className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] transition-colors">
-                  + Add
-                </button>
-              </div>
-              {form.carousel_images.length === 0 && (
-                <p className="text-xs text-[#71717A]">Nenhuma imagem adicionada</p>
-              )}
+              <ImageUpload
+                value=""
+                onChange={(url) => { if (url) set('carousel_images', [...form.carousel_images, url]); }}
+                folder="carrossel"
+                aspect="wide"
+                placeholder="URL da imagem do carrossel..."
+              />
             </div>
           </Section>
 
