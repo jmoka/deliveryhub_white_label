@@ -150,4 +150,13 @@ export class RestauranteController {
   cozinha(@Req() req: any) {
     return this.service.getCozinha(req.restaurantId);
   }
+
+  @Get('relatorio')
+  relatorio(
+    @Req() req: any,
+    @Query('de') de: string,
+    @Query('ate') ate: string,
+  ) {
+    return this.service.getRelatorio(req.restaurantId, de, ate);
+  }
 }

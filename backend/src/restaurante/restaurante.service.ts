@@ -483,6 +483,72 @@ export class RestauranteService {
     return nova;
   }
 
+  async getRelatorio(restaurantId: number, de: string, ate: string) {
+    const { data: orders, error } = await this.supabase.client
+      .from('orders')
+      .select('id, total, status, payment_method, created_at, customer_id, customers(name)')
+      .eq('restaurant_id', restaurantId)
+      .gte('created_at', de)
+      .lte('created_at', ate)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const orderIds = (orders ?? []).map((o: any) => o.id);
+
+    if (orderIds.length === 0) {
+      return {
+        pedidos: [],
+        resumo: { total_pedidos: 0, entregues: 0, cancelados: 0, em_andamento: 0, total_vendas: 0, ticket_medio: 0, por_pagamento: {} },
+      };
+    }
+
+    const { data: allItems } = await this.supabase.client
+      .from('order_items')
+      .select('id, order_id, product_id, quantity, unit_price')
+      .in('order_id', orderIds);
+
+    const productIds = [...new Set<number>((allItems ?? []).map((i: any) => i.product_id))];
+    const { data: allProds } = productIds.length > 0
+      ? await this.supabase.client.from('products').select('id, name').in('id', productIds)
+      : { data: [] };
+
+    const prodMap = Object.fromEntries((allProds ?? []).map((p: any) => [p.id, p.name]));
+    const itemsByOrder = (allItems ?? []).reduce((acc: any, item: any) => {
+      if (!acc[item.order_id]) acc[item.order_id] = [];
+      acc[item.order_id].push({ ...item, product_name: prodMap[item.product_id] ?? `#${item.product_id}` });
+      return acc;
+    }, {});
+
+    const pedidos = (orders ?? []).map((o: any) => ({ ...o, itens: itemsByOrder[o.id] ?? [] }));
+
+    const entregues = pedidos.filter((p: any) => p.status === 'delivered');
+    const cancelados = pedidos.filter((p: any) => p.status === 'canceled');
+    const em_andamento = pedidos.filter((p: any) => !['canceled', 'delivered'].includes(p.status));
+    const nao_cancelados = pedidos.filter((p: any) => p.status !== 'canceled');
+    const total_vendas = entregues.reduce((s: number, p: any) => s + (p.total ?? 0), 0);
+    const por_pagamento = nao_cancelados.reduce((acc: any, p: any) => {
+      const m = p.payment_method ?? 'unknown';
+      if (!acc[m]) acc[m] = { count: 0, total: 0 };
+      acc[m].count++;
+      acc[m].total += p.total ?? 0;
+      return acc;
+    }, {} as Record<string, { count: number; total: number }>);
+
+    return {
+      pedidos,
+      resumo: {
+        total_pedidos: pedidos.length,
+        entregues: entregues.length,
+        cancelados: cancelados.length,
+        em_andamento: em_andamento.length,
+        total_vendas,
+        ticket_medio: entregues.length > 0 ? total_vendas / entregues.length : 0,
+        por_pagamento,
+      },
+    };
+  }
+
   async buscarPedidoDoRestaurante(restaurantId: number, pedidoId: number) {
     const resultado = await this.pedidos.buscar(pedidoId);
     if (resultado.pedido.restaurant_id !== restaurantId) {

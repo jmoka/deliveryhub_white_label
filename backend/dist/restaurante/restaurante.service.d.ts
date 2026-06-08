@@ -276,6 +276,18 @@ export declare class RestauranteService {
         valor: number;
         criado_em: string;
     }>;
+    getRelatorio(restaurantId: number, de: string, ate: string): Promise<{
+        pedidos: any[];
+        resumo: {
+            total_pedidos: number;
+            entregues: number;
+            cancelados: number;
+            em_andamento: number;
+            total_vendas: any;
+            ticket_medio: number;
+            por_pagamento: any;
+        };
+    }>;
     buscarPedidoDoRestaurante(restaurantId: number, pedidoId: number): Promise<{
         pedido: {
             id: any;

@@ -286,4 +286,16 @@ export declare class RestauranteController {
     cozinha(req: any): Promise<{
         pedidos: any[];
     }>;
+    relatorio(req: any, de: string, ate: string): Promise<{
+        pedidos: any[];
+        resumo: {
+            total_pedidos: number;
+            entregues: number;
+            cancelados: number;
+            em_andamento: number;
+            total_vendas: any;
+            ticket_medio: number;
+            por_pagamento: any;
+        };
+    }>;
 }

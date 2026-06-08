@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import PedidoDetalhe from './PedidoDetalhe';
+import RelatorioPanel from './RelatorioPanel';
 import { printComanda } from '../../utils/printComanda';
 import SaidaModal from './SaidaModal';
 import FecharCaixaModal from './FecharCaixaModal';
@@ -427,6 +428,8 @@ const RestauranteDashboard = () => {
                 </div>
               </div>
             )}
+
+            <RelatorioPanel restauranteNome={empresa?.name} />
           </>
         )}
       </main>
