@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import PedidoDetalhe from './PedidoDetalhe';
+import { printComanda } from '../../utils/printComanda';
 import SaidaModal from './SaidaModal';
 import FecharCaixaModal from './FecharCaixaModal';
 
@@ -135,6 +136,10 @@ const RestauranteDashboard = () => {
       const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedido.id)]);
       setCaixa(novoCaixa);
       setPedidoDetalhe(novoDetalhe);
+      if (novoStatus === 'preparing') {
+        const pedidoParaImprimir = { ...novoDetalhe.pedido, customers: novoDetalhe.cliente };
+        printComanda(pedidoParaImprimir, novoDetalhe.itens ?? [], empresa?.name);
+      }
     } catch (e) { alert(e.message); } finally { setAtualizando(null); }
   };
 

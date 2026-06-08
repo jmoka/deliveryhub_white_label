@@ -226,7 +226,7 @@ export class PagamentosService {
     if (statusPagamento === 'paid') {
       await this.supabase.client
         .from('orders')
-        .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+        .update({ status: 'preparing', updated_at: new Date().toISOString() })
         .eq('id', pedido.id);
     }
 
@@ -287,7 +287,7 @@ export class PagamentosService {
     if (pago) {
       await this.supabase.client
         .from('orders')
-        .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+        .update({ status: 'preparing', updated_at: new Date().toISOString() })
         .eq('id', pagamento.order_id);
     }
 

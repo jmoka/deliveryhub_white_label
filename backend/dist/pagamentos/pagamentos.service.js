@@ -181,7 +181,7 @@ let PagamentosService = class PagamentosService {
         if (statusPagamento === 'paid') {
             await this.supabase.client
                 .from('orders')
-                .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+                .update({ status: 'preparing', updated_at: new Date().toISOString() })
                 .eq('id', pedido.id);
         }
         return {
@@ -235,7 +235,7 @@ let PagamentosService = class PagamentosService {
         if (pago) {
             await this.supabase.client
                 .from('orders')
-                .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+                .update({ status: 'preparing', updated_at: new Date().toISOString() })
                 .eq('id', pagamento.order_id);
         }
         return { processado: true, status: novoStatus, order_id: pagamento.order_id };

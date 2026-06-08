@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
+import { printComanda, barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
@@ -9,61 +10,6 @@ const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débit
 const STATUS_INFO = {
   confirmed: { label: 'Confirmado', next: 'preparing', nextLabel: 'Iniciar Preparo', nextIcon: 'ChefHat', prev: 'pending', prevLabel: 'Pendente', color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800', btnColor: 'bg-orange-500 hover:bg-orange-600' },
   preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Confirmado', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
-};
-
-// Barcode value: order ID zero-padded to 8 digits for CODE128 scan reliability
-const barcodeValue = (id) => String(id).padStart(8, '0');
-
-const printComanda = (pedido, itens, restauranteNome) => {
-  const w = window.open('', '_blank', 'width=440,height=680');
-  if (!w) return;
-  const hora = new Date(pedido.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  const clienteNome = pedido.customers?.name ?? '';
-  const bc = barcodeValue(pedido.id);
-
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Comanda #${pedido.id}</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
-    .center{text-align:center;display:block}
-    .big{font-size:30px;font-weight:900;text-align:center;letter-spacing:3px;margin:8px 0}
-    .rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
-    hr{border:none;border-top:1px dashed #000;margin:8px 0}
-    .item{display:flex;gap:8px;padding:4px 0;font-size:15px}
-    .qty{font-weight:900;min-width:28px}
-    .foot{font-size:11px;text-align:center;margin-top:6px}
-    #barcode{display:block;margin:8px auto 4px;max-width:260px}
-    @media print{button{display:none!important}}
-  </style></head><body>
-  <div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
-  <div class="center" style="font-size:11px;letter-spacing:1px">COMANDA DE COZINHA</div>
-  <hr/>
-  <div class="big">PEDIDO #${pedido.id}</div>
-  <div class="center" style="font-size:13px">${hora}</div>
-  ${clienteNome ? `<div class="center" style="font-size:12px;margin-top:2px;font-weight:bold">${clienteNome}</div>` : ''}
-  <hr/>
-  ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name ?? `Produto #${i.product_id}`}</span></div>`).join('')}
-  <hr/>
-  <div class="center" style="font-size:13px">Pgto: <b>${PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method}</b>${pedido.payment_method === 'cash' ? ' &nbsp;⚠ COBRAR' : ''}</div>
-  <hr/>
-  <svg id="barcode"></svg>
-  <div class="foot">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
-  <script>
-    function doBarcode() {
-      if (typeof JsBarcode !== 'undefined') {
-        JsBarcode("#barcode","${bc}",{format:"CODE128",width:2,height:56,displayValue:true,fontSize:13,text:"#${pedido.id}",margin:6,background:"#ffffff"});
-      }
-      window.print();
-      setTimeout(function(){window.close()},1500);
-    }
-    var s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
-    s.onload=doBarcode;
-    s.onerror=function(){document.getElementById('barcode').style.display='none';doBarcode()};
-    document.head.appendChild(s);
-  </script>
-  </body></html>`);
-  w.document.close();
 };
 
 const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
@@ -88,7 +34,6 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
         </div>
       )}
 
-      {/* Header do card */}
       <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
@@ -121,7 +66,6 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
         </div>
       </div>
 
-      {/* Itens */}
       <div className="px-4 py-3 bg-white mx-3 rounded-xl mb-3 border border-[#E4E4E7] flex-1">
         <div className="space-y-2">
           {(pedido.itens ?? []).map((item) => (
@@ -139,7 +83,6 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
         </div>
       </div>
 
-      {/* Ações */}
       <div className="px-3 pb-3 flex gap-2">
         <button
           disabled={isAtualizando}
@@ -179,12 +122,34 @@ const RestauranteCozinha = () => {
   const [scanInput, setScanInput] = useState('');
   const [highlighted, setHighlighted] = useState(null);
   const [scanMsg, setScanMsg] = useState(null);
+  const [showPrinterSettings, setShowPrinterSettings] = useState(false);
+  const [printerInput, setPrinterInput] = useState('');
+  const [printerSaved, setPrinterSaved] = useState(false);
   const scanRef = useRef(null);
+  const prevOrderIds = useRef(new Set());
+  const firstLoad = useRef(true);
 
-  const carregar = useCallback(async () => {
+  const handleSavePrinter = () => {
+    setPrinterName(printerInput.trim());
+    setPrinterSaved(true);
+    setTimeout(() => setPrinterSaved(false), 2000);
+  };
+
+  const carregar = useCallback(async (currentRestauranteNome) => {
     try {
       const data = await getPedidosCozinha();
-      setPedidos(data.pedidos ?? []);
+      const newPedidos = data.pedidos ?? [];
+
+      if (!firstLoad.current) {
+        const novos = newPedidos.filter((p) => !prevOrderIds.current.has(p.id));
+        novos.forEach((p) => {
+          printComanda(p, p.itens ?? [], currentRestauranteNome);
+        });
+      }
+
+      prevOrderIds.current = new Set(newPedidos.map((p) => p.id));
+      firstLoad.current = false;
+      setPedidos(newPedidos);
       setLastUpdate(new Date());
       setErro(null);
     } catch (e) {
@@ -195,13 +160,20 @@ const RestauranteCozinha = () => {
   }, []);
 
   useEffect(() => {
-    Promise.all([
-      carregar(),
-      getMinhaEmpresa().then((d) => setRestauranteNome(d.empresa?.name ?? '')).catch(() => {}),
-    ]);
-    const id = setInterval(carregar, 30000);
+    let nome = '';
+    getMinhaEmpresa()
+      .then((d) => { nome = d.empresa?.name ?? ''; setRestauranteNome(nome); })
+      .catch(() => {});
+
+    carregar(nome);
+    const id = setInterval(() => carregar(nome), 30000);
     return () => clearInterval(id);
   }, [carregar]);
+
+  useEffect(() => {
+    const saved = getPrinterName();
+    setPrinterInput(saved);
+  }, []);
 
   const buscarPorId = useCallback((rawValue) => {
     const id = parseInt(rawValue.replace(/\D/g, ''));
@@ -223,17 +195,14 @@ const RestauranteCozinha = () => {
   }, [pedidos]);
 
   const handleScanKey = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      buscarPorId(scanInput);
-    }
+    if (e.key === 'Enter') { e.preventDefault(); buscarPorId(scanInput); }
   };
 
   const handleAvancar = async (pedidoId, novoStatus) => {
     setAtualizando(pedidoId);
     try {
       await atualizarStatusPedido(pedidoId, novoStatus);
-      await carregar();
+      await carregar(restauranteNome);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -252,7 +221,6 @@ const RestauranteCozinha = () => {
 
   return (
     <div className="min-h-screen bg-[#111111]">
-      {/* Header */}
       <header className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-5 py-3">
         <div className="flex items-center gap-4 mb-3">
           <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
@@ -267,18 +235,53 @@ const RestauranteCozinha = () => {
               <p className="text-[#71717A] text-xs">{restauranteNome}</p>
             </div>
           </div>
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             <div className="flex items-center gap-2 text-xs text-[#71717A]">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               {lastUpdate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) ?? '—'}
             </div>
-            <button onClick={carregar} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+            <button onClick={() => { setShowPrinterSettings((v) => !v); setPrinterInput(getPrinterName()); }}
+              className={`p-2 rounded-lg transition-colors ${showPrinterSettings ? 'text-[#FF441F] bg-[#FF441F]/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
+              title="Configurar impressora">
+              <Icon name="Printer" size={16} />
+            </button>
+            <button onClick={() => carregar(restauranteNome)} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
               <Icon name="RefreshCw" size={16} />
             </button>
           </div>
         </div>
 
-        {/* Scanner / busca por código de barras ou número */}
+        {/* Printer settings inline bar */}
+        {showPrinterSettings && (
+          <div className="mb-3 flex items-center gap-3 bg-[#111111] border border-[#2A2A2A] rounded-xl px-4 py-3">
+            <Icon name="Printer" size={15} className="text-[#FF441F] flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#71717A] mb-1">Nome da impressora padrão (como aparece no Windows/Mac)</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={printerInput}
+                  onChange={(e) => setPrinterInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSavePrinter()}
+                  placeholder="Ex: EPSON TM-T20, HP LaserJet..."
+                  className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-[#3A3A3A] outline-none focus:border-[#FF441F]"
+                />
+                <button onClick={handleSavePrinter}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${printerSaved ? 'bg-green-600 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'}`}>
+                  {printerSaved ? '✓ Salvo' : 'Salvar'}
+                </button>
+                {getPrinterName() && (
+                  <button onClick={() => { setPrinterName(''); setPrinterInput(''); }}
+                    className="px-3 py-1.5 text-xs font-bold bg-[#2A2A2A] text-[#71717A] hover:text-white rounded-lg">
+                    Limpar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Scanner / barcode reader input */}
         <div className="flex items-center gap-3">
           <div className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border transition-colors ${
             scanMsg?.tipo === 'ok' ? 'border-green-500 bg-green-900/20' :
@@ -316,7 +319,6 @@ const RestauranteCozinha = () => {
       )}
 
       <main className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
-        {/* Coluna: Aguardando Preparo */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-blue-400" />
@@ -340,7 +342,6 @@ const RestauranteCozinha = () => {
           )}
         </div>
 
-        {/* Coluna: Em Preparo */}
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
@@ -373,7 +374,7 @@ const RestauranteCozinha = () => {
         </div>
       )}
 
-      <p className="text-center text-xs text-[#3A3A3A] py-4">Atualiza automaticamente a cada 30 segundos</p>
+      <p className="text-center text-xs text-[#3A3A3A] py-4">Atualiza automaticamente a cada 30 segundos · auto-imprime novos pedidos</p>
     </div>
   );
 };
