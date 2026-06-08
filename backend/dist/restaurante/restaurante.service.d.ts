@@ -276,6 +276,9 @@ export declare class RestauranteService {
         valor: number;
         criado_em: string;
     }>;
+    uploadImage(folder: string, file: Express.Multer.File): Promise<{
+        url: string;
+    }>;
     setupStorage(): Promise<{
         ok: boolean;
         bucket: string;

@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RestauranteController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
 const restaurante_service_1 = require("./restaurante.service");
 const restaurant_owner_guard_1 = require("../auth/restaurant-owner.guard");
 let RestauranteController = class RestauranteController {
@@ -98,6 +99,9 @@ let RestauranteController = class RestauranteController {
     }
     setupStorage() {
         return this.service.setupStorage();
+    }
+    uploadImage(file, folder = 'geral') {
+        return this.service.uploadImage(folder, file);
     }
     relatorio(req, de, ate) {
         return this.service.getRelatorio(req.restaurantId, de, ate);
@@ -291,6 +295,15 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "setupStorage", null);
+__decorate([
+    (0, common_1.Post)('storage/upload'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', { limits: { fileSize: 5 * 1024 * 1024 } })),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Query)('folder')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "uploadImage", null);
 __decorate([
     (0, common_1.Get)('relatorio'),
     __param(0, (0, common_1.Req)()),

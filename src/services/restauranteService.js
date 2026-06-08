@@ -102,6 +102,26 @@ export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 
+export const uploadImagem = async (file, folder = 'geral') => {
+  const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
+  const token = sessionResult?.data?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+  const form = new FormData();
+  form.append('file', file);
+
+  const res = await fetch(`/api/restaurante/storage/upload?folder=${encodeURIComponent(folder)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const json = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
+  if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+  return json; // { url: string }
+};
+
 // Motoboys
 export const listarMotoboys = () => apiFetch('/motoboys');
 export const criarMotoboy = (data) =>

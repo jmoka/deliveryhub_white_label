@@ -1,7 +1,8 @@
 import {
   Body, Controller, Get, Param, ParseIntPipe,
-  Patch, Post, Put, Query, Req, UseGuards,
+  Patch, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { RestauranteService } from './restaurante.service';
 import { RestaurantOwnerGuard } from '../auth/restaurant-owner.guard';
 
@@ -154,6 +155,15 @@ export class RestauranteController {
   @Post('storage/setup')
   setupStorage() {
     return this.service.setupStorage();
+  }
+
+  @Post('storage/upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Query('folder') folder = 'geral',
+  ) {
+    return this.service.uploadImage(folder, file);
   }
 
   @Get('relatorio')

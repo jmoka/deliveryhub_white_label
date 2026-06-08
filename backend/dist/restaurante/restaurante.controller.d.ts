@@ -291,6 +291,9 @@ export declare class RestauranteController {
         bucket: string;
         criado: boolean;
     }>;
+    uploadImage(file: Express.Multer.File, folder?: string): Promise<{
+        url: string;
+    }>;
     relatorio(req: any, de: string, ate: string): Promise<{
         pedidos: any[];
         resumo: {

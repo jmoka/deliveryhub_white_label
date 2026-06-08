@@ -1,9 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
-import { setupStorage } from '../../services/restauranteService';
+import { uploadImagem } from '../../services/restauranteService';
 import Icon from '../AppIcon';
 
-const BUCKET = 'restaurante-imagens';
 const MAX_MB = 5;
 const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/gif';
 
@@ -26,41 +24,18 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
 
   const previewH = aspect === 'square' ? 'h-32 w-32' : aspect === 'banner' ? 'h-32 w-full' : 'h-24 w-full';
 
-  const doUpload = async (file, path) => {
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
-    return error;
-  };
-
   const upload = async (file) => {
     setErro(null);
     if (!file.type.startsWith('image/')) { setErro('Apenas imagens (JPG, PNG, WEBP)'); return; }
     if (file.size > MAX_MB * 1024 * 1024) { setErro(`Máximo ${MAX_MB}MB`); return; }
 
     setUploading(true);
-    setProgress(10);
+    setProgress(20);
     try {
-      const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
-      setProgress(30);
-      let upErr = await doUpload(file, path);
-
-      // Bucket não existe → criar via backend e tentar de novo
-      if (upErr && (upErr.message?.includes('Bucket not found') || upErr.statusCode === '404' || upErr.error === 'Bucket not found')) {
-        setProgress(45);
-        await setupStorage();
-        setProgress(55);
-        upErr = await doUpload(file, path);
-      }
-
-      if (upErr) throw upErr;
-      setProgress(85);
-
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      setProgress(50);
+      const result = await uploadImagem(file, folder);
       setProgress(100);
-      onChange(data.publicUrl);
+      onChange(result.url);
     } catch (e) {
       setErro(e.message ?? 'Erro no upload');
     } finally {
@@ -74,7 +49,7 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
   const handleDrop = (e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) upload(f); };
   const handleUrlConfirm = () => { const u = urlInput.trim(); if (u) { onChange(u); setUrlInput(''); } };
 
-  // ── Com imagem: preview + trocar ─────────────────────────────────
+  // ── Com imagem: preview + trocar/remover ─────────────────────────
   if (value) {
     return (
       <div className="space-y-2">
@@ -86,14 +61,17 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
             <Icon name="X" size={13} />
           </button>
         </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => fileRef.current?.click()}
-            disabled={uploading}
+        <div className="flex gap-2 flex-wrap">
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E4E4E7] rounded-lg text-xs font-semibold text-[#27272A] hover:bg-[#F4F4F5] disabled:opacity-50 transition-colors">
             {uploading
               ? <div className="w-3 h-3 border-2 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
               : <Icon name="Upload" size={12} />}
-            Trocar
+            Trocar arquivo
+          </button>
+          <button type="button" onClick={() => { setTab('url'); onChange(''); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E4E4E7] rounded-lg text-xs font-semibold text-[#71717A] hover:bg-[#F4F4F5] transition-colors">
+            <Icon name="Link" size={12} /> Usar URL
           </button>
           <input ref={fileRef} type="file" accept={ACCEPT} onChange={handleFile} className="hidden" />
         </div>
@@ -110,9 +88,8 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
   // ── Sem imagem: tabs upload/url ───────────────────────────────────
   return (
     <div className="space-y-2">
-      {/* Tabs */}
       <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit">
-        {[['upload', 'Upload', 'Upload'], ['url', 'Link URL', 'Link']].map(([k, l]) => (
+        {[['upload', 'Upload'], ['url', 'Link URL']].map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${tab === k ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
             {l}
@@ -133,8 +110,8 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
           >
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 border-3 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
-                <p className="text-xs text-[#71717A]">Enviando... {progress}%</p>
+                <div className="w-8 h-8 border-2 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
+                <p className="text-xs text-[#71717A]">Enviando...</p>
               </div>
             ) : (
               <>

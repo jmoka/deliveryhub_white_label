@@ -422,6 +422,19 @@ let RestauranteService = class RestauranteService {
         await this.updateAparencia(restaurantId, { caixa_saidas: [...saidas, nova] });
         return nova;
     }
+    async uploadImage(folder, file) {
+        const BUCKET = 'restaurante-imagens';
+        await this.setupStorage();
+        const ext = (file.originalname.split('.').pop() ?? 'jpg').toLowerCase();
+        const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error } = await this.supabase.client.storage
+            .from(BUCKET)
+            .upload(path, file.buffer, { cacheControl: '3600', upsert: false, contentType: file.mimetype });
+        if (error)
+            throw error;
+        const { data } = this.supabase.client.storage.from(BUCKET).getPublicUrl(path);
+        return { url: data.publicUrl };
+    }
     async setupStorage() {
         const BUCKET = 'restaurante-imagens';
         const { data: buckets } = await this.supabase.client.storage.listBuckets();
