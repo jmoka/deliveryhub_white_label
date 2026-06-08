@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAparencia, updateAparencia, getMinhaEmpresa } from '../../services/restauranteService';
+import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 
@@ -72,6 +72,7 @@ const RestauranteAparencia = () => {
   const [fundoTipo, setFundoTipo] = useState('gradient'); // gradient | cor | imagem
 
   const [form, setForm] = useState({
+    logo_url: '',
     descricao: '',
     background_url: '',
     background_color: '#FF441F',
@@ -86,6 +87,7 @@ const RestauranteAparencia = () => {
       .then(([ap, emp]) => {
         setSlug(emp.empresa?.slug ?? '');
         setForm({
+          logo_url: emp.empresa?.logo_url ?? '',
           descricao: ap.descricao ?? '',
           background_url: ap.background_url ?? '',
           background_color: ap.background_color ?? '#FF441F',
@@ -110,7 +112,10 @@ const RestauranteAparencia = () => {
         background_url: fundoTipo === 'imagem' ? form.background_url : '',
         background_color: fundoTipo === 'cor' ? form.background_color : '',
       };
-      await updateAparencia(payload);
+      await Promise.all([
+        updateAparencia(payload),
+        updateEmpresa({ logo_url: form.logo_url }),
+      ]);
       setMsg({ tipo: 'ok', texto: 'Configurações salvas!' });
       setTimeout(() => setMsg(null), 3000);
     } catch (err) {
@@ -181,6 +186,52 @@ const RestauranteAparencia = () => {
               </div>
             </Section>
           )}
+
+          {/* ── Logo ──────────────────────────────────────────────── */}
+          <Section icon="Store" title="Logo do restaurante (aparece nos cards)">
+            <label className="block text-xs font-medium text-[#71717A] mb-1">URL da imagem</label>
+            <input type="url" value={form.logo_url}
+              onChange={(e) => set('logo_url', e.target.value)}
+              placeholder="https://exemplo.com/logo.jpg"
+              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+
+            {form.logo_url && (
+              <div className="mt-3 flex items-start gap-4">
+                {/* Preview circular (avatar) */}
+                <div className="flex-shrink-0 text-center">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#E4E4E7] bg-[#F4F4F5]">
+                    <img src={form.logo_url} alt="Logo" onError={(e) => (e.target.style.display = 'none')}
+                      className="w-full h-full object-cover" />
+                  </div>
+                  <p className="text-[10px] text-[#71717A] mt-1">Avatar</p>
+                </div>
+                {/* Preview card mini */}
+                <div className="flex-1 rounded-xl border border-[#E4E4E7] overflow-hidden bg-white">
+                  <div className="h-20 overflow-hidden bg-[#F4F4F5]">
+                    <img src={form.logo_url} alt="Capa" onError={(e) => (e.target.style.display = 'none')}
+                      className="w-full h-full object-cover" />
+                  </div>
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-bold text-[#18181B] truncate">Seu Restaurante</p>
+                    <p className="text-[10px] text-[#71717A]">Como aparece no card</p>
+                  </div>
+                </div>
+                <button type="button" onClick={() => set('logo_url', '')}
+                  className="text-red-400 hover:text-red-600 p-1 flex-shrink-0 mt-1">
+                  <Icon name="X" size={15} />
+                </button>
+              </div>
+            )}
+
+            {!form.logo_url && (
+              <div className="mt-3 rounded-xl border-2 border-dashed border-[#E4E4E7] p-5 flex items-center gap-3">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center flex-shrink-0">
+                  <Icon name="Store" size={24} className="text-[#FF441F]/40" />
+                </div>
+                <p className="text-xs text-[#71717A]">Sem logo cadastrada. Os cards exibirão um ícone genérico.</p>
+              </div>
+            )}
+          </Section>
 
           {/* ── Banner ────────────────────────────────────────────── */}
           <Section icon="Image" title="Banner (hero da página)">
