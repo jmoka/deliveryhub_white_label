@@ -100,6 +100,7 @@ export const adicionarSaida = (data) =>
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
+export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 
 // Motoboys
 export const listarMotoboys = () => apiFetch('/motoboys');

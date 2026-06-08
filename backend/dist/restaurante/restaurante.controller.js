@@ -96,6 +96,9 @@ let RestauranteController = class RestauranteController {
     cozinha(req) {
         return this.service.getCozinha(req.restaurantId);
     }
+    setupStorage() {
+        return this.service.setupStorage();
+    }
     relatorio(req, de, ate) {
         return this.service.getRelatorio(req.restaurantId, de, ate);
     }
@@ -282,6 +285,12 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "cozinha", null);
+__decorate([
+    (0, common_1.Post)('storage/setup'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "setupStorage", null);
 __decorate([
     (0, common_1.Get)('relatorio'),
     __param(0, (0, common_1.Req)()),

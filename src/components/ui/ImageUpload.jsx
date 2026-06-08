@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { setupStorage } from '../../services/restauranteService';
 import Icon from '../AppIcon';
 
 const BUCKET = 'restaurante-imagens';
@@ -25,6 +26,13 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
 
   const previewH = aspect === 'square' ? 'h-32 w-32' : aspect === 'banner' ? 'h-32 w-full' : 'h-24 w-full';
 
+  const doUpload = async (file, path) => {
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+    return error;
+  };
+
   const upload = async (file) => {
     setErro(null);
     if (!file.type.startsWith('image/')) { setErro('Apenas imagens (JPG, PNG, WEBP)'); return; }
@@ -36,13 +44,19 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
       const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
       const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-      setProgress(40);
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+      setProgress(30);
+      let upErr = await doUpload(file, path);
+
+      // Bucket não existe → criar via backend e tentar de novo
+      if (upErr && (upErr.message?.includes('Bucket not found') || upErr.statusCode === '404' || upErr.error === 'Bucket not found')) {
+        setProgress(45);
+        await setupStorage();
+        setProgress(55);
+        upErr = await doUpload(file, path);
+      }
 
       if (upErr) throw upErr;
-      setProgress(80);
+      setProgress(85);
 
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
       setProgress(100);

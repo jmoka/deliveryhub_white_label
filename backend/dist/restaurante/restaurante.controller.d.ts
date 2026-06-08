@@ -286,6 +286,11 @@ export declare class RestauranteController {
     cozinha(req: any): Promise<{
         pedidos: any[];
     }>;
+    setupStorage(): Promise<{
+        ok: boolean;
+        bucket: string;
+        criado: boolean;
+    }>;
     relatorio(req: any, de: string, ate: string): Promise<{
         pedidos: any[];
         resumo: {

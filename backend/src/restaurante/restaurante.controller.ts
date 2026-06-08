@@ -151,6 +151,11 @@ export class RestauranteController {
     return this.service.getCozinha(req.restaurantId);
   }
 
+  @Post('storage/setup')
+  setupStorage() {
+    return this.service.setupStorage();
+  }
+
   @Get('relatorio')
   relatorio(
     @Req() req: any,

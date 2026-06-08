@@ -276,6 +276,11 @@ export declare class RestauranteService {
         valor: number;
         criado_em: string;
     }>;
+    setupStorage(): Promise<{
+        ok: boolean;
+        bucket: string;
+        criado: boolean;
+    }>;
     getRelatorio(restaurantId: number, de: string, ate: string): Promise<{
         pedidos: any[];
         resumo: {

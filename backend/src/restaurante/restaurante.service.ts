@@ -483,6 +483,22 @@ export class RestauranteService {
     return nova;
   }
 
+  async setupStorage() {
+    const BUCKET = 'restaurante-imagens';
+    const { data: buckets } = await this.supabase.client.storage.listBuckets();
+    const exists = (buckets ?? []).some((b: any) => b.id === BUCKET);
+
+    if (!exists) {
+      const { error } = await this.supabase.client.storage.createBucket(BUCKET, {
+        public: true,
+        fileSizeLimit: 5 * 1024 * 1024,
+        allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
+      });
+      if (error) throw error;
+    }
+    return { ok: true, bucket: BUCKET, criado: !exists };
+  }
+
   async getRelatorio(restaurantId: number, de: string, ate: string) {
     const { data: orders, error } = await this.supabase.client
       .from('orders')
