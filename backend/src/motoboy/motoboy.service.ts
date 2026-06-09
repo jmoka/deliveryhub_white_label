@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -155,6 +155,76 @@ export class MotoboyService {
     if (error) throw error;
 
     return { ok: true, pedido_id: pedidoId, tipo, status: update.status ?? pedido.status };
+  }
+
+  async pedidosDisponiveis(motoboyId: number) {
+    const mb = await this.infoMotoboy(motoboyId);
+    if (!mb) throw new NotFoundException('Motoboy não encontrado');
+
+    const { data, error } = await this.supabase.client
+      .from('orders')
+      .select('id, total, status, payment_method, created_at, customer_id')
+      .eq('restaurant_id', mb.restaurant_id)
+      .eq('status', 'ready')
+      .is('motoboy_id', null)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    const pedidos = await Promise.all(
+      (data ?? []).map(async (p) => {
+        const { data: c } = p.customer_id
+          ? await this.supabase.client
+              .from('customers')
+              .select('name, phone_e164, address_json')
+              .eq('id', p.customer_id)
+              .maybeSingle()
+          : { data: null };
+        const { data: itensRaw } = await this.supabase.client
+          .from('order_items')
+          .select('id, quantity, unit_price, product_id')
+          .eq('order_id', p.id);
+        return { ...p, cliente: c, itens: itensRaw ?? [] };
+      }),
+    );
+    return { pedidos };
+  }
+
+  async pegarPedido(pedidoId: number, motoboyId: number) {
+    const mb = await this.infoMotoboy(motoboyId);
+    if (!mb) throw new NotFoundException('Motoboy não encontrado');
+
+    const { data, error } = await this.supabase.client
+      .from('orders')
+      .update({ motoboy_id: motoboyId, status: 'motoboy_collecting', updated_at: new Date().toISOString() })
+      .eq('id', pedidoId)
+      .eq('restaurant_id', mb.restaurant_id)
+      .eq('status', 'ready')
+      .is('motoboy_id', null)
+      .select('id');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new ConflictException('Pedido já foi pego por outro motoboy ou não está disponível');
+    }
+    return { ok: true, pedido_id: pedidoId, status: 'motoboy_collecting' };
+  }
+
+  async confirmarColeta(pedidoId: number, motoboyId: number, barcode: string) {
+    const expected = String(pedidoId).padStart(8, '0');
+    if (barcode.replace(/\D/g, '') !== expected) {
+      throw new BadRequestException('Código de barras não confere com este pedido');
+    }
+    const { data, error } = await this.supabase.client
+      .from('orders')
+      .update({ status: 'out_for_delivery', updated_at: new Date().toISOString() })
+      .eq('id', pedidoId)
+      .eq('motoboy_id', motoboyId)
+      .eq('status', 'motoboy_collecting')
+      .select('id');
+    if (error) throw error;
+    if (!data?.length) {
+      throw new ConflictException('Pedido não está aguardando coleta ou não pertence a você');
+    }
+    return { ok: true, pedido_id: pedidoId, status: 'out_for_delivery' };
   }
 
   async infoMotoboy(motoboyId: number) {

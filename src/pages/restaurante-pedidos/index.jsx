@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMeusPedidos, atualizarStatusPedido } from '../../services/restauranteService';
+import { getMeusPedidos, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const STATUS_LABELS = {
-  pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-800' },
-  confirmed: { label: 'Confirmado', color: 'bg-blue-100 text-blue-800' },
-  ready: { label: 'Pronto', color: 'bg-purple-100 text-purple-800' },
-  out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 text-indigo-800' },
-  delivered: { label: 'Entregue', color: 'bg-green-100 text-green-800' },
-  canceled: { label: 'Cancelado', color: 'bg-red-100 text-red-800' },
+  pending:            { label: 'Pendente',       color: 'bg-yellow-100 text-yellow-800' },
+  confirmed:          { label: 'Confirmado',     color: 'bg-blue-100 text-blue-800' },
+  preparing:          { label: 'Em preparo',     color: 'bg-orange-100 text-orange-800' },
+  ready:              { label: 'Pronto',         color: 'bg-purple-100 text-purple-800' },
+  motoboy_collecting: { label: 'Motoboy vindo',  color: 'bg-sky-100 text-sky-800' },
+  out_for_delivery:   { label: 'Em entrega',     color: 'bg-indigo-100 text-indigo-800' },
+  delivered:          { label: 'Entregue',       color: 'bg-green-100 text-green-800' },
+  canceled:           { label: 'Cancelado',      color: 'bg-red-100 text-red-800' },
 };
 
 const PROXIMOS_STATUS = {
@@ -21,7 +24,7 @@ const PROXIMOS_STATUS = {
   out_for_delivery: 'delivered',
 };
 
-const FILTROS = ['', 'pending', 'confirmed', 'ready', 'out_for_delivery', 'delivered', 'canceled'];
+const FILTROS = ['', 'pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered', 'canceled'];
 
 const RestaurantePedidos = () => {
   const navigate = useNavigate();
@@ -31,6 +34,7 @@ const RestaurantePedidos = () => {
   const [erro, setErro] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('');
   const [atualizando, setAtualizando] = useState(null);
+  const [restauranteId, setRestauranteId] = useState(null);
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -41,6 +45,28 @@ const RestaurantePedidos = () => {
   }, [filtroStatus]);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  // Busca ID do restaurante para o filtro realtime
+  useEffect(() => {
+    getMinhaEmpresa()
+      .then((d) => setRestauranteId(d.empresa?.id ?? null))
+      .catch(() => {});
+  }, []);
+
+  // Realtime: recarrega quando qualquer pedido do restaurante muda
+  useEffect(() => {
+    if (!restauranteId) return;
+    const channel = supabase
+      .channel(`pedidos-restaurante-${restauranteId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `restaurant_id=eq.${restauranteId}`,
+      }, () => carregar())
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [restauranteId, carregar]);
 
   const avancarStatus = async (pedido) => {
     const proximo = PROXIMOS_STATUS[pedido.status];

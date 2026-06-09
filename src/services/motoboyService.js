@@ -44,3 +44,14 @@ export const registrarOcorrencia = (pedidoId, tipo, motivo) =>
     method: 'POST',
     body: JSON.stringify({ tipo, motivo }),
   });
+
+export const getPedidosDisponiveis = () => motoboyFetch('/pedidos/disponiveis');
+
+export const pegarPedido = (pedidoId) =>
+  motoboyFetch(`/pedidos/${pedidoId}/pegar`, { method: 'POST' });
+
+export const confirmarColeta = (pedidoId, barcode) =>
+  motoboyFetch(`/pedidos/${pedidoId}/confirmar-coleta`, {
+    method: 'POST',
+    body: JSON.stringify({ barcode }),
+  });

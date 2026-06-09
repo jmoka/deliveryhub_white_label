@@ -24,8 +24,17 @@ let MotoboyPortalController = class MotoboyPortalController {
     me(req) {
         return this.service.infoMotoboy(req.motoboyId);
     }
+    disponiveis(req) {
+        return this.service.pedidosDisponiveis(req.motoboyId);
+    }
     pedidos(req) {
         return this.service.meusPedidos(req.motoboyId);
+    }
+    pegar(id, req) {
+        return this.service.pegarPedido(id, req.motoboyId);
+    }
+    confirmarColeta(id, body, req) {
+        return this.service.confirmarColeta(id, req.motoboyId, body.barcode);
     }
     localizacao(id, body, req) {
         return this.service.atualizarLocalizacao(id, req.motoboyId, body.lat, body.lng);
@@ -46,12 +55,36 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], MotoboyPortalController.prototype, "me", null);
 __decorate([
+    (0, common_1.Get)('pedidos/disponiveis'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], MotoboyPortalController.prototype, "disponiveis", null);
+__decorate([
     (0, common_1.Get)('pedidos'),
     __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], MotoboyPortalController.prototype, "pedidos", null);
+__decorate([
+    (0, common_1.Post)('pedidos/:id/pegar'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], MotoboyPortalController.prototype, "pegar", null);
+__decorate([
+    (0, common_1.Post)('pedidos/:id/confirmar-coleta'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], MotoboyPortalController.prototype, "confirmarColeta", null);
 __decorate([
     (0, common_1.Patch)('pedidos/:id/localizacao'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),

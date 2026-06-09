@@ -12,9 +12,28 @@ export class MotoboyPortalController {
     return this.service.infoMotoboy(req.motoboyId);
   }
 
+  @Get('pedidos/disponiveis')
+  disponiveis(@Req() req: any) {
+    return this.service.pedidosDisponiveis(req.motoboyId);
+  }
+
   @Get('pedidos')
   pedidos(@Req() req: any) {
     return this.service.meusPedidos(req.motoboyId);
+  }
+
+  @Post('pedidos/:id/pegar')
+  pegar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.pegarPedido(id, req.motoboyId);
+  }
+
+  @Post('pedidos/:id/confirmar-coleta')
+  confirmarColeta(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { barcode: string },
+    @Req() req: any,
+  ) {
+    return this.service.confirmarColeta(id, req.motoboyId, body.barcode);
   }
 
   @Patch('pedidos/:id/localizacao')

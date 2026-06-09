@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
+import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import { printComanda, barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
 
@@ -115,6 +116,7 @@ const RestauranteCozinha = () => {
   const navigate = useNavigate();
   const [pedidos, setPedidos] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
+  const [restauranteId, setRestauranteId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [atualizando, setAtualizando] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -162,13 +164,32 @@ const RestauranteCozinha = () => {
   useEffect(() => {
     let nome = '';
     getMinhaEmpresa()
-      .then((d) => { nome = d.empresa?.name ?? ''; setRestauranteNome(nome); })
+      .then((d) => {
+        nome = d.empresa?.name ?? '';
+        setRestauranteNome(nome);
+        setRestauranteId(d.empresa?.id ?? null);
+      })
       .catch(() => {});
 
     carregar(nome);
     const id = setInterval(() => carregar(nome), 30000);
     return () => clearInterval(id);
   }, [carregar]);
+
+  // Realtime: recarrega cozinha quando pedido muda de status
+  useEffect(() => {
+    if (!restauranteId) return;
+    const channel = supabase
+      .channel(`cozinha-${restauranteId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `restaurant_id=eq.${restauranteId}`,
+      }, () => carregar(restauranteNome))
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [restauranteId, carregar, restauranteNome]);
 
   useEffect(() => {
     const saved = getPrinterName();

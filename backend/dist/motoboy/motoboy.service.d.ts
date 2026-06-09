@@ -61,6 +61,37 @@ export declare class MotoboyService {
         tipo: "pendente" | "cancelada";
         status: any;
     }>;
+    pedidosDisponiveis(motoboyId: number): Promise<{
+        pedidos: {
+            cliente: {
+                name: any;
+                phone_e164: any;
+                address_json: any;
+            } | null;
+            itens: {
+                id: any;
+                quantity: any;
+                unit_price: any;
+                product_id: any;
+            }[];
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            created_at: any;
+            customer_id: any;
+        }[];
+    }>;
+    pegarPedido(pedidoId: number, motoboyId: number): Promise<{
+        ok: boolean;
+        pedido_id: number;
+        status: string;
+    }>;
+    confirmarColeta(pedidoId: number, motoboyId: number, barcode: string): Promise<{
+        ok: boolean;
+        pedido_id: number;
+        status: string;
+    }>;
     infoMotoboy(motoboyId: number): Promise<{
         id: any;
         name: any;

@@ -6,15 +6,17 @@ import Icon from '../../components/AppIcon';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const STATUS_INFO = {
-  pending:          { label: 'Aguardando confirmação', icon: 'Clock',         color: 'text-yellow-600', bg: 'bg-yellow-50' },
-  confirmed:        { label: 'Pedido confirmado',       icon: 'CheckCircle',   color: 'text-blue-600',   bg: 'bg-blue-50' },
-  ready:            { label: 'Pronto para entrega',     icon: 'Package',       color: 'text-purple-600', bg: 'bg-purple-50' },
-  out_for_delivery: { label: 'Saiu para entrega',       icon: 'Bike',          color: 'text-indigo-600', bg: 'bg-indigo-50' },
-  delivered:        { label: 'Entregue!',               icon: 'PartyPopper',   color: 'text-green-600',  bg: 'bg-green-50' },
-  canceled:         { label: 'Cancelado',               icon: 'XCircle',       color: 'text-red-600',    bg: 'bg-red-50' },
+  pending:            { label: 'Recebido',              icon: 'Clock',        color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  confirmed:          { label: 'Confirmado',            icon: 'CheckCircle',  color: 'text-blue-600',   bg: 'bg-blue-50' },
+  preparing:          { label: 'Em preparo',            icon: 'ChefHat',      color: 'text-orange-600', bg: 'bg-orange-50' },
+  ready:              { label: 'Pronto',                icon: 'Package',      color: 'text-purple-600', bg: 'bg-purple-50' },
+  motoboy_collecting: { label: 'Motoboy indo buscar',   icon: 'Bike',         color: 'text-blue-600',   bg: 'bg-blue-50' },
+  out_for_delivery:   { label: 'Saiu para entrega',     icon: 'Navigation',   color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  delivered:          { label: 'Entregue!',             icon: 'PartyPopper',  color: 'text-green-600',  bg: 'bg-green-50' },
+  canceled:           { label: 'Cancelado',             icon: 'XCircle',      color: 'text-red-600',    bg: 'bg-red-50' },
 };
 
-const TIMELINE = ['pending', 'confirmed', 'ready', 'out_for_delivery', 'delivered'];
+const TIMELINE = ['pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered'];
 
 const OrderTrackingStatus = () => {
   const navigate = useNavigate();
@@ -52,12 +54,31 @@ const OrderTrackingStatus = () => {
       return;
     }
     buscarPedido();
+
+    // Realtime: atualiza instantaneamente quando status muda no DB
+    const channel = supabase
+      .channel(`order-track-${orderId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`,
+      }, (payload) => {
+        setPedido((prev) => prev ? { ...prev, ...payload.new } : prev);
+      })
+      .subscribe();
+
+    // Fallback polling 30s caso realtime falhe
     const interval = setInterval(() => {
       if (pedido?.status !== 'delivered' && pedido?.status !== 'canceled') {
         buscarPedido();
       }
     }, 30000);
-    return () => clearInterval(interval);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [buscarPedido, orderId]);
 
   if (loading) {
@@ -189,7 +210,7 @@ const OrderTrackingStatus = () => {
           </button>
         </div>
 
-        <p className="text-center text-xs text-gray-400">Atualiza automaticamente a cada 30 segundos</p>
+        <p className="text-center text-xs text-gray-400">Atualização em tempo real</p>
       </main>
     </div>
   );

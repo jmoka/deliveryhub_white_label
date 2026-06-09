@@ -1,5 +1,5 @@
 import { SupabaseService } from '../supabase/supabase.service';
-declare const STATUS_VALIDOS: readonly ["pending", "confirmed", "preparing", "ready", "out_for_delivery", "delivered", "canceled"];
+declare const STATUS_VALIDOS: readonly ["pending", "confirmed", "preparing", "ready", "motoboy_collecting", "out_for_delivery", "delivered", "canceled"];
 type Status = typeof STATUS_VALIDOS[number];
 export declare class PedidosService {
     private supabase;

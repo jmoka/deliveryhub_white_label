@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   getMe, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
+  getPedidosDisponiveis, pegarPedido,
   getMotoboyToken, setMotoboyToken, clearMotoboyToken,
 } from '../../services/motoboyService';
+import ColetaBarcode from './ColetaBarcode';
 import Icon from '../../components/AppIcon';
 
 const OcorrenciaModal = ({ pedido, tipo, onConfirmar, onFechar, salvando }) => {
@@ -73,9 +75,11 @@ const OcorrenciaModal = ({ pedido, tipo, onConfirmar, onFechar, salvando }) => {
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const STATUS_LABEL = {
-  out_for_delivery: 'Saiu p/ entrega',
   confirmed: 'Confirmado',
+  preparing: 'Em preparo',
   ready: 'Pronto p/ entrega',
+  motoboy_collecting: 'Indo buscar',
+  out_for_delivery: 'Saiu p/ entrega',
 };
 
 const MotoboyLogin = ({ onLogin }) => {
@@ -133,6 +137,8 @@ const MotoboyPortal = () => {
   const [me, setMe] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [disponiveis, setDisponiveis] = useState([]);
+  const [pegando, setPegando] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
   const [ocorrencia, setOcorrencia] = useState(null); // { pedido, tipo }
   const [salvandoOcorrencia, setSalvandoOcorrencia] = useState(false);
@@ -164,6 +170,10 @@ const MotoboyPortal = () => {
     } finally {
       setLoading(false);
     }
+    try {
+      const disponiveisData = await getPedidosDisponiveis();
+      setDisponiveis(disponiveisData.pedidos ?? []);
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -231,6 +241,31 @@ const MotoboyPortal = () => {
     }
   };
 
+  // Disponíveis atualizam em 10s para motoboy ver pedidos novos rápido
+  useEffect(() => {
+    if (!authed) return;
+    const id = setInterval(async () => {
+      try {
+        const d = await getPedidosDisponiveis();
+        setDisponiveis(d.pedidos ?? []);
+      } catch {}
+    }, 10000);
+    return () => clearInterval(id);
+  }, [authed]);
+
+  const handlePegar = async (pedidoId) => {
+    setPegando(pedidoId);
+    try {
+      await pegarPedido(pedidoId);
+      await carregarDados();
+    } catch (e) {
+      alert(e.message);
+      await carregarDados();
+    } finally {
+      setPegando(null);
+    }
+  };
+
   const handleSair = () => {
     clearMotoboyToken();
     setAuthed(false);
@@ -274,7 +309,55 @@ const MotoboyPortal = () => {
       </header>
 
       <main className="max-w-lg mx-auto p-4 space-y-4">
-        {pedidos.length === 0 ? (
+        {/* Pedidos disponíveis para pegar */}
+        {disponiveis.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF441F] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#FF441F]" />
+              </span>
+              <p className="text-sm font-black text-[#18181B] uppercase tracking-wide">
+                {disponiveis.length} pedido{disponiveis.length > 1 ? 's' : ''} disponível{disponiveis.length > 1 ? 'is' : ''} para entrega
+              </p>
+            </div>
+            {disponiveis.map((p) => {
+              const cli = p.cliente ?? {};
+              const addr = cli.address_json ?? {};
+              const endereco = [addr.logradouro, addr.numero, addr.bairro].filter(Boolean).join(', ');
+              return (
+                <div key={p.id} className="bg-white rounded-2xl border-2 border-[#FF441F] p-4 mb-3 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-black text-[#18181B] text-lg">Pedido #{p.id}</p>
+                      {cli.name && <p className="text-sm text-[#71717A]">{cli.name}</p>}
+                      {endereco && (
+                        <p className="text-xs text-[#71717A] flex items-center gap-1 mt-0.5">
+                          <Icon name="MapPin" size={11} className="text-[#FF441F]" />
+                          {endereco}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-base font-black text-[#FF441F]">{fmt(p.total)}</p>
+                      <p className="text-xs text-[#71717A]">{p.itens?.length ?? 0} iten(s)</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handlePegar(p.id)}
+                    disabled={pegando === p.id}
+                    className="w-full py-3 bg-[#FF441F] hover:bg-[#E63A19] text-white font-black text-sm rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Icon name="Bike" size={16} />
+                    {pegando === p.id ? 'Pegando...' : 'Pegar este pedido'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {pedidos.length === 0 && disponiveis.length === 0 ? (
           <div className="bg-white rounded-2xl border border-[#E4E4E7] p-10 text-center">
             <Icon name="CheckCircle" size={40} className="mx-auto mb-3 text-green-400" />
             <p className="font-semibold text-[#18181B]">Nenhum pedido no momento</p>
@@ -414,28 +497,32 @@ const MotoboyPortal = () => {
             )}
 
             {/* Ações */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEntregar(p.id)}
-                disabled={confirmando === p.id}
-                className="flex-1 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Icon name="CheckCircle2" size={14} />
-                {confirmando === p.id ? '...' : 'Entregue'}
-              </button>
-              <button
-                onClick={() => setOcorrencia({ pedido: p, tipo: 'pendente' })}
-                className="flex-1 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Icon name="Clock" size={14} /> Pendente
-              </button>
-              <button
-                onClick={() => setOcorrencia({ pedido: p, tipo: 'cancelada' })}
-                className="flex-1 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Icon name="XCircle" size={14} /> Cancelar
-              </button>
-            </div>
+            {p.status === 'motoboy_collecting' ? (
+              <ColetaBarcode pedidoId={p.id} onConfirmado={carregarDados} />
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEntregar(p.id)}
+                  disabled={confirmando === p.id}
+                  className="flex-1 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="CheckCircle2" size={14} />
+                  {confirmando === p.id ? '...' : 'Entregue'}
+                </button>
+                <button
+                  onClick={() => setOcorrencia({ pedido: p, tipo: 'pendente' })}
+                  className="flex-1 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="Clock" size={14} /> Pendente
+                </button>
+                <button
+                  onClick={() => setOcorrencia({ pedido: p, tipo: 'cancelada' })}
+                  className="flex-1 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="XCircle" size={14} /> Cancelar
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
