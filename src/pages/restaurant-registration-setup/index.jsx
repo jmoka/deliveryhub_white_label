@@ -7,9 +7,12 @@ import ContactDetailsForm from './components/ContactDetailsForm';
 import OperatingHoursForm from './components/OperatingHoursForm';
 import BrandingForm from './components/BrandingForm';
 import ProgressSidebar from './components/ProgressSidebar';
+import { registrarRestaurante } from '../../services/restauranteService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const RestaurantRegistrationSetup = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [currentStep, setCurrentStep] = useState('business');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -208,26 +211,36 @@ const RestaurantRegistrationSetup = () => {
   const handleCompleteSetup = async () => {
     if (!validateCurrentStep()) return;
 
+    if (!isAuthenticated()) {
+      navigate('/customer-registration-login', { state: { from: '/restaurant-registration-setup' } });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Mark final step as completed
       if (!completedSteps?.includes(currentStep)) {
         setCompletedSteps(prev => [...prev, currentStep]);
       }
 
-      // Simulate API call to complete setup
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Clear saved data
+      const address = [
+        formData.address, formData.number, formData.neighborhood,
+        formData.city, formData.state,
+      ].filter(Boolean).join(', ');
+
+      await registrarRestaurante({
+        name: formData.restaurantName,
+        address: address || undefined,
+        business_hours: formData.operatingHours,
+      });
+
       localStorage.removeItem('restaurantSetupData');
       localStorage.removeItem('restaurantSetupStep');
       localStorage.removeItem('restaurantSetupCompleted');
-      
-      // Navigate to dashboard or success page
-      navigate('/menu-catalog-product-browse');
+
+      navigate('/restaurante');
     } catch (error) {
       console.error('Erro ao finalizar cadastro:', error);
-      setErrors({ submit: 'Erro ao finalizar cadastro. Tente novamente.' });
+      setErrors({ submit: error?.message || 'Erro ao finalizar cadastro. Tente novamente.' });
     } finally {
       setLoading(false);
     }

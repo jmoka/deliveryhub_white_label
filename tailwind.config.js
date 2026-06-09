@@ -18,6 +18,8 @@ export default {
     },
     extend: {
       colors: {
+        brand: { DEFAULT: '#FF441F', hover: '#E63A19', light: '#FFF1EE' },
+        promo: { DEFAULT: '#FF7A00', hover: '#E06C00', light: '#FFF4E6' },
         border: "var(--color-border)", /* gray-200 */
         input: "var(--color-input)", /* white */
         ring: "var(--color-ring)", /* blue-600 */
