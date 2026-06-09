@@ -94,7 +94,7 @@ const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onA
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
-      className="flex flex-col gap-3 max-h-[calc(100vh-180px)] overflow-y-auto pr-0.5"
+      className="flex flex-col gap-3 pr-0.5"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
