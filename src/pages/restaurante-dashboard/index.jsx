@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -13,6 +13,11 @@ import RelatorioPanel from './RelatorioPanel';
 import { printComanda } from '../../utils/printComanda';
 import SaidaModal from './SaidaModal';
 import FecharCaixaModal from './FecharCaixaModal';
+import { supabase } from '../../lib/supabase';
+import KpiCard from './KpiCard';
+import AlertasToast from './AlertasToast';
+import PedidoTimeline from './PedidoTimeline';
+import MobileMenu from './MobileMenu';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -37,19 +42,6 @@ const FILTER_TABS = [
   { value: 'canceled',        label: 'Cancelado',  activeColor: 'border-red-400 bg-red-100 text-red-800' },
 ];
 
-const KpiCard = ({ icon, label, value, sub, color = 'gray' }) => {
-  const colors = { orange: 'border-orange-200 bg-orange-50 text-orange-700', green: 'border-green-200 bg-green-50 text-green-700', blue: 'border-blue-200 bg-blue-50 text-blue-700', red: 'border-red-200 bg-red-50 text-red-700', gray: 'border-[#E4E4E7] bg-white text-[#18181B]' };
-  return (
-    <div className={`rounded-xl border p-4 ${colors[color]}`}>
-      <div className="flex items-center gap-1.5 mb-1">
-        <Icon name={icon} size={14} className="opacity-70" />
-        <p className="text-xs font-medium opacity-75">{label}</p>
-      </div>
-      <p className="text-2xl font-black">{value}</p>
-      {sub && <p className="text-xs opacity-60 mt-0.5">{sub}</p>}
-    </div>
-  );
-};
 
 const LINKS = [
   { label: 'Dashboard', path: '/restaurante' },
@@ -85,6 +77,29 @@ const RestauranteDashboard = () => {
   const [fechamento, setFechamento] = useState(null);
   const [motoboys, setMotoboys] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [restauranteId, setRestauranteId] = useState(null);
+  const [alertas, setAlertas] = useState([]);
+  const alertaTimers = useRef({});
+
+  const playNotification = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const tone = (freq, start, dur) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq; o.type = 'sine';
+        g.gain.setValueAtTime(0.35, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur + 0.05);
+      };
+      tone(880, 0, 0.15);
+      tone(1100, 0.2, 0.15);
+      tone(1320, 0.4, 0.3);
+    } catch {}
+  };
 
   const carregar = async () => {
     try {
@@ -92,6 +107,7 @@ const RestauranteDashboard = () => {
         getMinhaEmpresa(), getCaixa(), listarMotoboys().catch(() => ({ motoboys: [] })),
       ]);
       setEmpresa(emp.empresa);
+      setRestauranteId(emp.empresa?.id ?? null);
       setStatusAberto(caixaData.status_restaurante);
       setCaixa(caixaData);
       setMotoboys(mbData.motoboys ?? []);
@@ -102,12 +118,12 @@ const RestauranteDashboard = () => {
     }
   };
 
-  const recarregarCaixa = async () => {
+  const recarregarCaixa = useCallback(async () => {
     try {
       const data = await getCaixa();
       setCaixa(data);
     } catch { /* silent */ }
-  };
+  }, []);
 
   useEffect(() => { carregar(); }, []);
 
@@ -116,7 +132,41 @@ const RestauranteDashboard = () => {
     if (!caixa?.aberto) return;
     const id = setInterval(recarregarCaixa, 30000);
     return () => clearInterval(id);
-  }, [caixa?.aberto]);
+  }, [caixa?.aberto, recarregarCaixa]);
+
+  // Realtime: novo pedido → alerta visual + sonoro
+  useEffect(() => {
+    if (!restauranteId) return;
+    const channel = supabase
+      .channel(`dash-orders-${restauranteId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'orders',
+        filter: `restaurant_id=eq.${restauranteId}`,
+      }, (payload) => {
+        const p = payload.new;
+        playNotification();
+        const alerta = { id: p.id, total: p.total, ts: Date.now() };
+        setAlertas((prev) => [...prev, alerta]);
+        alertaTimers.current[p.id] = setTimeout(() => {
+          setAlertas((prev) => prev.filter((a) => a.id !== p.id));
+          delete alertaTimers.current[p.id];
+        }, 10000);
+        recarregarCaixa();
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `restaurant_id=eq.${restauranteId}`,
+      }, () => recarregarCaixa())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+      Object.values(alertaTimers.current).forEach(clearTimeout);
+    };
+  }, [restauranteId, recarregarCaixa]);
 
   const handleToggleStatus = async (novoStatus) => {
     setStatusAberto(novoStatus);
@@ -202,12 +252,16 @@ const RestauranteDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
+
+      <AlertasToast alertas={alertas} onDismiss={(id) => setAlertas((prev) => prev.filter((a) => a.id !== id))} />
+
       <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-[#18181B]">{empresa?.name ?? 'Meu Restaurante'}</h1>
           <p className="text-sm text-[#71717A]">Painel Operacional</p>
         </div>
-        <nav className="flex gap-1.5 flex-wrap items-center">
+        {/* Desktop nav */}
+        <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
           {LINKS.map((l) => (
             <button key={l.path} onClick={() => navigate(l.path)}
               className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
@@ -217,7 +271,23 @@ const RestauranteDashboard = () => {
           <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
             className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
         </nav>
+        {/* Mobile hamburger */}
+        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]"
+          onClick={() => setMenuAberto((v) => !v)}>
+          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
+        </button>
       </header>
+
+      <AnimatePresence>
+        {menuAberto && (
+          <MobileMenu
+            links={LINKS}
+            currentPath="/restaurante"
+            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
+            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+          />
+        )}
+      </AnimatePresence>
 
       <main className="p-6 w-[95%] mx-auto space-y-5">
 
@@ -311,10 +381,28 @@ const RestauranteDashboard = () => {
               const pedidosFiltrados = filtroStatus === 'todos' ? todosPedidos : todosPedidos.filter((p) => p.status === filtroStatus);
               const colHeight = 'max-h-[calc(100vh-340px)]';
               return (
+            <>
+            {/* Mobile: filtros horizontal scroll */}
+            <div className="flex md:hidden gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              {FILTER_TABS.map((tab) => {
+                const cnt = tab.value === 'todos' ? todosPedidos.length : (contagem[tab.value] ?? 0);
+                const isActive = filtroStatus === tab.value;
+                return (
+                  <button key={tab.value} onClick={() => setFiltroStatus(tab.value)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                      isActive ? tab.activeColor : 'border-[#E4E4E7] bg-white text-[#71717A]'
+                    }`}>
+                    {tab.label}
+                    {cnt > 0 && <span className="text-[10px] font-black px-1 py-0.5 rounded-full bg-black/10">{cnt}</span>}
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="flex gap-4 items-start">
 
-              {/* Sidebar de filtros */}
-              <div className="w-44 flex-shrink-0 sticky top-4">
+              {/* Sidebar de filtros — desktop */}
+              <div className="hidden md:block w-44 flex-shrink-0 sticky top-4">
                 <div className="bg-white rounded-2xl border border-[#E4E4E7] p-3 space-y-1">
                   <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest px-2 pb-1">Filtros</p>
                   {FILTER_TABS.map((tab) => {
@@ -337,8 +425,8 @@ const RestauranteDashboard = () => {
                 </div>
               </div>
 
-              {/* Lista + detalhe (50% + 50%) */}
-              <div className={`flex-1 grid gap-4 ${pedidoDetalhe || loadingDetalhe ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {/* Lista + detalhe: 1 col mobile, 50/50 desktop quando detalhe aberto */}
+              <div className={`flex-1 grid gap-4 ${pedidoDetalhe || loadingDetalhe ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
 
                 {/* Lista de pedidos */}
                 <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 flex flex-col">
@@ -365,8 +453,8 @@ const RestauranteDashboard = () => {
                           const isAtivo = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(p.status);
                           return (
                             <button key={p.id} onClick={() => handleSelecionarPedido(p.id)}
-                              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${selected ? 'border-[#FF441F] bg-[#FFF4F1]' : 'border-[#F4F4F5] hover:border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
-                              <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
+                              className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border transition-all text-left ${selected ? 'border-[#FF441F] bg-[#FFF4F1]' : 'border-[#F4F4F5] hover:border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
+                              <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 mt-0.5 ${
                                 p.status === 'pending' ? 'bg-yellow-400' :
                                 p.status === 'confirmed' ? 'bg-blue-400' :
                                 p.status === 'preparing' ? 'bg-orange-400' :
@@ -375,19 +463,24 @@ const RestauranteDashboard = () => {
                                 p.status === 'delivered' ? 'bg-green-400' : 'bg-red-300'
                               }`} />
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <p className="text-sm font-bold text-[#18181B]">#{p.id}</p>
-                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sl.color}`}>{sl.label}</span>
-                                  {isAtivo && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-auto flex-shrink-0" />}
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                      <p className="text-sm font-bold text-[#18181B]">#{p.id}</p>
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sl.color}`}>{sl.label}</span>
+                                      {isAtivo && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-auto flex-shrink-0" />}
+                                    </div>
+                                    {clienteNome && (
+                                      <p className="text-xs font-semibold text-[#27272A] truncate">{clienteNome}</p>
+                                    )}
+                                    <p className="text-xs text-[#71717A]">{fmt(p.total)} · {p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method === 'pix' ? 'PIX' : 'Cartão'}</p>
+                                  </div>
+                                  <p className="text-xs text-[#71717A] flex-shrink-0 tabular-nums">
+                                    {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
                                 </div>
-                                {clienteNome && (
-                                  <p className="text-xs font-semibold text-[#27272A] truncate">{clienteNome}</p>
-                                )}
-                                <p className="text-xs text-[#71717A]">{fmt(p.total)} · {p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method === 'pix' ? 'PIX' : 'Cartão'}</p>
+                                <PedidoTimeline status={p.status} />
                               </div>
-                              <p className="text-xs text-[#71717A] flex-shrink-0 tabular-nums">
-                                {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                              </p>
                             </button>
                           );
                         })}
@@ -418,6 +511,7 @@ const RestauranteDashboard = () => {
                 </AnimatePresence>
               </div>
             </div>
+            </>
               );
             })()}
 
