@@ -464,14 +464,14 @@ const MenuCatalogProductBrowse = () => {
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
   const [categorias, setCategorias]     = useState(CATEGORIAS_FALLBACK);
+  const [tagsCatalogo, setTagsCatalogo] = useState([]); // tags ativas do admin
   const [loading, setLoading]           = useState(true);
   const [loadProd, setLoadProd]         = useState(true);
   const [erro, setErro]                 = useState(null);
   const [busca, setBusca]               = useState('');
-  const [catAtiva, setCatAtiva]         = useState(null); // null = "todos" (primeiro da lista)
+  const [catAtiva, setCatAtiva]         = useState(null);
   const [viewMode, setViewMode]         = useState('grid');
 
-  /* Stats reais */
   const mediaNota = restaurantes.length > 0
     ? restaurantes.reduce((acc, r) => acc + (r.nota ?? 4.5), 0) / restaurantes.length
     : 0;
@@ -491,10 +491,12 @@ const MenuCatalogProductBrowse = () => {
 
     fetch('/api/categorias/globais')
       .then((r) => r.json())
-      .then((d) => {
-        const cats = d.categorias ?? [];
-        if (cats.length > 0) setCategorias(cats);
-      })
+      .then((d) => { const cats = d.categorias ?? []; if (cats.length > 0) setCategorias(cats); })
+      .catch(() => {});
+
+    fetch('/api/tags')
+      .then((r) => r.json())
+      .then((d) => setTagsCatalogo(d.tags ?? []))
       .catch(() => {});
   }, []);
 
@@ -510,9 +512,23 @@ const MenuCatalogProductBrowse = () => {
       )
     : produtos;
 
-  const maisVendidos = produtos.filter((p) => p.tags?.includes('mais_vendido')).slice(0, 20);
-  const emPromocao   = produtos.filter((p) => p.tags?.includes('promo') && p.preco_promo != null).slice(0, 20);
-  const combos = [];
+  // Carrosseis dinâmicos baseados nas tags ativas do admin
+  const carrosseis = tagsCatalogo
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((tag) => {
+      let prods;
+      if (tag.is_auto) {
+        // Auto: não filtra por tags[] do produto — seria calculado por order_items
+        // No catálogo global usamos os primeiros produtos com destaque como fallback
+        prods = produtos.filter((p) => p.destaque).slice(0, 20);
+      } else {
+        prods = produtos
+          .filter((p) => Array.isArray(p.tags) && p.tags.includes(tag.slug))
+          .slice(0, 20);
+      }
+      return { tag, prods };
+    })
+    .filter(({ prods }) => prods.length > 0);
 
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
@@ -633,56 +649,26 @@ const MenuCatalogProductBrowse = () => {
         </div>
       )}
 
-      {/* ── Mais Vendidos ────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-          <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
-            <Icon name="TrendingUp" size={15} className="text-amber-500" />
-            Mais Vendidos
-          </p>
-          {loadProd ? (
+      {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
+      {loadProd ? (
+        <div className="bg-white border-b border-[#E4E4E7]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
-          ) : maisVendidos.length === 0 ? (
-            <p className="text-sm text-[#71717A] py-4">Nenhum produto disponível</p>
-          ) : (
-            <ProdCarrossel produtos={maisVendidos} navigate={navigate} />
-          )}
+          </div>
         </div>
-      </div>
-
-      {/* ── Em Promoção ──────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-          <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
-            <Icon name="Tag" size={15} className="text-green-600" />
-            Em Promoção
-          </p>
-          {loadProd ? (
-            <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
-          ) : emPromocao.length === 0 ? (
-            <p className="text-sm text-[#71717A] py-4">Nenhum produto em promoção</p>
-          ) : (
-            <ProdCarrossel produtos={emPromocao} navigate={navigate} />
-          )}
-        </div>
-      </div>
-
-      {/* ── Combos ───────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-          <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
-            <Icon name="Package" size={15} className="text-purple-600" />
-            Combos
-          </p>
-          {loadProd ? (
-            <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
-          ) : combos.length === 0 ? (
-            <p className="text-sm text-[#71717A] py-4">Nenhum combo disponível</p>
-          ) : (
-            <ProdCarrossel produtos={combos} navigate={navigate} />
-          )}
-        </div>
-      </div>
+      ) : (
+        carrosseis.map(({ tag, prods }) => (
+          <div key={tag.id} className="bg-white border-b border-[#E4E4E7]">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+              <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+                <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
+                {tag.name}
+              </p>
+              <ProdCarrossel produtos={prods} navigate={navigate} />
+            </div>
+          </div>
+        ))
+      )}
 
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">

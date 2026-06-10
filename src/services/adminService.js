@@ -75,6 +75,12 @@ export const toggleProduto = (id, ativo) =>
 // Categorias por empresa
 export const getCategorias = (empresaId) => apiFetch(`/empresas/${empresaId}/categorias`);
 
+// Tags do catálogo — admin CRUD
+export const getTags = () => apiFetch('/admin/tags');
+export const criarTag = (data) => apiFetch('/admin/tags', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarTag = (id, data) => apiFetch(`/admin/tags/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerTag = (id) => apiFetch(`/admin/tags/${id}`, { method: 'DELETE' });
+
 // Categorias globais (plataforma) — admin
 export const getCategoriasGlobais = () => apiFetch('/categorias/globais');
 export const criarCategoriaGlobal = (data) =>

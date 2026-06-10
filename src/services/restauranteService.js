@@ -158,6 +158,13 @@ export const editarCombo = (id, data) =>
 export const deletarCombo = (id) =>
   apiFetch(`/combos/${id}`, { method: 'DELETE' });
 
+// Tags públicas — sem auth
+export const getTagsPublicas = () =>
+  fetch('/api/tags').then((r) => r.json());
+
+export const getCarrosseis = (restaurantId) =>
+  fetch(`/api/tags/carrosseis/${restaurantId}`).then((r) => r.json());
+
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {
   const res = await fetch(`/api/r/${slug}`);

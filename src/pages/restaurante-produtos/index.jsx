@@ -3,27 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
   getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria,
+  getTagsPublicas,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const TAGS_OPCOES = [
-  { value: 'promo',        label: '% Promoção',    bg: 'bg-green-100 text-green-700' },
-  { value: 'novo',         label: '🆕 Novo',        bg: 'bg-blue-100 text-blue-700' },
-  { value: 'exclusivo',    label: '⭐ Exclusivo',   bg: 'bg-purple-100 text-purple-700' },
-  { value: 'vegano',       label: '🌱 Vegano',      bg: 'bg-emerald-100 text-emerald-700' },
-  { value: 'vegetariano',  label: '🥦 Vegetariano', bg: 'bg-lime-100 text-lime-700' },
-  { value: 'sem_gluten',   label: '🌾 Sem Glúten',  bg: 'bg-yellow-100 text-yellow-700' },
-  { value: 'picante',      label: '🌶️ Picante',     bg: 'bg-red-100 text-red-700' },
-];
-
 const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false };
 
-const TagBadge = ({ tag }) => {
-  const opc = TAGS_OPCOES.find((t) => t.value === tag);
-  if (!opc) return null;
-  return <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${opc.bg}`}>{opc.label}</span>;
+const TagBadge = ({ slug, tagsMap }) => {
+  const t = tagsMap[slug];
+  if (!t) return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-gray-100 text-gray-600">{slug}</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-orange-100 text-orange-700">{t.name}</span>;
 };
 
 const RestauranteProdutos = () => {
@@ -32,6 +23,7 @@ const RestauranteProdutos = () => {
   const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
+  const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
@@ -46,11 +38,13 @@ const RestauranteProdutos = () => {
 
   const carregar = () => {
     setLoading(true);
-    Promise.all([getMeusProdutos(), getMinhasCategorias(), getCategoriasGlobais()])
-      .then(([p, mine, global]) => {
+    Promise.all([getMeusProdutos(), getMinhasCategorias(), getCategoriasGlobais(), getTagsPublicas()])
+      .then(([p, mine, global, tagsResp]) => {
         setProdutos(p.produtos ?? []);
         setCategorias(mine.categorias ?? []);
         setCategoriasGlobais(global.categorias ?? []);
+        // Só tags manuais (is_auto=false) — restaurante pode atribuir
+        setTagsDisponiveis((tagsResp.tags ?? []).filter((t) => !t.is_auto));
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -178,7 +172,9 @@ const RestauranteProdutos = () => {
   const catMap = Object.fromEntries(
     [...categorias, ...categoriasGlobais].map((c) => [c.id, c.name])
   );
-  const temPromo = form.tags.includes('promo');
+  const tagsMap = Object.fromEntries(tagsDisponiveis.map((t) => [t.slug, t]));
+  // Identifica se alguma tag de promoção está ativa (slug contém 'promo')
+  const temPromo = form.tags.some((s) => s.includes('promo'));
 
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
@@ -328,7 +324,7 @@ const RestauranteProdutos = () => {
                   </div>
                   {Array.isArray(p.tags) && p.tags.length > 0 && (
                     <div className="flex gap-1 mt-1 flex-wrap">
-                      {p.tags.map((t) => <TagBadge key={t} tag={t} />)}
+                      {p.tags.map((t) => <TagBadge key={t} slug={t} tagsMap={tagsMap} />)}
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mt-0.5">{catMap[p.category_id] ?? 'Sem categoria'}</p>
@@ -430,25 +426,29 @@ const RestauranteProdutos = () => {
                 />
               </div>
 
-              {/* Tags — multi-seleção */}
+              {/* Tags — multi-seleção (carregadas da API) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tags (pode marcar várias)</label>
-                <div className="flex flex-wrap gap-2">
-                  {TAGS_OPCOES.map((t) => (
-                    <button
-                      key={t.value}
-                      type="button"
-                      onClick={() => toggleTag(t.value)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                        form.tags.includes(t.value)
-                          ? 'bg-[#FF441F] text-white border-[#FF441F]'
-                          : 'bg-white text-[#71717A] border-[#E4E4E7] hover:border-[#FF441F]'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags / Carrosseis (pode marcar várias)</label>
+                {tagsDisponiveis.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Nenhuma tag disponível. O admin precisa criar tags primeiro.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {tagsDisponiveis.map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => toggleTag(t.slug)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                          form.tags.includes(t.slug)
+                            ? 'bg-[#FF441F] text-white border-[#FF441F]'
+                            : 'bg-white text-[#71717A] border-[#E4E4E7] hover:border-[#FF441F]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Preço promo — só aparece se tag promo ativa */}

@@ -13,6 +13,7 @@ import { PagamentosModule } from './pagamentos/pagamentos.module';
 import { RestauranteModule } from './restaurante/restaurante.module';
 import { MotoboyModule } from './motoboy/motoboy.module';
 import { PerfilModule } from './perfil/perfil.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { PerfilModule } from './perfil/perfil.module';
     RestauranteModule,
     MotoboyModule,
     PerfilModule,
+    TagsModule,
   ],
 })
 export class AppModule {}
