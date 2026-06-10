@@ -56,6 +56,10 @@ ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><sp
 <div class="center" style="font-size:13px">Pgto: <b>${pgto}</b>${isCash ? ' &nbsp;⚠ COBRAR' : ''}</div>
 <hr/>
 <svg id="barcode"></svg>
+<div style="text-align:center;margin:6px 0 2px">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${bc}&qzone=1" width="110" height="110" alt="QR #${pedido.id}" style="display:inline-block" />
+  <div style="font-size:10px;letter-spacing:1px;margin-top:2px">SCAN MOTOBOY</div>
+</div>
 <div class="foot">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
 <script>
 function doBarcode(){

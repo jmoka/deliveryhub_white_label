@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa,
+  getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa, fecharETransferir,
   adicionarSaida, buscarPedidoDetalhe, atualizarStatusPedido, toggleStatusRestaurante,
   listarMotoboys, atribuirMotoboy,
 } from '../../services/restauranteService';
@@ -50,6 +50,8 @@ const LINKS = [
   { label: 'Pedidos', path: '/restaurante/pedidos' },
   { label: 'Motoboys', path: '/restaurante/motoboys' },
   { label: 'Clientes', path: '/restaurante/clientes' },
+  { label: 'Financeiro', path: '/restaurante/financeiro' },
+  { label: 'Caixa', path: '/restaurante/caixa' },
   { label: 'Designer', path: '/restaurante/aparencia' },
   { label: 'Config', path: '/restaurante/config' },
 ];
@@ -78,6 +80,8 @@ const RestauranteDashboard = () => {
   const [motoboys, setMotoboys] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [menuAberto, setMenuAberto] = useState(false);
+  const [nomeOperador, setNomeOperador] = useState('');
+  const [pedidosAbertos, setPedidosAbertos] = useState([]);
   const [restauranteId, setRestauranteId] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const alertaTimers = useRef({});
@@ -169,15 +173,22 @@ const RestauranteDashboard = () => {
   }, [restauranteId, recarregarCaixa]);
 
   const handleToggleStatus = async (novoStatus) => {
+    if (novoStatus && !caixa?.aberto) {
+      alert('Abra o caixa antes de abrir o restaurante para aceitar pedidos.');
+      return;
+    }
     setStatusAberto(novoStatus);
-    try { await toggleStatusRestaurante(novoStatus); } catch { setStatusAberto(!novoStatus); }
+    try { await toggleStatusRestaurante(novoStatus); } catch (e) { setStatusAberto(!novoStatus); alert(e.message); }
   };
 
   const handleAbrirCaixa = async () => {
+    if (!nomeOperador.trim()) { alert('Informe o nome do operador'); return; }
+    const vi = valorInicial !== '' ? parseFloat(valorInicial) : (caixa?.saldo_caixa ?? 0);
     try {
-      const data = await abrirCaixa(valorInicial ? parseFloat(valorInicial) : 0);
+      const data = await abrirCaixa({ nome_operador: nomeOperador.trim(), valor_inicial: vi });
       setCaixa(data);
       setValorInicial('');
+      setNomeOperador('');
     } catch (e) { alert(e.message); }
   };
 
@@ -199,11 +210,17 @@ const RestauranteDashboard = () => {
       const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedido.id)]);
       setCaixa(novoCaixa);
       setPedidoDetalhe(novoDetalhe);
-      if (novoStatus === 'preparing') {
+      if (novoStatus === 'confirmed') {
         const pedidoParaImprimir = { ...novoDetalhe.pedido, customers: novoDetalhe.cliente };
         printComanda(pedidoParaImprimir, novoDetalhe.itens ?? [], empresa?.name);
       }
     } catch (e) { alert(e.message); } finally { setAtualizando(null); }
+  };
+
+  const handleReimprimir = () => {
+    if (!pedidoDetalhe) return;
+    const p = { ...pedidoDetalhe.pedido, customers: pedidoDetalhe.cliente };
+    printComanda(p, pedidoDetalhe.itens ?? [], empresa?.name);
   };
 
   const handleAtribuirMotoboy = async (pedidoId, motoboyId) => {
@@ -225,16 +242,36 @@ const RestauranteDashboard = () => {
     } catch (e) { alert(e.message); } finally { setSalvandoSaida(false); }
   };
 
-  const handleFecharCaixa = async () => {
+  const handleFecharCaixa = async (destinacao = {}) => {
     setFechando(true);
     try {
-      const res = await fecharCaixa();
-      setFechamento(res);
-      setCaixa({ ...caixa, aberto: false, pedidos: [], resumo: null });
+      const res = await fecharCaixa(destinacao);
+      setFechamento(res.fechamento ?? res);
+      await recarregarCaixa();
       setShowFechar(false);
       setPedidoSelecionadoId(null); setPedidoDetalhe(null);
+      setPedidosAbertos([]);
+    } catch (e) {
+      if (e.data?.pedidos) {
+        setPedidosAbertos(e.data.pedidos);
+      } else {
+        alert(e.message);
+      }
+    } finally { setFechando(false); }
+  };
+
+  const handleFecharETransferir = async ({ nome_operador, valor_inicial }) => {
+    setFechando(true);
+    try {
+      const res = await fecharETransferir({ nome_operador, valor_inicial });
+      setFechamento(res.fechamento);
+      await recarregarCaixa();
+      setShowFechar(false);
+      setPedidoSelecionadoId(null); setPedidoDetalhe(null);
+      setPedidosAbertos([]);
     } catch (e) { alert(e.message); } finally { setFechando(false); }
   };
+
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
@@ -316,27 +353,69 @@ const RestauranteDashboard = () => {
           </button>
         </motion.div>
 
+        {/* Caixa — expirado (8h) */}
+        {caixa?.expirado && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Icon name="AlertTriangle" size={18} className="text-red-500 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-red-800">Caixa expirado</p>
+                <p className="text-xs text-red-600">Mais de 8h desde a abertura. Feche para continuar operando.</p>
+              </div>
+            </div>
+            <button onClick={() => setShowFechar(true)}
+              className="px-4 py-2 bg-red-500 text-white text-sm font-bold rounded-xl hover:bg-red-600 flex-shrink-0">
+              Fechar caixa
+            </button>
+          </div>
+        )}
+
         {/* Caixa — fechado */}
-        {!caixa?.aberto && (
+        {!caixa?.aberto && !caixa?.expirado && (
           <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
             <div className="flex items-center gap-2 mb-4">
               <Icon name="Wallet" size={18} className="text-[#FF441F]" />
               <h2 className="font-bold text-[#18181B]">Caixa</h2>
               <span className="ml-auto text-xs bg-[#F4F4F5] text-[#71717A] px-2 py-0.5 rounded-full font-medium">Fechado</span>
             </div>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-[#71717A] mb-1">Valor inicial (R$)</label>
-                <input type="number" min="0" step="0.01" value={valorInicial}
-                  onChange={(e) => setValorInicial(e.target.value)}
-                  placeholder="0,00"
+            {/* Saldo em cofre */}
+            {(caixa?.saldo_caixa ?? 0) > 0 && (
+              <div className="bg-[#FF441F]/5 border border-[#FF441F]/20 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🗃️</span>
+                  <div>
+                    <p className="text-xs font-bold text-[#18181B]">Saldo no cofre</p>
+                    <p className="text-[10px] text-[#71717A]">Será o fundo inicial do próximo caixa</p>
+                  </div>
+                </div>
+                <p className="text-lg font-black text-[#FF441F]">{fmt(caixa.saldo_caixa)}</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-[#71717A] mb-1">Nome do operador *</label>
+                <input value={nomeOperador} onChange={(e) => setNomeOperador(e.target.value)}
+                  placeholder="Ex: João"
                   className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
               </div>
-              <div className="flex items-end">
-                <button onClick={handleAbrirCaixa}
-                  className="px-5 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] transition-colors whitespace-nowrap">
-                  Abrir caixa
-                </button>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-[#71717A] mb-1">
+                    Valor inicial (R$)
+                    {(caixa?.saldo_caixa ?? 0) > 0 && <span className="ml-1 text-[#FF441F]">← cofre</span>}
+                  </label>
+                  <input type="number" min="0" step="0.01"
+                    value={valorInicial !== '' ? valorInicial : (caixa?.saldo_caixa ?? '')}
+                    onChange={(e) => setValorInicial(e.target.value)}
+                    placeholder={caixa?.saldo_caixa > 0 ? String(caixa.saldo_caixa) : '0,00'}
+                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                </div>
+                <div className="flex items-end">
+                  <button onClick={handleAbrirCaixa}
+                    className="px-5 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] transition-colors whitespace-nowrap">
+                    Abrir caixa
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -352,6 +431,40 @@ const RestauranteDashboard = () => {
               <KpiCard icon="ArrowDownLeft" label="Saídas" value={fmt(r?.total_saidas)} sub={`${caixa?.saidas?.length ?? 0} registros`} color="red" />
               <KpiCard icon="Wallet" label="Saldo caixa" value={fmt(r?.saldo)} sub={`Inicial: ${fmt(caixa.valor_inicial)}`} color="orange" />
             </div>
+
+            {/* Breakdown espécie vs digital */}
+            {(() => {
+              const pedidos      = caixa.pedidos ?? [];
+              const saidas       = caixa.saidas ?? [];
+              const vendasCash   = pedidos.filter((p) => p.status === 'delivered' && p.payment_method === 'cash').reduce((s, p) => s + (p.total ?? 0), 0);
+              const saidas_cash  = saidas.filter((s) => !s.meio || s.meio === 'dinheiro').reduce((s, x) => s + (x.valor ?? 0), 0);
+              const saldoEspecie = (caixa.valor_inicial ?? 0) + vendasCash - saidas_cash;
+              const saldoDigital = (r?.total_vendas ?? 0) - vendasCash;
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">💵 Fundo inicial</p>
+                    <p className="text-lg font-black text-green-700">{fmt(caixa.valor_inicial)}</p>
+                    <p className="text-[10px] text-green-600">em espécie</p>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">💵 Vendas espécie</p>
+                    <p className="text-lg font-black text-green-700">{fmt(vendasCash)}</p>
+                    <p className="text-[10px] text-green-600">pagos em dinheiro</p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">🏦 Vendas digital</p>
+                    <p className="text-lg font-black text-blue-700">{fmt(saldoDigital)}</p>
+                    <p className="text-[10px] text-blue-600">PIX / cartão</p>
+                  </div>
+                  <div className="bg-[#FF441F]/5 border border-[#FF441F]/30 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1">💵 Espécie no caixa</p>
+                    <p className="text-lg font-black text-[#FF441F]">{fmt(saldoEspecie)}</p>
+                    <p className="text-[10px] text-[#FF441F]">estimativa física</p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Barra caixa */}
             <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 flex items-center gap-3 flex-wrap">
@@ -501,6 +614,7 @@ const RestauranteDashboard = () => {
                       <PedidoDetalhe
                         detalhe={pedidoDetalhe}
                         onAvancar={handleAvancarStatus}
+                        onReimprimir={handleReimprimir}
                         atualizando={atualizando}
                         onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
                         motoboys={motoboys}
@@ -526,7 +640,10 @@ const RestauranteDashboard = () => {
                     <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-[#F4F4F5] last:border-0">
                       <div>
                         <p className="font-medium text-[#18181B]">{s.descricao}</p>
-                        <p className="text-xs text-[#71717A]">{new Date(s.criado_em).toLocaleString('pt-BR')}</p>
+                        <p className="text-xs text-[#71717A]">
+                          {new Date(s.criado_em).toLocaleString('pt-BR')}
+                          {s.meio && <span className="ml-1.5 px-1.5 py-0.5 bg-[#F4F4F5] rounded text-[10px] font-semibold">{s.meio}</span>}
+                        </p>
                       </div>
                       <p className="font-bold text-red-500">- {fmt(s.valor)}</p>
                     </div>
@@ -552,8 +669,11 @@ const RestauranteDashboard = () => {
         <FecharCaixaModal
           resumo={caixa?.resumo}
           aberto_em={caixa?.aberto_em}
+          valorInicial={caixa?.valor_inicial}
+          pedidosAbertos={pedidosAbertos}
           onConfirmar={handleFecharCaixa}
-          onCancelar={() => setShowFechar(false)}
+          onFecharETransferir={handleFecharETransferir}
+          onCancelar={() => { setShowFechar(false); setPedidosAbertos([]); }}
           fechando={fechando}
         />
       )}

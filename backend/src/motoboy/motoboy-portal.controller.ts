@@ -27,6 +27,11 @@ export class MotoboyPortalController {
     return this.service.pegarPedido(id, req.motoboyId);
   }
 
+  @Post('pedidos/:id/reivindicar')
+  reivindicar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.reivindicarPedido(id, req.motoboyId);
+  }
+
   @Post('pedidos/:id/confirmar-coleta')
   confirmarColeta(
     @Param('id', ParseIntPipe) id: number,

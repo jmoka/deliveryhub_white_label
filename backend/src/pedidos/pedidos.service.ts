@@ -114,6 +114,14 @@ export class PedidosService {
       if (c) customerId = c.id;
     }
 
+    // Busca caixa aberto para vincular o pedido
+    const { data: caixaAberto } = await this.supabase.client
+      .from('caixas')
+      .select('id')
+      .eq('restaurant_id', body.restaurant_id)
+      .eq('status', 'aberto')
+      .maybeSingle();
+
     // Cria pedido
     const { data: pedido, error: errPedido } = await this.supabase.client
       .from('orders')
@@ -124,6 +132,7 @@ export class PedidosService {
         user_id: body.user_id,
         total: parseFloat(total.toFixed(2)),
         status: 'pending',
+        caixa_id: caixaAberto?.id ?? null,
       })
       .select()
       .single();
