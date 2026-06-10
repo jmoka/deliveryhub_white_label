@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
-  getMinhasCategorias,
+  getMinhasCategorias, getCategoriasGlobais,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -26,6 +26,7 @@ const RestauranteProdutos = () => {
   const { signOut } = useAuth();
   const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [categoriasGlobais, setCategoriasGlobais] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -36,10 +37,11 @@ const RestauranteProdutos = () => {
 
   const carregar = () => {
     setLoading(true);
-    Promise.all([getMeusProdutos(), getMinhasCategorias()])
-      .then(([p, c]) => {
+    Promise.all([getMeusProdutos(), getMinhasCategorias(), getCategoriasGlobais()])
+      .then(([p, mine, global]) => {
         setProdutos(p.produtos ?? []);
-        setCategorias(c.categorias ?? []);
+        setCategorias(mine.categorias ?? []);
+        setCategoriasGlobais(global.categorias ?? []);
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -136,7 +138,9 @@ const RestauranteProdutos = () => {
     }
   };
 
-  const catMap = Object.fromEntries(categorias.map((c) => [c.id, c.name]));
+  const catMap = Object.fromEntries(
+    [...categorias, ...categoriasGlobais].map((c) => [c.id, c.name])
+  );
   const temPromo = form.tags.includes('promo');
 
   const links = [
@@ -303,9 +307,20 @@ const RestauranteProdutos = () => {
                     required
                   >
                     <option value="">Selecionar</option>
-                    {categorias.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
+                    {categorias.length > 0 && (
+                      <optgroup label="Minhas categorias">
+                        {categorias.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {categoriasGlobais.length > 0 && (
+                      <optgroup label="Categorias da plataforma">
+                        {categoriasGlobais.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               </div>

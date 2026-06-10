@@ -73,7 +73,9 @@ let RestauranteService = class RestauranteService {
     }
     async catIdsDoRestaurante(restaurantId) {
         const { data } = await this.supabase.client
-            .from('categories').select('id').eq('restaurant_id', restaurantId);
+            .from('categories')
+            .select('id')
+            .or(`restaurant_id.eq.${restaurantId},restaurant_id.is.null`);
         return (data ?? []).map((c) => c.id);
     }
     async verificarProdutoDoRestaurante(produtoId, restaurantId) {
