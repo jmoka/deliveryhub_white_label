@@ -16,6 +16,7 @@ const AdminNav = ({ active }) => {
     { label: 'Dashboard', path: '/admin' },
     { label: 'Empresas', path: '/admin/empresas' },
     { label: 'Categorias', path: '/admin/categorias' },
+    { label: 'Tags',       path: '/admin/tags' },
     { label: 'Comissões', path: '/admin/comissoes' },
   ];
   return (
