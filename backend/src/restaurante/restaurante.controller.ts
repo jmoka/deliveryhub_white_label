@@ -206,4 +206,31 @@ export class RestauranteController {
   ) {
     return this.service.getRelatorio(req.restaurantId, de, ate);
   }
+
+  // ── Combos ──────────────────────────────────────────────────────────────────
+
+  @Get('combos')
+  meusCombos(@Req() req: any) {
+    return this.service.meusCombos(req.restaurantId);
+  }
+
+  @Get('combos/:id')
+  getComboDetalhe(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.getComboDetalhe(id, req.restaurantId);
+  }
+
+  @Post('combos')
+  criarCombo(@Req() req: any, @Body() body: any) {
+    return this.service.criarCombo(req.restaurantId, body);
+  }
+
+  @Patch('combos/:id')
+  editarCombo(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Body() body: any) {
+    return this.service.editarCombo(id, req.restaurantId, body);
+  }
+
+  @Delete('combos/:id')
+  deletarCombo(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.deletarCombo(id, req.restaurantId);
+  }
 }

@@ -2,13 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
-  getCategoriasGlobais,
+  getMinhasCategorias,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tipo: 'normal', destaque: false };
+const TAGS_OPCOES = [
+  { value: 'mais_vendido', label: '🔥 Mais Vendido', bg: 'bg-amber-100 text-amber-700' },
+  { value: 'promo', label: '% Promoção', bg: 'bg-green-100 text-green-700' },
+];
+
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false };
+
+const TagBadge = ({ tag }) => {
+  const opc = TAGS_OPCOES.find((t) => t.value === tag);
+  if (!opc) return null;
+  return <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${opc.bg}`}>{opc.label}</span>;
+};
 
 const RestauranteProdutos = () => {
   const navigate = useNavigate();
@@ -25,7 +36,7 @@ const RestauranteProdutos = () => {
 
   const carregar = () => {
     setLoading(true);
-    Promise.all([getMeusProdutos(), getCategoriasGlobais()])
+    Promise.all([getMeusProdutos(), getMinhasCategorias()])
       .then(([p, c]) => {
         setProdutos(p.produtos ?? []);
         setCategorias(c.categorias ?? []);
@@ -51,7 +62,7 @@ const RestauranteProdutos = () => {
       preco_promo: p.preco_promo != null ? String(p.preco_promo) : '',
       image_url: p.image_url ?? '',
       category_id: p.category_id != null ? String(p.category_id) : '',
-      tipo: p.tipo ?? 'normal',
+      tags: Array.isArray(p.tags) ? p.tags : [],
       destaque: p.destaque ?? false,
     });
     setShowModal(true);
@@ -61,6 +72,13 @@ const RestauranteProdutos = () => {
     setShowModal(false);
     setEditando(null);
     setForm(EMPTY_FORM);
+  };
+
+  const toggleTag = (tag) => {
+    setForm((f) => ({
+      ...f,
+      tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
+    }));
   };
 
   const handleToggle = async (produto) => {
@@ -86,7 +104,7 @@ const RestauranteProdutos = () => {
       preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : null,
       image_url: form.image_url || null,
       category_id: parseInt(form.category_id),
-      tipo: form.tipo,
+      tags: form.tags,
       destaque: form.destaque,
     };
     try {
@@ -119,10 +137,12 @@ const RestauranteProdutos = () => {
   };
 
   const catMap = Object.fromEntries(categorias.map((c) => [c.id, c.name]));
+  const temPromo = form.tags.includes('promo');
 
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
+    { label: 'Combos', path: '/restaurante/combos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
@@ -154,25 +174,6 @@ const RestauranteProdutos = () => {
       <main className="p-6 max-w-4xl mx-auto">
         {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
 
-        {/* Categorias globais */}
-        <section className="bg-white rounded-xl border border-[#E4E4E7] p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-[#18181B]">Categorias da plataforma</h2>
-            <p className="text-xs text-[#71717A]">Gerenciadas pelo admin</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categorias.map((c) => (
-              <span key={c.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white shadow-sm"
-                style={{ background: `linear-gradient(135deg, ${c.color_primary ?? '#FF441F'}, ${c.color_secondary ?? '#FF7A00'})` }}>
-                <span className="text-xs">{c.icon_name}</span>
-                {c.name}
-              </span>
-            ))}
-            {categorias.length === 0 && <p className="text-sm text-[#71717A]">Nenhuma categoria cadastrada</p>}
-          </div>
-        </section>
-
-        {/* Produtos */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#18181B]">
             Produtos <span className="text-gray-400 font-normal">({produtos.length})</span>
@@ -209,34 +210,28 @@ const RestauranteProdutos = () => {
                       <p className="font-medium text-gray-900 truncate">{p.name}</p>
                       {p.destaque && <span className="text-xs">⭐</span>}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {p.tipo !== 'normal' && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${
-                          p.tipo === 'promo' ? 'bg-green-100 text-green-700'
-                          : p.tipo === 'combo' ? 'bg-purple-100 text-purple-700'
-                          : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {p.tipo === 'promo' ? 'PROMO' : p.tipo === 'combo' ? 'COMBO' : 'TOP'}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleToggle(p)}
-                        className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                        }`}
-                      >
-                        {p.is_active ? 'Ativo' : 'Inativo'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleToggle(p)}
+                      className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                        p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {p.is_active ? 'Ativo' : 'Inativo'}
+                    </button>
                   </div>
                   {p.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{p.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-semibold text-[#FF441F]">{fmt(p.price)}</p>
-                    {p.tipo === 'promo' && p.preco_promo && (
+                    {p.tags?.includes('promo') && p.preco_promo && (
                       <p className="text-xs text-green-600 font-semibold">{fmt(p.preco_promo)} promo</p>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">{catMap[p.category_id] ?? 'Sem categoria'}</p>
+                  {Array.isArray(p.tags) && p.tags.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {p.tags.map((t) => <TagBadge key={t} tag={t} />)}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-0.5">{catMap[p.category_id] ?? 'Sem categoria'}</p>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => abrirEditar(p)}
@@ -291,9 +286,7 @@ const RestauranteProdutos = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="number" min="0" step="0.01"
                     value={form.price}
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -325,20 +318,30 @@ const RestauranteProdutos = () => {
                   placeholder="https://..."
                 />
               </div>
+
+              {/* Tags — multi-seleção */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select
-                  value={form.tipo}
-                  onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="normal">Normal</option>
-                  <option value="mais_vendido">Mais Vendido</option>
-                  <option value="promo">Promoção</option>
-                  <option value="combo">Combo</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags (pode marcar várias)</label>
+                <div className="flex flex-wrap gap-2">
+                  {TAGS_OPCOES.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => toggleTag(t.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                        form.tags.includes(t.value)
+                          ? 'bg-[#FF441F] text-white border-[#FF441F]'
+                          : 'bg-white text-[#71717A] border-[#E4E4E7] hover:border-[#FF441F]'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {form.tipo === 'promo' && (
+
+              {/* Preço promo — só aparece se tag promo ativa */}
+              {temPromo && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preço promocional (R$)</label>
                   <input
@@ -350,6 +353,7 @@ const RestauranteProdutos = () => {
                   />
                 </div>
               )}
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -359,6 +363,7 @@ const RestauranteProdutos = () => {
                 />
                 <span className="text-sm text-gray-700">⭐ Destacar produto</span>
               </label>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"

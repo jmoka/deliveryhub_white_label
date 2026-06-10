@@ -130,7 +130,7 @@ const RestCardList = ({ r, i }) => {
 
 /* ── Card produto (comparação) ───────────────────────────────────── */
 const ProdutoCompCard = ({ produto, i, navigate }) => {
-  const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const restFechado = rest?.aparencia?.aberto === false;
@@ -242,7 +242,7 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
 
 /* ── Card produto carrossel ──────────────────────────────────────── */
 const ProdCarrosselCard = ({ produto, i, navigate }) => {
-  const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const fechado = rest?.aparencia?.aberto === false;
@@ -265,10 +265,7 @@ const ProdCarrosselCard = ({ produto, i, navigate }) => {
         {!fechado && temPromo && (
           <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">PROMO</span>
         )}
-        {produto.tipo === 'combo' && (
-          <span className="absolute top-2 left-2 text-[9px] font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded-full shadow">COMBO</span>
-        )}
-        {produto.tipo === 'mais_vendido' && (
+        {produto.tags?.includes('mais_vendido') && (
           <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow">🔥</span>
         )}
       </div>
@@ -513,9 +510,9 @@ const MenuCatalogProductBrowse = () => {
       )
     : produtos;
 
-  const maisVendidos = produtos.filter((p) => p.tipo === 'mais_vendido').slice(0, 20);
-  const emPromocao   = produtos.filter((p) => p.tipo === 'promo' && p.preco_promo != null).slice(0, 20);
-  const combos       = produtos.filter((p) => p.tipo === 'combo').slice(0, 20);
+  const maisVendidos = produtos.filter((p) => p.tags?.includes('mais_vendido')).slice(0, 20);
+  const emPromocao   = produtos.filter((p) => p.tags?.includes('promo') && p.preco_promo != null).slice(0, 20);
+  const combos = [];
 
   return (
     <div className="min-h-screen bg-[#F4F4F5]">

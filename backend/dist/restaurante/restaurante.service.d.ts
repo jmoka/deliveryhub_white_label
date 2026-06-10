@@ -50,6 +50,8 @@ export declare class RestauranteService {
         restaurant_id: any;
         updated_at: any;
     }>;
+    private catIdsDoRestaurante;
+    private verificarProdutoDoRestaurante;
     meusProdutos(restaurantId: number): Promise<{
         produtos: {
             id: any;
@@ -60,7 +62,7 @@ export declare class RestauranteService {
             image_url: any;
             is_active: any;
             category_id: any;
-            tipo: any;
+            tags: any;
             destaque: any;
             created_at: any;
         }[];
@@ -71,7 +73,7 @@ export declare class RestauranteService {
         price: number;
         image_url?: string;
         category_id: number;
-        tipo?: string;
+        tags?: string[];
         preco_promo?: number;
         destaque?: boolean;
     }): Promise<any>;
@@ -83,6 +85,36 @@ export declare class RestauranteService {
         id: any;
         name: any;
         is_active: any;
+    }>;
+    meusCombos(restaurantId: number): Promise<{
+        combos: {
+            id: any;
+            name: any;
+            description: any;
+            price: any;
+            preco_promo: any;
+            image_url: any;
+            is_active: any;
+            destaque: any;
+            created_at: any;
+        }[];
+    }>;
+    getComboDetalhe(comboId: number, restaurantId: number): Promise<any>;
+    criarCombo(restaurantId: number, body: {
+        name: string;
+        description?: string;
+        price: number;
+        preco_promo?: number;
+        image_url?: string;
+        destaque?: boolean;
+        items?: {
+            product_id: number;
+            quantity: number;
+        }[];
+    }): Promise<any>;
+    editarCombo(comboId: number, restaurantId: number, body: any): Promise<any>;
+    deletarCombo(comboId: number, restaurantId: number): Promise<{
+        ok: boolean;
     }>;
     minhasCategorias(restaurantId: number): Promise<{
         categorias: {

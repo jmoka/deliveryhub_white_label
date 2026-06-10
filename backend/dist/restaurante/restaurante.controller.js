@@ -121,6 +121,21 @@ let RestauranteController = class RestauranteController {
     relatorio(req, de, ate) {
         return this.service.getRelatorio(req.restaurantId, de, ate);
     }
+    meusCombos(req) {
+        return this.service.meusCombos(req.restaurantId);
+    }
+    getComboDetalhe(id, req) {
+        return this.service.getComboDetalhe(id, req.restaurantId);
+    }
+    criarCombo(req, body) {
+        return this.service.criarCombo(req.restaurantId, body);
+    }
+    editarCombo(id, req, body) {
+        return this.service.editarCombo(id, req.restaurantId, body);
+    }
+    deletarCombo(id, req) {
+        return this.service.deletarCombo(id, req.restaurantId);
+    }
 };
 exports.RestauranteController = RestauranteController;
 __decorate([
@@ -369,6 +384,46 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "relatorio", null);
+__decorate([
+    (0, common_1.Get)('combos'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "meusCombos", null);
+__decorate([
+    (0, common_1.Get)('combos/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "getComboDetalhe", null);
+__decorate([
+    (0, common_1.Post)('combos'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "criarCombo", null);
+__decorate([
+    (0, common_1.Patch)('combos/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "editarCombo", null);
+__decorate([
+    (0, common_1.Delete)('combos/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "deletarCombo", null);
 exports.RestauranteController = RestauranteController = __decorate([
     (0, common_1.Controller)('restaurante'),
     (0, common_1.UseGuards)(restaurant_owner_guard_1.RestaurantOwnerGuard),

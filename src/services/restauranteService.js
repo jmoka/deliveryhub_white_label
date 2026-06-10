@@ -145,6 +145,16 @@ export const toggleMotoboy = (id, ativo) =>
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
 
+// Combos
+export const getMeusCombos = () => apiFetch('/combos');
+export const getComboDetalhe = (id) => apiFetch(`/combos/${id}`);
+export const criarCombo = (data) =>
+  apiFetch('/combos', { method: 'POST', body: JSON.stringify(data) });
+export const editarCombo = (id, data) =>
+  apiFetch(`/combos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deletarCombo = (id) =>
+  apiFetch(`/combos/${id}`, { method: 'DELETE' });
+
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {
   const res = await fetch(`/api/r/${slug}`);

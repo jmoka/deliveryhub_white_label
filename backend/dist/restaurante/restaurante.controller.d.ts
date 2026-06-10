@@ -60,7 +60,7 @@ export declare class RestauranteController {
             image_url: any;
             is_active: any;
             category_id: any;
-            tipo: any;
+            tags: any;
             destaque: any;
             created_at: any;
         }[];
@@ -390,5 +390,24 @@ export declare class RestauranteController {
             total_saidas: any;
             saldo_liquido: number;
         };
+    }>;
+    meusCombos(req: any): Promise<{
+        combos: {
+            id: any;
+            name: any;
+            description: any;
+            price: any;
+            preco_promo: any;
+            image_url: any;
+            is_active: any;
+            destaque: any;
+            created_at: any;
+        }[];
+    }>;
+    getComboDetalhe(id: number, req: any): Promise<any>;
+    criarCombo(req: any, body: any): Promise<any>;
+    editarCombo(id: number, req: any, body: any): Promise<any>;
+    deletarCombo(id: number, req: any): Promise<{
+        ok: boolean;
     }>;
 }

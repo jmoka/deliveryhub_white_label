@@ -66,18 +66,29 @@ export class RestauranteService {
     return this.pedidos.atualizarStatus(pedidoId, status as any);
   }
 
+  private async catIdsDoRestaurante(restaurantId: number): Promise<number[]> {
+    const { data } = await this.supabase.client
+      .from('categories').select('id').eq('restaurant_id', restaurantId);
+    return (data ?? []).map((c: any) => c.id);
+  }
+
+  private async verificarProdutoDoRestaurante(produtoId: number, restaurantId: number) {
+    const catIds = await this.catIdsDoRestaurante(restaurantId);
+    const { data: prod } = await this.supabase.client
+      .from('products').select('id, category_id').eq('id', produtoId).maybeSingle();
+    if (!prod) throw new NotFoundException('Produto não encontrado');
+    if (!catIds.includes(prod.category_id)) throw new NotFoundException('Produto não pertence a este restaurante');
+    return prod;
+  }
+
   async meusProdutos(restaurantId: number) {
+    const catIds = await this.catIdsDoRestaurante(restaurantId);
+    if (catIds.length === 0) return { produtos: [] };
+
     const { data, error } = await this.supabase.client
       .from('products')
-      .select('id, name, description, price, preco_promo, image_url, is_active, category_id, tipo, destaque, created_at')
-      .in(
-        'category_id',
-        (await this.supabase.client
-          .from('categories')
-          .select('id')
-          .eq('restaurant_id', restaurantId)
-          .then((r) => (r.data ?? []).map((c) => c.id))),
-      )
+      .select('id, name, description, price, preco_promo, image_url, is_active, category_id, tags, destaque, created_at')
+      .in('category_id', catIds)
       .order('destaque', { ascending: false })
       .order('name');
 
@@ -89,17 +100,11 @@ export class RestauranteService {
     restaurantId: number,
     body: {
       name: string; description?: string; price: number; image_url?: string;
-      category_id: number; tipo?: string; preco_promo?: number; destaque?: boolean;
+      category_id: number; tags?: string[]; preco_promo?: number; destaque?: boolean;
     },
   ) {
-    const { data: cat } = await this.supabase.client
-      .from('categories')
-      .select('id')
-      .eq('id', body.category_id)
-      .eq('restaurant_id', restaurantId)
-      .maybeSingle();
-
-    if (!cat) throw new NotFoundException('Categoria não pertence a este restaurante');
+    const catIds = await this.catIdsDoRestaurante(restaurantId);
+    if (!catIds.includes(body.category_id)) throw new NotFoundException('Categoria não pertence a este restaurante');
 
     const { data, error } = await this.supabase.client
       .from('products')
@@ -110,7 +115,7 @@ export class RestauranteService {
         preco_promo: body.preco_promo ?? null,
         image_url: body.image_url ?? null,
         category_id: body.category_id,
-        tipo: body.tipo ?? 'normal',
+        tags: body.tags ?? [],
         destaque: body.destaque ?? false,
         is_active: true,
       })
@@ -122,13 +127,7 @@ export class RestauranteService {
   }
 
   async editarProduto(produtoId: number, restaurantId: number, body: any) {
-    const { data: prod } = await this.supabase.client
-      .from('products').select('id, category_id').eq('id', produtoId).maybeSingle();
-    if (!prod) throw new NotFoundException('Produto não encontrado');
-
-    const { data: cat } = await this.supabase.client
-      .from('categories').select('id').eq('id', prod.category_id).eq('restaurant_id', restaurantId).maybeSingle();
-    if (!cat) throw new NotFoundException('Produto não pertence a este restaurante');
+    await this.verificarProdutoDoRestaurante(produtoId, restaurantId);
 
     const update: any = {};
     if (body.name !== undefined) update.name = body.name;
@@ -136,9 +135,13 @@ export class RestauranteService {
     if (body.price !== undefined) update.price = body.price;
     if (body.preco_promo !== undefined) update.preco_promo = body.preco_promo ?? null;
     if (body.image_url !== undefined) update.image_url = body.image_url ?? null;
-    if (body.tipo !== undefined) update.tipo = body.tipo;
+    if (body.tags !== undefined) update.tags = body.tags;
     if (body.destaque !== undefined) update.destaque = body.destaque;
-    if (body.category_id !== undefined) update.category_id = body.category_id;
+    if (body.category_id !== undefined) {
+      const catIds = await this.catIdsDoRestaurante(restaurantId);
+      if (!catIds.includes(body.category_id)) throw new NotFoundException('Categoria não pertence a este restaurante');
+      update.category_id = body.category_id;
+    }
 
     const { data, error } = await this.supabase.client
       .from('products').update(update).eq('id', produtoId).select().single();
@@ -147,38 +150,110 @@ export class RestauranteService {
   }
 
   async deletarProduto(produtoId: number, restaurantId: number) {
-    const { data: prod } = await this.supabase.client
-      .from('products').select('id, category_id').eq('id', produtoId).maybeSingle();
-    if (!prod) throw new NotFoundException('Produto não encontrado');
-
-    const { data: cat } = await this.supabase.client
-      .from('categories').select('id').eq('id', prod.category_id).eq('restaurant_id', restaurantId).maybeSingle();
-    if (!cat) throw new NotFoundException('Produto não pertence a este restaurante');
-
+    await this.verificarProdutoDoRestaurante(produtoId, restaurantId);
     const { error } = await this.supabase.client.from('products').delete().eq('id', produtoId);
     if (error) throw error;
     return { ok: true };
   }
 
   async toggleProduto(produtoId: number, restaurantId: number, ativo: boolean) {
-    const { data: prod } = await this.supabase.client
-      .from('products')
-      .select('id, category_id')
-      .eq('id', produtoId)
-      .maybeSingle();
+    await this.verificarProdutoDoRestaurante(produtoId, restaurantId);
+    return this.produtos.toggleAtivo(produtoId, ativo);
+  }
 
-    if (prod) {
-      const { data: cat } = await this.supabase.client
-        .from('categories')
-        .select('id')
-        .eq('id', prod.category_id)
-        .eq('restaurant_id', restaurantId)
-        .maybeSingle();
+  // ── Combos ──────────────────────────────────────────────────────────────────
 
-      if (!cat) throw new NotFoundException('Produto não pertence a este restaurante');
+  async meusCombos(restaurantId: number) {
+    const { data, error } = await this.supabase.client
+      .from('combos')
+      .select('id, name, description, price, preco_promo, image_url, is_active, destaque, created_at')
+      .eq('restaurant_id', restaurantId)
+      .order('destaque', { ascending: false })
+      .order('name');
+    if (error) throw error;
+    return { combos: data ?? [] };
+  }
+
+  async getComboDetalhe(comboId: number, restaurantId: number) {
+    const { data: combo } = await this.supabase.client
+      .from('combos').select('*').eq('id', comboId).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!combo) throw new NotFoundException('Combo não encontrado');
+
+    const { data: items } = await this.supabase.client
+      .from('combo_items')
+      .select('id, quantity, product_id, products(id, name, price, image_url)')
+      .eq('combo_id', comboId);
+
+    return { ...combo, items: items ?? [] };
+  }
+
+  async criarCombo(restaurantId: number, body: {
+    name: string; description?: string; price: number; preco_promo?: number;
+    image_url?: string; destaque?: boolean; items?: { product_id: number; quantity: number }[];
+  }) {
+    const { data: combo, error } = await this.supabase.client
+      .from('combos')
+      .insert({
+        restaurant_id: restaurantId,
+        name: body.name,
+        description: body.description ?? null,
+        price: body.price,
+        preco_promo: body.preco_promo ?? null,
+        image_url: body.image_url ?? null,
+        destaque: body.destaque ?? false,
+        is_active: true,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    if (body.items?.length) {
+      await this.supabase.client.from('combo_items').insert(
+        body.items.map((i) => ({ combo_id: combo.id, product_id: i.product_id, quantity: i.quantity })),
+      );
     }
 
-    return this.produtos.toggleAtivo(produtoId, ativo);
+    return this.getComboDetalhe(combo.id, restaurantId);
+  }
+
+  async editarCombo(comboId: number, restaurantId: number, body: any) {
+    const { data: existing } = await this.supabase.client
+      .from('combos').select('id').eq('id', comboId).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!existing) throw new NotFoundException('Combo não encontrado');
+
+    const update: any = {};
+    if (body.name !== undefined) update.name = body.name;
+    if (body.description !== undefined) update.description = body.description ?? null;
+    if (body.price !== undefined) update.price = body.price;
+    if (body.preco_promo !== undefined) update.preco_promo = body.preco_promo ?? null;
+    if (body.image_url !== undefined) update.image_url = body.image_url ?? null;
+    if (body.destaque !== undefined) update.destaque = body.destaque;
+    if (body.is_active !== undefined) update.is_active = body.is_active;
+
+    if (Object.keys(update).length > 0) {
+      const { error } = await this.supabase.client.from('combos').update(update).eq('id', comboId);
+      if (error) throw error;
+    }
+
+    if (Array.isArray(body.items)) {
+      await this.supabase.client.from('combo_items').delete().eq('combo_id', comboId);
+      if (body.items.length > 0) {
+        await this.supabase.client.from('combo_items').insert(
+          body.items.map((i: any) => ({ combo_id: comboId, product_id: i.product_id, quantity: i.quantity })),
+        );
+      }
+    }
+
+    return this.getComboDetalhe(comboId, restaurantId);
+  }
+
+  async deletarCombo(comboId: number, restaurantId: number) {
+    const { data: existing } = await this.supabase.client
+      .from('combos').select('id').eq('id', comboId).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!existing) throw new NotFoundException('Combo não encontrado');
+    const { error } = await this.supabase.client.from('combos').delete().eq('id', comboId);
+    if (error) throw error;
+    return { ok: true };
   }
 
   async minhasCategorias(restaurantId: number) {

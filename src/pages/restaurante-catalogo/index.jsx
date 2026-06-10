@@ -22,7 +22,7 @@ const SkeletonProduto = () => (
 
 /* ── Card produto ────────────────────────────────────────────────── */
 const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
-  const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const indisponivel = produto.disponivel === false || restauranteFechado;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
 
@@ -41,8 +41,8 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
             {produto.destaque && (
               <span className="text-[10px] px-1.5 py-0.5 bg-yellow-400/20 text-yellow-700 rounded font-bold flex-shrink-0">⭐ Destaque</span>
             )}
-            {produto.tipo === 'combo' && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold flex-shrink-0">COMBO</span>
+            {produto.tags?.includes('mais_vendido') && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold flex-shrink-0">🔥 Top</span>
             )}
           </div>
           {produto.description && (
