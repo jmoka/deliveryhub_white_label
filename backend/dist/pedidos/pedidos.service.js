@@ -106,6 +106,12 @@ let PedidosService = class PedidosService {
             if (c)
                 customerId = c.id;
         }
+        const { data: caixaAberto } = await this.supabase.client
+            .from('caixas')
+            .select('id')
+            .eq('restaurant_id', body.restaurant_id)
+            .eq('status', 'aberto')
+            .maybeSingle();
         const { data: pedido, error: errPedido } = await this.supabase.client
             .from('orders')
             .insert({
@@ -115,6 +121,7 @@ let PedidosService = class PedidosService {
             user_id: body.user_id,
             total: parseFloat(total.toFixed(2)),
             status: 'pending',
+            caixa_id: caixaAberto?.id ?? null,
         })
             .select()
             .single();

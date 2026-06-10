@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getMeusProdutos, criarProduto, toggleProduto,
+  getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
   getCategoriasGlobais,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -18,8 +18,11 @@ const RestauranteProdutos = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
+  const [deletando, setDeletando] = useState(null);
+
   const carregar = () => {
     setLoading(true);
     Promise.all([getMeusProdutos(), getCategoriasGlobais()])
@@ -32,6 +35,33 @@ const RestauranteProdutos = () => {
   };
 
   useEffect(() => { carregar(); }, []);
+
+  const abrirNovo = () => {
+    setEditando(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+
+  const abrirEditar = (p) => {
+    setEditando(p);
+    setForm({
+      name: p.name ?? '',
+      description: p.description ?? '',
+      price: p.price != null ? String(p.price) : '',
+      preco_promo: p.preco_promo != null ? String(p.preco_promo) : '',
+      image_url: p.image_url ?? '',
+      category_id: p.category_id != null ? String(p.category_id) : '',
+      tipo: p.tipo ?? 'normal',
+      destaque: p.destaque ?? false,
+    });
+    setShowModal(true);
+  };
+
+  const fecharModal = () => {
+    setShowModal(false);
+    setEditando(null);
+    setForm(EMPTY_FORM);
+  };
 
   const handleToggle = async (produto) => {
     try {
@@ -49,24 +79,42 @@ const RestauranteProdutos = () => {
       return;
     }
     setSalvando(true);
+    const payload = {
+      name: form.name,
+      description: form.description || null,
+      price: parseFloat(form.price),
+      preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : null,
+      image_url: form.image_url || null,
+      category_id: parseInt(form.category_id),
+      tipo: form.tipo,
+      destaque: form.destaque,
+    };
     try {
-      const novo = await criarProduto({
-        name: form.name,
-        description: form.description || undefined,
-        price: parseFloat(form.price),
-        preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : undefined,
-        image_url: form.image_url || undefined,
-        category_id: parseInt(form.category_id),
-        tipo: form.tipo,
-        destaque: form.destaque,
-      });
-      setProdutos((prev) => [...prev, novo]);
-      setForm(EMPTY_FORM);
-      setShowModal(false);
+      if (editando) {
+        const atualizado = await editarProduto(editando.id, payload);
+        setProdutos((prev) => prev.map((p) => (p.id === editando.id ? atualizado : p)));
+      } else {
+        const novo = await criarProduto(payload);
+        setProdutos((prev) => [...prev, novo]);
+      }
+      fecharModal();
     } catch (e) {
       alert(e.message);
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleDeletar = async (produto) => {
+    if (!window.confirm(`Deletar "${produto.name}"? Esta ação não pode ser desfeita.`)) return;
+    setDeletando(produto.id);
+    try {
+      await deletarProduto(produto.id);
+      setProdutos((prev) => prev.filter((p) => p.id !== produto.id));
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setDeletando(null);
     }
   };
 
@@ -130,7 +178,7 @@ const RestauranteProdutos = () => {
             Produtos <span className="text-gray-400 font-normal">({produtos.length})</span>
           </h2>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={abrirNovo}
             className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a]"
           >
             + Novo produto
@@ -144,7 +192,7 @@ const RestauranteProdutos = () => {
         ) : produtos.length === 0 ? (
           <div className="bg-white rounded-xl border p-12 text-center">
             <p className="text-gray-400 mb-3">Nenhum produto cadastrado</p>
-            <button onClick={() => setShowModal(true)} className="text-sm text-[#FF441F] hover:underline">
+            <button onClick={abrirNovo} className="text-sm text-[#FF441F] hover:underline">
               Criar primeiro produto →
             </button>
           </div>
@@ -163,8 +211,12 @@ const RestauranteProdutos = () => {
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {p.tipo !== 'normal' && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${p.tipo === 'promo' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {p.tipo === 'promo' ? 'PROMO' : 'COMBO'}
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${
+                          p.tipo === 'promo' ? 'bg-green-100 text-green-700'
+                          : p.tipo === 'combo' ? 'bg-purple-100 text-purple-700'
+                          : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {p.tipo === 'promo' ? 'PROMO' : p.tipo === 'combo' ? 'COMBO' : 'TOP'}
                         </span>
                       )}
                       <button
@@ -185,6 +237,21 @@ const RestauranteProdutos = () => {
                     )}
                   </div>
                   <p className="text-xs text-gray-400">{catMap[p.category_id] ?? 'Sem categoria'}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => abrirEditar(p)}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeletar(p)}
+                      disabled={deletando === p.id}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deletando === p.id ? '...' : 'Deletar'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -192,11 +259,13 @@ const RestauranteProdutos = () => {
         )}
       </main>
 
-      {/* Modal novo produto */}
+      {/* Modal criar / editar produto */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold text-[#18181B] mb-4">Novo Produto</h2>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold text-[#18181B] mb-4">
+              {editando ? 'Editar Produto' : 'Novo Produto'}
+            </h2>
             <form onSubmit={handleSalvar} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
@@ -237,7 +306,7 @@ const RestauranteProdutos = () => {
                   <select
                     value={form.category_id}
                     onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
-                    className="mx-2 w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Selecionar</option>
@@ -264,6 +333,7 @@ const RestauranteProdutos = () => {
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
                   <option value="normal">Normal</option>
+                  <option value="mais_vendido">Mais Vendido</option>
                   <option value="promo">Promoção</option>
                   <option value="combo">Combo</option>
                 </select>
@@ -292,7 +362,7 @@ const RestauranteProdutos = () => {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowModal(false); setForm(EMPTY_FORM); }}
+                  onClick={fecharModal}
                   className="flex-1 py-2 text-sm border rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
@@ -302,7 +372,7 @@ const RestauranteProdutos = () => {
                   disabled={salvando}
                   className="flex-1 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
                 >
-                  {salvando ? 'Salvando...' : 'Salvar'}
+                  {salvando ? 'Salvando...' : editando ? 'Salvar Alterações' : 'Criar Produto'}
                 </button>
               </div>
             </form>

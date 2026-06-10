@@ -87,6 +87,11 @@ export declare class MotoboyService {
         pedido_id: number;
         status: string;
     }>;
+    reivindicarPedido(pedidoId: number, motoboyId: number): Promise<{
+        ok: boolean;
+        pedido_id: number;
+        status: string;
+    }>;
     confirmarColeta(pedidoId: number, motoboyId: number, barcode: string): Promise<{
         ok: boolean;
         pedido_id: number;

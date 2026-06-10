@@ -5,6 +5,7 @@ import {
   getMotoboyToken, setMotoboyToken, clearMotoboyToken,
 } from '../../services/motoboyService';
 import ColetaBarcode from './ColetaBarcode';
+import EntregaBarcode from './EntregaBarcode';
 import Icon from '../../components/AppIcon';
 
 const OcorrenciaModal = ({ pedido, tipo, onConfirmar, onFechar, salvando }) => {
@@ -499,6 +500,8 @@ const MotoboyPortal = () => {
             {/* Ações */}
             {p.status === 'motoboy_collecting' ? (
               <ColetaBarcode pedidoId={p.id} onConfirmado={carregarDados} />
+            ) : p.status === 'out_for_delivery' ? (
+              <EntregaBarcode pedido={p} onConfirmado={carregarDados} />
             ) : (
               <div className="flex gap-2">
                 <button

@@ -121,6 +121,45 @@ export class RestauranteService {
     return data;
   }
 
+  async editarProduto(produtoId: number, restaurantId: number, body: any) {
+    const { data: prod } = await this.supabase.client
+      .from('products').select('id, category_id').eq('id', produtoId).maybeSingle();
+    if (!prod) throw new NotFoundException('Produto não encontrado');
+
+    const { data: cat } = await this.supabase.client
+      .from('categories').select('id').eq('id', prod.category_id).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!cat) throw new NotFoundException('Produto não pertence a este restaurante');
+
+    const update: any = {};
+    if (body.name !== undefined) update.name = body.name;
+    if (body.description !== undefined) update.description = body.description ?? null;
+    if (body.price !== undefined) update.price = body.price;
+    if (body.preco_promo !== undefined) update.preco_promo = body.preco_promo ?? null;
+    if (body.image_url !== undefined) update.image_url = body.image_url ?? null;
+    if (body.tipo !== undefined) update.tipo = body.tipo;
+    if (body.destaque !== undefined) update.destaque = body.destaque;
+    if (body.category_id !== undefined) update.category_id = body.category_id;
+
+    const { data, error } = await this.supabase.client
+      .from('products').update(update).eq('id', produtoId).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deletarProduto(produtoId: number, restaurantId: number) {
+    const { data: prod } = await this.supabase.client
+      .from('products').select('id, category_id').eq('id', produtoId).maybeSingle();
+    if (!prod) throw new NotFoundException('Produto não encontrado');
+
+    const { data: cat } = await this.supabase.client
+      .from('categories').select('id').eq('id', prod.category_id).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!cat) throw new NotFoundException('Produto não pertence a este restaurante');
+
+    const { error } = await this.supabase.client.from('products').delete().eq('id', produtoId);
+    if (error) throw error;
+    return { ok: true };
+  }
+
   async toggleProduto(produtoId: number, restaurantId: number, ativo: boolean) {
     const { data: prod } = await this.supabase.client
       .from('products')

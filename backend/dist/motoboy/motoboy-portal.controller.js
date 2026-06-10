@@ -33,6 +33,9 @@ let MotoboyPortalController = class MotoboyPortalController {
     pegar(id, req) {
         return this.service.pegarPedido(id, req.motoboyId);
     }
+    reivindicar(id, req) {
+        return this.service.reivindicarPedido(id, req.motoboyId);
+    }
     confirmarColeta(id, body, req) {
         return this.service.confirmarColeta(id, req.motoboyId, body.barcode);
     }
@@ -76,6 +79,14 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], MotoboyPortalController.prototype, "pegar", null);
+__decorate([
+    (0, common_1.Post)('pedidos/:id/reivindicar'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], MotoboyPortalController.prototype, "reivindicar", null);
 __decorate([
     (0, common_1.Post)('pedidos/:id/confirmar-coleta'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),

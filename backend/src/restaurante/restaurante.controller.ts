@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, ParseIntPipe,
+  Body, Controller, Delete, Get, Param, ParseIntPipe,
   Patch, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -50,6 +50,23 @@ export class RestauranteController {
   @Post('produtos')
   criarProduto(@Req() req: any, @Body() body: any) {
     return this.service.criarProduto(req.restaurantId, body);
+  }
+
+  @Patch('produtos/:id')
+  editarProduto(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    return this.service.editarProduto(id, req.restaurantId, body);
+  }
+
+  @Delete('produtos/:id')
+  deletarProduto(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    return this.service.deletarProduto(id, req.restaurantId);
   }
 
   @Patch('produtos/:id/toggle')

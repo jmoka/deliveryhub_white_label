@@ -50,6 +50,12 @@ export const getMeusProdutos = () => apiFetch('/produtos');
 export const criarProduto = (data) =>
   apiFetch('/produtos', { method: 'POST', body: JSON.stringify(data) });
 
+export const editarProduto = (id, data) =>
+  apiFetch(`/produtos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const deletarProduto = (id) =>
+  apiFetch(`/produtos/${id}`, { method: 'DELETE' });
+
 export const toggleProduto = (id, ativo) =>
   apiFetch(`/produtos/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 

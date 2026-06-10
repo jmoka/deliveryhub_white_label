@@ -43,6 +43,12 @@ let RestauranteController = class RestauranteController {
     criarProduto(req, body) {
         return this.service.criarProduto(req.restaurantId, body);
     }
+    editarProduto(id, body, req) {
+        return this.service.editarProduto(id, req.restaurantId, body);
+    }
+    deletarProduto(id, req) {
+        return this.service.deletarProduto(id, req.restaurantId);
+    }
     toggleProduto(id, body, req) {
         return this.service.toggleProduto(id, req.restaurantId, body.ativo);
     }
@@ -83,10 +89,19 @@ let RestauranteController = class RestauranteController {
         return this.service.getCaixa(req.restaurantId);
     }
     abrirCaixa(req, body) {
-        return this.service.abrirCaixa(req.restaurantId, body.valor_inicial ?? 0);
+        return this.service.abrirCaixa(req.restaurantId, body);
     }
-    fecharCaixa(req) {
-        return this.service.fecharCaixa(req.restaurantId);
+    fecharCaixa(req, body) {
+        return this.service.fecharCaixa(req.restaurantId, body);
+    }
+    fecharComTransferencia(req, body) {
+        return this.service.fecharComTransferencia(req.restaurantId, body);
+    }
+    getCaixaHistorico(req) {
+        return this.service.getCaixaHistorico(req.restaurantId);
+    }
+    getCaixaDetalhe(id, req) {
+        return this.service.getCaixaDetalhe(req.restaurantId, id);
     }
     adicionarSaida(req, body) {
         return this.service.adicionarSaida(req.restaurantId, body);
@@ -156,6 +171,23 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "criarProduto", null);
+__decorate([
+    (0, common_1.Patch)('produtos/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "editarProduto", null);
+__decorate([
+    (0, common_1.Delete)('produtos/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "deletarProduto", null);
 __decorate([
     (0, common_1.Patch)('produtos/:id/toggle'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
@@ -262,10 +294,34 @@ __decorate([
 __decorate([
     (0, common_1.Post)('caixa/fechar'),
     __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "fecharCaixa", null);
+__decorate([
+    (0, common_1.Post)('caixa/fechar-e-transferir'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "fecharComTransferencia", null);
+__decorate([
+    (0, common_1.Get)('caixa/historico'),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
-], RestauranteController.prototype, "fecharCaixa", null);
+], RestauranteController.prototype, "getCaixaHistorico", null);
+__decorate([
+    (0, common_1.Get)('caixa/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "getCaixaDetalhe", null);
 __decorate([
     (0, common_1.Post)('caixa/saida'),
     __param(0, (0, common_1.Req)()),

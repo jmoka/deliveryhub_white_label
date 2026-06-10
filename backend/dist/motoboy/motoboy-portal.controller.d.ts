@@ -60,6 +60,11 @@ export declare class MotoboyPortalController {
         pedido_id: number;
         status: string;
     }>;
+    reivindicar(id: number, req: any): Promise<{
+        ok: boolean;
+        pedido_id: number;
+        status: string;
+    }>;
     confirmarColeta(id: number, body: {
         barcode: string;
     }, req: any): Promise<{

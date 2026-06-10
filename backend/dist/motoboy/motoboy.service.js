@@ -203,6 +203,25 @@ let MotoboyService = class MotoboyService {
         }
         return { ok: true, pedido_id: pedidoId, status: 'motoboy_collecting' };
     }
+    async reivindicarPedido(pedidoId, motoboyId) {
+        const mb = await this.infoMotoboy(motoboyId);
+        if (!mb)
+            throw new common_1.NotFoundException('Motoboy não encontrado');
+        const { data, error } = await this.supabase.client
+            .from('orders')
+            .update({ motoboy_id: motoboyId, status: 'motoboy_collecting', updated_at: new Date().toISOString() })
+            .eq('id', pedidoId)
+            .eq('restaurant_id', mb.restaurant_id)
+            .in('status', ['ready', 'preparing', 'confirmed'])
+            .is('motoboy_id', null)
+            .select('id');
+        if (error)
+            throw error;
+        if (!data || data.length === 0) {
+            throw new common_1.ConflictException('Pedido não encontrado, já foi atribuído ou não está disponível');
+        }
+        return { ok: true, pedido_id: pedidoId, status: 'motoboy_collecting' };
+    }
     async confirmarColeta(pedidoId, motoboyId, barcode) {
         const expected = String(pedidoId).padStart(8, '0');
         if (barcode.replace(/\D/g, '') !== expected) {

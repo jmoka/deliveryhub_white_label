@@ -66,6 +66,10 @@ export declare class RestauranteController {
         }[];
     }>;
     criarProduto(req: any, body: any): Promise<any>;
+    editarProduto(id: number, body: any, req: any): Promise<any>;
+    deletarProduto(id: number, req: any): Promise<{
+        ok: boolean;
+    }>;
     toggleProduto(id: number, body: {
         ativo: boolean;
     }, req: any): Promise<{
@@ -130,36 +134,42 @@ export declare class RestauranteController {
     getCaixa(req: any): Promise<{
         status_restaurante: boolean;
         aberto: boolean;
-        aberto_em: null;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
+        expirado: boolean;
+        caixa_expirado: any;
         pedidos: never[];
         resumo: null;
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        id?: undefined;
+        nome_operador?: undefined;
+        aberto_em?: undefined;
+        valor_inicial?: undefined;
+        saidas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
-        aberto_em: string;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
+        expirado: boolean;
+        id: any;
+        nome_operador: any;
+        aberto_em: any;
+        valor_inicial: any;
+        saidas: any[];
         pedidos: {
             id: any;
             total: any;
             status: any;
             payment_method: any;
             created_at: any;
+            updated_at: any;
             customer_id: any;
             motoboy_id: any;
+            caixa_id: any;
             customers: {
                 name: any;
                 phone_e164: any;
+            }[];
+            motoboys: {
+                name: any;
             }[];
         }[];
         resumo: {
@@ -168,45 +178,55 @@ export declare class RestauranteController {
             em_andamento: number;
             cancelados: number;
             total_vendas: any;
-            total_saidas: number;
+            total_saidas: any;
             saldo: number;
         };
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        caixa_expirado?: undefined;
     }>;
     abrirCaixa(req: any, body: {
+        nome_operador: string;
         valor_inicial?: number;
     }): Promise<{
         status_restaurante: boolean;
         aberto: boolean;
-        aberto_em: null;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
+        expirado: boolean;
+        caixa_expirado: any;
         pedidos: never[];
         resumo: null;
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        id?: undefined;
+        nome_operador?: undefined;
+        aberto_em?: undefined;
+        valor_inicial?: undefined;
+        saidas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
-        aberto_em: string;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
+        expirado: boolean;
+        id: any;
+        nome_operador: any;
+        aberto_em: any;
+        valor_inicial: any;
+        saidas: any[];
         pedidos: {
             id: any;
             total: any;
             status: any;
             payment_method: any;
             created_at: any;
+            updated_at: any;
             customer_id: any;
             motoboy_id: any;
+            caixa_id: any;
             customers: {
                 name: any;
                 phone_e164: any;
+            }[];
+            motoboys: {
+                name: any;
             }[];
         }[];
         resumo: {
@@ -215,30 +235,92 @@ export declare class RestauranteController {
             em_andamento: number;
             cancelados: number;
             total_vendas: any;
-            total_saidas: number;
+            total_saidas: any;
             saldo: number;
         };
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        caixa_expirado?: undefined;
     }>;
-    fecharCaixa(req: any): Promise<{
-        pedidos: any[];
-        fechado_em: string;
-        aberto_em: string | null;
-        valor_inicial: any;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
+    fecharCaixa(req: any, body: {
+        banco?: number;
+        retirada?: number;
+        permanece?: number;
+    }): Promise<{
+        fechamento: {
+            id: any;
+            aberto_em: any;
+            fechado_em: string;
+            nome_operador: any;
+            valor_inicial: any;
+            saidas: any[];
+            resumo: {
+                total_pedidos: number;
+                entregues: number;
+                em_andamento: number;
+                cancelados: number;
+                total_vendas: any;
+                total_saidas: any;
+                saldo: number;
+            };
+            destinacao_fechamento: {
+                banco: number;
+                retirada: number;
+                permanece: number;
+                saldo: number;
+            };
+        };
+    }>;
+    fecharComTransferencia(req: any, body: {
+        nome_operador: string;
+        valor_inicial?: number;
+    }): Promise<{
+        fechamento: {
+            id: any;
+            aberto_em: any;
+            fechado_em: string;
+            nome_operador: any;
+            resumo: {
+                total_pedidos: number;
+                entregues: number;
+                em_andamento: number;
+                cancelados: number;
+                total_vendas: any;
+                total_saidas: any;
+                saldo: number;
+            };
+        };
+        novo_caixa: any;
+    }>;
+    getCaixaHistorico(req: any): Promise<{
+        historico: {
+            id: any;
+            nome_operador: any;
+            valor_inicial: any;
+            status: any;
+            aberto_em: any;
+            fechado_em: any;
+            resumo: any;
         }[];
-        resumo: Record<string, any> | null;
+    }>;
+    getCaixaDetalhe(id: number, req: any): Promise<{
+        caixa: any;
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            created_at: any;
+            customers: {
+                name: any;
+            }[];
+        }[];
     }>;
     adicionarSaida(req: any, body: {
         descricao: string;
         valor: number;
-    }): Promise<{
-        descricao: string;
-        valor: number;
-        criado_em: string;
-    }>;
+        meio?: string;
+    }): Promise<any>;
     buscarPedidoDetalhe(id: number, req: any): Promise<{
         pedido: {
             id: any;
@@ -296,6 +378,7 @@ export declare class RestauranteController {
     }>;
     relatorio(req: any, de: string, ate: string): Promise<{
         pedidos: any[];
+        saidas: any[];
         resumo: {
             total_pedidos: number;
             entregues: number;
@@ -304,6 +387,8 @@ export declare class RestauranteController {
             total_vendas: any;
             ticket_medio: number;
             por_pagamento: any;
+            total_saidas: any;
+            saldo_liquido: number;
         };
     }>;
 }
