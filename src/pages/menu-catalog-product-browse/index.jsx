@@ -507,7 +507,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
       <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto pb-3">
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
             {categorias.map((c, i) => {
               const ativo = catAtiva === c.id;
@@ -562,7 +562,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
-        <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-3 overflow-x-auto pb-2">
           {categorias.map((c, i) => {
             const ativo = catAtiva === c.id;
             return (
