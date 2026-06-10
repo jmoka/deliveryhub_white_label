@@ -240,6 +240,78 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
   );
 };
 
+/* ── Card produto carrossel ──────────────────────────────────────── */
+const ProdCarrosselCard = ({ produto, i, navigate }) => {
+  const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+  const preco = temPromo ? produto.preco_promo : produto.price;
+  const rest = produto.restaurante;
+  const fechado = rest?.aparencia?.aberto === false;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: (i % 10) * 0.05 }}
+      whileHover={{ y: fechado ? 0 : -2 }}
+      onClick={() => rest && !fechado && navigate(`/r/${rest.slug}`)}
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left ${
+        fechado ? 'border-red-200 opacity-70' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      }`}
+    >
+      <div className="relative h-28 bg-[#F4F4F5]">
+        {produto.image_url
+          ? <img src={produto.image_url} alt={produto.name} className={`w-full h-full object-cover ${fechado ? 'grayscale' : ''}`} />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={28} className="text-[#E4E4E7]" /></div>}
+        {!fechado && temPromo && (
+          <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">PROMO</span>
+        )}
+        {produto.tipo === 'combo' && (
+          <span className="absolute top-2 left-2 text-[9px] font-bold bg-purple-600 text-white px-1.5 py-0.5 rounded-full shadow">COMBO</span>
+        )}
+        {produto.tipo === 'mais_vendido' && (
+          <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow">🔥</span>
+        )}
+      </div>
+      <div className="p-2.5">
+        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{produto.name}</p>
+        <div className="mt-1.5">
+          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(produto.price)}</p>}
+          <p className={`text-sm font-black ${fechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+            {fechado ? '–' : fmt(preco)}
+          </p>
+        </div>
+        {rest && <p className="text-[9px] text-[#71717A] truncate mt-1">{rest.name}</p>}
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Carrossel de produtos ────────────────────────────────────────── */
+const ProdCarrossel = ({ produtos, navigate }) => {
+  const scrollRef = useRef(null);
+  const scroll = (dir) => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={() => scroll(-1)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
+        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+      </button>
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
+        {produtos.map((p, i) => (
+          <ProdCarrosselCard key={p.id} produto={p} i={i} navigate={navigate} />
+        ))}
+      </div>
+      <button onClick={() => scroll(1)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
+        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+      </button>
+    </div>
+  );
+};
+
 /* ── Sidebar esquerda ────────────────────────────────────────────── */
 const SidebarLeft = ({ categorias, catAtiva, setCatAtiva }) => (
   <aside className="hidden lg:flex flex-col gap-1 w-52 xl:w-60 flex-shrink-0">
@@ -441,6 +513,10 @@ const MenuCatalogProductBrowse = () => {
       )
     : produtos;
 
+  const maisVendidos = produtos.filter((p) => p.tipo === 'mais_vendido').slice(0, 20);
+  const emPromocao   = produtos.filter((p) => p.tipo === 'promo' && p.preco_promo != null).slice(0, 20);
+  const combos       = produtos.filter((p) => p.tipo === 'combo').slice(0, 20);
+
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
 
@@ -556,6 +632,45 @@ const MenuCatalogProductBrowse = () => {
               Populares
             </p>
             <RestCarrossel restaurantes={restaurantes} navigate={navigate} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Mais Vendidos ────────────────────────────────────────── */}
+      {!loadProd && maisVendidos.length > 0 && (
+        <div className="bg-white border-b border-[#E4E4E7]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+              <Icon name="TrendingUp" size={15} className="text-amber-500" />
+              Mais Vendidos
+            </p>
+            <ProdCarrossel produtos={maisVendidos} navigate={navigate} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Em Promoção ──────────────────────────────────────────── */}
+      {!loadProd && emPromocao.length > 0 && (
+        <div className="bg-white border-b border-[#E4E4E7]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+              <Icon name="Tag" size={15} className="text-green-600" />
+              Em Promoção
+            </p>
+            <ProdCarrossel produtos={emPromocao} navigate={navigate} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Combos ───────────────────────────────────────────────── */}
+      {!loadProd && combos.length > 0 && (
+        <div className="bg-white border-b border-[#E4E4E7]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+              <Icon name="Package" size={15} className="text-purple-600" />
+              Combos
+            </p>
+            <ProdCarrossel produtos={combos} navigate={navigate} />
           </div>
         </div>
       )}
