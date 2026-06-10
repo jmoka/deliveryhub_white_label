@@ -75,22 +75,18 @@ export class RestauranteService {
   }
 
   private async verificarProdutoDoRestaurante(produtoId: number, restaurantId: number) {
-    const catIds = await this.catIdsDoRestaurante(restaurantId);
     const { data: prod } = await this.supabase.client
-      .from('products').select('id, category_id').eq('id', produtoId).maybeSingle();
+      .from('products').select('id, category_id, restaurant_id').eq('id', produtoId).maybeSingle();
     if (!prod) throw new NotFoundException('Produto não encontrado');
-    if (!catIds.includes(prod.category_id)) throw new NotFoundException('Produto não pertence a este restaurante');
+    if (prod.restaurant_id !== restaurantId) throw new NotFoundException('Produto não pertence a este restaurante');
     return prod;
   }
 
   async meusProdutos(restaurantId: number) {
-    const catIds = await this.catIdsDoRestaurante(restaurantId);
-    if (catIds.length === 0) return { produtos: [] };
-
     const { data, error } = await this.supabase.client
       .from('products')
-      .select('id, name, description, price, preco_promo, image_url, is_active, category_id, tags, destaque, created_at')
-      .in('category_id', catIds)
+      .select('id, name, description, price, preco_promo, image_url, is_active, category_id, restaurant_id, tags, destaque, created_at')
+      .eq('restaurant_id', restaurantId)
       .order('destaque', { ascending: false })
       .order('name');
 
@@ -105,8 +101,12 @@ export class RestauranteService {
       category_id: number; tags?: string[]; preco_promo?: number; destaque?: boolean;
     },
   ) {
-    const catIds = await this.catIdsDoRestaurante(restaurantId);
-    if (!catIds.includes(body.category_id)) throw new NotFoundException('Categoria não pertence a este restaurante');
+    // Valida se a categoria é do restaurante ou global (restaurant_id IS NULL)
+    const { data: cat } = await this.supabase.client
+      .from('categories').select('id, restaurant_id').eq('id', body.category_id).maybeSingle();
+    if (!cat) throw new NotFoundException('Categoria não encontrada');
+    if (cat.restaurant_id !== null && cat.restaurant_id !== restaurantId)
+      throw new NotFoundException('Categoria não pertence a este restaurante');
 
     const { data, error } = await this.supabase.client
       .from('products')
@@ -117,6 +117,7 @@ export class RestauranteService {
         preco_promo: body.preco_promo ?? null,
         image_url: body.image_url ?? null,
         category_id: body.category_id,
+        restaurant_id: restaurantId,
         tags: body.tags ?? [],
         destaque: body.destaque ?? false,
         is_active: true,
@@ -140,8 +141,11 @@ export class RestauranteService {
     if (body.tags !== undefined) update.tags = body.tags;
     if (body.destaque !== undefined) update.destaque = body.destaque;
     if (body.category_id !== undefined) {
-      const catIds = await this.catIdsDoRestaurante(restaurantId);
-      if (!catIds.includes(body.category_id)) throw new NotFoundException('Categoria não pertence a este restaurante');
+      const { data: cat } = await this.supabase.client
+        .from('categories').select('id, restaurant_id').eq('id', body.category_id).maybeSingle();
+      if (!cat) throw new NotFoundException('Categoria não encontrada');
+      if (cat.restaurant_id !== null && cat.restaurant_id !== restaurantId)
+        throw new NotFoundException('Categoria não pertence a este restaurante');
       update.category_id = body.category_id;
     }
 

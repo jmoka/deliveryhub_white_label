@@ -1,6 +1,8 @@
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
+const PRODUTO_FIELDS = 'id, name, description, price, preco_promo, image_url, category_id, restaurant_id, tags, destaque, is_active';
+
 @Controller('r')
 export class CatalogoController {
   constructor(private supabase: SupabaseService) {}
@@ -27,36 +29,25 @@ export class CatalogoController {
     if (!restaurantes?.length) return { produtos: [] };
 
     const restIds = restaurantes.map((r) => r.id);
+    const restMap = Object.fromEntries(restaurantes.map((r) => [r.id, r]));
 
-    const { data: categorias } = await this.supabase.client
-      .from('categories')
-      .select('id, restaurant_id')
-      .in('restaurant_id', restIds);
-
-    const catIds = (categorias ?? []).map((c) => c.id);
-    if (!catIds.length) return { produtos: [] };
-
+    // Busca diretamente por restaurant_id (não depende de category chain)
     const { data: produtos, error } = await this.supabase.client
       .from('products')
-      .select('id, name, description, price, preco_promo, image_url, category_id, tipo, destaque')
+      .select(PRODUTO_FIELDS)
       .eq('is_active', true)
-      .in('category_id', catIds)
+      .in('restaurant_id', restIds)
       .order('name')
       .limit(200);
 
     if (error) throw error;
 
-    const catToRest = Object.fromEntries(
-      (categorias ?? []).map((c) => [c.id, c.restaurant_id]),
-    );
-    const restMap = Object.fromEntries(restaurantes.map((r) => [r.id, r]));
-
-    const resultado = (produtos ?? []).map((p) => ({
-      ...p,
-      restaurante: restMap[catToRest[p.category_id]] ?? null,
-    })).filter((p) => p.restaurante);
-
-    return { produtos: resultado };
+    return {
+      produtos: (produtos ?? []).map((p) => ({
+        ...p,
+        restaurante: restMap[p.restaurant_id] ?? null,
+      })).filter((p) => p.restaurante),
+    };
   }
 
   @Get(':slug')
@@ -69,28 +60,35 @@ export class CatalogoController {
 
     if (!restaurante) throw new NotFoundException('Restaurante não encontrado');
 
+    // Categorias do restaurante (próprias + globais para exibição)
     const { data: categorias } = await this.supabase.client
       .from('categories')
       .select('id, name')
-      .eq('restaurant_id', restaurante.id)
+      .or(`restaurant_id.eq.${restaurante.id},restaurant_id.is.null`)
       .order('name');
 
+    // Produtos via restaurant_id (forma correta e direta)
     const { data: produtos } = await this.supabase.client
       .from('products')
-      .select('id, name, description, price, preco_promo, image_url, category_id, tipo, destaque')
+      .select(PRODUTO_FIELDS)
       .eq('is_active', true)
-      .in('category_id', (categorias ?? []).map((c) => c.id))
+      .eq('restaurant_id', restaurante.id)
       .order('destaque', { ascending: false })
       .order('name');
 
+    const catSet = new Set((categorias ?? []).map((c) => c.id));
+
     const cardapio = (categorias ?? []).map((cat) => ({
       ...cat,
-      produtos: (produtos ?? []).filter((p) => p.category_id === cat.id && p.tipo === 'normal'),
+      produtos: (produtos ?? []).filter((p) => p.category_id === cat.id),
     })).filter((cat) => cat.produtos.length > 0);
 
     const destaques = (produtos ?? []).filter((p) => p.destaque);
-    const promos = (produtos ?? []).filter((p) => p.tipo === 'promo');
-    const combos = (produtos ?? []).filter((p) => p.tipo === 'combo');
+    const promos = (produtos ?? []).filter(
+      (p) => Array.isArray(p.tags) && p.tags.includes('promo') && p.preco_promo != null,
+    );
+    // Combos são entidade separada — carregados pelo client se necessário
+    const combos: any[] = [];
 
     return { restaurante, cardapio, destaques, promos, combos };
   }
