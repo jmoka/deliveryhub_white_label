@@ -637,43 +637,55 @@ const MenuCatalogProductBrowse = () => {
       )}
 
       {/* ── Mais Vendidos ────────────────────────────────────────── */}
-      {!loadProd && maisVendidos.length > 0 && (
-        <div className="bg-white border-b border-[#E4E4E7]">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
-              <Icon name="TrendingUp" size={15} className="text-amber-500" />
-              Mais Vendidos
-            </p>
+      <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+          <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+            <Icon name="TrendingUp" size={15} className="text-amber-500" />
+            Mais Vendidos
+          </p>
+          {loadProd ? (
+            <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
+          ) : maisVendidos.length === 0 ? (
+            <p className="text-sm text-[#71717A] py-4">Nenhum produto disponível</p>
+          ) : (
             <ProdCarrossel produtos={maisVendidos} navigate={navigate} />
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Em Promoção ──────────────────────────────────────────── */}
-      {!loadProd && emPromocao.length > 0 && (
-        <div className="bg-white border-b border-[#E4E4E7]">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
-              <Icon name="Tag" size={15} className="text-green-600" />
-              Em Promoção
-            </p>
+      <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+          <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+            <Icon name="Tag" size={15} className="text-green-600" />
+            Em Promoção
+          </p>
+          {loadProd ? (
+            <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
+          ) : emPromocao.length === 0 ? (
+            <p className="text-sm text-[#71717A] py-4">Nenhum produto em promoção</p>
+          ) : (
             <ProdCarrossel produtos={emPromocao} navigate={navigate} />
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Combos ───────────────────────────────────────────────── */}
-      {!loadProd && combos.length > 0 && (
-        <div className="bg-white border-b border-[#E4E4E7]">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
-              <Icon name="Package" size={15} className="text-purple-600" />
-              Combos
-            </p>
+      <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+          <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+            <Icon name="Package" size={15} className="text-purple-600" />
+            Combos
+          </p>
+          {loadProd ? (
+            <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
+          ) : combos.length === 0 ? (
+            <p className="text-sm text-[#71717A] py-4">Nenhum combo disponível</p>
+          ) : (
             <ProdCarrossel produtos={combos} navigate={navigate} />
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
