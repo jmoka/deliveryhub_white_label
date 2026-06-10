@@ -128,17 +128,32 @@ export class RestauranteController {
   }
 
   @Post('caixa/abrir')
-  abrirCaixa(@Req() req: any, @Body() body: { valor_inicial?: number }) {
-    return this.service.abrirCaixa(req.restaurantId, body.valor_inicial ?? 0);
+  abrirCaixa(@Req() req: any, @Body() body: { nome_operador: string; valor_inicial?: number }) {
+    return this.service.abrirCaixa(req.restaurantId, body);
   }
 
   @Post('caixa/fechar')
-  fecharCaixa(@Req() req: any) {
-    return this.service.fecharCaixa(req.restaurantId);
+  fecharCaixa(@Req() req: any, @Body() body: { banco?: number; retirada?: number; permanece?: number }) {
+    return this.service.fecharCaixa(req.restaurantId, body);
+  }
+
+  @Post('caixa/fechar-e-transferir')
+  fecharComTransferencia(@Req() req: any, @Body() body: { nome_operador: string; valor_inicial?: number }) {
+    return this.service.fecharComTransferencia(req.restaurantId, body);
+  }
+
+  @Get('caixa/historico')
+  getCaixaHistorico(@Req() req: any) {
+    return this.service.getCaixaHistorico(req.restaurantId);
+  }
+
+  @Get('caixa/:id')
+  getCaixaDetalhe(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.getCaixaDetalhe(req.restaurantId, id);
   }
 
   @Post('caixa/saida')
-  adicionarSaida(@Req() req: any, @Body() body: { descricao: string; valor: number }) {
+  adicionarSaida(@Req() req: any, @Body() body: { descricao: string; valor: number; meio?: string }) {
     return this.service.adicionarSaida(req.restaurantId, body);
   }
 

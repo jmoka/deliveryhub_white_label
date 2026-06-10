@@ -22,7 +22,9 @@ async function apiFetch(path, options = {}) {
 
   if (!res.ok) {
     const err = isJson ? await res.json().catch(() => ({})) : {};
-    throw new Error(err?.message ?? `HTTP ${res.status}`);
+    const error = new Error(err?.message ?? `HTTP ${res.status}`);
+    error.data = err;
+    throw error;
   }
 
   if (!isJson) throw new Error('Resposta inválida. Verifique se o backend está rodando.');
@@ -88,14 +90,20 @@ export const toggleStatusRestaurante = (aberto) =>
 
 export const getCaixa = () => apiFetch('/caixa');
 
-export const abrirCaixa = (valor_inicial) =>
-  apiFetch('/caixa/abrir', { method: 'POST', body: JSON.stringify({ valor_inicial }) });
+export const abrirCaixa = ({ nome_operador, valor_inicial }) =>
+  apiFetch('/caixa/abrir', { method: 'POST', body: JSON.stringify({ nome_operador, valor_inicial: valor_inicial ?? 0 }) });
 
-export const fecharCaixa = () =>
-  apiFetch('/caixa/fechar', { method: 'POST' });
+export const fecharCaixa = (destinacao = {}) =>
+  apiFetch('/caixa/fechar', { method: 'POST', body: JSON.stringify(destinacao) });
+
+export const fecharETransferir = ({ nome_operador, valor_inicial }) =>
+  apiFetch('/caixa/fechar-e-transferir', { method: 'POST', body: JSON.stringify({ nome_operador, valor_inicial: valor_inicial ?? 0 }) });
 
 export const adicionarSaida = (data) =>
   apiFetch('/caixa/saida', { method: 'POST', body: JSON.stringify(data) });
+
+export const getCaixaHistorico = () => apiFetch('/caixa/historico');
+export const getCaixaDetalhe = (id) => apiFetch(`/caixa/${id}`);
 
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');

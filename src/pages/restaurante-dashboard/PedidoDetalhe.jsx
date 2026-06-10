@@ -33,7 +33,7 @@ const STATUS_LABEL = {
   ready: 'Pronto', out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
 };
 
-const PROXIMOS  = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready' };
+const PROXIMOS  = { pending: 'confirmed', preparing: 'ready' };
 const ANTERIORES = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing' };
 
 const timeAgo = (iso) => {
@@ -55,7 +55,7 @@ const SectionTitle = ({ icon, label, color = 'text-[#FF441F]' }) => (
   </div>
 );
 
-const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onAtribuir }) => {
+const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, motoboys, onAtribuir }) => {
   const [motoboyId, setMotoboyId] = useState('');
   const [atribuindo, setAtribuindo] = useState(false);
 
@@ -363,12 +363,25 @@ const PedidoDetalhe = ({ detalhe, onAvancar, atualizando, onClose, motoboys, onA
               {atualizando === pedido.id ? 'Atualizando...' : (
                 <>
                   <Icon name={proxStatus === 'preparing' ? 'ChefHat' : 'ArrowRight'} size={15} />
-                  {proxStatus === 'preparing' ? 'Enviar p/ Cozinha' : `→ ${STATUS_LABEL[proxStatus]}`}
+                  {proxStatus === 'preparing'
+                    ? (pedido.status === 'pending' ? 'Confirmar e Enviar p/ Cozinha' : 'Enviar p/ Cozinha')
+                    : `→ ${STATUS_LABEL[proxStatus]}`}
                 </>
               )}
             </button>
           )}
         </div>
+
+        {/* Reenviar p/ cozinha (reimprimir comanda) */}
+        {(pedido.status === 'preparing' || pedido.status === 'confirmed') && onReimprimir && (
+          <button
+            onClick={() => onReimprimir(pedido)}
+            className="w-full py-2.5 border border-orange-200 bg-orange-50 text-orange-700 text-sm font-bold rounded-2xl hover:bg-orange-100 transition-colors flex items-center justify-center gap-2"
+          >
+            <Icon name="Printer" size={14} />
+            Enviar para a cozinha (reimprimir comanda)
+          </button>
+        )}
 
         {needsMotoboy && activeMotoboys.length > 0 && (
           <div className="space-y-2">

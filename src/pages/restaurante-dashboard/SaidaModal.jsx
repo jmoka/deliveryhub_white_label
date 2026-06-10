@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 
+const MEIOS = [
+  { value: 'dinheiro',      label: 'Dinheiro' },
+  { value: 'pix',           label: 'PIX' },
+  { value: 'transferencia', label: 'Transferência' },
+  { value: 'cartao',        label: 'Cartão' },
+];
+
 const SaidaModal = ({ onConfirmar, onFechar, salvando }) => {
-  const [form, setForm] = useState({ descricao: '', valor: '' });
+  const [form, setForm] = useState({ descricao: '', valor: '', meio: 'dinheiro' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.descricao || !form.valor) return;
-    onConfirmar({ descricao: form.descricao, valor: parseFloat(form.valor) });
+    onConfirmar({ descricao: form.descricao, valor: parseFloat(form.valor), meio: form.meio });
   };
 
   return (
@@ -19,21 +26,33 @@ const SaidaModal = ({ onConfirmar, onFechar, salvando }) => {
             <input
               value={form.descricao}
               onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
-              placeholder="Ex: Troco, compra de ingrediente..."
+              placeholder="Ex: Troco, compra de ingrediente, troco em PIX..."
               className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
               required
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-[#71717A] mb-1">Valor (R$)</label>
-            <input
-              type="number" min="0.01" step="0.01"
-              value={form.valor}
-              onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
-              placeholder="0,00"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
-              required
-            />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-[#71717A] mb-1">Valor (R$)</label>
+              <input
+                type="number" min="0.01" step="0.01"
+                value={form.valor}
+                onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
+                placeholder="0,00"
+                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                required
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-[#71717A] mb-1">Meio</label>
+              <select
+                value={form.meio}
+                onChange={(e) => setForm((f) => ({ ...f, meio: e.target.value }))}
+                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] bg-white mx-2"
+              >
+                {MEIOS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+            </div>
           </div>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
