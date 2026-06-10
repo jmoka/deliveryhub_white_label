@@ -93,6 +93,9 @@ export declare class RestauranteController {
     criarCategoria(req: any, body: {
         name: string;
     }): Promise<any>;
+    deletarCategoria(id: number, req: any): Promise<{
+        mensagem: string;
+    }>;
     listarClientes(req: any, busca?: string, limite?: string): Promise<{
         clientes: {
             id: any;

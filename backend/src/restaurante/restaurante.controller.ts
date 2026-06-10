@@ -88,6 +88,11 @@ export class RestauranteController {
     return this.service.criarCategoria(req.restaurantId, body);
   }
 
+  @Delete('categorias/:id')
+  deletarCategoria(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.deletarCategoria(id, req.restaurantId);
+  }
+
   @Get('clientes')
   listarClientes(
     @Req() req: any,

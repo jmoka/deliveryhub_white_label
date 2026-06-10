@@ -2,15 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
-  getMinhasCategorias, getCategoriasGlobais,
+  getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const TAGS_OPCOES = [
-  { value: 'mais_vendido', label: '🔥 Mais Vendido', bg: 'bg-amber-100 text-amber-700' },
-  { value: 'promo', label: '% Promoção', bg: 'bg-green-100 text-green-700' },
+  { value: 'promo',        label: '% Promoção',    bg: 'bg-green-100 text-green-700' },
+  { value: 'novo',         label: '🆕 Novo',        bg: 'bg-blue-100 text-blue-700' },
+  { value: 'exclusivo',    label: '⭐ Exclusivo',   bg: 'bg-purple-100 text-purple-700' },
+  { value: 'vegano',       label: '🌱 Vegano',      bg: 'bg-emerald-100 text-emerald-700' },
+  { value: 'vegetariano',  label: '🥦 Vegetariano', bg: 'bg-lime-100 text-lime-700' },
+  { value: 'sem_gluten',   label: '🌾 Sem Glúten',  bg: 'bg-yellow-100 text-yellow-700' },
+  { value: 'picante',      label: '🌶️ Picante',     bg: 'bg-red-100 text-red-700' },
 ];
 
 const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false };
@@ -27,6 +32,10 @@ const RestauranteProdutos = () => {
   const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
+  const [novaCategoria, setNovaCategoria] = useState('');
+  const [criandoCateg, setCriandoCateg] = useState(false);
+  const [deletandoCateg, setDeletandoCateg] = useState(null);
+  const [showCategPanel, setShowCategPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -68,6 +77,34 @@ const RestauranteProdutos = () => {
       destaque: p.destaque ?? false,
     });
     setShowModal(true);
+  };
+
+  const handleCriarCategoria = async (e) => {
+    e.preventDefault();
+    if (!novaCategoria.trim()) return;
+    setCriandoCateg(true);
+    try {
+      const nova = await criarCategoria(novaCategoria.trim());
+      setCategorias((prev) => [...prev, nova].sort((a, b) => a.name.localeCompare(b.name)));
+      setNovaCategoria('');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCriandoCateg(false);
+    }
+  };
+
+  const handleDeletarCategoria = async (cat) => {
+    if (!window.confirm(`Deletar categoria "${cat.name}"? Os produtos ligados perderão esta categoria.`)) return;
+    setDeletandoCateg(cat.id);
+    try {
+      await deletarCategoria(cat.id);
+      setCategorias((prev) => prev.filter((c) => c.id !== cat.id));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDeletandoCateg(null);
+    }
   };
 
   const fecharModal = () => {
@@ -177,6 +214,65 @@ const RestauranteProdutos = () => {
 
       <main className="p-6 max-w-4xl mx-auto">
         {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
+
+        {/* Painel de categorias do restaurante */}
+        <div className="bg-white rounded-xl border border-[#E4E4E7] mb-5">
+          <button
+            type="button"
+            onClick={() => setShowCategPanel((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#18181B] text-sm">Minhas Categorias</span>
+              <span className="text-xs text-[#71717A] bg-[#F4F4F5] px-2 py-0.5 rounded-full">{categorias.length}</span>
+            </div>
+            <span className="text-[#71717A] text-xs">{showCategPanel ? '▲' : '▼'}</span>
+          </button>
+
+          {showCategPanel && (
+            <div className="px-5 pb-4 border-t border-[#F4F4F5]">
+              {/* Criar nova */}
+              <form onSubmit={handleCriarCategoria} className="flex gap-2 mt-3 mb-4">
+                <input
+                  value={novaCategoria}
+                  onChange={(e) => setNovaCategoria(e.target.value)}
+                  placeholder="Nome da nova categoria..."
+                  className="flex-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                />
+                <button
+                  type="submit"
+                  disabled={criandoCateg || !novaCategoria.trim()}
+                  className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
+                >
+                  {criandoCateg ? '...' : '+ Criar'}
+                </button>
+              </form>
+
+              {categorias.length === 0 ? (
+                <p className="text-xs text-[#71717A]">Nenhuma categoria própria. Crie acima ou use as globais da plataforma.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categorias.map((c) => (
+                    <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-full px-3 py-1.5">
+                      <span className="text-sm text-[#27272A]">{c.name}</span>
+                      {c.total_produtos > 0 && (
+                        <span className="text-[10px] text-[#71717A]">({c.total_produtos})</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeletarCategoria(c)}
+                        disabled={deletandoCateg === c.id}
+                        className="text-[#A1A1AA] hover:text-red-500 text-sm leading-none disabled:opacity-40"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#18181B]">

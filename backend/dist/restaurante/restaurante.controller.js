@@ -58,6 +58,9 @@ let RestauranteController = class RestauranteController {
     criarCategoria(req, body) {
         return this.service.criarCategoria(req.restaurantId, body);
     }
+    deletarCategoria(id, req) {
+        return this.service.deletarCategoria(id, req.restaurantId);
+    }
     listarClientes(req, busca, limite) {
         return this.service.listarClientes(req.restaurantId, {
             busca,
@@ -227,6 +230,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "criarCategoria", null);
+__decorate([
+    (0, common_1.Delete)('categorias/:id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "deletarCategoria", null);
 __decorate([
     (0, common_1.Get)('clientes'),
     __param(0, (0, common_1.Req)()),

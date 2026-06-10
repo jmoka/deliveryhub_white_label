@@ -68,6 +68,9 @@ export const getMinhasCategorias = () => apiFetch('/categorias');
 export const criarCategoria = (name) =>
   apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name }) });
 
+export const deletarCategoria = (id) =>
+  apiFetch(`/categorias/${id}`, { method: 'DELETE' });
+
 export const getClientes = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return apiFetch(`/clientes${qs ? `?${qs}` : ''}`);

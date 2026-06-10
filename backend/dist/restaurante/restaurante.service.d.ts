@@ -132,6 +132,9 @@ export declare class RestauranteService {
     criarCategoria(restaurantId: number, body: {
         name: string;
     }): Promise<any>;
+    deletarCategoria(categoriaId: number, restaurantId: number): Promise<{
+        mensagem: string;
+    }>;
     listarClientes(restaurantId: number, filtros: {
         busca?: string;
         limite?: number;

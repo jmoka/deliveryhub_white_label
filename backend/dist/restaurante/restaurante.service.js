@@ -258,6 +258,13 @@ let RestauranteService = class RestauranteService {
     async criarCategoria(restaurantId, body) {
         return this.categorias.criar({ name: body.name, restaurant_id: restaurantId });
     }
+    async deletarCategoria(categoriaId, restaurantId) {
+        const { data } = await this.supabase.client
+            .from('categories').select('id').eq('id', categoriaId).eq('restaurant_id', restaurantId).maybeSingle();
+        if (!data)
+            throw new common_1.NotFoundException('Categoria não encontrada neste restaurante');
+        return this.categorias.remover(categoriaId);
+    }
     async listarClientes(restaurantId, filtros) {
         let query = this.supabase.client
             .from('customers')

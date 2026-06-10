@@ -266,6 +266,13 @@ export class RestauranteService {
     return this.categorias.criar({ name: body.name, restaurant_id: restaurantId });
   }
 
+  async deletarCategoria(categoriaId: number, restaurantId: number) {
+    const { data } = await this.supabase.client
+      .from('categories').select('id').eq('id', categoriaId).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!data) throw new NotFoundException('Categoria não encontrada neste restaurante');
+    return this.categorias.remover(categoriaId);
+  }
+
   async listarClientes(restaurantId: number, filtros: { busca?: string; limite?: number }) {
     let query = this.supabase.client
       .from('customers')
