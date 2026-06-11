@@ -1,0 +1,1 @@
+ALTER TABLE public.caixas ADD COLUMN IF NOT EXISTS entradas JSONB DEFAULT '[]';

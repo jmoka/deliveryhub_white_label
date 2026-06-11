@@ -229,7 +229,8 @@ export class MotoboyService {
 
   async confirmarColeta(pedidoId: number, motoboyId: number, barcode: string) {
     const expected = String(pedidoId).padStart(8, '0');
-    if (barcode.replace(/\D/g, '') !== expected) {
+    const scanned  = barcode.replace(/\D/g, '').padStart(8, '0');
+    if (scanned !== expected) {
       throw new BadRequestException('Código de barras não confere com este pedido');
     }
     const { data, error } = await this.supabase.client

@@ -111,8 +111,13 @@ export const fecharETransferir = ({ nome_operador, valor_inicial }) =>
 export const adicionarSaida = (data) =>
   apiFetch('/caixa/saida', { method: 'POST', body: JSON.stringify(data) });
 
+export const adicionarEntrada = (data) =>
+  apiFetch('/caixa/entrada', { method: 'POST', body: JSON.stringify(data) });
+
 export const getCaixaHistorico = () => apiFetch('/caixa/historico');
 export const getCaixaDetalhe = (id) => apiFetch(`/caixa/${id}`);
+export const aprovarConferencia = (caixaId) =>
+  apiFetch(`/caixa/${caixaId}/conferencia`, { method: 'POST' });
 
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');

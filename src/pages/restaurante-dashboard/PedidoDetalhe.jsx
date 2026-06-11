@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
+import { printFichaMotoboy } from '../../utils/printComanda';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -9,32 +10,25 @@ const PAYMENT_LABELS = {
   debit_card: 'Cartão de débito', cash: 'Dinheiro (cobrar na entrega)',
 };
 
-const STATUS_FLOW = [
-  { key: 'pending',          label: 'Recebido',   icon: 'Bell' },
-  { key: 'confirmed',        label: 'Confirmado', icon: 'CheckCircle' },
-  { key: 'preparing',        label: 'Preparo',    icon: 'ChefHat' },
-  { key: 'ready',            label: 'Pronto',     icon: 'Package' },
-  { key: 'out_for_delivery', label: 'Em entrega', icon: 'Bike' },
-  { key: 'delivered',        label: 'Entregue',   icon: 'CheckCircle2' },
-];
-
 const STATUS_COLORS = {
-  pending:          'bg-yellow-100 text-yellow-800 border-yellow-200',
-  confirmed:        'bg-blue-100 text-blue-800 border-blue-200',
-  preparing:        'bg-orange-100 text-orange-800 border-orange-200',
-  ready:            'bg-purple-100 text-purple-800 border-purple-200',
-  out_for_delivery: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  delivered:        'bg-green-100 text-green-800 border-green-200',
-  canceled:         'bg-red-100 text-red-800 border-red-200',
+  pending:            'bg-yellow-100 text-yellow-800 border-yellow-200',
+  confirmed:          'bg-blue-100 text-blue-800 border-blue-200',
+  preparing:          'bg-orange-100 text-orange-800 border-orange-200',
+  ready:              'bg-purple-100 text-purple-800 border-purple-200',
+  motoboy_collecting: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  out_for_delivery:   'bg-indigo-100 text-indigo-800 border-indigo-200',
+  delivered:          'bg-green-100 text-green-800 border-green-200',
+  canceled:           'bg-red-100 text-red-800 border-red-200',
 };
 
 const STATUS_LABEL = {
   pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo',
-  ready: 'Pronto', out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
+  ready: 'Pronto', motoboy_collecting: 'Motoboy coletando',
+  out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
 };
 
-const PROXIMOS  = { pending: 'confirmed', preparing: 'ready' };
-const ANTERIORES = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing' };
+const PROXIMOS    = { pending: 'preparing', confirmed: 'preparing', preparing: 'ready', ready: 'motoboy_collecting', motoboy_collecting: 'out_for_delivery', out_for_delivery: 'delivered' };
+const ANTERIORES  = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing', motoboy_collecting: 'ready', out_for_delivery: 'motoboy_collecting', delivered: 'out_for_delivery' };
 
 const timeAgo = (iso) => {
   if (!iso) return null;
@@ -55,19 +49,13 @@ const SectionTitle = ({ icon, label, color = 'text-[#FF441F]' }) => (
   </div>
 );
 
-const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, motoboys, onAtribuir }) => {
-  const [motoboyId, setMotoboyId] = useState('');
-  const [atribuindo, setAtribuindo] = useState(false);
-
+const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose }) => {
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
 
   const isCanceled = pedido.status === 'canceled';
-  const stepIdx = STATUS_FLOW.findIndex((s) => s.key === pedido.status);
   const proxStatus = PROXIMOS[pedido.status];
-  const antStatus = ANTERIORES[pedido.status];
-  const activeMotoboys = (motoboys ?? []).filter((m) => m.is_active);
-  const needsMotoboy = pedido.status === 'ready' && !pedido.motoboy_id;
+  const antStatus  = ANTERIORES[pedido.status];
   const statusBadge = STATUS_COLORS[pedido.status] ?? 'bg-gray-100 text-gray-700 border-gray-200';
 
   const addr = cliente?.address_json ?? {};
@@ -81,13 +69,6 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
   const mapsMotoboyUrl = pedido.motoboy_lat && pedido.motoboy_lng
     ? `https://www.google.com/maps?q=${pedido.motoboy_lat},${pedido.motoboy_lng}`
     : null;
-
-  const handleAtribuir = async () => {
-    if (!motoboyId) return;
-    setAtribuindo(true);
-    try { await onAtribuir(pedido.id, parseInt(motoboyId, 10)); }
-    finally { setAtribuindo(false); }
-  };
 
   return (
     <motion.div
@@ -118,43 +99,6 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
           </button>
         </div>
       </div>
-
-      {/* Timeline */}
-      {!isCanceled && (
-        <Section>
-          <div className="p-4">
-            <div className="flex items-center gap-1 mb-3">
-              {STATUS_FLOW.map((s, i) => {
-                const done = i <= stepIdx;
-                const active = i === stepIdx;
-                return (
-                  <React.Fragment key={s.key}>
-                    <div className={`flex flex-col items-center gap-1 flex-shrink-0 ${active ? 'scale-110' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-sm ${
-                        done ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#A1A1AA]'
-                      }`}>
-                        <Icon name={s.icon} size={14} />
-                      </div>
-                    </div>
-                    {i < STATUS_FLOW.length - 1 && (
-                      <div className={`flex-1 h-1 rounded-full transition-colors ${i < stepIdx ? 'bg-[#FF441F]' : 'bg-[#E4E4E7]'}`} />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-            <div className="flex justify-between mt-1">
-              {STATUS_FLOW.map((s, i) => (
-                <p key={s.key} className={`text-[9px] font-semibold text-center leading-tight ${
-                  i === stepIdx ? 'text-[#FF441F]' : i < stepIdx ? 'text-[#18181B]' : 'text-[#A1A1AA]'
-                }`} style={{ width: i < STATUS_FLOW.length - 1 ? undefined : 'auto', flex: i < STATUS_FLOW.length - 1 ? '0 0 auto' : 'none' }}>
-                  {s.label}
-                </p>
-              ))}
-            </div>
-          </div>
-        </Section>
-      )}
 
       {isCanceled && (
         <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -342,73 +286,68 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
       </Section>
 
       {/* Ações */}
-      <div className="space-y-2 pb-2">
-        <div className="flex gap-2">
-          {antStatus && (
-            <button
-              disabled={atualizando === pedido.id}
-              onClick={() => onAvancar(pedido, antStatus)}
-              className="flex-1 py-3 bg-[#F4F4F5] text-[#27272A] text-sm font-bold rounded-2xl hover:bg-[#E4E4E7] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-            >
-              <Icon name="ArrowLeft" size={15} />
-              {STATUS_LABEL[antStatus]}
-            </button>
-          )}
-          {proxStatus && (
+      {!isCanceled && pedido.status !== 'delivered' && (
+        <div className="space-y-2 pb-2">
+          {/* Pendente */}
+          {pedido.status === 'pending' && proxStatus && (
             <button
               disabled={atualizando === pedido.id}
               onClick={() => onAvancar(pedido, proxStatus)}
-              className={`py-3 text-white text-sm font-bold rounded-2xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg ${antStatus ? 'flex-[2]' : 'flex-1'} ${proxStatus === 'preparing' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-[#FF441F] hover:bg-[#E63A19] shadow-[#FF441F]/20'}`}
+              className="w-full py-3.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-black rounded-2xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-200"
             >
-              {atualizando === pedido.id ? 'Atualizando...' : (
-                <>
-                  <Icon name={proxStatus === 'preparing' ? 'ChefHat' : 'ArrowRight'} size={15} />
-                  {proxStatus === 'preparing'
-                    ? (pedido.status === 'pending' ? 'Confirmar e Enviar p/ Cozinha' : 'Enviar p/ Cozinha')
-                    : `→ ${STATUS_LABEL[proxStatus]}`}
-                </>
-              )}
+              {atualizando === pedido.id
+                ? 'Confirmando...'
+                : <><Icon name="ChefHat" size={16} /> Confirmar e Enviar p/ Cozinha</>}
             </button>
           )}
+
+          {/* Ativo: impressão */}
+          {['confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery'].includes(pedido.status) && (
+            <div className="flex gap-2">
+              {onReimprimir && (
+                <button
+                  onClick={() => onReimprimir(pedido)}
+                  className="flex-1 py-3 border-2 border-orange-300 bg-orange-50 text-orange-700 text-sm font-bold rounded-2xl hover:bg-orange-100 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Icon name="Printer" size={15} />
+                  Reimprimir Comanda
+                </button>
+              )}
+              <button
+                onClick={() => printFichaMotoboy(pedido, itens, cliente, null)}
+                className="flex-1 py-3 border-2 border-indigo-200 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-2xl hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+              >
+                <Icon name="Bike" size={15} />
+                Imprimir Motoboy
+              </button>
+            </div>
+          )}
+
+          {/* Ativo: avançar / voltar status */}
+          {['confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery'].includes(pedido.status) && (
+            <div className="flex gap-2">
+              {antStatus && (
+                <button
+                  disabled={atualizando === pedido.id}
+                  onClick={() => onAvancar(pedido, antStatus)}
+                  className="flex-1 py-2.5 border-2 border-[#E4E4E7] bg-white text-[#71717A] text-xs font-bold rounded-2xl hover:bg-[#F4F4F5] disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="ChevronLeft" size={14} /> Voltar Status
+                </button>
+              )}
+              {proxStatus && (
+                <button
+                  disabled={atualizando === pedido.id}
+                  onClick={() => onAvancar(pedido, proxStatus)}
+                  className="flex-1 py-2.5 border-2 border-[#FF441F]/30 bg-[#FF441F]/5 text-[#FF441F] text-xs font-bold rounded-2xl hover:bg-[#FF441F]/10 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  Avançar Status <Icon name="ChevronRight" size={14} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
-
-        {/* Reenviar p/ cozinha (reimprimir comanda) */}
-        {(pedido.status === 'preparing' || pedido.status === 'confirmed') && onReimprimir && (
-          <button
-            onClick={() => onReimprimir(pedido)}
-            className="w-full py-2.5 border border-orange-200 bg-orange-50 text-orange-700 text-sm font-bold rounded-2xl hover:bg-orange-100 transition-colors flex items-center justify-center gap-2"
-          >
-            <Icon name="Printer" size={14} />
-            Enviar para a cozinha (reimprimir comanda)
-          </button>
-        )}
-
-        {needsMotoboy && activeMotoboys.length > 0 && (
-          <div className="space-y-2">
-            <select value={motoboyId} onChange={(e) => setMotoboyId(e.target.value)}
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]">
-              <option value="">Selecionar motoboy...</option>
-              {activeMotoboys.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}{m.phone ? ` · ${m.phone}` : ''}</option>
-              ))}
-            </select>
-            <button disabled={!motoboyId || atribuindo} onClick={handleAtribuir}
-              className="w-full py-3 bg-indigo-600 text-white text-sm font-bold rounded-2xl hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
-              <Icon name="Bike" size={15} />
-              {atribuindo ? 'Atribuindo...' : 'Enviar com motoboy'}
-            </button>
-          </div>
-        )}
-
-        {needsMotoboy && activeMotoboys.length === 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3 flex items-center gap-2">
-            <Icon name="AlertTriangle" size={16} className="text-orange-500 flex-shrink-0" />
-            <p className="text-xs text-orange-700">
-              Nenhum motoboy ativo. <strong>Cadastre em Motoboys</strong> para enviar para entrega.
-            </p>
-          </div>
-        )}
-      </div>
+      )}
     </motion.div>
   );
 };

@@ -479,10 +479,27 @@ export class RestauranteService {
 
   private readonly STATUS_ABERTOS = ['pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery'];
 
-  private calcularResumo(pedidos: any[], saidas: any[], valor_inicial: number) {
+  private calcularResumo(pedidos: any[], saidas: any[], valor_inicial: number, entradas: any[] = []) {
     const entregues = pedidos.filter((p) => p.status === 'delivered');
     const total_vendas = entregues.reduce((s: number, p: any) => s + (p.total ?? 0), 0);
     const total_saidas = saidas.reduce((s: number, e: any) => s + (e.valor ?? 0), 0);
+    const total_entradas = entradas.reduce((s: number, e: any) => s + (e.valor ?? 0), 0);
+
+    const por_pagamento: Record<string, number> = {};
+    for (const p of entregues) {
+      const m = p.payment_method ?? 'outro';
+      por_pagamento[m] = (por_pagamento[m] ?? 0) + (p.total ?? 0);
+    }
+
+    const vendas_dinheiro = por_pagamento['cash'] ?? 0;
+    const saidas_especie = saidas
+      .filter((s: any) => !s.meio || s.meio === 'dinheiro')
+      .reduce((s: number, e: any) => s + (e.valor ?? 0), 0);
+    const entradas_especie = entradas
+      .filter((e: any) => !e.meio || e.meio === 'dinheiro')
+      .reduce((s: number, e: any) => s + (e.valor ?? 0), 0);
+    const especie_calculada = valor_inicial + vendas_dinheiro + entradas_especie - saidas_especie;
+
     return {
       total_pedidos: pedidos.length,
       entregues: entregues.length,
@@ -490,7 +507,12 @@ export class RestauranteService {
       cancelados: pedidos.filter((p: any) => p.status === 'canceled').length,
       total_vendas,
       total_saidas,
-      saldo: valor_inicial + total_vendas - total_saidas,
+      total_entradas,
+      saldo: valor_inicial + total_vendas + total_entradas - total_saidas,
+      por_pagamento,
+      especie_calculada,
+      saidas_especie,
+      entradas_especie,
     };
   }
 
@@ -546,7 +568,8 @@ export class RestauranteService {
 
     const pedidos = ordersData ?? [];
     const saidas = (caixa.saidas ?? []) as any[];
-    const resumo = this.calcularResumo(pedidos, saidas, caixa.valor_inicial);
+    const entradas = (caixa.entradas ?? []) as any[];
+    const resumo = this.calcularResumo(pedidos, saidas, caixa.valor_inicial, entradas);
 
     return {
       status_restaurante,
@@ -557,6 +580,7 @@ export class RestauranteService {
       aberto_em: caixa.aberto_em,
       valor_inicial: caixa.valor_inicial,
       saidas,
+      entradas,
       pedidos,
       resumo,
       saldo_caixa,
@@ -595,7 +619,7 @@ export class RestauranteService {
     return this.getCaixa(restaurantId);
   }
 
-  async fecharCaixa(restaurantId: number, body?: { banco?: number; retirada?: number; permanece?: number }) {
+  async fecharCaixa(restaurantId: number, body?: { dinheiro_contado?: number }) {
     const { data: caixa } = await this.supabase.client
       .from('caixas').select('*').eq('restaurant_id', restaurantId)
       .in('status', ['aberto', 'expirado']).maybeSingle();
@@ -620,25 +644,41 @@ export class RestauranteService {
       .or(`caixa_id.eq.${caixa.id},and(caixa_id.is.null,created_at.gte.${caixa.aberto_em})`);
 
     const saidas = (caixa.saidas ?? []) as any[];
-    const resumo = this.calcularResumo(todosPedidos ?? [], saidas, caixa.valor_inicial);
+    const entradas = (caixa.entradas ?? []) as any[];
+    const resumo = this.calcularResumo(todosPedidos ?? [], saidas, caixa.valor_inicial, entradas);
     const fechado_em = new Date().toISOString();
 
-    // Destinação do saldo: banco + retirada + permanece
-    const saldo = resumo.saldo;
-    const banco = body?.banco ?? 0;
-    const retirada = body?.retirada ?? 0;
-    const permanece = body?.permanece ?? Math.max(0, saldo - banco - retirada);
-    const destinacao_fechamento = { banco, retirada, permanece, saldo };
+    // Conferência: operador informa quanto contou; sistema compara com espécie calculada
+    const dinheiro_contado = body?.dinheiro_contado ?? (resumo.especie_calculada ?? 0);
+    const diferenca = dinheiro_contado - (resumo.especie_calculada ?? 0);
+    const destinacao_fechamento = {
+      dinheiro_contado,
+      especie_calculada: resumo.especie_calculada,
+      diferenca,
+      por_pagamento: resumo.por_pagamento,
+      conferencia_aprovada: false,
+    };
 
     await this.supabase.client.from('caixas')
       .update({ status: 'fechado', fechado_em, resumo, destinacao_fechamento })
       .eq('id', caixa.id);
 
-    // Atualizar saldo físico em caixa (para pré-preencher próxima abertura)
+    // saldo_caixa = dinheiro contado (o que vai pro cofre para o próximo caixa)
     await this.supabase.client.from('restaurants')
-      .update({ saldo_caixa: permanece }).eq('id', restaurantId);
+      .update({ saldo_caixa: Math.max(0, dinheiro_contado) }).eq('id', restaurantId);
 
     return { fechamento: { id: caixa.id, aberto_em: caixa.aberto_em, fechado_em, nome_operador: caixa.nome_operador, valor_inicial: caixa.valor_inicial, saidas, resumo, destinacao_fechamento } };
+  }
+
+  async aprovarConferencia(restaurantId: number, caixaId: number) {
+    const { data: caixa } = await this.supabase.client
+      .from('caixas').select('id, destinacao_fechamento')
+      .eq('id', caixaId).eq('restaurant_id', restaurantId).maybeSingle();
+    if (!caixa) throw new NotFoundException('Caixa não encontrado');
+    const dest = { ...(caixa.destinacao_fechamento ?? {}), conferencia_aprovada: true, aprovado_em: new Date().toISOString() };
+    const { error } = await this.supabase.client.from('caixas').update({ destinacao_fechamento: dest }).eq('id', caixaId);
+    if (error) throw error;
+    return { aprovado: true };
   }
 
   async fecharComTransferencia(restaurantId: number, body: { nome_operador: string; valor_inicial?: number }) {
@@ -668,6 +708,9 @@ export class RestauranteService {
       .select('*').single();
     if (error) throw error;
 
+    // Zerar saldo_caixa — novo caixa está aberto, valor físico está dentro dele
+    await this.supabase.client.from('restaurants').update({ saldo_caixa: 0 }).eq('id', restaurantId);
+
     // Transferir pedidos abertos para o novo caixa
     await this.supabase.client
       .from('orders')
@@ -685,7 +728,7 @@ export class RestauranteService {
   async getCaixaHistorico(restaurantId: number) {
     const { data, error } = await this.supabase.client
       .from('caixas')
-      .select('id, nome_operador, valor_inicial, status, aberto_em, fechado_em, resumo')
+      .select('id, nome_operador, valor_inicial, status, aberto_em, fechado_em, resumo, destinacao_fechamento')
       .eq('restaurant_id', restaurantId)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -709,14 +752,34 @@ export class RestauranteService {
   }
 
   async adicionarSaida(restaurantId: number, body: { descricao: string; valor: number; meio?: string }) {
+    if (!body.valor || body.valor <= 0) throw new BadRequestException('Valor da saída deve ser maior que zero');
+    if (!body.descricao?.trim()) throw new BadRequestException('Descrição da saída é obrigatória');
+
     const { data: caixa } = await this.supabase.client
       .from('caixas').select('id, saidas').eq('restaurant_id', restaurantId).eq('status', 'aberto').maybeSingle();
     if (!caixa) throw new NotFoundException('Nenhum caixa aberto');
 
     const saidas = (caixa.saidas ?? []) as any[];
-    const nova: any = { descricao: body.descricao, valor: body.valor, criado_em: new Date().toISOString() };
+    const nova: any = { descricao: body.descricao.trim(), valor: Number(body.valor), criado_em: new Date().toISOString() };
     if (body.meio) nova.meio = body.meio;
-    await this.supabase.client.from('caixas').update({ saidas: [...saidas, nova] }).eq('id', caixa.id);
+    const { error } = await this.supabase.client.from('caixas').update({ saidas: [...saidas, nova] }).eq('id', caixa.id);
+    if (error) throw error;
+    return nova;
+  }
+
+  async adicionarEntrada(restaurantId: number, body: { descricao: string; valor: number; meio?: string }) {
+    if (!body.valor || body.valor <= 0) throw new BadRequestException('Valor da entrada deve ser maior que zero');
+    if (!body.descricao?.trim()) throw new BadRequestException('Descrição da entrada é obrigatória');
+
+    const { data: caixa } = await this.supabase.client
+      .from('caixas').select('id, entradas').eq('restaurant_id', restaurantId).eq('status', 'aberto').maybeSingle();
+    if (!caixa) throw new NotFoundException('Nenhum caixa aberto');
+
+    const entradas = (caixa.entradas ?? []) as any[];
+    const nova: any = { descricao: body.descricao.trim(), valor: Number(body.valor), criado_em: new Date().toISOString() };
+    if (body.meio) nova.meio = body.meio;
+    const { error } = await this.supabase.client.from('caixas').update({ entradas: [...entradas, nova] }).eq('id', caixa.id);
+    if (error) throw error;
     return nova;
   }
 

@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate = (d) => d ? new Date(d).toLocaleString('pt-BR') : '-';
 
+const PL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito' };
+
 const Row = ({ label, value, bold, accent, muted }) => (
   <div className={`flex justify-between text-sm py-1.5 border-b border-[#F4F4F5] last:border-0 ${bold ? 'font-bold' : ''}`}>
     <span className={muted ? 'text-[#A1A1AA]' : 'text-[#71717A]'}>{label}</span>
@@ -70,91 +72,100 @@ const PedidosAbertosView = ({ pedidosAbertos, onTransferir, onCancelar, fechando
   );
 };
 
-// ── Tela 2: destinação do saldo ──────────────────────────────────────────────
-const DestinacaoView = ({ resumo, aberto_em, valorInicial, semMovimento, onFechar, onCancelar, fechando }) => {
+// ── Tela 2: conferência de fechamento ────────────────────────────────────────
+const DestinacaoView = ({ resumo, aberto_em, valorInicial, onFechar, onCancelar, fechando }) => {
   const r = resumo ?? {};
-  const saldo = r.saldo ?? (valorInicial ?? 0);
+  const [dinheiroContado, setDinheiroContado] = useState('');
 
-  const [banco, setBanco]       = useState('');
-  const [retirada, setRetirada] = useState('');
+  const vendasDinheiro  = r.por_pagamento?.cash ?? 0;
+  const saidasEspecie   = r.saidas_especie ?? 0;
+  const especieCalc     = r.especie_calculada ?? Math.max(0, (valorInicial ?? 0) + vendasDinheiro - saidasEspecie);
+  const digitais        = Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash');
 
-  const bancoVal    = parseFloat(banco)    || 0;
-  const retiradaVal = parseFloat(retirada) || 0;
-  const permanece   = saldo - bancoVal - retiradaVal;
-  const invalido    = permanece < -0.001;
+  const contadoVal = parseFloat(dinheiroContado) || 0;
+  const diferenca  = contadoVal - especieCalc;
+  const temContagem = dinheiroContado !== '';
 
-  const handleConfirmar = () => {
-    if (invalido) return;
-    onFechar({ banco: bancoVal, retirada: retiradaVal, permanece: Math.max(0, permanece) });
-  };
+  const difCor = diferenca === 0
+    ? 'bg-green-50 border-green-200'
+    : diferenca > 0 ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200';
+  const difTxt = diferenca === 0
+    ? 'text-green-700'
+    : diferenca > 0 ? 'text-blue-700' : 'text-red-600';
 
   return (
     <>
       <div className="text-center mb-4">
         <p className="text-2xl mb-1">🏁</p>
         <h2 className="text-base font-bold text-[#18181B]">Fechar Caixa</h2>
-        <p className="text-xs text-[#71717A] mt-0.5">Defina o destino do saldo</p>
+        <p className="text-xs text-[#71717A] mt-0.5">Conferência de fechamento · {fmtDate(aberto_em)}</p>
       </div>
 
-      {semMovimento && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-4 flex items-start gap-2">
-          <span className="text-amber-500 mt-0.5 flex-shrink-0">⚠️</span>
-          <p className="text-xs text-amber-700">Caixa sem vendas — o fundo de R$&nbsp;<strong>{fmt(valorInicial ?? 0)}</strong> precisa ser destinado.</p>
+      {/* Composição da espécie */}
+      <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-3">
+        <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Composição do caixa</p>
+        <Row label="Fundo inicial (troco)" value={fmt(valorInicial ?? 0)} />
+        <Row label="+ Vendas em dinheiro"  value={fmt(vendasDinheiro)} />
+        {saidasEspecie > 0 && <Row label="− Sangrias / saídas (dinheiro)" value={`- ${fmt(saidasEspecie)}`} />}
+        <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
+          <Row label="Espécie esperada no caixa" value={fmt(especieCalc)} bold />
+        </div>
+      </div>
+
+      {/* Vendas digitais */}
+      {digitais.length > 0 && (
+        <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-3">
+          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas digitais</p>
+          {digitais.map(([k, v]) => <Row key={k} label={PL[k] ?? k} value={fmt(v)} />)}
+          <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
+            <Row label="Total faturamento" value={fmt(r.total_vendas ?? 0)} bold />
+          </div>
         </div>
       )}
 
-      {/* Resumo compacto */}
-      <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-4 space-y-0.5">
-        <Row label="Aberto em"      value={fmtDate(aberto_em)} muted />
-        <Row label="Valor inicial"  value={fmt(valorInicial ?? 0)} />
-        <Row label="Vendas"         value={fmt(r.total_vendas)} />
-        <Row label="Saídas"         value={`- ${fmt(r.total_saidas)}`} />
-        <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
-          <Row label="Saldo a destinar" value={fmt(saldo)} bold accent />
-        </div>
+      {/* Contagem do operador */}
+      <div className="mb-3">
+        <label className="block text-xs font-semibold text-[#18181B] mb-1.5">
+          💵 Quanto de dinheiro você conta no caixa agora? *
+        </label>
+        <input
+          type="number" min="0" step="0.01"
+          value={dinheiroContado}
+          onChange={(e) => setDinheiroContado(e.target.value)}
+          placeholder="0,00"
+          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]"
+          autoFocus
+        />
       </div>
 
-      {/* Campos de destinação */}
-      <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Destinar saldo</p>
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0 text-sm">🏦</div>
-          <div className="flex-1">
-            <label className="block text-xs text-[#71717A] mb-0.5">Transferir para o banco (R$)</label>
-            <input type="number" min="0" max={saldo} step="0.01" value={banco}
-              onChange={(e) => setBanco(e.target.value)} placeholder="0,00"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+      {/* Resultado da conferência */}
+      {temContagem && (
+        <div className={`rounded-xl px-4 py-3 mb-3 border ${difCor}`}>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-[#71717A]">Espécie esperada</span>
+            <span className="font-semibold">{fmt(especieCalc)}</span>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0 text-sm">💵</div>
-          <div className="flex-1">
-            <label className="block text-xs text-[#71717A] mb-0.5">Retirar em dinheiro (R$)</label>
-            <input type="number" min="0" max={saldo} step="0.01" value={retirada}
-              onChange={(e) => setRetirada(e.target.value)} placeholder="0,00"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-[#71717A]">Dinheiro contado</span>
+            <span className="font-semibold">{fmt(contadoVal)}</span>
           </div>
-        </div>
-        <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${invalido ? 'bg-red-50 border border-red-200' : permanece > 0 ? 'bg-[#FF441F]/5 border border-[#FF441F]/20' : 'bg-[#F4F4F5]'}`}>
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-sm ${invalido ? 'bg-red-200' : 'bg-[#FF441F]/10'}`}>🗃️</div>
-          <div className="flex-1 flex justify-between items-center">
-            <span className="text-xs text-[#71717A]">Permanece no caixa</span>
-            <span className={`text-sm font-black ${invalido ? 'text-red-600' : permanece > 0 ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
-              {invalido ? 'Excede saldo!' : fmt(Math.max(0, permanece))}
+          <div className={`flex justify-between text-sm font-bold pt-1 border-t border-current/10`}>
+            <span>Diferença</span>
+            <span className={difTxt}>
+              {diferenca > 0 ? '+' : ''}{fmt(diferenca)}
+              {diferenca === 0 ? ' ✓ ok' : diferenca > 0 ? ' (sobra)' : ' (falta)'}
             </span>
           </div>
         </div>
-      </div>
-
-      {permanece > 0 && !invalido && (
-        <p className="text-[10px] text-[#71717A] mb-3 text-center">
-          {fmt(permanece)} ficará no cofre → vira fundo do próximo caixa.
-        </p>
       )}
+
+      <p className="text-[10px] text-[#71717A] mb-3 text-center">
+        Enviado ao financeiro para conferência e aprovação do gerente.
+      </p>
 
       <div className="flex gap-2">
         <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">Cancelar</button>
-        <button onClick={handleConfirmar} disabled={fechando || invalido}
+        <button onClick={() => onFechar({ dinheiro_contado: contadoVal })} disabled={fechando || !temContagem}
           className="flex-1 py-2.5 text-sm bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 disabled:opacity-50">
           {fechando ? 'Fechando...' : 'Fechar caixa'}
         </button>
@@ -170,16 +181,14 @@ const FecharCaixaModal = ({
   onConfirmar, onFecharETransferir, onCancelar,
   fechando,
 }) => {
-  const r = resumo ?? {};
   const temPedidosAbertos = (pedidosAbertos ?? []).length > 0;
-  const semMovimento = !temPedidosAbertos && (r.entregues ?? 0) === 0 && (valorInicial ?? 0) > 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
         {temPedidosAbertos
           ? <PedidosAbertosView pedidosAbertos={pedidosAbertos} onTransferir={onFecharETransferir} onCancelar={onCancelar} fechando={fechando} />
-          : <DestinacaoView resumo={resumo} aberto_em={aberto_em} valorInicial={valorInicial} semMovimento={semMovimento} onFechar={onConfirmar} onCancelar={onCancelar} fechando={fechando} />
+          : <DestinacaoView resumo={resumo} aberto_em={aberto_em} valorInicial={valorInicial} onFechar={onConfirmar} onCancelar={onCancelar} fechando={fechando} />
         }
       </div>
     </div>

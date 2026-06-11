@@ -210,7 +210,7 @@ const RestauranteDashboard = () => {
       const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedido.id)]);
       setCaixa(novoCaixa);
       setPedidoDetalhe(novoDetalhe);
-      if (novoStatus === 'confirmed') {
+      if (novoStatus === 'preparing' || novoStatus === 'confirmed') {
         const pedidoParaImprimir = { ...novoDetalhe.pedido, customers: novoDetalhe.cliente };
         printComanda(pedidoParaImprimir, novoDetalhe.itens ?? [], empresa?.name);
       }
@@ -378,19 +378,6 @@ const RestauranteDashboard = () => {
               <h2 className="font-bold text-[#18181B]">Caixa</h2>
               <span className="ml-auto text-xs bg-[#F4F4F5] text-[#71717A] px-2 py-0.5 rounded-full font-medium">Fechado</span>
             </div>
-            {/* Saldo em cofre */}
-            {(caixa?.saldo_caixa ?? 0) > 0 && (
-              <div className="bg-[#FF441F]/5 border border-[#FF441F]/20 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🗃️</span>
-                  <div>
-                    <p className="text-xs font-bold text-[#18181B]">Saldo no cofre</p>
-                    <p className="text-[10px] text-[#71717A]">Será o fundo inicial do próximo caixa</p>
-                  </div>
-                </div>
-                <p className="text-lg font-black text-[#FF441F]">{fmt(caixa.saldo_caixa)}</p>
-              </div>
-            )}
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-[#71717A] mb-1">Nome do operador *</label>

@@ -149,6 +149,7 @@ const RestauranteConfig = () => {
     pagbank_token: '',
     pagbank_sandbox: true,
     pagbank_seller_account_id: '',
+    taxa_pagbank_percent: '',
   });
 
   useEffect(() => {
@@ -159,6 +160,7 @@ const RestauranteConfig = () => {
           ...f,
           pagbank_sandbox: d.pagbank_sandbox ?? true,
           pagbank_seller_account_id: d.pagbank_seller_account_id ?? '',
+          taxa_pagbank_percent: d.taxa_pagbank_percent != null ? String(d.taxa_pagbank_percent) : '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -173,8 +175,9 @@ const RestauranteConfig = () => {
     try {
       const payload = {
         pagbank_sandbox: form.pagbank_sandbox,
-        pagbank_webhook_url: WEBHOOK_URL,  // sempre usa a URL gerada automaticamente
+        pagbank_webhook_url: WEBHOOK_URL,
         pagbank_seller_account_id: form.pagbank_seller_account_id.trim(),
+        taxa_pagbank_percent: form.taxa_pagbank_percent !== '' ? parseFloat(form.taxa_pagbank_percent) : null,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -269,6 +272,24 @@ const RestauranteConfig = () => {
                     className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                   <p className="text-xs text-gray-400 mt-1">Necessário para o repasse automático (Split Payment)</p>
+                </div>
+
+                {/* Taxa PagBank */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Taxa PagBank (% sobre vendas digitais)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number" min="0" max="30" step="0.01"
+                      value={form.taxa_pagbank_percent}
+                      onChange={(e) => setForm((f) => ({ ...f, taxa_pagbank_percent: e.target.value }))}
+                      placeholder="Ex: 2.50"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Usado para estimar desconto PagBank no painel Financeiro</p>
                 </div>
 
                 {/* Webhook — apenas informativo */}

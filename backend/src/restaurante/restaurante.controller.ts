@@ -155,8 +155,13 @@ export class RestauranteController {
   }
 
   @Post('caixa/fechar')
-  fecharCaixa(@Req() req: any, @Body() body: { banco?: number; retirada?: number; permanece?: number }) {
+  fecharCaixa(@Req() req: any, @Body() body: { dinheiro_contado?: number }) {
     return this.service.fecharCaixa(req.restaurantId, body);
+  }
+
+  @Post('caixa/:id/conferencia')
+  aprovarConferencia(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.aprovarConferencia(req.restaurantId, id);
   }
 
   @Post('caixa/fechar-e-transferir')
@@ -177,6 +182,11 @@ export class RestauranteController {
   @Post('caixa/saida')
   adicionarSaida(@Req() req: any, @Body() body: { descricao: string; valor: number; meio?: string }) {
     return this.service.adicionarSaida(req.restaurantId, body);
+  }
+
+  @Post('caixa/entrada')
+  adicionarEntrada(@Req() req: any, @Body() body: { descricao: string; valor: number; meio?: string }) {
+    return this.service.adicionarEntrada(req.restaurantId, body);
   }
 
   @Get('pedidos/:id/detalhe')
