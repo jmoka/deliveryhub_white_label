@@ -403,12 +403,21 @@ export class RestauranteService {
       pagbank_seller_account_id: cfg.pagbank_seller_account_id ?? '',
       configurado: !!cfg.pagbank_token,
       split_ativo: !!(cfg.pagbank_seller_account_id),
+      taxa_pagbank_percent: cfg.taxa_pagbank_percent ?? null,
+      chave_pix: cfg.chave_pix ?? null,
     };
   }
 
   async updateConfig(
     restaurantId: number,
-    body: { pagbank_token?: string; pagbank_sandbox?: boolean; pagbank_webhook_url?: string; pagbank_seller_account_id?: string },
+    body: {
+      pagbank_token?: string;
+      pagbank_sandbox?: boolean;
+      pagbank_webhook_url?: string;
+      pagbank_seller_account_id?: string;
+      taxa_pagbank_percent?: number | null;
+      chave_pix?: string | null;
+    },
   ) {
     const { data: atual } = await this.supabase.client
       .from('restaurants')
@@ -425,6 +434,8 @@ export class RestauranteService {
     if (body.pagbank_sandbox !== undefined) novo.pagbank_sandbox = body.pagbank_sandbox;
     if (body.pagbank_webhook_url !== undefined) novo.pagbank_webhook_url = body.pagbank_webhook_url;
     if (body.pagbank_seller_account_id !== undefined) novo.pagbank_seller_account_id = body.pagbank_seller_account_id;
+    if (body.taxa_pagbank_percent !== undefined) novo.taxa_pagbank_percent = body.taxa_pagbank_percent;
+    if (body.chave_pix !== undefined) novo.chave_pix = body.chave_pix;
 
     const { error } = await this.supabase.client
       .from('restaurants')

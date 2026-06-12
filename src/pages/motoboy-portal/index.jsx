@@ -513,7 +513,13 @@ const MotoboyPortal = () => {
             {p.status === 'motoboy_collecting' ? (
               <ColetaBarcode pedidoId={p.id} onConfirmado={carregarDados} />
             ) : p.status === 'out_for_delivery' ? (
-              <EntregaBarcode pedido={p} onConfirmado={carregarDados} />
+              <EntregaBarcode
+                pedido={p}
+                onConfirmado={carregarDados}
+                chavePix={me?.chave_pix ?? null}
+                restauranteNome={me?.restaurante_nome ?? null}
+                restauranteCidade={me?.restaurante_cidade ?? null}
+              />
             ) : (
               <div className="flex gap-2">
                 <button

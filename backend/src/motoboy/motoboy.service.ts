@@ -279,11 +279,24 @@ export class MotoboyService {
   }
 
   async infoMotoboy(motoboyId: number) {
-    const { data } = await this.supabase.client
+    const { data: mb } = await this.supabase.client
       .from('motoboys')
       .select('id, name, phone, restaurant_id')
       .eq('id', motoboyId)
       .maybeSingle();
-    return data;
+    if (!mb) return null;
+
+    const { data: rest } = await this.supabase.client
+      .from('restaurants')
+      .select('name, payment_config')
+      .eq('id', mb.restaurant_id)
+      .maybeSingle();
+
+    return {
+      ...mb,
+      restaurante_nome: rest?.name ?? null,
+      restaurante_cidade: null,
+      chave_pix: (rest?.payment_config as any)?.chave_pix ?? null,
+    };
   }
 }

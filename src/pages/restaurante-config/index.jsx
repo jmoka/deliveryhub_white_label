@@ -150,6 +150,7 @@ const RestauranteConfig = () => {
     pagbank_sandbox: true,
     pagbank_seller_account_id: '',
     taxa_pagbank_percent: '',
+    chave_pix: '',
   });
 
   useEffect(() => {
@@ -161,6 +162,7 @@ const RestauranteConfig = () => {
           pagbank_sandbox: d.pagbank_sandbox ?? true,
           pagbank_seller_account_id: d.pagbank_seller_account_id ?? '',
           taxa_pagbank_percent: d.taxa_pagbank_percent != null ? String(d.taxa_pagbank_percent) : '',
+          chave_pix: d.chave_pix ?? '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -178,6 +180,7 @@ const RestauranteConfig = () => {
         pagbank_webhook_url: WEBHOOK_URL,
         pagbank_seller_account_id: form.pagbank_seller_account_id.trim(),
         taxa_pagbank_percent: form.taxa_pagbank_percent !== '' ? parseFloat(form.taxa_pagbank_percent) : null,
+        chave_pix: form.chave_pix.trim() || null,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -275,6 +278,20 @@ const RestauranteConfig = () => {
                 </div>
 
                 {/* Taxa PagBank */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Chave PIX (para pagamentos na entrega)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.chave_pix}
+                    onChange={(e) => setForm((f) => ({ ...f, chave_pix: e.target.value }))}
+                    placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Usada para gerar QR Code PIX quando motoboy precisar cobrar na entrega</p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Taxa PagBank (% sobre vendas digitais)
