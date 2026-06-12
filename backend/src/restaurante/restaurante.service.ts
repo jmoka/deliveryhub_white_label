@@ -533,7 +533,7 @@ export class RestauranteService {
       .select('aparencia, saldo_caixa')
       .eq('id', restaurantId)
       .maybeSingle();
-    const status_restaurante: boolean = (restaurantData?.aparencia?.aberto) !== false;
+    const status_restaurante: boolean = (restaurantData?.aparencia?.aberto) === true;
     const saldo_caixa: number = restaurantData?.saldo_caixa ?? 0;
 
     // Saldo de caixas fechados que não passaram pelo fluxo de destinação

@@ -61,7 +61,7 @@ const RestauranteDashboard = () => {
   const { signOut } = useAuth();
 
   const [empresa, setEmpresa] = useState(null);
-  const [statusAberto, setStatusAberto] = useState(true);
+  const [statusAberto, setStatusAberto] = useState(false);
   const [caixa, setCaixa] = useState(null);
   const [valorInicial, setValorInicial] = useState('');
   const [loading, setLoading] = useState(true);
