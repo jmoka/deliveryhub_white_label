@@ -257,6 +257,34 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
         </div>
       )}
 
+      {/* Pagamento na entrega — informado pelo motoboy */}
+      {pedido.entrega_pagamento && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 space-y-1.5">
+          <p className="text-xs font-black text-green-700 flex items-center gap-1.5">
+            <Icon name="CheckCircle2" size={13} /> Pagamento confirmado pelo motoboy
+          </p>
+          {pedido.entrega_pagamento.metodo === 'exato' && (
+            <p className="text-sm text-green-800">Dinheiro — valor exato <strong>{fmt(pedido.entrega_pagamento.dinheiro)}</strong></p>
+          )}
+          {pedido.entrega_pagamento.metodo === 'conforme' && !pedido.troco_para && (
+            <p className="text-sm text-green-800">Dinheiro — conforme pedido <strong>{fmt(pedido.entrega_pagamento.dinheiro)}</strong></p>
+          )}
+          {pedido.entrega_pagamento.metodo === 'conforme' && pedido.troco_para > pedido.total && (
+            <p className="text-sm text-green-800">
+              Dinheiro — recebeu <strong>{fmt(pedido.entrega_pagamento.dinheiro)}</strong>, deu <strong>{fmt(Number(pedido.troco_para) - Number(pedido.total))}</strong> de troco
+            </p>
+          )}
+          {pedido.entrega_pagamento.metodo === 'pix' && (
+            <p className="text-sm text-green-800">PIX — <strong>{fmt(pedido.entrega_pagamento.pix)}</strong></p>
+          )}
+          {pedido.entrega_pagamento.metodo === 'pix_parcial' && (
+            <p className="text-sm text-green-800">
+              Dinheiro <strong>{fmt(pedido.entrega_pagamento.dinheiro)}</strong> + PIX <strong>{fmt(pedido.entrega_pagamento.pix)}</strong>
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Itens */}
       <Section>
         <SectionTitle icon="ShoppingBag" label={`Itens do pedido (${itens.length})`} />

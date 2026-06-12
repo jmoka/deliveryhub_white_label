@@ -109,20 +109,68 @@ export class MotoboyService {
     return { ok: true };
   }
 
-  async confirmarEntrega(pedidoId: number, motoboyId: number) {
+  async confirmarEntrega(
+    pedidoId: number,
+    motoboyId: number,
+    entregaPagamento?: { metodo: string; dinheiro?: number; pix?: number },
+  ) {
     const { data: pedido } = await this.supabase.client
       .from('orders')
-      .select('id, status')
+      .select('id, status, restaurant_id, total')
       .eq('id', pedidoId)
       .eq('motoboy_id', motoboyId)
       .maybeSingle();
     if (!pedido) throw new NotFoundException('Pedido não encontrado ou não atribuído a você');
 
+    const updatePayload: Record<string, any> = { status: 'delivered', updated_at: new Date().toISOString() };
+    if (entregaPagamento) updatePayload.entrega_pagamento = entregaPagamento;
+
     const { error } = await this.supabase.client
       .from('orders')
-      .update({ status: 'delivered', updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', pedidoId);
     if (error) throw error;
+
+    // Registrar entrada(s) no caixa aberto
+    if (entregaPagamento && pedido.restaurant_id) {
+      const { data: caixa } = await this.supabase.client
+        .from('caixas')
+        .select('id, entradas')
+        .eq('restaurant_id', pedido.restaurant_id)
+        .eq('status', 'aberto')
+        .maybeSingle();
+
+      if (caixa) {
+        const entradas = (caixa.entradas ?? []) as any[];
+        const novas: any[] = [];
+        const agora = new Date().toISOString();
+
+        if ((entregaPagamento.dinheiro ?? 0) > 0) {
+          novas.push({
+            descricao: `Entrega pedido #${pedidoId} — dinheiro`,
+            valor: entregaPagamento.dinheiro,
+            meio: 'dinheiro',
+            criado_em: agora,
+          });
+        }
+        if ((entregaPagamento.pix ?? 0) > 0) {
+          novas.push({
+            descricao: `Entrega pedido #${pedidoId} — PIX`,
+            valor: entregaPagamento.pix,
+            meio: 'pix',
+            criado_em: agora,
+          });
+        }
+
+        if (novas.length > 0) {
+          await this.supabase.client
+            .from('caixas')
+            .update({ entradas: [...entradas, ...novas] })
+            .eq('id', caixa.id);
+        }
+      }
+    }
+
     return { ok: true, pedido_id: pedidoId, status: 'delivered' };
   }
 

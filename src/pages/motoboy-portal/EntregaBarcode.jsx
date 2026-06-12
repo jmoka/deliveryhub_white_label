@@ -5,7 +5,7 @@ import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-// etapas: scan → pagamento → troco | pix | pix_parcial → acao → ocorrencia
+// etapas: scan → pagamento → troco | exato | pix | pix_parcial → acao → ocorrencia
 
 const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, restauranteCidade }) => {
   const [etapa, setEtapa] = useState('scan');
@@ -14,6 +14,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
   const [confirmando, setConfirmando] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [trocoConfirmado, setTrocoConfirmado] = useState(false);
+  const [exatoConfirmado, setExatoConfirmado] = useState(false);
   const [dinheiroInput, setDinheiroInput] = useState('');
   const [erro, setErro] = useState(null);
   const scannerRef = useRef(null);
@@ -59,9 +60,9 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
 
   useEffect(() => () => { stopScan(); }, []); // eslint-disable-line
 
-  const handleEntregar = async () => {
+  const handleEntregar = async (entregaPagamento) => {
     setConfirmando(true);
-    try { await confirmarEntrega(pedido.id); onConfirmado(); }
+    try { await confirmarEntrega(pedido.id, entregaPagamento); onConfirmado(); }
     catch (e) { setErro(e.message); }
     finally { setConfirmando(false); }
   };
@@ -140,7 +141,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             </button>
 
             <button
-              onClick={() => setEtapa('acao')}
+              onClick={() => setEtapa('exato')}
               className="w-full py-3 border-2 border-green-200 bg-green-50 text-green-800 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 transition-colors">
               <Icon name="Banknote" size={16} /> Cliente pagou valor exato — sem troco
             </button>
@@ -193,9 +194,41 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               </span>
             </label>
           </div>
-          <button onClick={handleEntregar} disabled={!trocoConfirmado || confirmando}
+          <button
+            onClick={() => handleEntregar({ metodo: 'conforme', dinheiro: Number(pedido.troco_para) })}
+            disabled={!trocoConfirmado || confirmando}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Confirmar e Marcar Entregue'}
+          </button>
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
+            ← Voltar
+          </button>
+        </>
+      )}
+
+      {/* ETAPA: VALOR EXATO */}
+      {etapa === 'exato' && (
+        <>
+          <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-black text-green-800 text-center">Confirmar Recebimento</p>
+            <div className="flex justify-between text-sm">
+              <span className="text-green-700">Valor recebido:</span>
+              <strong className="text-green-900">{fmt(total)}</strong>
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={exatoConfirmado}
+                onChange={(e) => setExatoConfirmado(e.target.checked)}
+                className="mt-0.5 w-5 h-5 accent-green-500 flex-shrink-0" />
+              <span className="text-xs text-green-900 leading-snug font-medium">
+                Confirmo que recebi <strong>{fmt(total)}</strong> em dinheiro, valor exato, sem troco
+              </span>
+            </label>
+          </div>
+          <button
+            onClick={() => handleEntregar({ metodo: 'exato', dinheiro: total })}
+            disabled={!exatoConfirmado || confirmando}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+            <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Entregue!'}
           </button>
           <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
             ← Voltar
@@ -215,7 +248,9 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
           ) : (
             <p className="text-xs text-red-500 text-center">Erro ao gerar QR Code</p>
           )}
-          <button onClick={handleEntregar} disabled={confirmando}
+          <button
+            onClick={() => handleEntregar({ metodo: 'pix', pix: total })}
+            disabled={confirmando}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'PIX Recebido — Marcar Entregue'}
           </button>
@@ -258,7 +293,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             )}
           </div>
           <button
-            onClick={handleEntregar}
+            onClick={() => handleEntregar({ metodo: 'pix_parcial', dinheiro: dinheiroVal, pix: pixParcialVal })}
             disabled={confirmando || pixParcialVal <= 0}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Pagamento Recebido — Entregue'}
@@ -275,7 +310,9 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
           <p className="text-xs font-semibold text-center text-[#18181B] bg-green-50 rounded-xl px-3 py-2">
             ✅ Confirme a entrega do pedido #{pedido.id}
           </p>
-          <button onClick={handleEntregar} disabled={confirmando}
+          <button
+            onClick={() => handleEntregar({ metodo: 'conforme', dinheiro: total })}
+            disabled={confirmando}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
             <Icon name="CheckCircle2" size={16} />
             {confirmando ? 'Confirmando...' : 'Entregue!'}

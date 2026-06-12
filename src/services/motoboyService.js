@@ -36,8 +36,11 @@ export const atualizarLocalizacao = (pedidoId, lat, lng) =>
     method: 'PATCH',
     body: JSON.stringify({ lat, lng }),
   });
-export const confirmarEntrega = (pedidoId) =>
-  motoboyFetch(`/pedidos/${pedidoId}/entregar`, { method: 'POST' });
+export const confirmarEntrega = (pedidoId, entregaPagamento) =>
+  motoboyFetch(`/pedidos/${pedidoId}/entregar`, {
+    method: 'POST',
+    body: JSON.stringify({ entrega_pagamento: entregaPagamento ?? null }),
+  });
 
 export const registrarOcorrencia = (pedidoId, tipo, motivo) =>
   motoboyFetch(`/pedidos/${pedidoId}/ocorrencia`, {
