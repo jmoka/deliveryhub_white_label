@@ -198,7 +198,7 @@ const RestauranteCatalogo = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
-  const [catAtiva, setCatAtiva] = useState('destaques');
+  const [catAtiva, setCatAtiva] = useState('todos');
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
 
   useEffect(() => {
@@ -206,12 +206,7 @@ const RestauranteCatalogo = () => {
     getCardapioPorSlug(slug)
       .then((d) => {
         setData(d);
-        const primeiraTab =
-          d.destaques?.length ? 'destaques'
-          : d.promos?.length ? 'promos'
-          : d.combos?.length ? 'combos'
-          : d.cardapio?.[0]?.id ?? null;
-        setCatAtiva(primeiraTab);
+        setCatAtiva('todos');
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -268,6 +263,7 @@ const RestauranteCatalogo = () => {
   const ap = restaurante.aparencia ?? {};
 
   const tabs = [
+    { id: 'todos', label: 'Todos' },
     ...(destaques?.length ? [{ id: 'destaques', label: '⭐ Destaques' }] : []),
     ...(promos?.length ? [{ id: 'promos', label: '🔥 Promoções' }] : []),
     ...(combos?.length ? [{ id: 'combos', label: '🍱 Combos' }] : []),
@@ -275,6 +271,7 @@ const RestauranteCatalogo = () => {
   ];
 
   const produtosDaTab = () => {
+    if (catAtiva === 'todos') return cardapio.flatMap((c) => c.produtos ?? []);
     if (catAtiva === 'destaques') return destaques ?? [];
     if (catAtiva === 'promos') return promos ?? [];
     if (catAtiva === 'combos') return combos ?? [];
