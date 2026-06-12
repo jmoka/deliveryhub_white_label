@@ -85,25 +85,68 @@ const RestauranteDashboard = () => {
   const [restauranteId, setRestauranteId] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const alertaTimers = useRef({});
+  const audioCtxRef = useRef(null);
+  const lastCheckTimeRef = useRef(new Date().toISOString());
+  const newPendingCountRef = useRef(0);
 
-  const playNotification = () => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const tone = (freq, start, dur) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = freq; o.type = 'sine';
-        g.gain.setValueAtTime(0.35, ctx.currentTime + start);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + dur + 0.05);
-      };
-      tone(880, 0, 0.15);
-      tone(1100, 0.2, 0.15);
-      tone(1320, 0.4, 0.3);
-    } catch {}
+  const getAudioCtx = () => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtxRef.current;
   };
+
+  const playNotification = useCallback(() => {
+    try {
+      const ctx = getAudioCtx();
+      const play = () => {
+        const tone = (freq, start, dur, vol = 0.7) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = freq; o.type = 'square';
+          g.gain.setValueAtTime(vol, ctx.currentTime + start);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          o.start(ctx.currentTime + start);
+          o.stop(ctx.currentTime + start + dur + 0.1);
+        };
+        tone(523, 0,    0.12); // C5
+        tone(659, 0.15, 0.12); // E5
+        tone(784, 0.3,  0.12); // G5
+        tone(1047, 0.45, 0.3); // C6 — acorde final
+      };
+      if (ctx.state === 'suspended') ctx.resume().then(play);
+      else play();
+    } catch {}
+  }, []);
+
+  // Desbloquear AudioContext no primeiro gesto do usuário
+  useEffect(() => {
+    const unlock = () => { try { getAudioCtx().resume(); } catch {} };
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+
+  // Título da aba pisca com contagem de pedidos novos quando aba não está em foco
+  const flashTitle = useCallback((count) => {
+    newPendingCountRef.current = count;
+    if (document.visibilityState === 'hidden') {
+      document.title = `(${count}) 🔔 NOVO PEDIDO!`;
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFocus = () => {
+      newPendingCountRef.current = 0;
+      document.title = 'Dashboard';
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    return () => document.removeEventListener('visibilitychange', onFocus);
+  }, []);
 
   const carregar = async () => {
     try {
@@ -151,6 +194,8 @@ const RestauranteDashboard = () => {
       }, (payload) => {
         const p = payload.new;
         playNotification();
+        flashTitle(newPendingCountRef.current + 1);
+        lastCheckTimeRef.current = p.created_at ?? new Date().toISOString();
         const alerta = { id: p.id, total: p.total, ts: Date.now() };
         setAlertas((prev) => [...prev, alerta]);
         alertaTimers.current[p.id] = setTimeout(() => {
@@ -170,7 +215,38 @@ const RestauranteDashboard = () => {
       supabase.removeChannel(channel);
       Object.values(alertaTimers.current).forEach(clearTimeout);
     };
-  }, [restauranteId, recarregarCaixa]);
+  }, [restauranteId, recarregarCaixa, playNotification, flashTitle]);
+
+  // Polling fallback: detecta novos pedidos caso Realtime falhe
+  useEffect(() => {
+    if (!restauranteId) return;
+    const poll = async () => {
+      try {
+        const { data } = await supabase
+          .from('orders')
+          .select('id, total, created_at')
+          .eq('restaurant_id', restauranteId)
+          .eq('status', 'pending')
+          .gt('created_at', lastCheckTimeRef.current)
+          .order('created_at', { ascending: false });
+        if (!data || data.length === 0) return;
+        lastCheckTimeRef.current = data[0].created_at;
+        playNotification();
+        data.forEach((p) => {
+          flashTitle(newPendingCountRef.current + 1);
+          const alerta = { id: p.id, total: p.total, ts: Date.now() };
+          setAlertas((prev) => prev.some((a) => a.id === p.id) ? prev : [...prev, alerta]);
+          alertaTimers.current[p.id] = setTimeout(() => {
+            setAlertas((prev) => prev.filter((a) => a.id !== p.id));
+            delete alertaTimers.current[p.id];
+          }, 10000);
+        });
+        recarregarCaixa();
+      } catch {}
+    };
+    const id = setInterval(poll, 10000);
+    return () => clearInterval(id);
+  }, [restauranteId, playNotification, flashTitle, recarregarCaixa]);
 
   const handleToggleStatus = async (novoStatus) => {
     if (novoStatus && !caixa?.aberto) {
