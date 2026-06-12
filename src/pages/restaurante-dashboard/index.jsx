@@ -155,7 +155,12 @@ const RestauranteDashboard = () => {
       ]);
       setEmpresa(emp.empresa);
       setRestauranteId(emp.empresa?.id ?? null);
-      setStatusAberto(caixaData.status_restaurante === true && !!caixaData.aberto);
+      const deveEstarAberto = caixaData.status_restaurante === true && !!caixaData.aberto;
+      setStatusAberto(deveEstarAberto);
+      // Se o DB diz aberto mas caixa está fechado, sincroniza o fechamento no backend
+      if (caixaData.status_restaurante === true && !caixaData.aberto) {
+        toggleStatusRestaurante(false).catch(() => {});
+      }
       setCaixa(caixaData);
       setMotoboys(mbData.motoboys ?? []);
     } catch (e) {
