@@ -487,6 +487,18 @@ const MotoboyPortal = () => {
               )}
             </div>
 
+            {/* Banner de troco */}
+            {p.payment_method === 'cash' && p.troco_para > p.total && (
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-xl px-4 py-3 space-y-1">
+                <p className="text-xs font-black text-amber-800 flex items-center gap-1.5">
+                  <Icon name="Banknote" size={14} /> ATENÇÃO — TROCO
+                </p>
+                <p className="text-sm text-amber-900">
+                  Pegar <strong>{fmt(p.troco_para)}</strong> do cliente · Dar <strong>{fmt(Number(p.troco_para) - Number(p.total))}</strong> de troco
+                </p>
+              </div>
+            )}
+
             {/* Pendência ativa */}
             {p.delivery_occurrence === 'pendente' && p.delivery_notes && (
               <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">

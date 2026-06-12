@@ -42,6 +42,15 @@ export class RestauranteController {
     return this.service.atualizarStatusPedido(id, req.restaurantId, body.status);
   }
 
+  @Patch('pedidos/:id/troco')
+  setTrocoPara(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { troco_para: number },
+    @Req() req: any,
+  ) {
+    return this.service.setTrocoPara(req.restaurantId, id, body.troco_para);
+  }
+
   @Get('produtos')
   meusProdutos(@Req() req: any) {
     return this.service.meusProdutos(req.restaurantId);

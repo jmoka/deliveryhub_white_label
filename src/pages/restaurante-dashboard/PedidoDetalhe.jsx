@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
+import { setTrocoPara } from '../../services/restauranteService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -49,9 +50,23 @@ const SectionTitle = ({ icon, label, color = 'text-[#FF441F]' }) => (
   </div>
 );
 
-const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose }) => {
+const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, onDetalheMudou }) => {
+  const [trocoInput, setTrocoInput] = useState('');
+  const [salvandoTroco, setSalvandoTroco] = useState(false);
+
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
+
+  const troco = pedido.troco_para > pedido.total ? Number(pedido.troco_para) - Number(pedido.total) : 0;
+
+  const handleSalvarTroco = async () => {
+    const val = parseFloat(trocoInput.replace(',', '.'));
+    if (!val || val <= pedido.total) return;
+    setSalvandoTroco(true);
+    try { await setTrocoPara(pedido.id, val); setTrocoInput(''); onDetalheMudou?.(); }
+    catch (e) { alert(e.message); }
+    finally { setSalvandoTroco(false); }
+  };
 
   const isCanceled = pedido.status === 'canceled';
   const proxStatus = PROXIMOS[pedido.status];
@@ -264,6 +279,16 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose 
             <span className="text-sm font-bold text-[#18181B]">Total</span>
             <span className="text-lg font-black text-[#FF441F]">{fmt(pedido.total)}</span>
           </div>
+          {troco > 0 && (
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3 mt-1 space-y-1">
+              <p className="text-xs font-black text-amber-800 flex items-center gap-1.5">
+                <Icon name="Banknote" size={13} /> ATENÇÃO — TROCO
+              </p>
+              <p className="text-sm text-amber-900">
+                Pegar <strong>{fmt(pedido.troco_para)}</strong> do cliente · Dar <strong>{fmt(troco)}</strong> de troco
+              </p>
+            </div>
+          )}
         </div>
       </Section>
 
@@ -283,6 +308,33 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose 
             </span>
           )}
         </div>
+
+        {/* Input de troco — só aparece quando não há troco configurado */}
+        {pedido.payment_method === 'cash' && troco === 0 && (
+          <div className="px-4 pb-3 border-t border-[#F4F4F5] pt-3">
+            <div className="space-y-2">
+              <p className="text-xs text-[#71717A] font-medium">Cliente vai pagar com quanto? (opcional)</p>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  min={pedido.total + 0.01}
+                  value={trocoInput}
+                  onChange={(e) => setTrocoInput(e.target.value)}
+                  placeholder={`Mín. ${fmt(pedido.total + 1)}`}
+                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400"
+                />
+                <button
+                  onClick={handleSalvarTroco}
+                  disabled={salvandoTroco || !trocoInput || parseFloat(trocoInput.replace(',', '.')) <= pedido.total}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors"
+                >
+                  {salvandoTroco ? '...' : 'OK'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Ações */}

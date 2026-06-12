@@ -2,19 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../components/AppIcon';
 import { confirmarEntrega, registrarOcorrencia } from '../../services/motoboyService';
 
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
 const EntregaBarcode = ({ pedido, onConfirmado }) => {
-  const [etapa, setEtapa] = useState('scan'); // scan | acao | ocorrencia
+  const [etapa, setEtapa] = useState('scan'); // scan | acao | troco | ocorrencia
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState('');
   const [confirmando, setConfirmando] = useState(false);
   const [motivo, setMotivo] = useState('');
+  const [trocoConfirmado, setTrocoConfirmado] = useState(false);
   const [erro, setErro] = useState(null);
   const scannerRef = useRef(null);
   const divId = `entrega-scan-${pedido.id}`;
 
   const expectedCode = String(pedido.id).padStart(8, '0');
+  const temTroco = pedido.payment_method === 'cash' && Number(pedido.troco_para) > Number(pedido.total);
+  const trocoValor = temTroco ? Number(pedido.troco_para) - Number(pedido.total) : 0;
 
-  const validarCodigo = (code) => code.replace(/\D/g, '') === expectedCode.replace(/\D/g, '');
+  const validarCodigo = (code) => code.replace(/\D/g, '').padStart(8, '0') === expectedCode;
 
   const handleScanSuccess = (decoded) => {
     stopScan();
@@ -23,7 +28,7 @@ const EntregaBarcode = ({ pedido, onConfirmado }) => {
       return;
     }
     setErro(null);
-    setEtapa('acao');
+    setEtapa(temTroco ? 'troco' : 'acao');
   };
 
   const stopScan = async () => {
@@ -92,12 +97,53 @@ const EntregaBarcode = ({ pedido, onConfirmado }) => {
               onKeyDown={(e) => e.key === 'Enter' && validarCodigo(manual) && setEtapa('acao')}
               placeholder={`Código manual (${expectedCode})`}
               className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500" />
-            <button onClick={() => { if (validarCodigo(manual)) { setErro(null); setEtapa('acao'); } else setErro('Código incorreto'); }}
+            <button onClick={() => { if (validarCodigo(manual)) { setErro(null); setEtapa(temTroco ? 'troco' : 'acao'); } else setErro('Código incorreto'); }}
               disabled={!manual.trim()}
               className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 hover:bg-green-700">
               OK
             </button>
           </div>
+        </>
+      )}
+
+      {etapa === 'troco' && (
+        <>
+          <p className="text-xs font-semibold text-center text-[#18181B] bg-green-50 rounded-xl px-3 py-2">
+            ✅ Código confirmado — Pedido #{pedido.id}
+          </p>
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-black text-amber-800 text-center">Confirmação de Troco</p>
+            <div className="flex justify-between text-sm">
+              <span className="text-amber-700">Receber do cliente:</span>
+              <strong className="text-amber-900">{fmt(pedido.troco_para)}</strong>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-amber-700">Devolver de troco:</span>
+              <strong className="text-amber-900">{fmt(trocoValor)}</strong>
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={trocoConfirmado}
+                onChange={(e) => setTrocoConfirmado(e.target.checked)}
+                className="mt-0.5 w-5 h-5 accent-amber-500 flex-shrink-0"
+              />
+              <span className="text-xs text-amber-900 leading-snug font-medium">
+                Confirmo que recebi <strong>{fmt(pedido.troco_para)}</strong> e passei <strong>{fmt(trocoValor)}</strong> de troco para o cliente
+              </span>
+            </label>
+          </div>
+          <button
+            onClick={() => setEtapa('acao')}
+            disabled={!trocoConfirmado}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Icon name="CheckCircle2" size={16} /> Confirmar e Marcar Entregue
+          </button>
+          <button onClick={() => setEtapa('ocorrencia')} disabled={confirmando}
+            className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
+            <Icon name="Clock" size={14} /> Não consegui entregar (pendência)
+          </button>
         </>
       )}
 

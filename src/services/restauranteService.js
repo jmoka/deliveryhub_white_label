@@ -119,6 +119,9 @@ export const getCaixaDetalhe = (id) => apiFetch(`/caixa/${id}`);
 export const aprovarConferencia = (caixaId) =>
   apiFetch(`/caixa/${caixaId}/conferencia`, { method: 'POST' });
 
+export const setTrocoPara = (pedidoId, troco_para) =>
+  apiFetch(`/pedidos/${pedidoId}/troco`, { method: 'PATCH', body: JSON.stringify({ troco_para }) });
+
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);

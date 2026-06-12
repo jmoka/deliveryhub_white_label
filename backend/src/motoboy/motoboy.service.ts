@@ -59,7 +59,7 @@ export class MotoboyService {
   async meusPedidos(motoboyId: number) {
     const { data, error } = await this.supabase.client
       .from('orders')
-      .select('id, total, status, payment_method, created_at, updated_at, motoboy_lat, motoboy_lng, customer_id, delivery_notes, delivery_occurrence')
+      .select('id, total, troco_para, status, payment_method, created_at, updated_at, motoboy_lat, motoboy_lng, customer_id, delivery_notes, delivery_occurrence')
       .eq('motoboy_id', motoboyId)
       .not('status', 'in', '("delivered","canceled")')
       .order('created_at', { ascending: false });
@@ -233,18 +233,49 @@ export class MotoboyService {
     if (scanned !== expected) {
       throw new BadRequestException('Código de barras não confere com este pedido');
     }
-    const { data, error } = await this.supabase.client
+
+    const { data: pedido } = await this.supabase.client
       .from('orders')
-      .update({ status: 'out_for_delivery', updated_at: new Date().toISOString() })
+      .select('id, total, troco_para, payment_method, restaurant_id')
       .eq('id', pedidoId)
       .eq('motoboy_id', motoboyId)
       .eq('status', 'motoboy_collecting')
-      .select('id');
+      .maybeSingle();
+    if (!pedido) throw new ConflictException('Pedido não está aguardando coleta ou não pertence a você');
+
+    const { error } = await this.supabase.client
+      .from('orders')
+      .update({ status: 'out_for_delivery', updated_at: new Date().toISOString() })
+      .eq('id', pedidoId);
     if (error) throw error;
-    if (!data?.length) {
-      throw new ConflictException('Pedido não está aguardando coleta ou não pertence a você');
+
+    // Troco: sangria automática quando motoboy leva o troco para o cliente
+    const trocoValor = pedido.payment_method === 'cash' && pedido.troco_para > pedido.total
+      ? Number(pedido.troco_para) - Number(pedido.total)
+      : 0;
+    if (trocoValor > 0) {
+      const { data: caixa } = await this.supabase.client
+        .from('caixas')
+        .select('id, saidas')
+        .eq('restaurant_id', pedido.restaurant_id)
+        .eq('status', 'aberto')
+        .maybeSingle();
+      if (caixa) {
+        const saidas = (caixa.saidas ?? []) as any[];
+        const novaSaida = {
+          descricao: `Troco pedido #${pedidoId}`,
+          valor: trocoValor,
+          meio: 'dinheiro',
+          criado_em: new Date().toISOString(),
+        };
+        await this.supabase.client
+          .from('caixas')
+          .update({ saidas: [...saidas, novaSaida] })
+          .eq('id', caixa.id);
+      }
     }
-    return { ok: true, pedido_id: pedidoId, status: 'out_for_delivery' };
+
+    return { ok: true, pedido_id: pedidoId, status: 'out_for_delivery', troco: trocoValor };
   }
 
   async infoMotoboy(motoboyId: number) {

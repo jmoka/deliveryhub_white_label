@@ -783,6 +783,19 @@ export class RestauranteService {
     return nova;
   }
 
+  async setTrocoPara(restaurantId: number, pedidoId: number, trocoPara: number) {
+    if (!trocoPara || trocoPara <= 0) throw new BadRequestException('Valor inválido');
+    const { data, error } = await this.supabase.client
+      .from('orders')
+      .update({ troco_para: trocoPara })
+      .eq('id', pedidoId)
+      .eq('restaurant_id', restaurantId)
+      .select('id, total, troco_para');
+    if (error) throw error;
+    if (!data?.length) throw new NotFoundException('Pedido não encontrado');
+    return data[0];
+  }
+
   async uploadImage(folder: string, file: Express.Multer.File) {
     const BUCKET = 'restaurante-imagens';
     await this.setupStorage();
