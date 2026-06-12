@@ -155,7 +155,7 @@ const RestauranteDashboard = () => {
       ]);
       setEmpresa(emp.empresa);
       setRestauranteId(emp.empresa?.id ?? null);
-      setStatusAberto(caixaData.status_restaurante);
+      setStatusAberto(caixaData.status_restaurante === true && !!caixaData.aberto);
       setCaixa(caixaData);
       setMotoboys(mbData.motoboys ?? []);
     } catch (e) {
