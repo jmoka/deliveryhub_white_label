@@ -5,6 +5,8 @@ import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import StepEndereco from './StepEndereco';
 import { getPerfil } from '../../services/perfilService';
+import { cartCount, cartByRestaurant, cartClear } from '../../utils/multiCart';
+import MultiCartCheckout from './MultiCartCheckout';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -297,7 +299,7 @@ const StepConfirmar = ({ itens, paymentMethod, total, perfil, loading, erro, onC
 };
 
 /* ── Checkout principal ───────────────────────────────────────────  */
-const ShoppingCartCheckout = () => {
+const SingleCartCheckout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -502,6 +504,39 @@ const ShoppingCartCheckout = () => {
       </main>
     </div>
   );
+};
+
+const ShoppingCartCheckout = () => {
+  const location = useLocation();
+
+  // Single cart from restaurant page always takes priority
+  if (location.state?.carrinho) return <SingleCartCheckout />;
+
+  const groups = Object.values(cartByRestaurant());
+
+  // 1 restaurant in multiCart → full checkout (address + payment selection)
+  if (groups.length === 1) {
+    const grupo = groups[0];
+    const carrinho = grupo.items.map((i) => ({
+      id: i.produto_id,
+      name: i.name,
+      price: i.price,
+      image_url: i.image_url ?? null,
+      qtd: i.qty,
+    }));
+    sessionStorage.setItem('pending_cart', JSON.stringify({
+      carrinho,
+      restauranteId: grupo.restaurante_id,
+      restauranteSlug: grupo.slug ?? '',
+    }));
+    cartClear();
+    return <SingleCartCheckout />;
+  }
+
+  // 2+ restaurants → MultiCartCheckout (cash only)
+  if (groups.length > 1) return <MultiCartCheckout />;
+
+  return <SingleCartCheckout />;
 };
 
 export default ShoppingCartCheckout;
