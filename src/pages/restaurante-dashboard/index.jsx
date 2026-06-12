@@ -682,6 +682,13 @@ const RestauranteDashboard = () => {
                         onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
                         motoboys={motoboys}
                         onAtribuir={handleAtribuirMotoboy}
+                        onDetalheMudou={async () => {
+                          if (!pedidoSelecionadoId) return;
+                          try {
+                            const d = await buscarPedidoDetalhe(pedidoSelecionadoId);
+                            setPedidoDetalhe(d);
+                          } catch {}
+                        }}
                       />
                     </div>
                   )}
