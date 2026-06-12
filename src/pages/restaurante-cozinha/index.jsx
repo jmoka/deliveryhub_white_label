@@ -9,8 +9,8 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
 
 const STATUS_INFO = {
-  confirmed: { label: 'Confirmado', next: 'preparing', nextLabel: 'Iniciar Preparo', nextIcon: 'ChefHat', prev: 'pending', prevLabel: 'Pendente', color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800', btnColor: 'bg-orange-500 hover:bg-orange-600' },
-  preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Confirmado', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
+  confirmed: { label: 'Aguardando Preparo', next: 'preparing', nextLabel: 'Iniciar Preparo', nextIcon: 'ChefHat', prev: 'pending', prevLabel: 'Pendente', color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800', btnColor: 'bg-orange-500 hover:bg-orange-600' },
+  preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Ag. Preparo', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
 };
 
 const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {

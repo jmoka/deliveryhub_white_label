@@ -23,7 +23,7 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 
 const STATUS_LABELS = {
   pending:          { label: 'Recebido',   color: 'bg-yellow-100 text-yellow-800' },
-  confirmed:        { label: 'Confirmado', color: 'bg-blue-100 text-blue-800' },
+  confirmed:        { label: 'Aguardando Preparo', color: 'bg-blue-100 text-blue-800' },
   preparing:        { label: 'Em Preparo', color: 'bg-orange-100 text-orange-800' },
   ready:            { label: 'Pronto',     color: 'bg-purple-100 text-purple-800' },
   out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 text-indigo-800' },
@@ -34,7 +34,7 @@ const STATUS_LABELS = {
 const FILTER_TABS = [
   { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
   { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 bg-yellow-100 text-yellow-800' },
-  { value: 'confirmed',        label: 'Confirmado', activeColor: 'border-blue-400 bg-blue-100 text-blue-800' },
+  { value: 'confirmed',        label: 'Ag. Preparo', activeColor: 'border-blue-400 bg-blue-100 text-blue-800' },
   { value: 'preparing',        label: 'Cozinha',    activeColor: 'border-orange-400 bg-orange-100 text-orange-800' },
   { value: 'ready',            label: 'Pronto',     activeColor: 'border-purple-400 bg-purple-100 text-purple-800' },
   { value: 'out_for_delivery', label: 'Em Entrega', activeColor: 'border-indigo-400 bg-indigo-100 text-indigo-800' },

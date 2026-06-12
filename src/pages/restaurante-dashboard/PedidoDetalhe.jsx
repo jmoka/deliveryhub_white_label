@@ -23,12 +23,12 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABEL = {
-  pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo',
+  pending: 'Recebido', confirmed: 'Aguardando Preparo', preparing: 'Em Preparo',
   ready: 'Pronto', motoboy_collecting: 'Motoboy coletando',
   out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
 };
 
-const PROXIMOS    = { pending: 'preparing', confirmed: 'preparing', preparing: 'ready', ready: 'motoboy_collecting', motoboy_collecting: 'out_for_delivery', out_for_delivery: 'delivered' };
+const PROXIMOS    = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready', ready: 'motoboy_collecting', motoboy_collecting: 'out_for_delivery', out_for_delivery: 'delivered' };
 const ANTERIORES  = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing', motoboy_collecting: 'ready', out_for_delivery: 'motoboy_collecting', delivered: 'out_for_delivery' };
 
 const timeAgo = (iso) => {
