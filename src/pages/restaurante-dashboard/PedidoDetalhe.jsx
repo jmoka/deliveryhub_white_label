@@ -337,11 +337,13 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
           )}
         </div>
 
-        {/* Input de troco — só aparece quando não há troco configurado */}
-        {pedido.payment_method === 'cash' && troco === 0 && (
+        {/* Input de troco — sempre visível para pedidos cash */}
+        {pedido.payment_method === 'cash' && (
           <div className="px-4 pb-3 border-t border-[#F4F4F5] pt-3">
             <div className="space-y-2">
-              <p className="text-xs text-[#71717A] font-medium">Cliente vai pagar com quanto? (opcional)</p>
+              <p className="text-xs text-[#71717A] font-medium">
+                {troco > 0 ? 'Alterar valor que o cliente vai pagar:' : 'Cliente vai pagar com quanto? (opcional)'}
+              </p>
               <div className="flex gap-2">
                 <input
                   type="number"
