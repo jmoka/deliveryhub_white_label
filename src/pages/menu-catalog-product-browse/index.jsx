@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -129,11 +130,23 @@ const RestCardList = ({ r, i }) => {
 };
 
 /* ── Card produto (comparação) ───────────────────────────────────── */
-const ProdutoCompCard = ({ produto, i, navigate }) => {
+const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
   const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const restFechado = rest?.aparencia?.aberto === false;
+  const [added, setAdded] = useState(false);
+
+  const handleClick = () => {
+    if (!rest || restFechado) return;
+    if (onAdd) {
+      onAdd(produto, rest);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 900);
+    } else {
+      navigate(`/r/${rest.slug}`);
+    }
+  };
 
   return (
     <motion.button
@@ -141,13 +154,20 @@ const ProdutoCompCard = ({ produto, i, navigate }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: (i % 12) * 0.04, duration: 0.25 }}
       whileHover={restFechado ? {} : { y: -2, transition: { duration: 0.12 } }}
-      onClick={() => rest && !restFechado && navigate(`/r/${rest.slug}`)}
-      className={`bg-white rounded-2xl border overflow-hidden transition-all text-left w-full ${
+      onClick={handleClick}
+      className={`bg-white rounded-2xl border overflow-hidden transition-all text-left w-full relative ${
         restFechado
           ? 'border-red-200 opacity-70 cursor-not-allowed'
+          : added
+          ? 'border-green-400 shadow-md shadow-green-100'
           : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20'
       }`}
     >
+      {added && (
+        <div className="absolute inset-0 bg-green-500/10 z-10 flex items-center justify-center rounded-2xl pointer-events-none">
+          <span className="bg-green-500 text-white text-xs font-black px-3 py-1 rounded-full shadow">✓ Adicionado!</span>
+        </div>
+      )}
       <div className="relative h-36 bg-[#F4F4F5] overflow-hidden">
         {produto.image_url
           ? <img src={produto.image_url} alt={produto.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
@@ -241,11 +261,23 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
 };
 
 /* ── Card produto carrossel ──────────────────────────────────────── */
-const ProdCarrosselCard = ({ produto, i, navigate }) => {
+const ProdCarrosselCard = ({ produto, i, navigate, onAdd }) => {
   const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const fechado = rest?.aparencia?.aberto === false;
+  const [added, setAdded] = useState(false);
+
+  const handleClick = () => {
+    if (!rest || fechado) return;
+    if (onAdd) {
+      onAdd(produto, rest);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 900);
+    } else {
+      navigate(`/r/${rest.slug}`);
+    }
+  };
 
   return (
     <motion.button
@@ -253,11 +285,16 @@ const ProdCarrosselCard = ({ produto, i, navigate }) => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: (i % 10) * 0.05 }}
       whileHover={{ y: fechado ? 0 : -2 }}
-      onClick={() => rest && !fechado && navigate(`/r/${rest.slug}`)}
-      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left ${
-        fechado ? 'border-red-200 opacity-70' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      onClick={handleClick}
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
+        fechado ? 'border-red-200 opacity-70' : added ? 'border-green-400' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
       }`}
     >
+      {added && (
+        <div className="absolute inset-0 bg-green-500/20 z-10 flex items-center justify-center rounded-2xl pointer-events-none">
+          <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">✓</span>
+        </div>
+      )}
       <div className="relative h-28 bg-[#F4F4F5]">
         {produto.image_url
           ? <img src={produto.image_url} alt={produto.name} className={`w-full h-full object-cover ${fechado ? 'grayscale' : ''}`} />
@@ -284,7 +321,7 @@ const ProdCarrosselCard = ({ produto, i, navigate }) => {
 };
 
 /* ── Carrossel de produtos ────────────────────────────────────────── */
-const ProdCarrossel = ({ produtos, navigate }) => {
+const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
   const scrollRef = useRef(null);
   const scroll = (dir) => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
@@ -298,7 +335,7 @@ const ProdCarrossel = ({ produtos, navigate }) => {
       </button>
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
         {produtos.map((p, i) => (
-          <ProdCarrosselCard key={p.id} produto={p} i={i} navigate={navigate} />
+          <ProdCarrosselCard key={p.id} produto={p} i={i} navigate={navigate} onAdd={onAdd} />
         ))}
       </div>
       <button onClick={() => scroll(1)}
@@ -471,6 +508,23 @@ const MenuCatalogProductBrowse = () => {
   const [busca, setBusca]               = useState('');
   const [catAtiva, setCatAtiva]         = useState(null);
   const [viewMode, setViewMode]         = useState('grid');
+  const [badgeCount, setBadgeCount]     = useState(() => cartCount());
+  const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
+
+  const handleAddToCart = (produto, restaurante) => {
+    cartAdd(produto, restaurante);
+    setBadgeCount(cartCount());
+    setBadgeTotal(cartTotal());
+  };
+
+  const handleIrCheckout = () => {
+    if (!isAuthenticated()) {
+      sessionStorage.setItem('pending_multi_cart', '1');
+      navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
+      return;
+    }
+    navigate('/shopping-cart-checkout', { state: { multiCart: true } });
+  };
 
   const mediaNota = restaurantes.length > 0
     ? restaurantes.reduce((acc, r) => acc + (r.nota ?? 4.5), 0) / restaurantes.length
@@ -664,7 +718,7 @@ const MenuCatalogProductBrowse = () => {
                 <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
                 {tag.name}
               </p>
-              <ProdCarrossel produtos={prods} navigate={navigate} />
+              <ProdCarrossel produtos={prods} navigate={navigate} onAdd={handleAddToCart} />
             </div>
           </div>
         ))
@@ -802,7 +856,7 @@ const MenuCatalogProductBrowse = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {produtosFiltrados.slice(0, 24).map((p, i) => (
-                    <ProdutoCompCard key={p.id} produto={p} i={i} navigate={navigate} />
+                    <ProdutoCompCard key={p.id} produto={p} i={i} navigate={navigate} onAdd={handleAddToCart} />
                   ))}
                 </div>
               )}
@@ -822,6 +876,40 @@ const MenuCatalogProductBrowse = () => {
       <footer className="border-t border-[#E4E4E7] bg-white mt-8 py-6 text-center">
         <p className="text-xs text-[#71717A]">© {new Date().getFullYear()} DeliveryHub · Todos os direitos reservados</p>
       </footer>
+
+      {/* ── Carrinho flutuante ───────────────────────────────────── */}
+      <AnimatePresence>
+        {badgeCount > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
+          >
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleIrCheckout}
+              className="flex items-center gap-3 bg-[#FF441F] text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-[#FF441F]/30 font-bold text-sm"
+            >
+              <span className="w-6 h-6 bg-white text-[#FF441F] rounded-full text-xs font-black flex items-center justify-center">
+                {badgeCount}
+              </span>
+              Ver carrinho
+              <span className="text-white/80 text-xs font-semibold">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(badgeTotal)}
+              </span>
+            </motion.button>
+            <button
+              onClick={() => { cartClear(); setBadgeCount(0); setBadgeTotal(0); }}
+              className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-[#71717A] hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Limpar carrinho"
+            >
+              <Icon name="Trash2" size={15} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
