@@ -16,6 +16,7 @@ exports.PlataformaController = void 0;
 const common_1 = require("@nestjs/common");
 const plataforma_service_1 = require("./plataforma.service");
 const admin_guard_1 = require("../auth/admin.guard");
+const update_config_dto_1 = require("./update-config.dto");
 let PlataformaController = class PlataformaController {
     service;
     constructor(service) {
@@ -53,7 +54,7 @@ __decorate([
     (0, common_1.Patch)('config'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [update_config_dto_1.UpdateConfigDto]),
     __metadata("design:returntype", void 0)
 ], PlataformaController.prototype, "updateConfig", null);
 __decorate([

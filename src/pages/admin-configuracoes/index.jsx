@@ -17,7 +17,12 @@ const AdminConfiguracoes = () => {
     pagbank_platform_token: '',
     pagbank_platform_account_id: '',
     pagbank_sandbox: true,
+    cloudflare_tunnel_token: '',
+    cloudflare_domain: '',
   });
+  const [salvandoCf, setSalvandoCf] = useState(false);
+  const [sucessoCf, setSucessoCf] = useState(false);
+  const [erroCf, setErroCf] = useState(null);
 
   useEffect(() => {
     getPlataformaConfig()
@@ -27,6 +32,7 @@ const AdminConfiguracoes = () => {
           ...f,
           pagbank_platform_account_id: d.pagbank_platform_account_id ?? '',
           pagbank_sandbox: d.pagbank_sandbox ?? true,
+          cloudflare_domain: d.cloudflare_domain ?? '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -55,6 +61,28 @@ const AdminConfiguracoes = () => {
       setErro(err.message);
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleSalvarCloudflare = async (e) => {
+    e.preventDefault();
+    setSalvandoCf(true);
+    setErroCf(null);
+    setSucessoCf(false);
+    try {
+      const payload = { cloudflare_domain: form.cloudflare_domain.trim() };
+      if (form.cloudflare_tunnel_token.trim()) {
+        payload.cloudflare_tunnel_token = form.cloudflare_tunnel_token.trim();
+      }
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setForm((f) => ({ ...f, cloudflare_tunnel_token: '' }));
+      setSucessoCf(true);
+      setTimeout(() => setSucessoCf(false), 3000);
+    } catch (err) {
+      setErroCf(err.message);
+    } finally {
+      setSalvandoCf(false);
     }
   };
 
@@ -245,6 +273,96 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+            {/* ── Cloudflare Tunnel ───────────────────────────────── */}
+            <div className="bg-white rounded-xl border p-6">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-semibold text-gray-900">Acesso via Cloudflare Tunnel</h2>
+                {config?.cloudflare_configurado ? (
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Não configurado
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mb-5">
+                Permite que clientes externos acessem o sistema via domínio público seguro (HTTPS), mesmo sem IP fixo.
+              </p>
+
+              {/* Instrução de uso */}
+              <div className="bg-gray-900 rounded-xl p-4 mb-5 text-xs font-mono">
+                <p className="text-gray-400 mb-1"># 1. Instale o cloudflared no PC do restaurante</p>
+                <p className="text-green-400">{'winget install Cloudflare.cloudflared'}</p>
+                <p className="text-gray-400 mt-2 mb-1"># 2. Execute com o token abaixo</p>
+                <p className="text-yellow-300 break-all">
+                  {'cloudflared tunnel run --token '}
+                  <span className="text-white">
+                    {config?.cloudflare_tunnel_token_masked ?? '<TOKEN>'}
+                  </span>
+                </p>
+                {config?.cloudflare_domain && (
+                  <>
+                    <p className="text-gray-400 mt-2 mb-1"># 3. Acesse via</p>
+                    <p className="text-blue-400">https://{config.cloudflare_domain}</p>
+                  </>
+                )}
+              </div>
+
+              <form onSubmit={handleSalvarCloudflare} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Token do Tunnel
+                    {config?.cloudflare_configurado && (
+                      <span className="text-xs text-gray-400 ml-2">(deixe vazio para manter atual: {config.cloudflare_tunnel_token_masked})</span>
+                    )}
+                  </label>
+                  <input
+                    type="password"
+                    value={form.cloudflare_tunnel_token}
+                    onChange={(e) => setForm((f) => ({ ...f, cloudflare_tunnel_token: e.target.value }))}
+                    placeholder="eyJhIjoiXXX... (obtido no Cloudflare Zero Trust)"
+                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Cloudflare Zero Trust → Tunnels → criar tunnel → copiar token
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Domínio público</label>
+                  <input
+                    type="text"
+                    value={form.cloudflare_domain}
+                    onChange={(e) => setForm((f) => ({ ...f, cloudflare_domain: e.target.value }))}
+                    placeholder="delivery.seudominio.com"
+                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Apenas letras, números, pontos e hífens. Ex: pedidos.seusite.com.br
+                  </p>
+                </div>
+
+                {erroCf && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{erroCf}</div>
+                )}
+                {sucessoCf && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                    Configuração Cloudflare salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoCf}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoCf ? 'Salvando...' : 'Salvar configuração Cloudflare'}
+                </button>
+              </form>
+            </div>
+
           </div>
         )}
       </main>

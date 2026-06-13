@@ -94,6 +94,11 @@ let PlataformaService = class PlataformaService {
                 ? `${'•'.repeat(8)}${String(cfg.pagbank_platform_token).slice(-4)}`
                 : null,
             configurado: !!(cfg.pagbank_platform_token && cfg.pagbank_platform_account_id),
+            cloudflare_domain: cfg.cloudflare_domain ?? '',
+            cloudflare_tunnel_token_masked: cfg.cloudflare_tunnel_token
+                ? `${'•'.repeat(8)}${String(cfg.cloudflare_tunnel_token).slice(-6)}`
+                : null,
+            cloudflare_configurado: !!(cfg.cloudflare_tunnel_token && cfg.cloudflare_domain),
         };
     }
     async updateConfig(body) {
@@ -112,6 +117,12 @@ let PlataformaService = class PlataformaService {
         }
         if (body.pagbank_sandbox !== undefined) {
             novo.pagbank_sandbox = body.pagbank_sandbox;
+        }
+        if (body.cloudflare_tunnel_token?.trim()) {
+            novo.cloudflare_tunnel_token = body.cloudflare_tunnel_token.trim();
+        }
+        if (body.cloudflare_domain !== undefined) {
+            novo.cloudflare_domain = body.cloudflare_domain.trim();
         }
         const { error } = await this.supabase.client
             .from('platform_settings')

@@ -1,4 +1,5 @@
 import { PlataformaService } from './plataforma.service';
+import { UpdateConfigDto } from './update-config.dto';
 export declare class PlataformaController {
     private service;
     constructor(service: PlataformaService);
@@ -7,16 +8,18 @@ export declare class PlataformaController {
         pagbank_sandbox: any;
         pagbank_platform_token_masked: string | null;
         configurado: boolean;
+        cloudflare_domain: any;
+        cloudflare_tunnel_token_masked: string | null;
+        cloudflare_configurado: boolean;
     }>;
-    updateConfig(body: {
-        pagbank_platform_token?: string;
-        pagbank_platform_account_id?: string;
-        pagbank_sandbox?: boolean;
-    }): Promise<{
+    updateConfig(body: UpdateConfigDto): Promise<{
         pagbank_platform_account_id: any;
         pagbank_sandbox: any;
         pagbank_platform_token_masked: string | null;
         configurado: boolean;
+        cloudflare_domain: any;
+        cloudflare_tunnel_token_masked: string | null;
+        cloudflare_configurado: boolean;
     }>;
     metricas(): Promise<{
         resumo: {

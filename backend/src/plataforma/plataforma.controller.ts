@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { PlataformaService } from './plataforma.service';
 import { AdminGuard } from '../auth/admin.guard';
+import { UpdateConfigDto } from './update-config.dto';
 
 @Controller('plataforma')
 @UseGuards(AdminGuard)
@@ -13,13 +14,7 @@ export class PlataformaController {
   }
 
   @Patch('config')
-  updateConfig(
-    @Body() body: {
-      pagbank_platform_token?: string;
-      pagbank_platform_account_id?: string;
-      pagbank_sandbox?: boolean;
-    },
-  ) {
+  updateConfig(@Body() body: UpdateConfigDto) {
     return this.service.updateConfig(body);
   }
 
