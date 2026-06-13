@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMetricas, getComissoes } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtNum = (v) => new Intl.NumberFormat('pt-BR').format(v ?? 0);
@@ -25,6 +26,7 @@ const Card = ({ label, value, sub, color = 'blue' }) => {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { signOut, userProfile } = useAuth();
+  const { isLocalMode, localRestaurantId } = useLocalMode() ?? {};
   const [metricas, setMetricas] = useState(null);
   const [comissoes, setComissoes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,8 +59,16 @@ const AdminDashboard = () => {
 
   const r = metricas?.resumo ?? {};
 
+  // Modo local: redireciona direto para a empresa do restaurante
+  useEffect(() => {
+    if (isLocalMode && localRestaurantId) {
+      navigate(`/admin/empresas/${localRestaurantId}`, { replace: true });
+    }
+  }, [isLocalMode, localRestaurantId, navigate]);
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <LocalModeBanner />
       {/* Header */}
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div>

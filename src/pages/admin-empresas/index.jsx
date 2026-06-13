@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -137,6 +138,7 @@ const Modal = ({ empresa, onClose, onSave }) => {
 
 const AdminEmpresas = () => {
   const navigate = useNavigate();
+  const { isLocalMode, localRestaurantId } = useLocalMode() ?? {};
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -146,7 +148,12 @@ const AdminEmpresas = () => {
     setLoading(true);
     try {
       const data = await getEmpresas();
-      setEmpresas(data.empresas ?? []);
+      let lista = data.empresas ?? [];
+      // Modo local: restringe a 1 restaurante
+      if (isLocalMode && localRestaurantId) {
+        lista = lista.filter((e) => e.id === localRestaurantId);
+      }
+      setEmpresas(lista);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -168,6 +175,7 @@ const AdminEmpresas = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <LocalModeBanner />
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Painel Dev-Admin</h1>
@@ -181,12 +189,14 @@ const AdminEmpresas = () => {
           <h2 className="text-lg font-semibold text-gray-900">
             Empresas <span className="text-gray-400 font-normal text-sm">({empresas.length})</span>
           </h2>
-          <button
-            onClick={() => setModal('novo')}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-          >
-            + Nova Empresa
-          </button>
+          {!isLocalMode && (
+            <button
+              onClick={() => setModal('novo')}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+            >
+              + Nova Empresa
+            </button>
+          )}
         </div>
 
         {erro && (
@@ -268,12 +278,14 @@ const AdminEmpresas = () => {
                           >
                             Editar
                           </button>
-                          <button
-                            onClick={() => handleRemover(e)}
-                            className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg"
-                          >
-                            Remover
-                          </button>
+                          {!isLocalMode && (
+                            <button
+                              onClick={() => handleRemover(e)}
+                              className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              Remover
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
