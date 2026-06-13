@@ -288,26 +288,78 @@ const AdminConfiguracoes = () => {
                 )}
               </div>
               <p className="text-sm text-gray-500 mb-5">
-                Permite que clientes externos acessem o sistema via domínio público seguro (HTTPS), mesmo sem IP fixo.
+                Permite que clientes externos acessem o sistema via domínio público seguro (HTTPS), mesmo sem IP fixo ou servidor.
               </p>
 
-              {/* Instrução de uso */}
-              <div className="bg-gray-900 rounded-xl p-4 mb-5 text-xs font-mono">
-                <p className="text-gray-400 mb-1"># 1. Instale o cloudflared no PC do restaurante</p>
-                <p className="text-green-400">{'winget install Cloudflare.cloudflared'}</p>
-                <p className="text-gray-400 mt-2 mb-1"># 2. Execute com o token abaixo</p>
-                <p className="text-yellow-300 break-all">
-                  {'cloudflared tunnel run --token '}
-                  <span className="text-white">
-                    {config?.cloudflare_tunnel_token_masked ?? '<TOKEN>'}
-                  </span>
-                </p>
-                {config?.cloudflare_domain && (
-                  <>
-                    <p className="text-gray-400 mt-2 mb-1"># 3. Acesse via</p>
-                    <p className="text-blue-400">https://{config.cloudflare_domain}</p>
-                  </>
-                )}
+              {/* Passo a passo de configuração */}
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-5 space-y-4">
+                <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                  <Icon name="Info" size={15} /> Como configurar (faça uma vez)
+                </h3>
+                <ol className="space-y-3 text-xs text-blue-800">
+                  <li className="flex gap-3">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">1</span>
+                    <div>
+                      <p className="font-semibold">Crie uma conta Cloudflare (gratuito)</p>
+                      <p className="text-blue-600 mt-0.5">Acesse <strong>one.dash.cloudflare.com</strong> e crie ou entre na sua conta</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
+                    <div>
+                      <p className="font-semibold">Crie o Tunnel</p>
+                      <p className="text-blue-600 mt-0.5">No painel Cloudflare: <strong>Zero Trust → Networks → Tunnels → Create a tunnel</strong></p>
+                      <p className="text-blue-600">Escolha "Cloudflared" → dê um nome → clique em Next</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">3</span>
+                    <div>
+                      <p className="font-semibold">Copie o token</p>
+                      <p className="text-blue-600 mt-0.5">Na tela de instalação, copie o token longo que aparece após <code className="bg-blue-100 px-1 rounded">--token</code></p>
+                      <p className="text-blue-600">Cole no campo abaixo e salve</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">4</span>
+                    <div>
+                      <p className="font-semibold">Configure o domínio público no Tunnel</p>
+                      <p className="text-blue-600 mt-0.5">Em "Public Hostname": subdomínio → seu domínio → Service: <code className="bg-blue-100 px-1 rounded">HTTP · localhost:4028</code></p>
+                      <p className="text-blue-600">Coloque o mesmo domínio no campo abaixo</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">5</span>
+                    <div>
+                      <p className="font-semibold">Instale e rode o cloudflared no PC</p>
+                      <div className="bg-gray-900 rounded-lg p-2 mt-1 space-y-1 font-mono">
+                        <p className="text-gray-400 text-[10px]"># instalar (só 1x, Windows)</p>
+                        <p className="text-green-400 text-[10px] select-all">winget install Cloudflare.cloudflared</p>
+                        <p className="text-gray-400 text-[10px] mt-1"># rodar sempre que ligar o PC</p>
+                        <p className="text-yellow-300 text-[10px] break-all select-all">
+                          cloudflared tunnel run --token{' '}
+                          <span className="text-white">{config?.cloudflare_tunnel_token_masked ?? '<COLE O TOKEN AQUI>'}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                  {config?.cloudflare_domain && (
+                    <li className="flex gap-3">
+                      <span className="w-5 h-5 rounded-full bg-green-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">✓</span>
+                      <div>
+                        <p className="font-semibold text-green-800">Acesse via domínio público</p>
+                        <a
+                          href={`https://${config.cloudflare_domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline font-mono text-[11px]"
+                        >
+                          https://{config.cloudflare_domain}
+                        </a>
+                      </div>
+                    </li>
+                  )}
+                </ol>
               </div>
 
               <form onSubmit={handleSalvarCloudflare} className="space-y-4">
