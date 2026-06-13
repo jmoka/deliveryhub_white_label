@@ -3,6 +3,9 @@ export declare class MotoboyPortalController {
     private service;
     constructor(service: MotoboyService);
     me(req: any): Promise<{
+        restaurante_nome: any;
+        restaurante_cidade: null;
+        chave_pix: any;
         id: any;
         name: any;
         phone: any;
@@ -44,6 +47,7 @@ export declare class MotoboyPortalController {
             }[];
             id: any;
             total: any;
+            troco_para: any;
             status: any;
             payment_method: any;
             created_at: any;
@@ -71,6 +75,7 @@ export declare class MotoboyPortalController {
         ok: boolean;
         pedido_id: number;
         status: string;
+        troco: number;
     }>;
     localizacao(id: number, body: {
         lat: number;
@@ -78,10 +83,21 @@ export declare class MotoboyPortalController {
     }, req: any): Promise<{
         ok: boolean;
     }>;
-    entregar(id: number, req: any): Promise<{
+    entregar(id: number, body: {
+        entrega_pagamento?: {
+            metodo: string;
+            dinheiro?: number;
+            pix?: number;
+        };
+    }, req: any): Promise<{
         ok: boolean;
         pedido_id: number;
         status: string;
+    }>;
+    comprovante(id: number, body: {
+        base64: string;
+    }, req: any): Promise<{
+        url: string;
     }>;
     ocorrencia(id: number, body: {
         tipo: 'pendente' | 'cancelada';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../components/AppIcon';
-import { confirmarEntrega, registrarOcorrencia } from '../../services/motoboyService';
+import { confirmarEntrega, registrarOcorrencia, uploadComprovantePix } from '../../services/motoboyService';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -16,8 +16,12 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
   const [trocoConfirmado, setTrocoConfirmado] = useState(false);
   const [exatoConfirmado, setExatoConfirmado] = useState(false);
   const [dinheiroInput, setDinheiroInput] = useState('');
+  const [comprovantePreview, setComprovantePreview] = useState(null);
+  const [comprovanteBase64, setComprovanteBase64] = useState(null);
+  const [uploadandoFoto, setUploadandoFoto] = useState(false);
   const [erro, setErro] = useState(null);
   const scannerRef = useRef(null);
+  const fileInputRef = useRef(null);
   const divId = `entrega-scan-${pedido.id}`;
 
   const expectedCode = String(pedido.id).padStart(8, '0');
@@ -60,13 +64,6 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
 
   useEffect(() => () => { stopScan(); }, []); // eslint-disable-line
 
-  const handleEntregar = async (entregaPagamento) => {
-    setConfirmando(true);
-    try { await confirmarEntrega(pedido.id, entregaPagamento); onConfirmado(); }
-    catch (e) { setErro(e.message); }
-    finally { setConfirmando(false); }
-  };
-
   const handleOcorrencia = async () => {
     if (motivo.trim().length < 10) return;
     setConfirmando(true);
@@ -90,6 +87,50 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
 
   const dinheiroVal = parseFloat(dinheiroInput.replace(',', '.')) || 0;
   const pixParcialVal = dinheiroVal > 0 && dinheiroVal < total ? total - dinheiroVal : 0;
+
+  const comprimirImagem = (file) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const MAX = 1200;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = url;
+    });
+
+  const handleFotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const base64 = await comprimirImagem(file);
+    setComprovanteBase64(base64);
+    setComprovantePreview(base64);
+    e.target.value = '';
+  };
+
+  const handleEntregar = async (entregaPagamento) => {
+    setConfirmando(true);
+    try {
+      if (comprovanteBase64) {
+        setUploadandoFoto(true);
+        await uploadComprovantePix(pedido.id, comprovanteBase64);
+        setUploadandoFoto(false);
+      }
+      await confirmarEntrega(pedido.id, entregaPagamento);
+      onConfirmado();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setConfirmando(false);
+      setUploadandoFoto(false);
+    }
+  };
 
   return (
     <div className="border-t border-[#E4E4E7] pt-3 space-y-3">
@@ -236,6 +277,16 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
         </>
       )}
 
+      {/* Input câmera oculto — compartilhado pelas etapas PIX */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFotoChange}
+      />
+
       {/* ETAPA: PIX TOTAL */}
       {etapa === 'pix' && (
         <>
@@ -248,11 +299,32 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
           ) : (
             <p className="text-xs text-red-500 text-center">Erro ao gerar QR Code</p>
           )}
+
+          {/* Comprovante */}
+          {comprovantePreview ? (
+            <div className="relative">
+              <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300" />
+              <button
+                onClick={() => { setComprovantePreview(null); setComprovanteBase64(null); }}
+                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow">
+                <Icon name="X" size={14} className="text-gray-600" />
+              </button>
+              <p className="text-xs text-green-700 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-2.5 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors">
+              <Icon name="Camera" size={16} /> Fotografar comprovante do cliente
+            </button>
+          )}
+
           <button
             onClick={() => handleEntregar({ metodo: 'pix', pix: total })}
             disabled={confirmando}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-            <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'PIX Recebido — Marcar Entregue'}
+            <Icon name="CheckCircle2" size={16} />
+            {uploadandoFoto ? 'Enviando foto...' : confirmando ? 'Confirmando...' : 'PIX Recebido — Marcar Entregue'}
           </button>
           <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
             ← Voltar

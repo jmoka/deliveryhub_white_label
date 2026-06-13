@@ -42,8 +42,11 @@ let MotoboyPortalController = class MotoboyPortalController {
     localizacao(id, body, req) {
         return this.service.atualizarLocalizacao(id, req.motoboyId, body.lat, body.lng);
     }
-    entregar(id, req) {
-        return this.service.confirmarEntrega(id, req.motoboyId);
+    entregar(id, body, req) {
+        return this.service.confirmarEntrega(id, req.motoboyId, body?.entrega_pagamento);
+    }
+    comprovante(id, body, req) {
+        return this.service.uploadComprovante(id, req.motoboyId, body.base64);
     }
     ocorrencia(id, body, req) {
         return this.service.registrarOcorrencia(id, req.motoboyId, body.tipo, body.motivo);
@@ -108,11 +111,21 @@ __decorate([
 __decorate([
     (0, common_1.Post)('pedidos/:id/entregar'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number, Object, Object]),
     __metadata("design:returntype", void 0)
 ], MotoboyPortalController.prototype, "entregar", null);
+__decorate([
+    (0, common_1.Post)('pedidos/:id/comprovante'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], MotoboyPortalController.prototype, "comprovante", null);
 __decorate([
     (0, common_1.Post)('pedidos/:id/ocorrencia'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),

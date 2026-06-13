@@ -326,6 +326,39 @@ export class MotoboyService {
     return { ok: true, pedido_id: pedidoId, status: 'out_for_delivery', troco: trocoValor };
   }
 
+  async uploadComprovante(pedidoId: number, motoboyId: number, base64: string) {
+    const { data: pedido } = await this.supabase.client
+      .from('orders')
+      .select('id')
+      .eq('id', pedidoId)
+      .eq('motoboy_id', motoboyId)
+      .maybeSingle();
+    if (!pedido) throw new NotFoundException('Pedido não encontrado ou não atribuído a você');
+
+    const matches = base64.match(/^data:(image\/\w+);base64,(.+)$/);
+    const mimeType = matches ? matches[1] : 'image/jpeg';
+    const raw = matches ? matches[2] : base64;
+    const buffer = Buffer.from(raw, 'base64');
+    const ext = mimeType === 'image/png' ? 'png' : 'jpg';
+    const path = `pedido-${pedidoId}-${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await this.supabase.client.storage
+      .from('comprovantes-pix')
+      .upload(path, buffer, { contentType: mimeType, upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = this.supabase.client.storage
+      .from('comprovantes-pix')
+      .getPublicUrl(path);
+
+    await this.supabase.client
+      .from('orders')
+      .update({ comprovante_pix_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', pedidoId);
+
+    return { url: publicUrl };
+  }
+
   async infoMotoboy(motoboyId: number) {
     const { data: mb } = await this.supabase.client
       .from('motoboys')

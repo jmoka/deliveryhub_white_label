@@ -61,3 +61,9 @@ export const confirmarColeta = (pedidoId, barcode) =>
 
 export const reivindicarPedido = (pedidoId) =>
   motoboyFetch(`/pedidos/${pedidoId}/reivindicar`, { method: 'POST' });
+
+export const uploadComprovantePix = (pedidoId, base64) =>
+  motoboyFetch(`/pedidos/${pedidoId}/comprovante`, {
+    method: 'POST',
+    body: JSON.stringify({ base64 }),
+  });

@@ -59,6 +59,15 @@ export class MotoboyPortalController {
     return this.service.confirmarEntrega(id, req.motoboyId, body?.entrega_pagamento);
   }
 
+  @Post('pedidos/:id/comprovante')
+  comprovante(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { base64: string },
+    @Req() req: any,
+  ) {
+    return this.service.uploadComprovante(id, req.motoboyId, body.base64);
+  }
+
   @Post('pedidos/:id/ocorrencia')
   ocorrencia(
     @Param('id', ParseIntPipe) id: number,
