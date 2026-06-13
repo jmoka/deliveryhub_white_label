@@ -1,7 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+// Em dev: usa window.location.origin como URL base do Supabase.
+// O Vite proxeia /rest/v1, /auth/v1, /storage/v1, /realtime/v1 para o Supabase local (127.0.0.1:54331).
+// Isso permite acesso via qualquer IP na rede (LAN, Cloudflare Tunnel) sem mudar .env.
+// Em produção: usa VITE_SUPABASE_URL normalmente.
+const supabaseUrl = import.meta.env.DEV
+  ? window.location.origin
+  : import.meta.env.VITE_SUPABASE_URL;
+
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env file for VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');

@@ -16,13 +16,21 @@ export default defineConfig({
     port: "4028",
     host: "0.0.0.0",
     strictPort: true,
-    allowedHosts: ['.amazonaws.com', '.builtwithrocket.new'],
+    // true = permite qualquer IP/hostname (LAN, Cloudflare Tunnel, etc.)
+    allowedHosts: true,
     proxy: {
+      // Backend NestJS
       '/api': {
         target: 'http://localhost:3002',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-      }
+      },
+      // Supabase local — proxeado para funcionar via IP de rede (LAN/Tunnel)
+      // Sem isso, VITE_SUPABASE_URL=127.0.0.1 quebra em outros dispositivos
+      '/rest/v1': { target: 'http://127.0.0.1:54331', changeOrigin: true },
+      '/auth/v1': { target: 'http://127.0.0.1:54331', changeOrigin: true },
+      '/storage/v1': { target: 'http://127.0.0.1:54331', changeOrigin: true },
+      '/realtime/v1': { target: 'http://127.0.0.1:54331', changeOrigin: true, ws: true },
     }
   }
 });
