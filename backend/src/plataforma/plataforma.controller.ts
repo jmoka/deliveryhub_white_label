@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Query, UseGuards } from '@nestjs/common';
+import * as os from 'os';
 import { PlataformaService } from './plataforma.service';
 import { AdminGuard } from '../auth/admin.guard';
 import { UpdateConfigDto } from './update-config.dto';
@@ -16,6 +17,18 @@ export class PlataformaController {
   @Patch('config')
   updateConfig(@Body() body: UpdateConfigDto) {
     return this.service.updateConfig(body);
+  }
+
+  @Get('rede')
+  getRede() {
+    const nets = os.networkInterfaces();
+    const ips: string[] = [];
+    for (const iface of Object.values(nets)) {
+      for (const net of iface ?? []) {
+        if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+      }
+    }
+    return { ips, porta: 4028 };
   }
 
   @Get('metricas')

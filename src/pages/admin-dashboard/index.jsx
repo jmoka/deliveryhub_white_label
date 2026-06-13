@@ -42,6 +42,12 @@ const AdminDashboard = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (isLocalMode && localRestaurantId) {
+      navigate(`/admin/empresas/${localRestaurantId}`, { replace: true });
+    }
+  }, [isLocalMode, localRestaurantId, navigate]);
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -58,13 +64,6 @@ const AdminDashboard = () => {
   );
 
   const r = metricas?.resumo ?? {};
-
-  // Modo local: redireciona direto para a empresa do restaurante
-  useEffect(() => {
-    if (isLocalMode && localRestaurantId) {
-      navigate(`/admin/empresas/${localRestaurantId}`, { replace: true });
-    }
-  }, [isLocalMode, localRestaurantId, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">

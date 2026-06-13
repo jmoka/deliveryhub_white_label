@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlataformaConfig, updatePlataformaConfig } from '../../services/adminService';
+import { getPlataformaConfig, updatePlataformaConfig, getRedeInfo } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 
@@ -23,6 +23,7 @@ const AdminConfiguracoes = () => {
   const [salvandoCf, setSalvandoCf] = useState(false);
   const [sucessoCf, setSucessoCf] = useState(false);
   const [erroCf, setErroCf] = useState(null);
+  const [redeInfo, setRedeInfo] = useState(null);
 
   useEffect(() => {
     getPlataformaConfig()
@@ -37,6 +38,7 @@ const AdminConfiguracoes = () => {
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
+    getRedeInfo().then(setRedeInfo).catch(() => {});
   }, []);
 
   const handleSalvar = async (e) => {
@@ -273,6 +275,49 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+            {/* ── Acesso via Rede Local (WiFi) ──────────────────── */}
+            <div className="bg-white rounded-xl border p-6">
+              <h2 className="font-semibold text-gray-900 mb-1">Acesso via Rede Local (WiFi)</h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Outros dispositivos na mesma rede (celulares, tablets, outros PCs) podem acessar o sistema pelo IP abaixo.
+              </p>
+              {redeInfo ? (
+                <div className="space-y-3">
+                  {redeInfo.ips.length === 0 ? (
+                    <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      Nenhum IP de rede local detectado. Verifique se o PC está conectado ao WiFi ou rede cabeada.
+                    </p>
+                  ) : (
+                    redeInfo.ips.map((ip) => (
+                      <div key={ip} className="bg-gray-900 rounded-lg p-3 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-gray-400 text-[10px] mb-0.5">Abrir no celular / outro PC (mesma rede WiFi)</p>
+                          <p className="text-green-400 font-mono text-sm select-all">
+                            http://{ip}:{redeInfo.porta}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard?.writeText(`http://${ip}:${redeInfo.porta}`)}
+                          className="text-xs text-gray-400 hover:text-white border border-gray-600 rounded px-2 py-1 flex-shrink-0"
+                        >
+                          Copiar
+                        </button>
+                      </div>
+                    ))
+                  )}
+                  <p className="text-xs text-gray-400">
+                    O celular e o PC devem estar na mesma rede WiFi. Para acesso externo (fora da rede), use o Cloudflare Tunnel abaixo.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                  Detectando IP...
+                </div>
+              )}
+            </div>
+
             {/* ── Cloudflare Tunnel ───────────────────────────────── */}
             <div className="bg-white rounded-xl border p-6">
               <div className="flex items-center justify-between mb-1">

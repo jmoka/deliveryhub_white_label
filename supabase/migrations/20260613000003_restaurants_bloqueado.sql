@@ -1,0 +1,2 @@
+ALTER TABLE public.restaurants
+  ADD COLUMN IF NOT EXISTS bloqueado BOOLEAN NOT NULL DEFAULT false;

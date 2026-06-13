@@ -13,6 +13,7 @@ export class CatalogoController {
       .from('restaurants')
       .select('id, name, address, logo_url, slug, aparencia')
       .not('slug', 'is', null)
+      .eq('bloqueado', false)
       .order('name');
 
     if (error) throw error;
@@ -24,7 +25,8 @@ export class CatalogoController {
     const { data: restaurantes } = await this.supabase.client
       .from('restaurants')
       .select('id, name, logo_url, slug, aparencia')
-      .not('slug', 'is', null);
+      .not('slug', 'is', null)
+      .eq('bloqueado', false);
 
     if (!restaurantes?.length) return { produtos: [] };
 

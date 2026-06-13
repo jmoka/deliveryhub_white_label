@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
+import { imgUrl } from '../../lib/imgUrl';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -50,7 +51,7 @@ const RestCardGrid = ({ r, i }) => {
     >
       <div className="relative h-44 overflow-hidden bg-[#F4F4F5]">
         {r.logo_url
-          ? <img src={r.logo_url} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
+          ? <img src={imgUrl(r.logo_url)} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
           : <div className="w-full h-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center">
               <Icon name="Store" size={52} className="text-[#FF441F]/25" />
             </div>}
@@ -101,7 +102,7 @@ const RestCardList = ({ r, i }) => {
     >
       <div className="w-28 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F4F4F5]">
         {r.logo_url
-          ? <img src={r.logo_url} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
+          ? <img src={imgUrl(r.logo_url)} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
           : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={32} className="text-[#FF441F]/30" /></div>}
       </div>
       <div className="flex-1 min-w-0 py-1">
@@ -203,7 +204,7 @@ const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
           <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#F4F4F5]">
             <div className="w-5 h-5 rounded-md overflow-hidden bg-[#F4F4F5] flex-shrink-0">
               {rest.logo_url
-                ? <img src={rest.logo_url} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
+                ? <img src={imgUrl(rest.logo_url)} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
             </div>
             <p className="text-[10px] text-[#71717A] font-medium truncate">{rest.name}</p>
@@ -243,7 +244,7 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
           >
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-white border-2 border-[#E4E4E7] hover:border-[#FF441F]/40 shadow-sm transition-all">
               {r.logo_url
-                ? <img src={r.logo_url} alt={r.name} className="w-full h-full object-cover" />
+                ? <img src={imgUrl(r.logo_url)} alt={r.name} className="w-full h-full object-cover" />
                 : <div className="w-full h-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center">
                     <Icon name="Store" size={28} className="text-[#FF441F]/40" />
                   </div>}
@@ -395,7 +396,7 @@ const SidebarRight = ({ restaurantes, navigate }) => {
               <span className="text-base font-black text-[#E4E4E7] w-4 flex-shrink-0">{i + 1}</span>
               <div className="w-8 h-8 rounded-xl overflow-hidden bg-[#F4F4F5] flex-shrink-0">
                 {r.logo_url
-                  ? <img src={r.logo_url} alt={r.name} className="w-full h-full object-cover" />
+                  ? <img src={imgUrl(r.logo_url)} alt={r.name} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={14} className="text-[#FF441F]/40" /></div>}
               </div>
               <p className="text-xs font-semibold text-[#18181B] truncate flex-1">{r.name}</p>

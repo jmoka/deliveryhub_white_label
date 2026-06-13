@@ -12,7 +12,7 @@ export class EmpresasService {
   async listar(apenasAtivo?: boolean) {
     let query = this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, comissao_pct, user_id, slug, created_at')
+      .select('id, name, address, logo_url, comissao_pct, user_id, slug, bloqueado, created_at')
       .order('name');
 
     const { data, error } = await query;
@@ -64,7 +64,7 @@ export class EmpresasService {
         address: body.address ?? null,
         logo_url: body.logo_url ?? null,
         comissao_pct: body.comissao_pct ?? 5.0,
-        user_id: body.user_id ?? null,
+        user_id: body.user_id || null,
         slug: body.slug || this.gerarSlug(body.name),
       })
       .select()
@@ -83,15 +83,29 @@ export class EmpresasService {
     payment_config: object;
     user_id: string;
   }>) {
+    const payload: Record<string, any> = { ...body, updated_at: new Date().toISOString() };
+    if ('user_id' in payload && !payload.user_id) payload.user_id = null;
+
     const { data, error } = await this.supabase.client
       .from('restaurants')
-      .update({ ...body, updated_at: new Date().toISOString() })
+      .update(payload)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
     if (!data) throw new NotFoundException(`Empresa ${id} não encontrada`);
+    return data;
+  }
+
+  async bloquear(id: number, bloqueado: boolean) {
+    const { data, error } = await this.supabase.client
+      .from('restaurants')
+      .update({ bloqueado, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, name, bloqueado')
+      .single();
+    if (error) throw error;
     return data;
   }
 

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getCardapioPorSlug } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { imgUrl } from '../../lib/imgUrl';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -318,7 +319,7 @@ const RestauranteCatalogo = () => {
       {/* ── Hero ───────────────────────────────────────────────────── */}
       <div className="relative">
         {ap.banner_url ? (
-          <img src={ap.banner_url} alt={restaurante.name} className="w-full h-52 sm:h-72 object-cover" />
+          <img src={imgUrl(ap.banner_url)} alt={restaurante.name} className="w-full h-52 sm:h-72 object-cover" />
         ) : (
           <div className="w-full h-52 sm:h-72 bg-gradient-to-br from-[#FF441F] to-[#FF7A00]" />
         )}
@@ -331,7 +332,7 @@ const RestauranteCatalogo = () => {
               className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white overflow-hidden bg-white shadow-lg"
             >
               {restaurante.logo_url ? (
-                <img src={restaurante.logo_url} alt={restaurante.name} className="w-full h-full object-cover" />
+                <img src={imgUrl(restaurante.logo_url)} alt={restaurante.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-[#F4F4F5] flex items-center justify-center">
                   <Icon name="Store" size={32} className="text-[#FF441F]" />
