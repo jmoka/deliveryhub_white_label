@@ -42,14 +42,14 @@ let PedidosService = class PedidosService {
     async buscar(id) {
         const { data: pedido, error } = await this.supabase.client
             .from('orders')
-            .select('id, total, status, payment_method, restaurant_id, customer_id, user_id, motoboy_id, motoboy_lat, motoboy_lng, motoboy_location_at, delivery_notes, delivery_occurrence, created_at, updated_at')
+            .select('id, total, troco_para, entrega_pagamento, status, payment_method, restaurant_id, customer_id, user_id, motoboy_id, motoboy_lat, motoboy_lng, motoboy_location_at, delivery_notes, delivery_occurrence, created_at, updated_at')
             .eq('id', id)
             .maybeSingle();
         if (error)
             throw error;
         if (!pedido)
             throw new common_1.NotFoundException(`Pedido ${id} não encontrado`);
-        const [{ data: itensRaw }, { data: cliente }, { data: empresa }, { data: motoboy }] = await Promise.all([
+        const [{ data: itensRaw }, { data: cliente }, { data: empresa }, { data: motoboy }, { data: pagamento }] = await Promise.all([
             this.supabase.client
                 .from('order_items')
                 .select('id, quantity, unit_price, product_id')
@@ -65,6 +65,7 @@ let PedidosService = class PedidosService {
             pedido.motoboy_id
                 ? this.supabase.client.from('motoboys').select('id, name, phone, access_token').eq('id', pedido.motoboy_id).maybeSingle()
                 : Promise.resolve({ data: null }),
+            this.supabase.client.from('pagamentos').select('id, valor, tipo, status').eq('order_id', id).eq('status', 'paid').maybeSingle(),
         ]);
         let itens = itensRaw ?? [];
         if (itens.length > 0) {
@@ -73,7 +74,7 @@ let PedidosService = class PedidosService {
             const prodMap = Object.fromEntries((prods ?? []).map((p) => [p.id, p.name]));
             itens = itens.map((i) => ({ ...i, product_name: prodMap[i.product_id] ?? `Produto #${i.product_id}` }));
         }
-        return { pedido, itens, cliente, empresa, motoboy };
+        return { pedido, itens, cliente, empresa, motoboy, pagamento_pago: pagamento ?? null };
     }
     async criar(body) {
         if (!body.itens?.length)
@@ -158,6 +159,44 @@ let PedidosService = class PedidosService {
     }
     async cancelar(id) {
         return this.atualizarStatus(id, 'canceled');
+    }
+    async cancelarCliente(id, userId, motivo) {
+        if (!motivo?.trim())
+            throw new common_1.BadRequestException('Motivo do cancelamento é obrigatório');
+        const { data: pedido, error } = await this.supabase.client
+            .from('orders')
+            .select('id, status, user_id, total, payment_method')
+            .eq('id', id)
+            .maybeSingle();
+        if (error)
+            throw error;
+        if (!pedido)
+            throw new common_1.NotFoundException(`Pedido ${id} não encontrado`);
+        if (pedido.user_id !== userId)
+            throw new common_1.ForbiddenException('Sem permissão para cancelar este pedido');
+        if (!['pending', 'confirmed'].includes(pedido.status)) {
+            throw new common_1.BadRequestException('Pedido não pode ser cancelado após início do preparo');
+        }
+        const { data: pagamento } = await this.supabase.client
+            .from('pagamentos')
+            .select('id, valor, tipo')
+            .eq('order_id', id)
+            .eq('status', 'paid')
+            .maybeSingle();
+        const { data: atualizado, error: errUpd } = await this.supabase.client
+            .from('orders')
+            .update({ status: 'canceled', cancel_reason: motivo.trim(), updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select('id, status, cancel_reason, total, updated_at')
+            .single();
+        if (errUpd)
+            throw errUpd;
+        const valor_devolver = pagamento?.valor ?? 0;
+        return {
+            pedido: atualizado,
+            valor_devolver,
+            precisa_estorno: valor_devolver > 0,
+        };
     }
 };
 exports.PedidosService = PedidosService;

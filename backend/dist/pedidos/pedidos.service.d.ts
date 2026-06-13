@@ -28,6 +28,8 @@ export declare class PedidosService {
         pedido: {
             id: any;
             total: any;
+            troco_para: any;
+            entrega_pagamento: any;
             status: any;
             payment_method: any;
             restaurant_id: any;
@@ -67,6 +69,12 @@ export declare class PedidosService {
             phone: any;
             access_token: any;
         } | null;
+        pagamento_pago: {
+            id: any;
+            valor: any;
+            tipo: any;
+            status: any;
+        } | null;
     }>;
     criar(body: {
         restaurant_id: number;
@@ -99,6 +107,17 @@ export declare class PedidosService {
         total: any;
         restaurant_id: any;
         updated_at: any;
+    }>;
+    cancelarCliente(id: number, userId: string, motivo: string): Promise<{
+        pedido: {
+            id: any;
+            status: any;
+            cancel_reason: any;
+            total: any;
+            updated_at: any;
+        };
+        valor_devolver: any;
+        precisa_estorno: boolean;
     }>;
 }
 export {};

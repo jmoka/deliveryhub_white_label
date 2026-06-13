@@ -71,6 +71,17 @@ export class PedidosController {
     return this.service.atualizarStatus(id, body.status as any);
   }
 
+  // Cliente cancela antes do preparo (pending ou confirmed)
+  @Patch(':id/cancelar')
+  @UseGuards(JwtGuard)
+  cancelarCliente(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { motivo: string },
+    @Req() req: any,
+  ) {
+    return this.service.cancelarCliente(id, req.userId, body.motivo);
+  }
+
   // Admin cancela
   @Delete(':id')
   @UseGuards(AdminGuard)

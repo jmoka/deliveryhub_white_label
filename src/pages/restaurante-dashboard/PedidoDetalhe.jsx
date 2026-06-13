@@ -116,11 +116,15 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
       </div>
 
       {isCanceled && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <Icon name="XCircle" size={20} className="text-red-500 flex-shrink-0" />
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+          <Icon name="XCircle" size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-bold text-red-700">Pedido Cancelado</p>
-            <p className="text-xs text-red-500">Este pedido foi cancelado e não pode ser avançado.</p>
+            {pedido.cancel_reason ? (
+              <p className="text-xs text-red-600 mt-0.5">Motivo: {pedido.cancel_reason}</p>
+            ) : (
+              <p className="text-xs text-red-500">Este pedido foi cancelado e não pode ser avançado.</p>
+            )}
           </div>
         </div>
       )}
@@ -282,6 +286,26 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
               Dinheiro <strong>{fmt(pedido.entrega_pagamento.dinheiro)}</strong> + PIX <strong>{fmt(pedido.entrega_pagamento.pix)}</strong>
             </p>
           )}
+        </div>
+      )}
+
+      {/* Comprovante PIX enviado pelo motoboy */}
+      {pedido.comprovante_pix_url && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-blue-100 flex items-center gap-2">
+            <Icon name="Image" size={14} className="text-blue-600" />
+            <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Comprovante PIX</p>
+          </div>
+          <div className="p-3">
+            <a href={pedido.comprovante_pix_url} target="_blank" rel="noopener noreferrer">
+              <img
+                src={pedido.comprovante_pix_url}
+                alt="Comprovante PIX"
+                className="w-full rounded-xl object-contain max-h-72 border border-blue-100"
+              />
+            </a>
+            <p className="text-[10px] text-blue-500 mt-1.5 text-center">Toque para ampliar</p>
+          </div>
         </div>
       )}
 
