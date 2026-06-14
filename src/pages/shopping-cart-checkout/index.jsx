@@ -162,8 +162,26 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
 };
 
 /* ── Step 2: Pagamento ───────────────────────────────────────────── */
-const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, onNext, onBack }) => (
+const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, total, onNext, onBack }) => (
   <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+    {/* Resumo do valor — sempre visível */}
+    <div className="bg-[#18181B] rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
+      <div className="flex flex-col">
+        <span className="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">Subtotal</span>
+        <span className="text-sm font-semibold text-white">{fmt(subtotal)}</span>
+      </div>
+      {frete > 0 && (
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">Frete</span>
+          <span className="text-sm font-semibold text-white">{fmt(frete)}</span>
+        </div>
+      )}
+      <div className="flex flex-col items-end">
+        <span className="text-[10px] text-[#FF441F] uppercase tracking-widest font-bold">Total</span>
+        <span className="text-lg font-black text-white">{fmt(total)}</span>
+      </div>
+    </div>
+
     <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
       <p className="text-sm font-semibold text-[#18181B] mb-3">Forma de pagamento</p>
       <div className="space-y-2">
@@ -547,6 +565,9 @@ const SingleCartCheckout = () => {
               setCpf={setCpf}
               trocoPara={trocoPara}
               setTrocoPara={setTrocoPara}
+              subtotal={subtotal}
+              frete={frete}
+              total={total}
               onNext={() => { if (!validarPagamento()) return; irParaStep(3); }}
               onBack={() => irParaStep(1)}
             />
