@@ -593,7 +593,7 @@ let RestauranteService = class RestauranteService {
         }
         const { data: ordersData } = await this.supabase.client
             .from('orders')
-            .select('id, total, status, payment_method, created_at, updated_at, customer_id, motoboy_id, caixa_id, customers(name, phone_e164), motoboys(name)')
+            .select('id, total, frete_cobrado, troco_para, status, payment_method, created_at, updated_at, customer_id, motoboy_id, caixa_id, customers(name, phone_e164), motoboys(name)')
             .eq('restaurant_id', restaurantId)
             .or(`caixa_id.eq.${caixa.id},and(caixa_id.is.null,created_at.gte.${caixa.aberto_em})`)
             .order('created_at', { ascending: false });
@@ -788,6 +788,79 @@ let RestauranteService = class RestauranteService {
         if (error)
             throw error;
         return nova;
+    }
+    async relatorioFretes(restaurantId, periodo) {
+        const agora = new Date();
+        let dataInicio = null;
+        if (periodo === 'hoje') {
+            const d = new Date(agora);
+            d.setHours(0, 0, 0, 0);
+            dataInicio = d.toISOString();
+        }
+        else if (periodo === 'semana') {
+            const d = new Date(agora);
+            d.setDate(d.getDate() - 7);
+            dataInicio = d.toISOString();
+        }
+        else if (periodo === 'mes') {
+            const d = new Date(agora);
+            d.setDate(1);
+            d.setHours(0, 0, 0, 0);
+            dataInicio = d.toISOString();
+        }
+        else if (periodo === 'ano') {
+            const d = new Date(agora);
+            d.setMonth(0, 1);
+            d.setHours(0, 0, 0, 0);
+            dataInicio = d.toISOString();
+        }
+        let q = this.supabase.client
+            .from('orders')
+            .select('id, total, frete_cobrado, troco_para, payment_method, status, created_at, motoboy_id, motoboys(name)')
+            .eq('restaurant_id', restaurantId)
+            .eq('status', 'delivered');
+        if (dataInicio)
+            q = q.gte('created_at', dataInicio);
+        const { data: pedidos, error } = await q.order('created_at', { ascending: false });
+        if (error)
+            throw error;
+        const todos = pedidos ?? [];
+        const total_fretes = todos.reduce((s, p) => s + parseFloat(p.frete_cobrado ?? 0), 0);
+        const total_troco = todos.reduce((s, p) => {
+            const troco = parseFloat(p.troco_para ?? 0) - parseFloat(p.total ?? 0);
+            return s + (troco > 0 ? troco : 0);
+        }, 0);
+        const qtd_entregas = todos.length;
+        const porMotoboy = {};
+        for (const p of todos) {
+            const nome = p.motoboys?.name ?? 'Sem motoboy';
+            const mid = p.motoboy_id ?? 0;
+            const key = String(mid);
+            if (!porMotoboy[key])
+                porMotoboy[key] = { motoboy_id: mid, nome, fretes: 0, troco: 0, entregas: 0 };
+            porMotoboy[key].fretes += parseFloat(p.frete_cobrado ?? 0);
+            const troco = parseFloat(p.troco_para ?? 0) - parseFloat(p.total ?? 0);
+            porMotoboy[key].troco += troco > 0 ? troco : 0;
+            porMotoboy[key].entregas += 1;
+        }
+        const porDia = {};
+        for (const p of todos) {
+            const dia = new Date(p.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            if (!porDia[dia])
+                porDia[dia] = { dia, fretes: 0, troco: 0, entregas: 0 };
+            porDia[dia].fretes += parseFloat(p.frete_cobrado ?? 0);
+            const troco = parseFloat(p.troco_para ?? 0) - parseFloat(p.total ?? 0);
+            porDia[dia].troco += troco > 0 ? troco : 0;
+            porDia[dia].entregas += 1;
+        }
+        return {
+            periodo,
+            total_fretes: parseFloat(total_fretes.toFixed(2)),
+            total_troco: parseFloat(total_troco.toFixed(2)),
+            qtd_entregas,
+            por_motoboy: Object.values(porMotoboy),
+            por_dia: Object.values(porDia),
+        };
     }
     async setFreteGratis(restaurantId, pedidoId) {
         const { data: pedido, error: errGet } = await this.supabase.client

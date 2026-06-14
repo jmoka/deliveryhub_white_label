@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa, fecharETransferir,
   adicionarSaida, buscarPedidoDetalhe, atualizarStatusPedido, toggleStatusRestaurante,
-  listarMotoboys, atribuirMotoboy,
+  listarMotoboys, atribuirMotoboy, getRelatorioFretes,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
@@ -79,6 +79,9 @@ const RestauranteDashboard = () => {
   const [fechamento, setFechamento] = useState(null);
   const [motoboys, setMotoboys] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [relFretes, setRelFretes] = useState(null);
+  const [periodoFretes, setPeriodoFretes] = useState('hoje');
+  const [showDetalheFretes, setShowDetalheFretes] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const [nomeOperador, setNomeOperador] = useState('');
   const [pedidosAbertos, setPedidosAbertos] = useState([]);
@@ -176,6 +179,17 @@ const RestauranteDashboard = () => {
       setCaixa(data);
     } catch { /* silent */ }
   }, []);
+
+  const carregarRelFretes = useCallback(async (periodo) => {
+    try {
+      const data = await getRelatorioFretes(periodo);
+      setRelFretes(data);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    carregarRelFretes(periodoFretes);
+  }, [periodoFretes, carregarRelFretes]);
 
   useEffect(() => { carregar(); }, []);
 
@@ -498,6 +512,107 @@ const RestauranteDashboard = () => {
               <KpiCard icon="Clock" label="Em andamento" value={r?.em_andamento ?? 0} sub={`${r?.cancelados ?? 0} cancelados`} color="blue" />
               <KpiCard icon="ArrowDownLeft" label="Saídas" value={fmt(r?.total_saidas)} sub={`${caixa?.saidas?.length ?? 0} registros`} color="red" />
               <KpiCard icon="Wallet" label="Saldo caixa" value={fmt(r?.saldo)} sub={`Inicial: ${fmt(caixa.valor_inicial)}`} color="orange" />
+            </div>
+
+            {/* KPIs Fretes + Troco */}
+            <div className="grid grid-cols-2 gap-3">
+              <KpiCard icon="Truck" label="Fretes cobrados" value={fmt(relFretes?.total_fretes)} sub={`${relFretes?.qtd_entregas ?? 0} entregas`} color="blue" />
+              <KpiCard icon="Coins" label="Troco dado" value={fmt(relFretes?.total_troco)} sub={`pagamentos em dinheiro`} color="purple" />
+            </div>
+
+            {/* Filtro período + tabela detalhe por motoboy */}
+            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <button
+                  onClick={() => setShowDetalheFretes((v) => !v)}
+                  className="flex items-center gap-2 text-sm font-semibold text-[#18181B] hover:text-[#FF441F]"
+                >
+                  <Icon name="Truck" size={16} />
+                  Fretes e Troco por motoboy
+                  <Icon name={showDetalheFretes ? 'ChevronUp' : 'ChevronDown'} size={14} />
+                </button>
+                <div className="flex gap-1">
+                  {[
+                    { v: 'hoje', l: 'Hoje' },
+                    { v: 'semana', l: '7d' },
+                    { v: 'mes', l: 'Mês' },
+                    { v: 'ano', l: 'Ano' },
+                    { v: 'tudo', l: 'Tudo' },
+                  ].map(({ v, l }) => (
+                    <button
+                      key={v}
+                      onClick={() => setPeriodoFretes(v)}
+                      className={`px-2 py-1 text-xs rounded-lg font-medium transition-colors ${periodoFretes === v ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A] hover:bg-[#E4E4E7]'}`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {showDetalheFretes && (
+                <div className="mt-4 space-y-3">
+                  {/* Por motoboy */}
+                  {relFretes?.por_motoboy?.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide mb-2">Por motoboy</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b text-xs text-[#71717A]">
+                              <th className="text-left py-1.5 pr-3">Motoboy</th>
+                              <th className="text-right py-1.5 px-2 whitespace-nowrap">Entregas</th>
+                              <th className="text-right py-1.5 px-2 whitespace-nowrap">Fretes</th>
+                              <th className="text-right py-1.5 pl-2 whitespace-nowrap">Troco dado</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relFretes.por_motoboy.map((m) => (
+                              <tr key={m.motoboy_id} className="border-b last:border-0">
+                                <td className="py-1.5 pr-3 font-medium text-[#18181B]">{m.nome}</td>
+                                <td className="py-1.5 px-2 text-right text-[#71717A]">{m.entregas}</td>
+                                <td className="py-1.5 px-2 text-right text-green-700 font-semibold">{fmt(m.fretes)}</td>
+                                <td className="py-1.5 pl-2 text-right text-orange-700 font-semibold">{fmt(m.troco)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#71717A] text-center py-4">Nenhuma entrega no período</p>
+                  )}
+
+                  {/* Por dia */}
+                  {relFretes?.por_dia?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide mb-2 mt-4">Por dia</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b text-xs text-[#71717A]">
+                              <th className="text-left py-1.5 pr-3">Data</th>
+                              <th className="text-right py-1.5 px-2 whitespace-nowrap">Entregas</th>
+                              <th className="text-right py-1.5 px-2 whitespace-nowrap">Fretes</th>
+                              <th className="text-right py-1.5 pl-2 whitespace-nowrap">Troco dado</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {relFretes.por_dia.map((d) => (
+                              <tr key={d.dia} className="border-b last:border-0">
+                                <td className="py-1.5 pr-3 font-medium text-[#18181B]">{d.dia}</td>
+                                <td className="py-1.5 px-2 text-right text-[#71717A]">{d.entregas}</td>
+                                <td className="py-1.5 px-2 text-right text-green-700 font-semibold">{fmt(d.fretes)}</td>
+                                <td className="py-1.5 pl-2 text-right text-orange-700 font-semibold">{fmt(d.troco)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Breakdown espécie vs digital */}

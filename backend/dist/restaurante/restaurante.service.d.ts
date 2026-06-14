@@ -256,6 +256,8 @@ export declare class RestauranteService {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
+            troco_para: any;
             status: any;
             payment_method: any;
             created_at: any;
@@ -320,6 +322,8 @@ export declare class RestauranteService {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
+            troco_para: any;
             status: any;
             payment_method: any;
             created_at: any;
@@ -450,6 +454,14 @@ export declare class RestauranteService {
         valor: number;
         meio?: string;
     }): Promise<any>;
+    relatorioFretes(restaurantId: number, periodo: 'hoje' | 'semana' | 'mes' | 'ano' | 'tudo'): Promise<{
+        periodo: "hoje" | "semana" | "mes" | "ano" | "tudo";
+        total_fretes: number;
+        total_troco: number;
+        qtd_entregas: number;
+        por_motoboy: any[];
+        por_dia: any[];
+    }>;
     setFreteGratis(restaurantId: number, pedidoId: number): Promise<{
         id: any;
         total: any;

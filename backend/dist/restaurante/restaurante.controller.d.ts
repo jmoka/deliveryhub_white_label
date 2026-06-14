@@ -201,6 +201,8 @@ export declare class RestauranteController {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
+            troco_para: any;
             status: any;
             payment_method: any;
             created_at: any;
@@ -265,6 +267,8 @@ export declare class RestauranteController {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
+            troco_para: any;
             status: any;
             payment_method: any;
             created_at: any;
@@ -477,6 +481,14 @@ export declare class RestauranteController {
             total_saidas: any;
             saldo_liquido: number;
         };
+    }>;
+    relatorioFretes(req: any, periodo?: string): Promise<{
+        periodo: "hoje" | "semana" | "mes" | "ano" | "tudo";
+        total_fretes: number;
+        total_troco: number;
+        qtd_entregas: number;
+        por_motoboy: any[];
+        por_dia: any[];
     }>;
     meusCombos(req: any): Promise<{
         combos: {

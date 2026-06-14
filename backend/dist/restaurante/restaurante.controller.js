@@ -142,6 +142,9 @@ let RestauranteController = class RestauranteController {
     relatorio(req, de, ate) {
         return this.service.getRelatorio(req.restaurantId, de, ate);
     }
+    relatorioFretes(req, periodo = 'hoje') {
+        return this.service.relatorioFretes(req.restaurantId, periodo);
+    }
     meusCombos(req) {
         return this.service.meusCombos(req.restaurantId);
     }
@@ -462,6 +465,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "relatorio", null);
+__decorate([
+    (0, common_1.Get)('relatorio/fretes'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('periodo')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "relatorioFretes", null);
 __decorate([
     (0, common_1.Get)('combos'),
     __param(0, (0, common_1.Req)()),

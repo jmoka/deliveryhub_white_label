@@ -253,6 +253,14 @@ export class RestauranteController {
     return this.service.getRelatorio(req.restaurantId, de, ate);
   }
 
+  @Get('relatorio/fretes')
+  relatorioFretes(
+    @Req() req: any,
+    @Query('periodo') periodo: string = 'hoje',
+  ) {
+    return this.service.relatorioFretes(req.restaurantId, periodo as any);
+  }
+
   // ── Combos ──────────────────────────────────────────────────────────────────
 
   @Get('combos')
