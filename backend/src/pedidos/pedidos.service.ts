@@ -78,6 +78,7 @@ export class PedidosService {
     restaurant_id: number;
     customer_id?: number;
     payment_method: string;
+    troco_para?: number;
     user_id: string;
     itens: { product_id: number; quantity: number }[];
   }) {
@@ -130,6 +131,7 @@ export class PedidosService {
         restaurant_id: body.restaurant_id,
         customer_id: customerId,
         payment_method: body.payment_method,
+        troco_para: body.payment_method === 'cash' && body.troco_para ? body.troco_para : null,
         user_id: body.user_id,
         total: parseFloat(total.toFixed(2)),
         status: 'pending',

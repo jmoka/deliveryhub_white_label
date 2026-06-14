@@ -54,6 +54,7 @@ export class PedidosController {
       restaurant_id: number;
       customer_id?: number;
       payment_method: string;
+      troco_para?: number;
       itens: { product_id: number; quantity: number }[];
     },
     @Req() req: any,

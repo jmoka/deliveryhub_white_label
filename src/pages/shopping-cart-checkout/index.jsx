@@ -150,7 +150,7 @@ const StepItens = ({ itens, setItens, onNext, total }) => {
 };
 
 /* ── Step 2: Pagamento ───────────────────────────────────────────── */
-const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, onNext, onBack }) => (
+const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, onNext, onBack }) => (
   <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
     <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
       <p className="text-sm font-semibold text-[#18181B] mb-3">Forma de pagamento</p>
@@ -209,6 +209,38 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, onNext, o
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Troco para dinheiro */}
+      <AnimatePresence>
+        {paymentMethod === 'cash' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 pt-4 border-t border-[#E4E4E7]">
+              <label className="block text-sm font-medium text-[#27272A] mb-1.5">
+                Com quanto vai pagar? <span className="text-[#71717A] font-normal">(para troco)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#71717A] font-medium">R$</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={trocoPara}
+                  onChange={(e) => setTrocoPara(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
+                />
+              </div>
+              <p className="text-xs text-[#71717A] mt-1">Deixe em branco se pagar o valor exato</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
 
     <div className="flex gap-3">
@@ -225,7 +257,7 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, onNext, o
 );
 
 /* ── Step 3: Confirmar ───────────────────────────────────────────── */
-const StepConfirmar = ({ itens, paymentMethod, total, perfil, loading, erro, onConfirmar, onBack }) => {
+const StepConfirmar = ({ itens, paymentMethod, trocoPara, total, perfil, loading, erro, onConfirmar, onBack }) => {
   const payOpt = PAYMENT_OPTIONS.find((o) => o.key === paymentMethod);
   const addr = perfil?.address_json ?? {};
   const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
@@ -270,9 +302,14 @@ const StepConfirmar = ({ itens, paymentMethod, total, perfil, loading, erro, onC
         <div className="w-9 h-9 bg-[#FF441F]/10 rounded-xl flex items-center justify-center">
           <Icon name={payOpt?.icon ?? 'CreditCard'} size={18} className="text-[#FF441F]" />
         </div>
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold text-[#18181B]">{payOpt?.label}</p>
           <p className="text-xs text-[#71717A]">{payOpt?.desc}</p>
+          {paymentMethod === 'cash' && trocoPara > 0 && (
+            <p className="text-xs text-[#27272A] mt-0.5">
+              Pagará {fmt(trocoPara)} · Troco: {fmt(Math.max(0, trocoPara - total))}
+            </p>
+          )}
         </div>
       </div>
 
@@ -318,6 +355,7 @@ const SingleCartCheckout = () => {
   const [perfil, setPerfil] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpf, setCpf] = useState('');
+  const [trocoPara, setTrocoPara] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [pixData, setPixData] = useState(null);
@@ -353,12 +391,14 @@ const SingleCartCheckout = () => {
       const token = sessionResult?.data?.session?.access_token;
       if (!token) throw new Error('Sessão expirada. Faça login.');
 
+      const trocoParsed = parseFloat(trocoPara) || null;
       const resP = await fetch('/api/pedidos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           restaurant_id: restauranteId,
           payment_method: paymentMethod,
+          troco_para: paymentMethod === 'cash' && trocoParsed > 0 ? trocoParsed : undefined,
           itens: itens.map((i) => ({ product_id: i.id, quantity: i.qtd })),
         }),
       });
@@ -483,6 +523,8 @@ const SingleCartCheckout = () => {
               setPaymentMethod={setPaymentMethod}
               cpf={cpf}
               setCpf={setCpf}
+              trocoPara={trocoPara}
+              setTrocoPara={setTrocoPara}
               onNext={() => { if (!validarPagamento()) return; irParaStep(3); }}
               onBack={() => irParaStep(1)}
             />
@@ -492,6 +534,7 @@ const SingleCartCheckout = () => {
               key="confirmar"
               itens={itens}
               paymentMethod={paymentMethod}
+              trocoPara={parseFloat(trocoPara) || 0}
               total={total}
               perfil={perfil}
               loading={loading}
