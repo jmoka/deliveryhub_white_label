@@ -138,7 +138,7 @@ const OrderActions = ({
           className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black bg-opacity-50 animate-fade-in"
           onClick={handleBackdropClick}
         >
-          <div className="w-full max-w-md bg-card rounded-lg shadow-lg animate-slide-up elevation-3">
+          <div className="w-full max-w-md bg-card rounded-lg shadow-lg animate-slide-up elevation-3 max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-border">
               <h3 className="text-lg font-semibold text-foreground">
