@@ -887,25 +887,25 @@ const MenuCatalogProductBrowse = () => {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
+            className="fixed bottom-6 left-4 right-4 z-50 flex items-center gap-2"
           >
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleIrCheckout}
-              className="flex items-center gap-3 bg-[#FF441F] text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-[#FF441F]/30 font-bold text-sm"
+              className="flex-1 flex items-center justify-between bg-[#FF441F] text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-[#FF441F]/30 font-bold text-sm"
             >
-              <span className="w-6 h-6 bg-white text-[#FF441F] rounded-full text-xs font-black flex items-center justify-center">
+              <span className="w-6 h-6 bg-white text-[#FF441F] rounded-full text-xs font-black flex items-center justify-center flex-shrink-0">
                 {badgeCount}
               </span>
-              Ver carrinho
-              <span className="text-white/80 text-xs font-semibold">
+              <span>Ver carrinho</span>
+              <span className="text-white/80 text-xs font-semibold flex-shrink-0">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(badgeTotal)}
               </span>
             </motion.button>
             <button
               onClick={() => { cartClear(); setBadgeCount(0); setBadgeTotal(0); }}
-              className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-[#71717A] hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="flex-shrink-0 w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center text-[#71717A] hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Limpar carrinho"
             >
               <Icon name="Trash2" size={15} />
