@@ -376,7 +376,7 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
                   value={trocoInput}
                   onChange={(e) => setTrocoInput(e.target.value)}
                   placeholder={`Mín. ${fmt(pedido.total + 1)}`}
-                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400"
+                  className="flex-1 min-w-0 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400"
                 />
                 <button
                   onClick={handleSalvarTroco}
