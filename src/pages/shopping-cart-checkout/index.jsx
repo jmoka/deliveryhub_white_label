@@ -616,6 +616,7 @@ const ShoppingCartCheckout = () => {
       carrinho,
       restauranteId: grupo.restaurante_id,
       restauranteSlug: grupo.slug ?? '',
+      freteMotoboy: grupo.frete_motoboy ?? 0,
     }));
     cartClear();
     return <SingleCartCheckout />;

@@ -25,6 +25,7 @@ export const cartAdd = (produto, restaurante) => {
       restaurante_id: restaurante.id,
       restaurante_slug: restaurante.slug,
       restaurante_nome: restaurante.name,
+      restaurante_frete: parseFloat(restaurante.frete_motoboy ?? 0),
     });
   }
   localStorage.setItem(KEY, JSON.stringify(cart));
@@ -67,6 +68,7 @@ export const cartByRestaurant = () => {
         restaurante_id: rid,
         slug: item.restaurante_slug,
         nome: item.restaurante_nome,
+        frete_motoboy: item.restaurante_frete ?? 0,
         items: [],
       };
     }

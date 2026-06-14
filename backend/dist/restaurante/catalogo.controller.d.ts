@@ -15,6 +15,7 @@ export declare class CatalogoController {
             logo_url: any;
             slug: any;
             aparencia: any;
+            frete_motoboy: any;
         }[];
     }>;
     todosOsProdutos(): Promise<{

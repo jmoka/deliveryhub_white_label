@@ -89,7 +89,7 @@ let CatalogoController = class CatalogoController {
     async listarRestaurantes() {
         const { data, error } = await this.supabase.client
             .from('restaurants')
-            .select('id, name, address, logo_url, slug, aparencia')
+            .select('id, name, address, logo_url, slug, aparencia, frete_motoboy')
             .not('slug', 'is', null)
             .eq('bloqueado', false)
             .order('name');
