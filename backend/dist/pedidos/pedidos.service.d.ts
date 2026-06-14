@@ -29,6 +29,7 @@ export declare class PedidosService {
             id: any;
             total: any;
             troco_para: any;
+            frete_cobrado: any;
             entrega_pagamento: any;
             status: any;
             payment_method: any;

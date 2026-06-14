@@ -145,9 +145,7 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
           <span className="text-[#71717A] flex items-center gap-1">
             <Icon name="Truck" size={13} /> Frete motoboy
           </span>
-          <span className={`font-medium ${frete > 0 ? 'text-[#18181B]' : 'text-green-600'}`}>
-            {frete > 0 ? fmt(frete) : 'Grátis'}
-          </span>
+          <span className="font-medium text-[#18181B]">{fmt(frete)}</span>
         </div>
         <div className="border-t border-[#E4E4E7] pt-2 flex justify-between font-bold">
           <span className="text-[#18181B]">Total</span>
@@ -308,9 +306,7 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, total
             <span className="text-[#71717A] flex items-center gap-1">
               <Icon name="Truck" size={13} /> Frete motoboy
             </span>
-            <span className={`font-medium ${frete > 0 ? 'text-[#27272A]' : 'text-green-600'}`}>
-              {frete > 0 ? fmt(frete) : 'Grátis'}
-            </span>
+            <span className="font-medium text-[#27272A]">{fmt(frete)}</span>
           </div>
           <div className="border-t border-[#E4E4E7] pt-2 flex justify-between font-bold">
             <span className="text-[#18181B]">Total</span>

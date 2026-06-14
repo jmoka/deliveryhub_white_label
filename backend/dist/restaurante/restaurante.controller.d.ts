@@ -50,6 +50,19 @@ export declare class RestauranteController {
         restaurant_id: any;
         updated_at: any;
     }>;
+    setFreteGratis(id: number, req: any): Promise<{
+        id: any;
+        total: any;
+        frete_cobrado: any;
+    } | {
+        message: string;
+        pedido: {
+            id: any;
+            total: any;
+            frete_cobrado: any;
+            status: any;
+        };
+    }>;
     setTrocoPara(id: number, body: {
         troco_para: number;
     }, req: any): Promise<{
@@ -377,6 +390,7 @@ export declare class RestauranteController {
             id: any;
             total: any;
             troco_para: any;
+            frete_cobrado: any;
             entrega_pagamento: any;
             status: any;
             payment_method: any;

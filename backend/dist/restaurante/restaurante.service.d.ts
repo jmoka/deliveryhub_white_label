@@ -442,6 +442,19 @@ export declare class RestauranteService {
         valor: number;
         meio?: string;
     }): Promise<any>;
+    setFreteGratis(restaurantId: number, pedidoId: number): Promise<{
+        id: any;
+        total: any;
+        frete_cobrado: any;
+    } | {
+        message: string;
+        pedido: {
+            id: any;
+            total: any;
+            frete_cobrado: any;
+            status: any;
+        };
+    }>;
     setTrocoPara(restaurantId: number, pedidoId: number, trocoPara: number): Promise<{
         id: any;
         total: any;
@@ -475,6 +488,7 @@ export declare class RestauranteService {
             id: any;
             total: any;
             troco_para: any;
+            frete_cobrado: any;
             entrega_pagamento: any;
             status: any;
             payment_method: any;

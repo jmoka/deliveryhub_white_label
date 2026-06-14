@@ -1,0 +1,2 @@
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS frete_cobrado NUMERIC(10,2) NOT NULL DEFAULT 0;

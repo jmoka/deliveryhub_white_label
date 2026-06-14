@@ -763,6 +763,35 @@ let RestauranteService = class RestauranteService {
             throw error;
         return nova;
     }
+    async setFreteGratis(restaurantId, pedidoId) {
+        const { data: pedido, error: errGet } = await this.supabase.client
+            .from('orders')
+            .select('id, total, frete_cobrado, status')
+            .eq('id', pedidoId)
+            .eq('restaurant_id', restaurantId)
+            .maybeSingle();
+        if (errGet)
+            throw errGet;
+        if (!pedido)
+            throw new common_1.NotFoundException('Pedido não encontrado');
+        if (['delivered', 'canceled'].includes(pedido.status)) {
+            throw new common_1.BadRequestException('Não é possível alterar pedido finalizado');
+        }
+        const frete = parseFloat(pedido.frete_cobrado ?? 0);
+        if (frete === 0)
+            return { message: 'Frete já é zero', pedido };
+        const novoTotal = parseFloat((Number(pedido.total) - frete).toFixed(2));
+        const { data, error } = await this.supabase.client
+            .from('orders')
+            .update({ frete_cobrado: 0, total: novoTotal })
+            .eq('id', pedidoId)
+            .eq('restaurant_id', restaurantId)
+            .select('id, total, frete_cobrado')
+            .single();
+        if (error)
+            throw error;
+        return data;
+    }
     async setTrocoPara(restaurantId, pedidoId, trocoPara) {
         if (!trocoPara || trocoPara <= 0)
             throw new common_1.BadRequestException('Valor inválido');

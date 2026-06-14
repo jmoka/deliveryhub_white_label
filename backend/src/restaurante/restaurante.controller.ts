@@ -42,6 +42,14 @@ export class RestauranteController {
     return this.service.atualizarStatusPedido(id, req.restaurantId, body.status);
   }
 
+  @Patch('pedidos/:id/frete-gratis')
+  setFreteGratis(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    return this.service.setFreteGratis(req.restaurantId, id);
+  }
+
   @Patch('pedidos/:id/troco')
   setTrocoPara(
     @Param('id', ParseIntPipe) id: number,

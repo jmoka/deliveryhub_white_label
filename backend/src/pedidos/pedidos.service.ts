@@ -36,7 +36,7 @@ export class PedidosService {
   async buscar(id: number) {
     const { data: pedido, error } = await this.supabase.client
       .from('orders')
-      .select('id, total, troco_para, entrega_pagamento, status, payment_method, restaurant_id, customer_id, user_id, motoboy_id, motoboy_lat, motoboy_lng, motoboy_location_at, delivery_notes, delivery_occurrence, created_at, updated_at')
+      .select('id, total, troco_para, frete_cobrado, entrega_pagamento, status, payment_method, restaurant_id, customer_id, user_id, motoboy_id, motoboy_lat, motoboy_lng, motoboy_location_at, delivery_notes, delivery_occurrence, created_at, updated_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -166,6 +166,7 @@ export class PedidosService {
         troco_para: body.payment_method === 'cash' && body.troco_para ? body.troco_para : null,
         user_id: body.user_id,
         total: parseFloat(total.toFixed(2)),
+        frete_cobrado: parseFloat(frete.toFixed(2)),
         status: 'pending',
         caixa_id: caixaAberto?.id ?? null,
       })

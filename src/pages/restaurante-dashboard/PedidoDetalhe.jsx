@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
-import { setTrocoPara } from '../../services/restauranteService';
+import { setTrocoPara, setFreteGratis } from '../../services/restauranteService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -53,11 +53,20 @@ const SectionTitle = ({ icon, label, color = 'text-[#FF441F]' }) => (
 const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, onDetalheMudou, saldoCaixa = 0 }) => {
   const [trocoInput, setTrocoInput] = useState('');
   const [salvandoTroco, setSalvandoTroco] = useState(false);
+  const [zerrandoFrete, setZerrandoFrete] = useState(false);
 
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
 
   const troco = pedido.troco_para > pedido.total ? Number(pedido.troco_para) - Number(pedido.total) : 0;
+
+  const handleFreteGratis = async () => {
+    if (!confirm(`Zerar frete de ${fmt(pedido?.frete_cobrado)} neste pedido? O total será reduzido.`)) return;
+    setZerrandoFrete(true);
+    try { await setFreteGratis(pedido.id); onDetalheMudou?.(); }
+    catch (e) { alert(e.message); }
+    finally { setZerrandoFrete(false); }
+  };
 
   const handleSalvarTroco = async () => {
     const val = parseFloat(trocoInput.replace(',', '.'));
@@ -327,7 +336,34 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
               </div>
             </div>
           ))}
-          <div className="flex justify-between pt-3 border-t border-[#E4E4E7] mt-3">
+          {/* Frete motoboy */}
+          <div className="flex items-center justify-between pt-2 border-t border-[#E4E4E7] mt-2">
+            <div className="flex items-center gap-1.5">
+              <Icon name="Truck" size={13} className="text-[#71717A]" />
+              <span className="text-sm text-[#71717A]">Frete motoboy</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {pedido.frete_cobrado > 0 ? (
+                <>
+                  <span className="text-sm font-medium text-[#18181B]">{fmt(pedido.frete_cobrado)}</span>
+                  {!isCanceled && pedido.status !== 'delivered' && (
+                    <button
+                      onClick={handleFreteGratis}
+                      disabled={zerrandoFrete}
+                      title="Zerar frete para este pedido"
+                      className="text-xs px-2 py-0.5 border border-green-400 text-green-700 bg-green-50 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors"
+                    >
+                      {zerrandoFrete ? '...' : 'Grátis'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span className="text-sm font-medium text-green-600">Grátis</span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-between pt-2 border-t border-[#E4E4E7] mt-2">
             <span className="text-sm font-bold text-[#18181B]">Total</span>
             <span className="text-lg font-black text-[#FF441F]">{fmt(pedido.total)}</span>
           </div>

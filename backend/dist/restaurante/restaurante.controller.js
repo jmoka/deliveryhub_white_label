@@ -37,6 +37,9 @@ let RestauranteController = class RestauranteController {
     atualizarStatus(id, body, req) {
         return this.service.atualizarStatusPedido(id, req.restaurantId, body.status);
     }
+    setFreteGratis(id, req) {
+        return this.service.setFreteGratis(req.restaurantId, id);
+    }
     setTrocoPara(id, body, req) {
         return this.service.setTrocoPara(req.restaurantId, id, body.troco_para);
     }
@@ -186,6 +189,14 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object, Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "atualizarStatus", null);
+__decorate([
+    (0, common_1.Patch)('pedidos/:id/frete-gratis'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "setFreteGratis", null);
 __decorate([
     (0, common_1.Patch)('pedidos/:id/troco'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
