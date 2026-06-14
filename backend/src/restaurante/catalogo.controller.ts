@@ -11,12 +11,22 @@ export class CatalogoController {
   @Get('acesso')
   async getAcesso() {
     const nets = os.networkInterfaces();
-    const ips: string[] = [];
+    const todos: string[] = [];
     for (const iface of Object.values(nets)) {
       for (const net of iface ?? []) {
-        if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+        if (net.family === 'IPv4' && !net.internal) todos.push(net.address);
       }
     }
+    // Prioriza 192.168.x.x (WiFi doméstico/corporativo) e 10.x.x.x (redes corporativas).
+    // Descarta 172.16-31.x.x que são WSL, Docker, Hyper-V — não acessíveis por dispositivos reais.
+    const score = (ip: string) => {
+      if (/^192\.168\./.test(ip)) return 0;
+      if (/^10\./.test(ip)) return 1;
+      if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return 99; // virtual — vai por último
+      return 2;
+    };
+    const ips = todos.sort((a, b) => score(a) - score(b));
+
     const { data } = await this.supabase.client
       .from('platform_settings')
       .select('config')

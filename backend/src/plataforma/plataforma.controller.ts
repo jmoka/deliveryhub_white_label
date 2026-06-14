@@ -22,12 +22,19 @@ export class PlataformaController {
   @Get('rede')
   getRede() {
     const nets = os.networkInterfaces();
-    const ips: string[] = [];
+    const todos: string[] = [];
     for (const iface of Object.values(nets)) {
       for (const net of iface ?? []) {
-        if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+        if (net.family === 'IPv4' && !net.internal) todos.push(net.address);
       }
     }
+    const score = (ip: string) => {
+      if (/^192\.168\./.test(ip)) return 0;
+      if (/^10\./.test(ip)) return 1;
+      if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return 99;
+      return 2;
+    };
+    const ips = todos.sort((a, b) => score(a) - score(b));
     return { ips, porta: 4028 };
   }
 
