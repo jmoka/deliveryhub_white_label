@@ -62,6 +62,7 @@ export declare class RestauranteService {
             image_url: any;
             is_active: any;
             category_id: any;
+            restaurant_id: any;
             tags: any;
             destaque: any;
             created_at: any;
@@ -140,11 +141,13 @@ export declare class RestauranteService {
         limite?: number;
     }): Promise<{
         clientes: {
+            pedidos_count: number;
+            total_gasto: number;
+            ultimo_pedido: string | null;
             id: any;
             name: any;
             email: any;
             phone_e164: any;
-            address_json: any;
             notes: any;
             user_id: any;
             created_at: any;
@@ -155,14 +158,12 @@ export declare class RestauranteService {
         name: string;
         email?: string;
         phone_e164?: string;
-        address_json?: object;
         notes?: string;
     }): Promise<any>;
     atualizarCliente(clienteId: number, restaurantId: number, body: Partial<{
         name: string;
         email: string;
         phone_e164: string;
-        address_json: object;
         notes: string;
     }>): Promise<any>;
     updateEmpresa(restaurantId: number, body: {
@@ -185,12 +186,16 @@ export declare class RestauranteService {
         pagbank_seller_account_id: any;
         configurado: boolean;
         split_ativo: boolean;
+        taxa_pagbank_percent: any;
+        chave_pix: any;
     }>;
     updateConfig(restaurantId: number, body: {
         pagbank_token?: string;
         pagbank_sandbox?: boolean;
         pagbank_webhook_url?: string;
         pagbank_seller_account_id?: string;
+        taxa_pagbank_percent?: number | null;
+        chave_pix?: string | null;
     }): Promise<{
         pagbank_sandbox: any;
         pagbank_webhook_url: any;
@@ -198,9 +203,14 @@ export declare class RestauranteService {
         pagbank_seller_account_id: any;
         configurado: boolean;
         split_ativo: boolean;
+        taxa_pagbank_percent: any;
+        chave_pix: any;
     }>;
     toggleStatus(restaurantId: number, aberto: boolean): Promise<{
         aberto: boolean;
+    }>;
+    renovarTokenCozinha(restaurantId: number): Promise<{
+        cozinha_token: `${string}-${string}-${string}-${string}-${string}`;
     }>;
     getCozinha(restaurantId: number): Promise<{
         pedidos: any[];
@@ -221,6 +231,7 @@ export declare class RestauranteService {
         aberto_em?: undefined;
         valor_inicial?: undefined;
         saidas?: undefined;
+        entradas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
@@ -230,6 +241,7 @@ export declare class RestauranteService {
         aberto_em: any;
         valor_inicial: any;
         saidas: any[];
+        entradas: any[];
         pedidos: {
             id: any;
             total: any;
@@ -255,7 +267,12 @@ export declare class RestauranteService {
             cancelados: number;
             total_vendas: any;
             total_saidas: any;
+            total_entradas: any;
             saldo: number;
+            por_pagamento: Record<string, number>;
+            especie_calculada: number;
+            saidas_especie: any;
+            entradas_especie: any;
         };
         saldo_caixa: number;
         saldo_fechados_pendente: number;
@@ -278,6 +295,7 @@ export declare class RestauranteService {
         aberto_em?: undefined;
         valor_inicial?: undefined;
         saidas?: undefined;
+        entradas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
@@ -287,6 +305,7 @@ export declare class RestauranteService {
         aberto_em: any;
         valor_inicial: any;
         saidas: any[];
+        entradas: any[];
         pedidos: {
             id: any;
             total: any;
@@ -312,16 +331,19 @@ export declare class RestauranteService {
             cancelados: number;
             total_vendas: any;
             total_saidas: any;
+            total_entradas: any;
             saldo: number;
+            por_pagamento: Record<string, number>;
+            especie_calculada: number;
+            saidas_especie: any;
+            entradas_especie: any;
         };
         saldo_caixa: number;
         saldo_fechados_pendente: number;
         caixa_expirado?: undefined;
     }>;
     fecharCaixa(restaurantId: number, body?: {
-        banco?: number;
-        retirada?: number;
-        permanece?: number;
+        dinheiro_contado?: number;
     }): Promise<{
         fechamento: {
             id: any;
@@ -337,15 +359,24 @@ export declare class RestauranteService {
                 cancelados: number;
                 total_vendas: any;
                 total_saidas: any;
+                total_entradas: any;
                 saldo: number;
+                por_pagamento: Record<string, number>;
+                especie_calculada: number;
+                saidas_especie: any;
+                entradas_especie: any;
             };
             destinacao_fechamento: {
-                banco: number;
-                retirada: number;
-                permanece: number;
-                saldo: number;
+                dinheiro_contado: number;
+                especie_calculada: number;
+                diferenca: number;
+                por_pagamento: Record<string, number>;
+                conferencia_aprovada: boolean;
             };
         };
+    }>;
+    aprovarConferencia(restaurantId: number, caixaId: number): Promise<{
+        aprovado: boolean;
     }>;
     fecharComTransferencia(restaurantId: number, body: {
         nome_operador: string;
@@ -363,7 +394,12 @@ export declare class RestauranteService {
                 cancelados: number;
                 total_vendas: any;
                 total_saidas: any;
+                total_entradas: any;
                 saldo: number;
+                por_pagamento: Record<string, number>;
+                especie_calculada: number;
+                saidas_especie: any;
+                entradas_especie: any;
             };
         };
         novo_caixa: any;
@@ -377,6 +413,7 @@ export declare class RestauranteService {
             aberto_em: any;
             fechado_em: any;
             resumo: any;
+            destinacao_fechamento: any;
         }[];
     }>;
     getCaixaDetalhe(restaurantId: number, caixaId: number): Promise<{
@@ -397,6 +434,16 @@ export declare class RestauranteService {
         valor: number;
         meio?: string;
     }): Promise<any>;
+    adicionarEntrada(restaurantId: number, body: {
+        descricao: string;
+        valor: number;
+        meio?: string;
+    }): Promise<any>;
+    setTrocoPara(restaurantId: number, pedidoId: number, trocoPara: number): Promise<{
+        id: any;
+        total: any;
+        troco_para: any;
+    }>;
     uploadImage(folder: string, file: Express.Multer.File): Promise<{
         url: string;
     }>;
@@ -424,6 +471,8 @@ export declare class RestauranteService {
         pedido: {
             id: any;
             total: any;
+            troco_para: any;
+            entrega_pagamento: any;
             status: any;
             payment_method: any;
             restaurant_id: any;
@@ -462,6 +511,12 @@ export declare class RestauranteService {
             name: any;
             phone: any;
             access_token: any;
+        } | null;
+        pagamento_pago: {
+            id: any;
+            valor: any;
+            tipo: any;
+            status: any;
         } | null;
     }>;
 }

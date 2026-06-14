@@ -104,8 +104,27 @@ let PedidosService = class PedidosService {
                 .select('id')
                 .eq('user_id', body.user_id)
                 .maybeSingle();
-            if (c)
+            if (c) {
                 customerId = c.id;
+            }
+            else {
+                const { data: profile } = await this.supabase.client
+                    .from('user_profiles')
+                    .select('name, email')
+                    .eq('id', body.user_id)
+                    .maybeSingle();
+                const { data: novoCliente } = await this.supabase.client
+                    .from('customers')
+                    .insert({
+                    user_id: body.user_id,
+                    name: profile?.name ?? 'Cliente',
+                    email: profile?.email ?? null,
+                })
+                    .select('id')
+                    .single();
+                if (novoCliente)
+                    customerId = novoCliente.id;
+            }
         }
         const { data: caixaAberto } = await this.supabase.client
             .from('caixas')
@@ -119,6 +138,7 @@ let PedidosService = class PedidosService {
             restaurant_id: body.restaurant_id,
             customer_id: customerId,
             payment_method: body.payment_method,
+            troco_para: body.payment_method === 'cash' && body.troco_para ? body.troco_para : null,
             user_id: body.user_id,
             total: parseFloat(total.toFixed(2)),
             status: 'pending',

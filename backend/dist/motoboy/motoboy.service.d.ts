@@ -16,6 +16,13 @@ export declare class MotoboyService {
         name: string;
         phone?: string;
     }): Promise<any>;
+    renovarToken(id: number, restaurantId: number): Promise<{
+        id: any;
+        name: any;
+        phone: any;
+        access_token: any;
+        is_active: any;
+    }>;
     toggle(id: number, restaurantId: number, ativo: boolean): Promise<any>;
     atribuir(pedidoId: number, restaurantId: number, motoboyId: number): Promise<{
         ok: boolean;

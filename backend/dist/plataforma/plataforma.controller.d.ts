@@ -21,6 +21,10 @@ export declare class PlataformaController {
         cloudflare_tunnel_token_masked: string | null;
         cloudflare_configurado: boolean;
     }>;
+    getRede(): {
+        ips: string[];
+        porta: number;
+    };
     metricas(): Promise<{
         resumo: {
             total_empresas: number;

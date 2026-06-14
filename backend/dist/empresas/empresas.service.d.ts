@@ -12,6 +12,7 @@ export declare class EmpresasService {
             comissao_pct: any;
             user_id: any;
             slug: any;
+            bloqueado: any;
             created_at: any;
         }[];
         total: number;
@@ -53,6 +54,11 @@ export declare class EmpresasService {
         payment_config: object;
         user_id: string;
     }>): Promise<any>;
+    bloquear(id: number, bloqueado: boolean): Promise<{
+        id: any;
+        name: any;
+        bloqueado: any;
+    }>;
     remover(id: number): Promise<{
         mensagem: string;
     }>;

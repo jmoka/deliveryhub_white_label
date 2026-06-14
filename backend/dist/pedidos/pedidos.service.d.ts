@@ -80,6 +80,7 @@ export declare class PedidosService {
         restaurant_id: number;
         customer_id?: number;
         payment_method: string;
+        troco_para?: number;
         user_id: string;
         itens: {
             product_id: number;

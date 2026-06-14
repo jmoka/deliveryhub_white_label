@@ -11,6 +11,7 @@ export declare class EmpresasController {
             comissao_pct: any;
             user_id: any;
             slug: any;
+            bloqueado: any;
             created_at: any;
         }[];
         total: number;
@@ -43,6 +44,13 @@ export declare class EmpresasController {
         user_id?: string;
     }): Promise<any>;
     atualizar(id: number, body: any): Promise<any>;
+    bloquear(id: number, body: {
+        bloqueado: boolean;
+    }): Promise<{
+        id: any;
+        name: any;
+        bloqueado: any;
+    }>;
     remover(id: number): Promise<{
         mensagem: string;
     }>;

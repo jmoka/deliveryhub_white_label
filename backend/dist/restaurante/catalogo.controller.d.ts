@@ -2,6 +2,11 @@ import { SupabaseService } from '../supabase/supabase.service';
 export declare class CatalogoController {
     private supabase;
     constructor(supabase: SupabaseService);
+    getAcesso(): Promise<{
+        lan_ips: string[];
+        porta: number;
+        cloudflare_domain: any;
+    }>;
     listarRestaurantes(): Promise<{
         restaurantes: {
             id: any;
@@ -22,8 +27,10 @@ export declare class CatalogoController {
             preco_promo: any;
             image_url: any;
             category_id: any;
-            tipo: any;
+            restaurant_id: any;
+            tags: any;
             destaque: any;
+            is_active: any;
         }[];
     }>;
     cardapio(slug: string): Promise<{
@@ -45,8 +52,10 @@ export declare class CatalogoController {
                 preco_promo: any;
                 image_url: any;
                 category_id: any;
-                tipo: any;
+                restaurant_id: any;
+                tags: any;
                 destaque: any;
+                is_active: any;
             }[];
             id: any;
             name: any;
@@ -59,8 +68,10 @@ export declare class CatalogoController {
             preco_promo: any;
             image_url: any;
             category_id: any;
-            tipo: any;
+            restaurant_id: any;
+            tags: any;
             destaque: any;
+            is_active: any;
         }[];
         promos: {
             id: any;
@@ -70,19 +81,11 @@ export declare class CatalogoController {
             preco_promo: any;
             image_url: any;
             category_id: any;
-            tipo: any;
+            restaurant_id: any;
+            tags: any;
             destaque: any;
+            is_active: any;
         }[];
-        combos: {
-            id: any;
-            name: any;
-            description: any;
-            price: any;
-            preco_promo: any;
-            image_url: any;
-            category_id: any;
-            tipo: any;
-            destaque: any;
-        }[];
+        combos: any[];
     }>;
 }

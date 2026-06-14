@@ -27,6 +27,9 @@ let RestauranteMotoboysController = class RestauranteMotoboysController {
     criar(req, body) {
         return this.service.criar(req.restaurantId, body);
     }
+    renovarToken(id, req) {
+        return this.service.renovarToken(id, req.restaurantId);
+    }
     toggle(id, body, req) {
         return this.service.toggle(id, req.restaurantId, body.ativo);
     }
@@ -50,6 +53,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteMotoboysController.prototype, "criar", null);
+__decorate([
+    (0, common_1.Patch)(':id/renovar-token'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteMotoboysController.prototype, "renovarToken", null);
 __decorate([
     (0, common_1.Patch)(':id/toggle'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),

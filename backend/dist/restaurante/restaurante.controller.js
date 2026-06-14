@@ -37,6 +37,9 @@ let RestauranteController = class RestauranteController {
     atualizarStatus(id, body, req) {
         return this.service.atualizarStatusPedido(id, req.restaurantId, body.status);
     }
+    setTrocoPara(id, body, req) {
+        return this.service.setTrocoPara(req.restaurantId, id, body.troco_para);
+    }
     meusProdutos(req) {
         return this.service.meusProdutos(req.restaurantId);
     }
@@ -97,6 +100,9 @@ let RestauranteController = class RestauranteController {
     fecharCaixa(req, body) {
         return this.service.fecharCaixa(req.restaurantId, body);
     }
+    aprovarConferencia(id, req) {
+        return this.service.aprovarConferencia(req.restaurantId, id);
+    }
     fecharComTransferencia(req, body) {
         return this.service.fecharComTransferencia(req.restaurantId, body);
     }
@@ -109,11 +115,17 @@ let RestauranteController = class RestauranteController {
     adicionarSaida(req, body) {
         return this.service.adicionarSaida(req.restaurantId, body);
     }
+    adicionarEntrada(req, body) {
+        return this.service.adicionarEntrada(req.restaurantId, body);
+    }
     buscarPedidoDetalhe(id, req) {
         return this.service.buscarPedidoDoRestaurante(req.restaurantId, id);
     }
     cozinha(req) {
         return this.service.getCozinha(req.restaurantId);
+    }
+    renovarTokenCozinha(req) {
+        return this.service.renovarTokenCozinha(req.restaurantId);
     }
     setupStorage() {
         return this.service.setupStorage();
@@ -174,6 +186,15 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object, Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "atualizarStatus", null);
+__decorate([
+    (0, common_1.Patch)('pedidos/:id/troco'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "setTrocoPara", null);
 __decorate([
     (0, common_1.Get)('produtos'),
     __param(0, (0, common_1.Req)()),
@@ -326,6 +347,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "fecharCaixa", null);
 __decorate([
+    (0, common_1.Post)('caixa/:id/conferencia'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "aprovarConferencia", null);
+__decorate([
     (0, common_1.Post)('caixa/fechar-e-transferir'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Body)()),
@@ -357,6 +386,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "adicionarSaida", null);
 __decorate([
+    (0, common_1.Post)('caixa/entrada'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "adicionarEntrada", null);
+__decorate([
     (0, common_1.Get)('pedidos/:id/detalhe'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Req)()),
@@ -371,6 +408,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], RestauranteController.prototype, "cozinha", null);
+__decorate([
+    (0, common_1.Patch)('renovar-token-cozinha'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], RestauranteController.prototype, "renovarTokenCozinha", null);
 __decorate([
     (0, common_1.Post)('storage/setup'),
     __metadata("design:type", Function),

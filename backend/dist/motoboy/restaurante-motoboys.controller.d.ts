@@ -16,6 +16,13 @@ export declare class RestauranteMotoboysController {
         name: string;
         phone?: string;
     }): Promise<any>;
+    renovarToken(id: number, req: any): Promise<{
+        id: any;
+        name: any;
+        phone: any;
+        access_token: any;
+        is_active: any;
+    }>;
     toggle(id: number, body: {
         ativo: boolean;
     }, req: any): Promise<any>;

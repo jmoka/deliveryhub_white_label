@@ -50,6 +50,13 @@ export declare class RestauranteController {
         restaurant_id: any;
         updated_at: any;
     }>;
+    setTrocoPara(id: number, body: {
+        troco_para: number;
+    }, req: any): Promise<{
+        id: any;
+        total: any;
+        troco_para: any;
+    }>;
     meusProdutos(req: any): Promise<{
         produtos: {
             id: any;
@@ -60,6 +67,7 @@ export declare class RestauranteController {
             image_url: any;
             is_active: any;
             category_id: any;
+            restaurant_id: any;
             tags: any;
             destaque: any;
             created_at: any;
@@ -98,11 +106,13 @@ export declare class RestauranteController {
     }>;
     listarClientes(req: any, busca?: string, limite?: string): Promise<{
         clientes: {
+            pedidos_count: number;
+            total_gasto: number;
+            ultimo_pedido: string | null;
             id: any;
             name: any;
             email: any;
             phone_e164: any;
-            address_json: any;
             notes: any;
             user_id: any;
             created_at: any;
@@ -120,6 +130,8 @@ export declare class RestauranteController {
         pagbank_seller_account_id: any;
         configurado: boolean;
         split_ativo: boolean;
+        taxa_pagbank_percent: any;
+        chave_pix: any;
     }>;
     updateConfig(req: any, body: any): Promise<{
         pagbank_sandbox: any;
@@ -128,6 +140,8 @@ export declare class RestauranteController {
         pagbank_seller_account_id: any;
         configurado: boolean;
         split_ativo: boolean;
+        taxa_pagbank_percent: any;
+        chave_pix: any;
     }>;
     toggleStatus(req: any, body: {
         aberto: boolean;
@@ -148,6 +162,7 @@ export declare class RestauranteController {
         aberto_em?: undefined;
         valor_inicial?: undefined;
         saidas?: undefined;
+        entradas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
@@ -157,6 +172,7 @@ export declare class RestauranteController {
         aberto_em: any;
         valor_inicial: any;
         saidas: any[];
+        entradas: any[];
         pedidos: {
             id: any;
             total: any;
@@ -182,7 +198,12 @@ export declare class RestauranteController {
             cancelados: number;
             total_vendas: any;
             total_saidas: any;
+            total_entradas: any;
             saldo: number;
+            por_pagamento: Record<string, number>;
+            especie_calculada: number;
+            saidas_especie: any;
+            entradas_especie: any;
         };
         saldo_caixa: number;
         saldo_fechados_pendente: number;
@@ -205,6 +226,7 @@ export declare class RestauranteController {
         aberto_em?: undefined;
         valor_inicial?: undefined;
         saidas?: undefined;
+        entradas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
@@ -214,6 +236,7 @@ export declare class RestauranteController {
         aberto_em: any;
         valor_inicial: any;
         saidas: any[];
+        entradas: any[];
         pedidos: {
             id: any;
             total: any;
@@ -239,16 +262,19 @@ export declare class RestauranteController {
             cancelados: number;
             total_vendas: any;
             total_saidas: any;
+            total_entradas: any;
             saldo: number;
+            por_pagamento: Record<string, number>;
+            especie_calculada: number;
+            saidas_especie: any;
+            entradas_especie: any;
         };
         saldo_caixa: number;
         saldo_fechados_pendente: number;
         caixa_expirado?: undefined;
     }>;
     fecharCaixa(req: any, body: {
-        banco?: number;
-        retirada?: number;
-        permanece?: number;
+        dinheiro_contado?: number;
     }): Promise<{
         fechamento: {
             id: any;
@@ -264,15 +290,24 @@ export declare class RestauranteController {
                 cancelados: number;
                 total_vendas: any;
                 total_saidas: any;
+                total_entradas: any;
                 saldo: number;
+                por_pagamento: Record<string, number>;
+                especie_calculada: number;
+                saidas_especie: any;
+                entradas_especie: any;
             };
             destinacao_fechamento: {
-                banco: number;
-                retirada: number;
-                permanece: number;
-                saldo: number;
+                dinheiro_contado: number;
+                especie_calculada: number;
+                diferenca: number;
+                por_pagamento: Record<string, number>;
+                conferencia_aprovada: boolean;
             };
         };
+    }>;
+    aprovarConferencia(id: number, req: any): Promise<{
+        aprovado: boolean;
     }>;
     fecharComTransferencia(req: any, body: {
         nome_operador: string;
@@ -290,7 +325,12 @@ export declare class RestauranteController {
                 cancelados: number;
                 total_vendas: any;
                 total_saidas: any;
+                total_entradas: any;
                 saldo: number;
+                por_pagamento: Record<string, number>;
+                especie_calculada: number;
+                saidas_especie: any;
+                entradas_especie: any;
             };
         };
         novo_caixa: any;
@@ -304,6 +344,7 @@ export declare class RestauranteController {
             aberto_em: any;
             fechado_em: any;
             resumo: any;
+            destinacao_fechamento: any;
         }[];
     }>;
     getCaixaDetalhe(id: number, req: any): Promise<{
@@ -324,10 +365,17 @@ export declare class RestauranteController {
         valor: number;
         meio?: string;
     }): Promise<any>;
+    adicionarEntrada(req: any, body: {
+        descricao: string;
+        valor: number;
+        meio?: string;
+    }): Promise<any>;
     buscarPedidoDetalhe(id: number, req: any): Promise<{
         pedido: {
             id: any;
             total: any;
+            troco_para: any;
+            entrega_pagamento: any;
             status: any;
             payment_method: any;
             restaurant_id: any;
@@ -367,9 +415,18 @@ export declare class RestauranteController {
             phone: any;
             access_token: any;
         } | null;
+        pagamento_pago: {
+            id: any;
+            valor: any;
+            tipo: any;
+            status: any;
+        } | null;
     }>;
     cozinha(req: any): Promise<{
         pedidos: any[];
+    }>;
+    renovarTokenCozinha(req: any): Promise<{
+        cozinha_token: `${string}-${string}-${string}-${string}-${string}`;
     }>;
     setupStorage(): Promise<{
         ok: boolean;

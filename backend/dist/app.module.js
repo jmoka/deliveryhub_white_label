@@ -22,6 +22,7 @@ const pagamentos_module_1 = require("./pagamentos/pagamentos.module");
 const restaurante_module_1 = require("./restaurante/restaurante.module");
 const motoboy_module_1 = require("./motoboy/motoboy.module");
 const perfil_module_1 = require("./perfil/perfil.module");
+const tags_module_1 = require("./tags/tags.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -48,6 +49,7 @@ exports.AppModule = AppModule = __decorate([
             restaurante_module_1.RestauranteModule,
             motoboy_module_1.MotoboyModule,
             perfil_module_1.PerfilModule,
+            tags_module_1.TagsModule,
         ],
     })
 ], AppModule);
