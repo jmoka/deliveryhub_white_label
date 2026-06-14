@@ -170,9 +170,18 @@ const CozinhaLogin = ({ onLogin }) => {
 
 const RestauranteCozinha = () => {
   const navigate = useNavigate();
-  // Modo token: acessado via link de cozinha sem conta de dono
-  const [modoToken, setModoToken] = useState(false);
-  const [authed, setAuthed] = useState(false);
+
+  // Detecta modo token sincronamente — antes da primeira renderização
+  const [modoToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('cozinha_token');
+    if (urlToken) {
+      setCozinhaToken(urlToken);
+      window.history.replaceState({}, '', '/restaurante/cozinha');
+    }
+    return !!getCozinhaToken();
+  });
+  const [authed, setAuthed] = useState(() => !!getCozinhaToken());
   const [pedidos, setPedidos] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
   const [restauranteId, setRestauranteId] = useState(null);
@@ -244,20 +253,6 @@ const RestauranteCozinha = () => {
       setErro(e.message);
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  // Detectar token na URL (acesso via link de cozinha)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('cozinha_token');
-    if (urlToken) {
-      setCozinhaToken(urlToken);
-      window.history.replaceState({}, '', '/restaurante/cozinha');
-    }
-    if (getCozinhaToken()) {
-      setModoToken(true);
-      setAuthed(true);
     }
   }, []);
 
