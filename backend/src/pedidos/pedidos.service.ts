@@ -105,7 +105,7 @@ export class PedidosService {
       return acc + prodMap[item.product_id].price * item.quantity;
     }, 0);
 
-    // Resolve customer_id pela plataforma (não por restaurante)
+    // Resolve customer_id — busca existente ou cria novo ao primeiro pedido
     let customerId = body.customer_id ?? null;
     if (!customerId && body.user_id) {
       const { data: c } = await this.supabase.client
@@ -113,7 +113,29 @@ export class PedidosService {
         .select('id')
         .eq('user_id', body.user_id)
         .maybeSingle();
-      if (c) customerId = c.id;
+
+      if (c) {
+        customerId = c.id;
+      } else {
+        // Cria registro de cliente usando dados do user_profile
+        const { data: profile } = await this.supabase.client
+          .from('user_profiles')
+          .select('name, email')
+          .eq('id', body.user_id)
+          .maybeSingle();
+
+        const { data: novoCliente } = await this.supabase.client
+          .from('customers')
+          .insert({
+            user_id: body.user_id,
+            name: profile?.name ?? 'Cliente',
+            email: profile?.email ?? null,
+          })
+          .select('id')
+          .single();
+
+        if (novoCliente) customerId = novoCliente.id;
+      }
     }
 
     // Busca caixa aberto para vincular o pedido

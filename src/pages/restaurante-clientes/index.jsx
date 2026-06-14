@@ -2,15 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getClientes, criarCliente, atualizarCliente } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
+import Icon from '../../components/AppIcon';
 
-const EMPTY_FORM = { name: '', email: '', phone_e164: '', notes: '' };
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+const fmtData = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
 
+/* ── Modal criar/editar ─────────────────────────────────────────── */
 const Modal = ({ cliente, onClose, onSave }) => {
   const [form, setForm] = useState({
-    name: cliente?.name ?? '',
-    email: cliente?.email ?? '',
+    name:       cliente?.name       ?? '',
+    email:      cliente?.email      ?? '',
     phone_e164: cliente?.phone_e164 ?? '',
-    notes: cliente?.notes ?? '',
+    notes:      cliente?.notes      ?? '',
   });
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -36,62 +39,61 @@ const Modal = ({ cliente, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold mb-4">{cliente ? 'Editar Cliente' : 'Novo Cliente'}</h3>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-[#18181B]">{cliente ? 'Editar cliente' : 'Novo cliente'}</h3>
+          <button onClick={onClose} className="p-1 text-[#71717A] hover:text-[#27272A]">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+            <label className="block text-xs font-semibold text-[#27272A] mb-1">Nome *</label>
             <input
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               placeholder="Nome completo"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-xs font-semibold text-[#27272A] mb-1">Email</label>
             <input
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               placeholder="email@exemplo.com"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+            <label className="block text-xs font-semibold text-[#27272A] mb-1">Telefone</label>
             <input
               value={form.phone_e164}
               onChange={(e) => setForm((f) => ({ ...f, phone_e164: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               placeholder="+5511999999999"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+            <label className="block text-xs font-semibold text-[#27272A] mb-1">Observações</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm"
+              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               rows={2}
-              placeholder="Preferências, restrições, etc."
+              placeholder="Preferências, restrições alimentares..."
             />
           </div>
-          {erro && <p className="text-sm text-red-600">{erro}</p>}
+          {erro && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-2">{erro}</p>}
           <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-2 border rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-            >
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 border border-[#E4E4E7] text-[#27272A] text-sm font-semibold rounded-xl hover:bg-[#F4F4F5]">
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={salvando}
-              className="flex-1 py-2 bg-[#FF441F] text-white rounded-lg text-sm hover:bg-[#e03b1a] disabled:opacity-50"
-            >
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50">
               {salvando ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
@@ -101,6 +103,46 @@ const Modal = ({ cliente, onClose, onSave }) => {
   );
 };
 
+/* ── Card mobile ────────────────────────────────────────────────── */
+const ClienteCard = ({ c, onEditar }) => (
+  <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-10 h-10 bg-[#FF441F]/10 rounded-full flex items-center justify-center flex-shrink-0">
+          <Icon name="User" size={18} className="text-[#FF441F]" />
+        </div>
+        <div className="min-w-0">
+          <p className="font-semibold text-[#18181B] truncate">{c.name}</p>
+          {c.email && <p className="text-xs text-[#71717A] truncate">{c.email}</p>}
+          {c.phone_e164 && <p className="text-xs text-[#71717A] font-mono">{c.phone_e164}</p>}
+        </div>
+      </div>
+      <button onClick={() => onEditar(c)}
+        className="flex-shrink-0 p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors">
+        <Icon name="Pencil" size={15} />
+      </button>
+    </div>
+    <div className="flex gap-3 text-center">
+      <div className="flex-1 bg-[#FAFAFA] rounded-xl p-2">
+        <p className="text-lg font-black text-[#FF441F]">{c.pedidos_count}</p>
+        <p className="text-[10px] text-[#71717A] font-medium">pedidos</p>
+      </div>
+      <div className="flex-1 bg-[#FAFAFA] rounded-xl p-2">
+        <p className="text-sm font-black text-[#18181B]">{fmt(c.total_gasto)}</p>
+        <p className="text-[10px] text-[#71717A] font-medium">total gasto</p>
+      </div>
+      <div className="flex-1 bg-[#FAFAFA] rounded-xl p-2">
+        <p className="text-xs font-bold text-[#27272A]">{fmtData(c.ultimo_pedido)}</p>
+        <p className="text-[10px] text-[#71717A] font-medium">último pedido</p>
+      </div>
+    </div>
+    {c.notes && (
+      <p className="text-xs text-[#71717A] bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">{c.notes}</p>
+    )}
+  </div>
+);
+
+/* ── Página principal ───────────────────────────────────────────── */
 const RestauranteClientes = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -109,7 +151,7 @@ const RestauranteClientes = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [busca, setBusca] = useState('');
-  const [modal, setModal] = useState(null); // null | 'novo' | cliente_obj
+  const [modal, setModal] = useState(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -140,96 +182,127 @@ const RestauranteClientes = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#18181B]">Clientes</h1>
-          <p className="text-sm text-[#71717A]">{total} cadastrado(s)</p>
-        </div>
-        <nav className="flex gap-1.5 flex-wrap justify-end">
-          {links.map((l) => (
-            <button key={l.path} onClick={() => navigate(l.path)}
-              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-                l.path === '/restaurante/clientes'
-                  ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
-                  : 'text-[#27272A] hover:bg-[#F4F4F5]'
-              }`}>
-              {l.label}
+      <header className="bg-white border-b border-[#E4E4E7] px-4 sm:px-6 py-4">
+        <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl font-bold text-[#18181B]">Clientes</h1>
+            <p className="text-sm text-[#71717A]">{total} cliente{total !== 1 ? 's' : ''} neste restaurante</p>
+          </div>
+          <nav className="flex gap-1.5 flex-wrap">
+            {links.map((l) => (
+              <button key={l.path} onClick={() => navigate(l.path)}
+                className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  l.path === '/restaurante/clientes'
+                    ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
+                    : 'text-[#27272A] hover:bg-[#F4F4F5]'
+                }`}>
+                {l.label}
+              </button>
+            ))}
+            <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+              className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
+              Sair
             </button>
-          ))}
-          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-            className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
-            Sair
-          </button>
-        </nav>
+          </nav>
+        </div>
       </header>
 
-      <main className="p-6 max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nome ou email..."
-            className="flex-1 border rounded-lg px-3 py-2 text-sm max-w-xs"
-          />
-          <button
-            onClick={() => setModal('novo')}
-            className="px-4 py-2 bg-[#FF441F] text-white text-sm font-semibold rounded-lg hover:bg-[#e03b1a]"
-          >
-            + Novo cliente
+      <main className="p-4 sm:p-6 max-w-5xl mx-auto">
+        {/* Barra de busca + botão */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="relative flex-1 min-w-0" style={{ minWidth: '200px' }}>
+            <Icon name="Search" size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]" />
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome, email ou telefone..."
+              className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
+            />
+          </div>
+          <button onClick={() => setModal('novo')}
+            className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
+            <Icon name="UserPlus" size={15} />
+            Novo cliente
           </button>
         </div>
 
-        {erro && <p className="text-red-600 text-sm mb-4">{erro}</p>}
+        {erro && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{erro}</div>
+        )}
 
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : clientes.length === 0 ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
-            <p className="text-gray-400 mb-3">
-              {busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-12 text-center">
+            <Icon name="Users" size={48} className="text-[#E4E4E7] mx-auto mb-4" />
+            <p className="text-[#27272A] font-semibold">
+              {busca ? 'Nenhum cliente encontrado' : 'Nenhum cliente ainda'}
             </p>
-            {!busca && (
-              <button onClick={() => setModal('novo')} className="text-sm text-[#FF441F] hover:underline">
-                Cadastrar primeiro cliente →
-              </button>
-            )}
+            <p className="text-sm text-[#71717A] mt-1">
+              {busca
+                ? 'Tente outro termo de busca'
+                : 'Os clientes aparecem aqui automaticamente ao fazerem o primeiro pedido'}
+            </p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Nome</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 hidden sm:table-cell">Email</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Telefone</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-600 hidden md:table-cell">Desde</th>
-                  <th className="px-4 py-3 w-px whitespace-nowrap" />
-                </tr>
-              </thead>
-              <tbody>
-                {clientes.map((c) => (
-                  <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{c.email ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 hidden md:table-cell font-mono text-xs">{c.phone_e164 ?? '—'}</td>
-                    <td className="px-4 py-3 text-right text-gray-400 text-xs hidden md:table-cell">
-                      {new Date(c.created_at).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => setModal(c)}
-                        className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg"
-                      >
-                        Editar
-                      </button>
-                    </td>
+          <>
+            {/* Tabela — desktop */}
+            <div className="hidden md:block bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E4E4E7] bg-[#FAFAFA]">
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#71717A] uppercase tracking-wide">Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-[#71717A] uppercase tracking-wide">Contato</th>
+                    <th className="px-4 py-3 text-center text-xs font-bold text-[#71717A] uppercase tracking-wide">Pedidos</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-[#71717A] uppercase tracking-wide">Total gasto</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-[#71717A] uppercase tracking-wide">Último pedido</th>
+                    <th className="px-4 py-3 w-px whitespace-nowrap" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {clientes.map((c) => (
+                    <tr key={c.id} className="border-b border-[#E4E4E7] last:border-0 hover:bg-[#FAFAFA] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-[#FF441F]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Icon name="User" size={14} className="text-[#FF441F]" />
+                          </div>
+                          <span className="font-semibold text-[#18181B]">{c.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[#71717A]">
+                        <div>{c.email ?? '—'}</div>
+                        {c.phone_e164 && <div className="text-xs font-mono">{c.phone_e164}</div>}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center justify-center w-7 h-7 bg-[#FF441F]/10 text-[#FF441F] text-xs font-bold rounded-full">
+                          {c.pedidos_count}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold text-[#18181B]">{fmt(c.total_gasto)}</td>
+                      <td className="px-4 py-3 text-right text-[#71717A] text-xs">{fmtData(c.ultimo_pedido)}</td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => setModal(c)}
+                          className="px-3 py-1.5 text-xs font-medium text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors flex items-center gap-1">
+                          <Icon name="Pencil" size={12} />
+                          Editar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Cards — mobile */}
+            <div className="md:hidden space-y-3">
+              {clientes.map((c) => (
+                <ClienteCard key={c.id} c={c} onEditar={setModal} />
+              ))}
+            </div>
+          </>
         )}
       </main>
 

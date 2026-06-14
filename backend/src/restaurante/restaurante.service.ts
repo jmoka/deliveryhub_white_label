@@ -278,26 +278,65 @@ export class RestauranteService {
   }
 
   async listarClientes(restaurantId: number, filtros: { busca?: string; limite?: number }) {
-    let query = this.supabase.client
+    // Busca IDs dos clientes vinculados a este restaurante
+    const { data: crRows, error: crErr } = await this.supabase.client
+      .from('customer_restaurants')
+      .select('customer_id')
+      .eq('restaurant_id', restaurantId);
+
+    if (crErr) throw crErr;
+    const customerIds = (crRows ?? []).map((r) => r.customer_id);
+    if (customerIds.length === 0) return { clientes: [], total: 0 };
+
+    // Busca dados dos clientes com filtro opcional
+    let q = this.supabase.client
       .from('customers')
-      .select('id, name, email, phone_e164, address_json, notes, user_id, created_at')
-      .eq('restaurant_id', restaurantId)
+      .select('id, name, email, phone_e164, notes, user_id, created_at')
+      .in('id', customerIds)
       .order('name');
 
     if (filtros.busca) {
-      query = query.or(`name.ilike.%${filtros.busca}%,email.ilike.%${filtros.busca}%`);
+      q = q.or(`name.ilike.%${filtros.busca}%,email.ilike.%${filtros.busca}%,phone_e164.ilike.%${filtros.busca}%`);
+    }
+    if (filtros.limite) q = q.limit(filtros.limite);
+
+    const { data: clientes, error: cErr } = await q;
+    if (cErr) throw cErr;
+
+    if (!clientes?.length) return { clientes: [], total: 0 };
+
+    // Busca estatísticas de pedidos por cliente neste restaurante
+    const ids = clientes.map((c) => c.id);
+    const { data: pedidos } = await this.supabase.client
+      .from('orders')
+      .select('customer_id, total, created_at')
+      .eq('restaurant_id', restaurantId)
+      .in('customer_id', ids)
+      .neq('status', 'canceled');
+
+    const statsMap: Record<number, { count: number; total: number; ultimo: string | null }> = {};
+    for (const p of pedidos ?? []) {
+      if (!statsMap[p.customer_id]) statsMap[p.customer_id] = { count: 0, total: 0, ultimo: null };
+      statsMap[p.customer_id].count++;
+      statsMap[p.customer_id].total += parseFloat(p.total);
+      if (!statsMap[p.customer_id].ultimo || p.created_at > (statsMap[p.customer_id].ultimo as string)) {
+        statsMap[p.customer_id].ultimo = p.created_at;
+      }
     }
 
-    if (filtros.limite) query = query.limit(filtros.limite);
+    const result = clientes.map((c) => ({
+      ...c,
+      pedidos_count: statsMap[c.id]?.count ?? 0,
+      total_gasto: statsMap[c.id]?.total ?? 0,
+      ultimo_pedido: statsMap[c.id]?.ultimo ?? null,
+    }));
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return { clientes: data ?? [], total: data?.length ?? 0 };
+    return { clientes: result, total: result.length };
   }
 
   async criarCliente(
     restaurantId: number,
-    body: { name: string; email?: string; phone_e164?: string; address_json?: object; notes?: string },
+    body: { name: string; email?: string; phone_e164?: string; notes?: string },
   ) {
     const { data, error } = await this.supabase.client
       .from('customers')
@@ -305,30 +344,36 @@ export class RestauranteService {
         name: body.name,
         email: body.email ?? null,
         phone_e164: body.phone_e164 ?? null,
-        address_json: body.address_json ?? {},
         notes: body.notes ?? null,
-        restaurant_id: restaurantId,
       })
       .select()
       .single();
 
     if (error) throw error;
+
+    // Vincula ao restaurante
+    await this.supabase.client
+      .from('customer_restaurants')
+      .insert({ customer_id: data.id, restaurant_id: restaurantId })
+      .throwOnError();
+
     return data;
   }
 
   async atualizarCliente(
     clienteId: number,
     restaurantId: number,
-    body: Partial<{ name: string; email: string; phone_e164: string; address_json: object; notes: string }>,
+    body: Partial<{ name: string; email: string; phone_e164: string; notes: string }>,
   ) {
-    const { data: existente } = await this.supabase.client
-      .from('customers')
-      .select('id')
-      .eq('id', clienteId)
+    // Verifica vínculo com o restaurante
+    const { data: cr } = await this.supabase.client
+      .from('customer_restaurants')
+      .select('customer_id')
+      .eq('customer_id', clienteId)
       .eq('restaurant_id', restaurantId)
       .maybeSingle();
 
-    if (!existente) throw new NotFoundException('Cliente não encontrado neste restaurante');
+    if (!cr) throw new NotFoundException('Cliente não encontrado neste restaurante');
 
     const { data, error } = await this.supabase.client
       .from('customers')
