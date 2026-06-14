@@ -6,6 +6,7 @@ export declare class PedidosController {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
             status: any;
             payment_method: any;
             restaurant_id: any;
@@ -19,6 +20,7 @@ export declare class PedidosController {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
             status: any;
             payment_method: any;
             restaurant_id: any;

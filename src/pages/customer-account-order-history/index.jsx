@@ -151,7 +151,12 @@ const CustomerAccountOrderHistory = () => {
                     </div>
                     <div className="text-right">
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.color}`}>{s.label}</span>
-                      <p className="text-base font-bold text-orange-600 mt-1">{fmt(p.total)}</p>
+                      {parseFloat(p.frete_cobrado ?? 0) > 0 && (
+                        <p className="text-xs text-gray-400 mt-1 flex items-center justify-end gap-1">
+                          <Icon name="Truck" size={11} /> Frete: {fmt(p.frete_cobrado)}
+                        </p>
+                      )}
+                      <p className="text-base font-bold text-orange-600 mt-0.5">{fmt(p.total)}</p>
                     </div>
                   </div>
                   {!finalizado && (

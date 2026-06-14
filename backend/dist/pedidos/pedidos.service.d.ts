@@ -15,6 +15,7 @@ export declare class PedidosService {
         pedidos: {
             id: any;
             total: any;
+            frete_cobrado: any;
             status: any;
             payment_method: any;
             restaurant_id: any;

@@ -18,7 +18,7 @@ export class PedidosService {
   }) {
     let query = this.supabase.client
       .from('orders')
-      .select('id, total, status, payment_method, restaurant_id, customer_id, user_id, created_at')
+      .select('id, total, frete_cobrado, status, payment_method, restaurant_id, customer_id, user_id, created_at')
       .order('created_at', { ascending: false })
       .limit(filtros.limite ?? 50);
 

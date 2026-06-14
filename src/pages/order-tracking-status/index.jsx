@@ -204,7 +204,7 @@ const OrderTrackingStatus = () => {
         {/* Itens */}
         {pedido.itens?.length > 0 && (
           <div className="bg-white rounded-xl border p-4">
-            <h2 className="font-semibold text-gray-900 mb-3">Itens</h2>
+            <h2 className="font-semibold text-gray-900 mb-3">Itens do pedido</h2>
             <div className="space-y-2">
               {pedido.itens.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm text-gray-600">
@@ -213,9 +213,29 @@ const OrderTrackingStatus = () => {
                 </div>
               ))}
             </div>
-            <div className="border-t pt-2 mt-2 flex justify-between font-bold text-gray-900">
-              <span>Total</span>
-              <span className="text-orange-600">{fmt(pedido.total)}</span>
+            <div className="border-t pt-2 mt-2 space-y-1.5">
+              {(() => {
+                const frete = parseFloat(pedido.frete_cobrado ?? 0);
+                const subtotal = pedido.itens.reduce((acc, i) => acc + i.unit_price * i.quantity, 0);
+                return (
+                  <>
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Subtotal ({pedido.itens.reduce((a, i) => a + i.quantity, 0)} itens)</span>
+                      <span>{fmt(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Icon name="Truck" size={13} /> Frete motoboy
+                      </span>
+                      <span>{fmt(frete)}</span>
+                    </div>
+                    <div className="border-t pt-1.5 flex justify-between font-bold text-gray-900">
+                      <span>Total</span>
+                      <span className="text-orange-600">{fmt(pedido.total)}</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
