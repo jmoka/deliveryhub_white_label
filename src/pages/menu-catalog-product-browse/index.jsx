@@ -617,14 +617,16 @@ const MenuCatalogProductBrowse = () => {
               <>
                 {isAdmin() && (
                   <button onClick={() => navigate('/admin')}
-                    className="hidden sm:block px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg">
-                    Admin
+                    className="p-2 sm:px-3 sm:py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Painel Admin">
+                    <span className="hidden sm:inline text-xs font-semibold">Admin</span>
+                    <Icon name="LayoutDashboard" size={18} className="sm:hidden" />
                   </button>
                 )}
                 {isRestaurantOwner() && (
                   <button onClick={() => navigate('/restaurante')}
-                    className="hidden sm:block px-3 py-1.5 text-xs font-semibold text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg">
-                    Meu Rest.
+                    className="p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg" title="Meu Painel">
+                    <span className="hidden sm:inline text-xs font-semibold">Meu Rest.</span>
+                    <Icon name="Store" size={18} className="sm:hidden" />
                   </button>
                 )}
                 <button onClick={() => navigate('/customer-account-order-history')}
