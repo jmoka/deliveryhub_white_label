@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getCardapioPorSlug } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { imgUrl } from '../../lib/imgUrl';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -22,7 +23,7 @@ const SkeletonProduto = () => (
 
 /* ── Card produto ────────────────────────────────────────────────── */
 const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
-  const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const indisponivel = produto.disponivel === false || restauranteFechado;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
 
@@ -41,8 +42,8 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
             {produto.destaque && (
               <span className="text-[10px] px-1.5 py-0.5 bg-yellow-400/20 text-yellow-700 rounded font-bold flex-shrink-0">⭐ Destaque</span>
             )}
-            {produto.tipo === 'combo' && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold flex-shrink-0">COMBO</span>
+            {produto.tags?.includes('mais_vendido') && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold flex-shrink-0">🔥 Top</span>
             )}
           </div>
           {produto.description && (
@@ -193,12 +194,12 @@ const CarrinhoDesktop = ({ carrinho, onAdicionar, onCheckout }) => (
 const RestauranteCatalogo = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isRestaurantOwner, isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
-  const [catAtiva, setCatAtiva] = useState('destaques');
+  const [catAtiva, setCatAtiva] = useState('todos');
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
 
   useEffect(() => {
@@ -206,12 +207,7 @@ const RestauranteCatalogo = () => {
     getCardapioPorSlug(slug)
       .then((d) => {
         setData(d);
-        const primeiraTab =
-          d.destaques?.length ? 'destaques'
-          : d.promos?.length ? 'promos'
-          : d.combos?.length ? 'combos'
-          : d.cardapio?.[0]?.id ?? null;
-        setCatAtiva(primeiraTab);
+        setCatAtiva('todos');
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -268,6 +264,7 @@ const RestauranteCatalogo = () => {
   const ap = restaurante.aparencia ?? {};
 
   const tabs = [
+    { id: 'todos', label: 'Todos' },
     ...(destaques?.length ? [{ id: 'destaques', label: '⭐ Destaques' }] : []),
     ...(promos?.length ? [{ id: 'promos', label: '🔥 Promoções' }] : []),
     ...(combos?.length ? [{ id: 'combos', label: '🍱 Combos' }] : []),
@@ -275,6 +272,7 @@ const RestauranteCatalogo = () => {
   ];
 
   const produtosDaTab = () => {
+    if (catAtiva === 'todos') return cardapio.flatMap((c) => c.produtos ?? []);
     if (catAtiva === 'destaques') return destaques ?? [];
     if (catAtiva === 'promos') return promos ?? [];
     if (catAtiva === 'combos') return combos ?? [];
@@ -305,6 +303,28 @@ const RestauranteCatalogo = () => {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#18181B] text-sm truncate">{restaurante.name}</p>
           </div>
+          {/* Botão painel restaurante — visível para dono */}
+          {isRestaurantOwner() && (
+            <button onClick={() => navigate('/restaurante')}
+              className="p-2 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0" title="Meu Painel">
+              <Icon name="Store" size={18} />
+            </button>
+          )}
+          {/* Botões cliente — pedidos e perfil */}
+          {isAuthenticated() && !isRestaurantOwner() && !isAdmin() && (
+            <button onClick={() => navigate('/customer-account-order-history')}
+              className="p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
+              title="Meus Pedidos">
+              <Icon name="ClipboardList" size={18} />
+            </button>
+          )}
+          {!isAuthenticated() && (
+            <button onClick={() => navigate('/customer-registration-login')}
+              className="p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
+              title="Entrar">
+              <Icon name="User" size={18} />
+            </button>
+          )}
           {/* Carrinho icon mobile */}
           <button onClick={() => setCarrinhoAberto(true)}
             className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
@@ -321,7 +341,7 @@ const RestauranteCatalogo = () => {
       {/* ── Hero ───────────────────────────────────────────────────── */}
       <div className="relative">
         {ap.banner_url ? (
-          <img src={ap.banner_url} alt={restaurante.name} className="w-full h-52 sm:h-72 object-cover" />
+          <img src={imgUrl(ap.banner_url)} alt={restaurante.name} className="w-full h-52 sm:h-72 object-cover" />
         ) : (
           <div className="w-full h-52 sm:h-72 bg-gradient-to-br from-[#FF441F] to-[#FF7A00]" />
         )}
@@ -334,7 +354,7 @@ const RestauranteCatalogo = () => {
               className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white overflow-hidden bg-white shadow-lg"
             >
               {restaurante.logo_url ? (
-                <img src={restaurante.logo_url} alt={restaurante.name} className="w-full h-full object-cover" />
+                <img src={imgUrl(restaurante.logo_url)} alt={restaurante.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-[#F4F4F5] flex items-center justify-center">
                   <Icon name="Store" size={32} className="text-[#FF441F]" />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
+import OrderActions from './components/OrderActions';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -24,8 +25,11 @@ const OrderTrackingStatus = () => {
   const { orderId, restauranteSlug } = location.state ?? {};
 
   const [pedido, setPedido] = useState(null);
+  const [pagamentoPago, setPagamentoPago] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [cancelSucesso, setCancelSucesso] = useState(null);
 
   const buscarPedido = useCallback(async () => {
     if (!orderId) return;
@@ -39,8 +43,9 @@ const OrderTrackingStatus = () => {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      // API returns { pedido:{...}, itens:[], cliente:{...}, empresa:{...} }
+      // API returns { pedido:{...}, itens:[], cliente:{...}, empresa:{...}, pagamento_pago }
       setPedido({ ...data.pedido, itens: data.itens ?? [] });
+      setPagamentoPago(data.pagamento_pago ?? null);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -102,8 +107,31 @@ const OrderTrackingStatus = () => {
     );
   }
 
+  const handleCancelarPedido = async ({ orderId: oid, reason }) => {
+    setCancelando(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      const res = await fetch(`/api/pedidos/${oid}/cancelar`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo: reason }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setPedido((prev) => ({ ...prev, status: 'canceled', cancel_reason: reason }));
+      setCancelSucesso(data);
+    } finally {
+      setCancelando(false);
+    }
+  };
+
   const statusInfo = STATUS_INFO[pedido.status] ?? STATUS_INFO.pending;
   const timelineIdx = TIMELINE.indexOf(pedido.status);
+  const valorDevolver = pagamentoPago?.valor ?? 0;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -192,7 +220,34 @@ const OrderTrackingStatus = () => {
           </div>
         )}
 
-        {/* Ações */}
+        {/* Banner de cancelamento confirmado */}
+        {cancelSucesso && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+            <Icon name="CheckCircle" size={20} className="text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-green-800">Pedido cancelado</p>
+              {cancelSucesso.precisa_estorno && (
+                <p className="text-sm text-green-700 mt-0.5">
+                  Valor a devolver:{' '}
+                  <strong>{fmt(cancelSucesso.valor_devolver)}</strong> — o estorno será processado pelo restaurante.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Cancelar antes do preparo */}
+        {['pending', 'confirmed'].includes(pedido.status) && (
+          <OrderActions
+            orderStatus={pedido.status}
+            orderId={pedido.id}
+            onCancelOrder={handleCancelarPedido}
+            isPago={valorDevolver > 0}
+            valorDevolver={valorDevolver}
+          />
+        )}
+
+        {/* Ações de navegação */}
         <div className="flex gap-3">
           {restauranteSlug && (
             <button

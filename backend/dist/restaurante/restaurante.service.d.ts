@@ -50,6 +50,8 @@ export declare class RestauranteService {
         restaurant_id: any;
         updated_at: any;
     }>;
+    private catIdsDoRestaurante;
+    private verificarProdutoDoRestaurante;
     meusProdutos(restaurantId: number): Promise<{
         produtos: {
             id: any;
@@ -60,7 +62,7 @@ export declare class RestauranteService {
             image_url: any;
             is_active: any;
             category_id: any;
-            tipo: any;
+            tags: any;
             destaque: any;
             created_at: any;
         }[];
@@ -71,14 +73,48 @@ export declare class RestauranteService {
         price: number;
         image_url?: string;
         category_id: number;
-        tipo?: string;
+        tags?: string[];
         preco_promo?: number;
         destaque?: boolean;
     }): Promise<any>;
+    editarProduto(produtoId: number, restaurantId: number, body: any): Promise<any>;
+    deletarProduto(produtoId: number, restaurantId: number): Promise<{
+        ok: boolean;
+    }>;
     toggleProduto(produtoId: number, restaurantId: number, ativo: boolean): Promise<{
         id: any;
         name: any;
         is_active: any;
+    }>;
+    meusCombos(restaurantId: number): Promise<{
+        combos: {
+            id: any;
+            name: any;
+            description: any;
+            price: any;
+            preco_promo: any;
+            image_url: any;
+            is_active: any;
+            destaque: any;
+            created_at: any;
+        }[];
+    }>;
+    getComboDetalhe(comboId: number, restaurantId: number): Promise<any>;
+    criarCombo(restaurantId: number, body: {
+        name: string;
+        description?: string;
+        price: number;
+        preco_promo?: number;
+        image_url?: string;
+        destaque?: boolean;
+        items?: {
+            product_id: number;
+            quantity: number;
+        }[];
+    }): Promise<any>;
+    editarCombo(comboId: number, restaurantId: number, body: any): Promise<any>;
+    deletarCombo(comboId: number, restaurantId: number): Promise<{
+        ok: boolean;
     }>;
     minhasCategorias(restaurantId: number): Promise<{
         categorias: {
@@ -96,6 +132,9 @@ export declare class RestauranteService {
     criarCategoria(restaurantId: number, body: {
         name: string;
     }): Promise<any>;
+    deletarCategoria(categoriaId: number, restaurantId: number): Promise<{
+        mensagem: string;
+    }>;
     listarClientes(restaurantId: number, filtros: {
         busca?: string;
         limite?: number;
@@ -166,116 +205,198 @@ export declare class RestauranteService {
     getCozinha(restaurantId: number): Promise<{
         pedidos: any[];
     }>;
+    private readonly STATUS_ABERTOS;
+    private calcularResumo;
     getCaixa(restaurantId: number): Promise<{
         status_restaurante: boolean;
         aberto: boolean;
-        aberto_em: null;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
+        expirado: boolean;
+        caixa_expirado: any;
         pedidos: never[];
         resumo: null;
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        id?: undefined;
+        nome_operador?: undefined;
+        aberto_em?: undefined;
+        valor_inicial?: undefined;
+        saidas?: undefined;
     } | {
         status_restaurante: boolean;
         aberto: boolean;
-        aberto_em: string;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
-        pedidos: {
-            id: any;
-            total: any;
-            status: any;
-            payment_method: any;
-            created_at: any;
-            customer_id: any;
-            motoboy_id: any;
-            customers: {
-                name: any;
-                phone_e164: any;
-            }[];
-        }[];
-        resumo: {
-            total_pedidos: number;
-            entregues: number;
-            em_andamento: number;
-            cancelados: number;
-            total_vendas: any;
-            total_saidas: number;
-            saldo: number;
-        };
-    }>;
-    abrirCaixa(restaurantId: number, valor_inicial: number): Promise<{
-        status_restaurante: boolean;
-        aberto: boolean;
-        aberto_em: null;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
-        pedidos: never[];
-        resumo: null;
-    } | {
-        status_restaurante: boolean;
-        aberto: boolean;
-        aberto_em: string;
-        valor_inicial: number;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
-        }[];
-        pedidos: {
-            id: any;
-            total: any;
-            status: any;
-            payment_method: any;
-            created_at: any;
-            customer_id: any;
-            motoboy_id: any;
-            customers: {
-                name: any;
-                phone_e164: any;
-            }[];
-        }[];
-        resumo: {
-            total_pedidos: number;
-            entregues: number;
-            em_andamento: number;
-            cancelados: number;
-            total_vendas: any;
-            total_saidas: number;
-            saldo: number;
-        };
-    }>;
-    fecharCaixa(restaurantId: number): Promise<{
-        pedidos: any[];
-        fechado_em: string;
-        aberto_em: string | null;
+        expirado: boolean;
+        id: any;
+        nome_operador: any;
+        aberto_em: any;
         valor_inicial: any;
-        saidas: {
-            descricao: string;
-            valor: number;
-            criado_em: string;
+        saidas: any[];
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            created_at: any;
+            updated_at: any;
+            customer_id: any;
+            motoboy_id: any;
+            caixa_id: any;
+            customers: {
+                name: any;
+                phone_e164: any;
+            }[];
+            motoboys: {
+                name: any;
+            }[];
         }[];
-        resumo: Record<string, any> | null;
+        resumo: {
+            total_pedidos: number;
+            entregues: number;
+            em_andamento: number;
+            cancelados: number;
+            total_vendas: any;
+            total_saidas: any;
+            saldo: number;
+        };
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        caixa_expirado?: undefined;
+    }>;
+    abrirCaixa(restaurantId: number, body: {
+        nome_operador: string;
+        valor_inicial?: number;
+    }): Promise<{
+        status_restaurante: boolean;
+        aberto: boolean;
+        expirado: boolean;
+        caixa_expirado: any;
+        pedidos: never[];
+        resumo: null;
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        id?: undefined;
+        nome_operador?: undefined;
+        aberto_em?: undefined;
+        valor_inicial?: undefined;
+        saidas?: undefined;
+    } | {
+        status_restaurante: boolean;
+        aberto: boolean;
+        expirado: boolean;
+        id: any;
+        nome_operador: any;
+        aberto_em: any;
+        valor_inicial: any;
+        saidas: any[];
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            created_at: any;
+            updated_at: any;
+            customer_id: any;
+            motoboy_id: any;
+            caixa_id: any;
+            customers: {
+                name: any;
+                phone_e164: any;
+            }[];
+            motoboys: {
+                name: any;
+            }[];
+        }[];
+        resumo: {
+            total_pedidos: number;
+            entregues: number;
+            em_andamento: number;
+            cancelados: number;
+            total_vendas: any;
+            total_saidas: any;
+            saldo: number;
+        };
+        saldo_caixa: number;
+        saldo_fechados_pendente: number;
+        caixa_expirado?: undefined;
+    }>;
+    fecharCaixa(restaurantId: number, body?: {
+        banco?: number;
+        retirada?: number;
+        permanece?: number;
+    }): Promise<{
+        fechamento: {
+            id: any;
+            aberto_em: any;
+            fechado_em: string;
+            nome_operador: any;
+            valor_inicial: any;
+            saidas: any[];
+            resumo: {
+                total_pedidos: number;
+                entregues: number;
+                em_andamento: number;
+                cancelados: number;
+                total_vendas: any;
+                total_saidas: any;
+                saldo: number;
+            };
+            destinacao_fechamento: {
+                banco: number;
+                retirada: number;
+                permanece: number;
+                saldo: number;
+            };
+        };
+    }>;
+    fecharComTransferencia(restaurantId: number, body: {
+        nome_operador: string;
+        valor_inicial?: number;
+    }): Promise<{
+        fechamento: {
+            id: any;
+            aberto_em: any;
+            fechado_em: string;
+            nome_operador: any;
+            resumo: {
+                total_pedidos: number;
+                entregues: number;
+                em_andamento: number;
+                cancelados: number;
+                total_vendas: any;
+                total_saidas: any;
+                saldo: number;
+            };
+        };
+        novo_caixa: any;
+    }>;
+    getCaixaHistorico(restaurantId: number): Promise<{
+        historico: {
+            id: any;
+            nome_operador: any;
+            valor_inicial: any;
+            status: any;
+            aberto_em: any;
+            fechado_em: any;
+            resumo: any;
+        }[];
+    }>;
+    getCaixaDetalhe(restaurantId: number, caixaId: number): Promise<{
+        caixa: any;
+        pedidos: {
+            id: any;
+            total: any;
+            status: any;
+            payment_method: any;
+            created_at: any;
+            customers: {
+                name: any;
+            }[];
+        }[];
     }>;
     adicionarSaida(restaurantId: number, body: {
         descricao: string;
         valor: number;
-    }): Promise<{
-        descricao: string;
-        valor: number;
-        criado_em: string;
-    }>;
+        meio?: string;
+    }): Promise<any>;
     uploadImage(folder: string, file: Express.Multer.File): Promise<{
         url: string;
     }>;
@@ -286,6 +407,7 @@ export declare class RestauranteService {
     }>;
     getRelatorio(restaurantId: number, de: string, ate: string): Promise<{
         pedidos: any[];
+        saidas: any[];
         resumo: {
             total_pedidos: number;
             entregues: number;
@@ -294,6 +416,8 @@ export declare class RestauranteService {
             total_vendas: any;
             ticket_medio: number;
             por_pagamento: any;
+            total_saidas: any;
+            saldo_liquido: number;
         };
     }>;
     buscarPedidoDoRestaurante(restaurantId: number, pedidoId: number): Promise<{

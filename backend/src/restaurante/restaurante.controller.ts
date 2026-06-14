@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, ParseIntPipe,
+  Body, Controller, Delete, Get, Param, ParseIntPipe,
   Patch, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -42,6 +42,15 @@ export class RestauranteController {
     return this.service.atualizarStatusPedido(id, req.restaurantId, body.status);
   }
 
+  @Patch('pedidos/:id/troco')
+  setTrocoPara(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { troco_para: number },
+    @Req() req: any,
+  ) {
+    return this.service.setTrocoPara(req.restaurantId, id, body.troco_para);
+  }
+
   @Get('produtos')
   meusProdutos(@Req() req: any) {
     return this.service.meusProdutos(req.restaurantId);
@@ -50,6 +59,23 @@ export class RestauranteController {
   @Post('produtos')
   criarProduto(@Req() req: any, @Body() body: any) {
     return this.service.criarProduto(req.restaurantId, body);
+  }
+
+  @Patch('produtos/:id')
+  editarProduto(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    return this.service.editarProduto(id, req.restaurantId, body);
+  }
+
+  @Delete('produtos/:id')
+  deletarProduto(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: any,
+  ) {
+    return this.service.deletarProduto(id, req.restaurantId);
   }
 
   @Patch('produtos/:id/toggle')
@@ -69,6 +95,11 @@ export class RestauranteController {
   @Post('categorias')
   criarCategoria(@Req() req: any, @Body() body: { name: string }) {
     return this.service.criarCategoria(req.restaurantId, body);
+  }
+
+  @Delete('categorias/:id')
+  deletarCategoria(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.deletarCategoria(id, req.restaurantId);
   }
 
   @Get('clientes')
@@ -133,8 +164,13 @@ export class RestauranteController {
   }
 
   @Post('caixa/fechar')
-  fecharCaixa(@Req() req: any, @Body() body: { banco?: number; retirada?: number; permanece?: number }) {
+  fecharCaixa(@Req() req: any, @Body() body: { dinheiro_contado?: number }) {
     return this.service.fecharCaixa(req.restaurantId, body);
+  }
+
+  @Post('caixa/:id/conferencia')
+  aprovarConferencia(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.aprovarConferencia(req.restaurantId, id);
   }
 
   @Post('caixa/fechar-e-transferir')
@@ -157,6 +193,11 @@ export class RestauranteController {
     return this.service.adicionarSaida(req.restaurantId, body);
   }
 
+  @Post('caixa/entrada')
+  adicionarEntrada(@Req() req: any, @Body() body: { descricao: string; valor: number; meio?: string }) {
+    return this.service.adicionarEntrada(req.restaurantId, body);
+  }
+
   @Get('pedidos/:id/detalhe')
   buscarPedidoDetalhe(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     return this.service.buscarPedidoDoRestaurante(req.restaurantId, id);
@@ -165,6 +206,11 @@ export class RestauranteController {
   @Get('cozinha')
   cozinha(@Req() req: any) {
     return this.service.getCozinha(req.restaurantId);
+  }
+
+  @Patch('renovar-token-cozinha')
+  renovarTokenCozinha(@Req() req: any) {
+    return this.service.renovarTokenCozinha(req.restaurantId);
   }
 
   @Post('storage/setup')
@@ -188,5 +234,32 @@ export class RestauranteController {
     @Query('ate') ate: string,
   ) {
     return this.service.getRelatorio(req.restaurantId, de, ate);
+  }
+
+  // ── Combos ──────────────────────────────────────────────────────────────────
+
+  @Get('combos')
+  meusCombos(@Req() req: any) {
+    return this.service.meusCombos(req.restaurantId);
+  }
+
+  @Get('combos/:id')
+  getComboDetalhe(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.getComboDetalhe(id, req.restaurantId);
+  }
+
+  @Post('combos')
+  criarCombo(@Req() req: any, @Body() body: any) {
+    return this.service.criarCombo(req.restaurantId, body);
+  }
+
+  @Patch('combos/:id')
+  editarCombo(@Param('id', ParseIntPipe) id: number, @Req() req: any, @Body() body: any) {
+    return this.service.editarCombo(id, req.restaurantId, body);
+  }
+
+  @Delete('combos/:id')
+  deletarCombo(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.deletarCombo(id, req.restaurantId);
   }
 }

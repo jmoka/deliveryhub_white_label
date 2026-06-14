@@ -50,6 +50,12 @@ export const getMeusProdutos = () => apiFetch('/produtos');
 export const criarProduto = (data) =>
   apiFetch('/produtos', { method: 'POST', body: JSON.stringify(data) });
 
+export const editarProduto = (id, data) =>
+  apiFetch(`/produtos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const deletarProduto = (id) =>
+  apiFetch(`/produtos/${id}`, { method: 'DELETE' });
+
 export const toggleProduto = (id, ativo) =>
   apiFetch(`/produtos/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 
@@ -61,6 +67,9 @@ export const getMinhasCategorias = () => apiFetch('/categorias');
 
 export const criarCategoria = (name) =>
   apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name }) });
+
+export const deletarCategoria = (id) =>
+  apiFetch(`/categorias/${id}`, { method: 'DELETE' });
 
 export const getClientes = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
@@ -102,11 +111,20 @@ export const fecharETransferir = ({ nome_operador, valor_inicial }) =>
 export const adicionarSaida = (data) =>
   apiFetch('/caixa/saida', { method: 'POST', body: JSON.stringify(data) });
 
+export const adicionarEntrada = (data) =>
+  apiFetch('/caixa/entrada', { method: 'POST', body: JSON.stringify(data) });
+
 export const getCaixaHistorico = () => apiFetch('/caixa/historico');
 export const getCaixaDetalhe = (id) => apiFetch(`/caixa/${id}`);
+export const aprovarConferencia = (caixaId) =>
+  apiFetch(`/caixa/${caixaId}/conferencia`, { method: 'POST' });
+
+export const setTrocoPara = (pedidoId, troco_para) =>
+  apiFetch(`/pedidos/${pedidoId}/troco`, { method: 'PATCH', body: JSON.stringify({ troco_para }) });
 
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
+export const renovarTokenCozinha = () => apiFetch('/renovar-token-cozinha', { method: 'PATCH' });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 
@@ -138,6 +156,25 @@ export const toggleMotoboy = (id, ativo) =>
   apiFetch(`/motoboys/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
+export const renovarTokenMotoboy = (id) =>
+  apiFetch(`/motoboys/${id}/renovar-token`, { method: 'PATCH' });
+
+// Combos
+export const getMeusCombos = () => apiFetch('/combos');
+export const getComboDetalhe = (id) => apiFetch(`/combos/${id}`);
+export const criarCombo = (data) =>
+  apiFetch('/combos', { method: 'POST', body: JSON.stringify(data) });
+export const editarCombo = (id, data) =>
+  apiFetch(`/combos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deletarCombo = (id) =>
+  apiFetch(`/combos/${id}`, { method: 'DELETE' });
+
+// Tags públicas — sem auth
+export const getTagsPublicas = () =>
+  fetch('/api/tags').then((r) => r.json());
+
+export const getCarrosseis = (restaurantId) =>
+  fetch(`/api/tags/carrosseis/${restaurantId}`).then((r) => r.json());
 
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {

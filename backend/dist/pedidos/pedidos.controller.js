@@ -46,6 +46,9 @@ let PedidosController = class PedidosController {
     atualizarStatus(id, body) {
         return this.service.atualizarStatus(id, body.status);
     }
+    cancelarCliente(id, body, req) {
+        return this.service.cancelarCliente(id, req.userId, body.motivo);
+    }
     cancelar(id) {
         return this.service.cancelar(id);
     }
@@ -98,6 +101,16 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", void 0)
 ], PedidosController.prototype, "atualizarStatus", null);
+__decorate([
+    (0, common_1.Patch)(':id/cancelar'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Object, Object]),
+    __metadata("design:returntype", void 0)
+], PedidosController.prototype, "cancelarCliente", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.UseGuards)(admin_guard_1.AdminGuard),

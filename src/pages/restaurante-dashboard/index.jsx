@@ -23,7 +23,7 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 
 const STATUS_LABELS = {
   pending:          { label: 'Recebido',   color: 'bg-yellow-100 text-yellow-800' },
-  confirmed:        { label: 'Confirmado', color: 'bg-blue-100 text-blue-800' },
+  confirmed:        { label: 'Aguardando Preparo', color: 'bg-blue-100 text-blue-800' },
   preparing:        { label: 'Em Preparo', color: 'bg-orange-100 text-orange-800' },
   ready:            { label: 'Pronto',     color: 'bg-purple-100 text-purple-800' },
   out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 text-indigo-800' },
@@ -34,7 +34,7 @@ const STATUS_LABELS = {
 const FILTER_TABS = [
   { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
   { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 bg-yellow-100 text-yellow-800' },
-  { value: 'confirmed',        label: 'Confirmado', activeColor: 'border-blue-400 bg-blue-100 text-blue-800' },
+  { value: 'confirmed',        label: 'Ag. Preparo', activeColor: 'border-blue-400 bg-blue-100 text-blue-800' },
   { value: 'preparing',        label: 'Cozinha',    activeColor: 'border-orange-400 bg-orange-100 text-orange-800' },
   { value: 'ready',            label: 'Pronto',     activeColor: 'border-purple-400 bg-purple-100 text-purple-800' },
   { value: 'out_for_delivery', label: 'Em Entrega', activeColor: 'border-indigo-400 bg-indigo-100 text-indigo-800' },
@@ -61,7 +61,7 @@ const RestauranteDashboard = () => {
   const { signOut } = useAuth();
 
   const [empresa, setEmpresa] = useState(null);
-  const [statusAberto, setStatusAberto] = useState(true);
+  const [statusAberto, setStatusAberto] = useState(false);
   const [caixa, setCaixa] = useState(null);
   const [valorInicial, setValorInicial] = useState('');
   const [loading, setLoading] = useState(true);
@@ -85,25 +85,68 @@ const RestauranteDashboard = () => {
   const [restauranteId, setRestauranteId] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const alertaTimers = useRef({});
+  const audioCtxRef = useRef(null);
+  const lastCheckTimeRef = useRef(new Date().toISOString());
+  const newPendingCountRef = useRef(0);
 
-  const playNotification = () => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const tone = (freq, start, dur) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = freq; o.type = 'sine';
-        g.gain.setValueAtTime(0.35, ctx.currentTime + start);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + dur + 0.05);
-      };
-      tone(880, 0, 0.15);
-      tone(1100, 0.2, 0.15);
-      tone(1320, 0.4, 0.3);
-    } catch {}
+  const getAudioCtx = () => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtxRef.current;
   };
+
+  const playNotification = useCallback(() => {
+    try {
+      const ctx = getAudioCtx();
+      const play = () => {
+        const tone = (freq, start, dur, vol = 0.7) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = freq; o.type = 'square';
+          g.gain.setValueAtTime(vol, ctx.currentTime + start);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+          o.start(ctx.currentTime + start);
+          o.stop(ctx.currentTime + start + dur + 0.1);
+        };
+        tone(523, 0,    0.12); // C5
+        tone(659, 0.15, 0.12); // E5
+        tone(784, 0.3,  0.12); // G5
+        tone(1047, 0.45, 0.3); // C6 — acorde final
+      };
+      if (ctx.state === 'suspended') ctx.resume().then(play);
+      else play();
+    } catch {}
+  }, []);
+
+  // Desbloquear AudioContext no primeiro gesto do usuário
+  useEffect(() => {
+    const unlock = () => { try { getAudioCtx().resume(); } catch {} };
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+
+  // Título da aba pisca com contagem de pedidos novos quando aba não está em foco
+  const flashTitle = useCallback((count) => {
+    newPendingCountRef.current = count;
+    if (document.visibilityState === 'hidden') {
+      document.title = `(${count}) 🔔 NOVO PEDIDO!`;
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFocus = () => {
+      newPendingCountRef.current = 0;
+      document.title = 'Dashboard';
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    return () => document.removeEventListener('visibilitychange', onFocus);
+  }, []);
 
   const carregar = async () => {
     try {
@@ -112,7 +155,12 @@ const RestauranteDashboard = () => {
       ]);
       setEmpresa(emp.empresa);
       setRestauranteId(emp.empresa?.id ?? null);
-      setStatusAberto(caixaData.status_restaurante);
+      const deveEstarAberto = caixaData.status_restaurante === true && !!caixaData.aberto;
+      setStatusAberto(deveEstarAberto);
+      // Se o DB diz aberto mas caixa está fechado, sincroniza o fechamento no backend
+      if (caixaData.status_restaurante === true && !caixaData.aberto) {
+        toggleStatusRestaurante(false).catch(() => {});
+      }
       setCaixa(caixaData);
       setMotoboys(mbData.motoboys ?? []);
     } catch (e) {
@@ -151,6 +199,8 @@ const RestauranteDashboard = () => {
       }, (payload) => {
         const p = payload.new;
         playNotification();
+        flashTitle(newPendingCountRef.current + 1);
+        lastCheckTimeRef.current = p.created_at ?? new Date().toISOString();
         const alerta = { id: p.id, total: p.total, ts: Date.now() };
         setAlertas((prev) => [...prev, alerta]);
         alertaTimers.current[p.id] = setTimeout(() => {
@@ -170,7 +220,38 @@ const RestauranteDashboard = () => {
       supabase.removeChannel(channel);
       Object.values(alertaTimers.current).forEach(clearTimeout);
     };
-  }, [restauranteId, recarregarCaixa]);
+  }, [restauranteId, recarregarCaixa, playNotification, flashTitle]);
+
+  // Polling fallback: detecta novos pedidos caso Realtime falhe
+  useEffect(() => {
+    if (!restauranteId) return;
+    const poll = async () => {
+      try {
+        const { data } = await supabase
+          .from('orders')
+          .select('id, total, created_at')
+          .eq('restaurant_id', restauranteId)
+          .eq('status', 'pending')
+          .gt('created_at', lastCheckTimeRef.current)
+          .order('created_at', { ascending: false });
+        if (!data || data.length === 0) return;
+        lastCheckTimeRef.current = data[0].created_at;
+        playNotification();
+        data.forEach((p) => {
+          flashTitle(newPendingCountRef.current + 1);
+          const alerta = { id: p.id, total: p.total, ts: Date.now() };
+          setAlertas((prev) => prev.some((a) => a.id === p.id) ? prev : [...prev, alerta]);
+          alertaTimers.current[p.id] = setTimeout(() => {
+            setAlertas((prev) => prev.filter((a) => a.id !== p.id));
+            delete alertaTimers.current[p.id];
+          }, 10000);
+        });
+        recarregarCaixa();
+      } catch {}
+    };
+    const id = setInterval(poll, 10000);
+    return () => clearInterval(id);
+  }, [restauranteId, playNotification, flashTitle, recarregarCaixa]);
 
   const handleToggleStatus = async (novoStatus) => {
     if (novoStatus && !caixa?.aberto) {
@@ -210,7 +291,7 @@ const RestauranteDashboard = () => {
       const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedido.id)]);
       setCaixa(novoCaixa);
       setPedidoDetalhe(novoDetalhe);
-      if (novoStatus === 'confirmed') {
+      if (novoStatus === 'preparing' || novoStatus === 'confirmed') {
         const pedidoParaImprimir = { ...novoDetalhe.pedido, customers: novoDetalhe.cliente };
         printComanda(pedidoParaImprimir, novoDetalhe.itens ?? [], empresa?.name);
       }
@@ -378,19 +459,6 @@ const RestauranteDashboard = () => {
               <h2 className="font-bold text-[#18181B]">Caixa</h2>
               <span className="ml-auto text-xs bg-[#F4F4F5] text-[#71717A] px-2 py-0.5 rounded-full font-medium">Fechado</span>
             </div>
-            {/* Saldo em cofre */}
-            {(caixa?.saldo_caixa ?? 0) > 0 && (
-              <div className="bg-[#FF441F]/5 border border-[#FF441F]/20 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🗃️</span>
-                  <div>
-                    <p className="text-xs font-bold text-[#18181B]">Saldo no cofre</p>
-                    <p className="text-[10px] text-[#71717A]">Será o fundo inicial do próximo caixa</p>
-                  </div>
-                </div>
-                <p className="text-lg font-black text-[#FF441F]">{fmt(caixa.saldo_caixa)}</p>
-              </div>
-            )}
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-[#71717A] mb-1">Nome do operador *</label>
@@ -619,6 +687,13 @@ const RestauranteDashboard = () => {
                         onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
                         motoboys={motoboys}
                         onAtribuir={handleAtribuirMotoboy}
+                        onDetalheMudou={async () => {
+                          if (!pedidoSelecionadoId) return;
+                          try {
+                            const d = await buscarPedidoDetalhe(pedidoSelecionadoId);
+                            setPedidoDetalhe(d);
+                          } catch {}
+                        }}
                       />
                     </div>
                   )}

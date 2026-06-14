@@ -1,5 +1,62 @@
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
 
+const printIframe = (html, id) => {
+  const f = document.createElement('iframe');
+  f.id = id; f.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(f);
+  try { f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close(); }
+  catch { f.remove(); const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); } }
+};
+
+export const printFichaMotoboy = (pedido, itens, cliente, restauranteNome) => {
+  const addr = cliente?.address_json ?? {};
+  const rua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
+  const compl = [addr.complemento, addr.bairro].filter(Boolean).join(' — ');
+  const cidade = [addr.cidade, addr.estado].filter(Boolean).join(' / ');
+  const ref = addr.referencia ?? '';
+  const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+  const hora = new Date(pedido.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const pgto = PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method;
+  const isCash = pedido.payment_method === 'cash';
+  const bc = barcodeValue(pedido.id);
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha Motoboy #${pedido.id}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}@media print{button{display:none!important}}</style>
+</head><body>
+<div class="c bold" style="font-size:11px;letter-spacing:1px">FICHA DE ENTREGA</div>
+<div class="c" style="font-size:12px">${restauranteNome ?? ''}</div>
+<div class="big">PEDIDO #${pedido.id}</div>
+<div class="c" style="font-size:11px">${hora}</div>
+<hr/>
+<div class="bold">${cliente?.name ?? 'Cliente'}</div>
+${cliente?.phone_e164 ? `<div>${cliente.phone_e164}</div>` : ''}
+<div class="addr" style="margin-top:4px">${rua ? `<div>${rua}</div>` : ''}${compl ? `<div>${compl}</div>` : ''}${cidade ? `<div>${cidade}</div>` : ''}${ref ? `<div style="font-weight:bold">Ref: ${ref}</div>` : ''}</div>
+<hr/>
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name ?? `#${i.product_id}`}</span></div>`).join('')}
+<hr/>
+<div class="c bold" style="font-size:16px">TOTAL: ${fmt(pedido.total)}</div>
+<div class="c">${isCash ? '<span style="font-size:13px;font-weight:bold">⚠ COBRAR NA ENTREGA</span>' : `Pago: ${pgto}`}</div>
+<hr/>
+<svg id="bc"></svg>
+<div class="c" style="font-size:10px;letter-spacing:1px;margin-top:2px">ESCANEIE PARA CONFIRMAR COLETA</div>
+<div class="c" style="font-size:10px;margin-top:6px">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
+<script>
+function doBarcode(){
+  if(typeof JsBarcode!=='undefined'){
+    JsBarcode("#bc","${bc}",{format:"CODE128",width:2,height:56,displayValue:true,fontSize:13,text:"#${pedido.id}",margin:6,background:"#ffffff"});
+  }
+  window.print();
+  setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000);
+}
+var s=document.createElement('script');
+s.src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
+s.onload=doBarcode;
+s.onerror=function(){document.getElementById('bc').style.display='none';doBarcode()};
+document.head.appendChild(s);
+</script>
+</body></html>`;
+  printIframe(html, `motoboy-frame-${pedido.id}-${Date.now()}`);
+};
+
 export const barcodeValue = (id) => String(id).padStart(8, '0');
 
 export const getPrinterName = () => localStorage.getItem('kitchen_printer_name') ?? '';

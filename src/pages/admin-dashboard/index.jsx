@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMetricas, getComissoes } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtNum = (v) => new Intl.NumberFormat('pt-BR').format(v ?? 0);
@@ -25,6 +26,7 @@ const Card = ({ label, value, sub, color = 'blue' }) => {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { signOut, userProfile } = useAuth();
+  const { isLocalMode, localRestaurantId } = useLocalMode() ?? {};
   const [metricas, setMetricas] = useState(null);
   const [comissoes, setComissoes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,12 @@ const AdminDashboard = () => {
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (isLocalMode && localRestaurantId) {
+      navigate(`/admin/empresas/${localRestaurantId}`, { replace: true });
+    }
+  }, [isLocalMode, localRestaurantId, navigate]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -59,6 +67,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <LocalModeBanner />
       {/* Header */}
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div>
@@ -74,6 +83,9 @@ const AdminDashboard = () => {
           </button>
           <button onClick={() => navigate('/admin/categorias')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Categorias
+          </button>
+          <button onClick={() => navigate('/admin/tags')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+            Tags
           </button>
           <button onClick={() => navigate('/admin/comissoes')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Comissões

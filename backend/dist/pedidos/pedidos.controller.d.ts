@@ -32,6 +32,8 @@ export declare class PedidosController {
         pedido: {
             id: any;
             total: any;
+            troco_para: any;
+            entrega_pagamento: any;
             status: any;
             payment_method: any;
             restaurant_id: any;
@@ -71,6 +73,12 @@ export declare class PedidosController {
             phone: any;
             access_token: any;
         } | null;
+        pagamento_pago: {
+            id: any;
+            valor: any;
+            tipo: any;
+            status: any;
+        } | null;
     }>;
     criar(body: {
         restaurant_id: number;
@@ -97,6 +105,19 @@ export declare class PedidosController {
         total: any;
         restaurant_id: any;
         updated_at: any;
+    }>;
+    cancelarCliente(id: number, body: {
+        motivo: string;
+    }, req: any): Promise<{
+        pedido: {
+            id: any;
+            status: any;
+            cancel_reason: any;
+            total: any;
+            updated_at: any;
+        };
+        valor_devolver: any;
+        precisa_estorno: boolean;
     }>;
     cancelar(id: number): Promise<{
         id: any;

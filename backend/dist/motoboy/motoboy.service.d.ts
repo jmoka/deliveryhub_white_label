@@ -36,6 +36,7 @@ export declare class MotoboyService {
             }[];
             id: any;
             total: any;
+            troco_para: any;
             status: any;
             payment_method: any;
             created_at: any;
@@ -50,7 +51,11 @@ export declare class MotoboyService {
     atualizarLocalizacao(pedidoId: number, motoboyId: number, lat: number, lng: number): Promise<{
         ok: boolean;
     }>;
-    confirmarEntrega(pedidoId: number, motoboyId: number): Promise<{
+    confirmarEntrega(pedidoId: number, motoboyId: number, entregaPagamento?: {
+        metodo: string;
+        dinheiro?: number;
+        pix?: number;
+    }): Promise<{
         ok: boolean;
         pedido_id: number;
         status: string;
@@ -87,12 +92,24 @@ export declare class MotoboyService {
         pedido_id: number;
         status: string;
     }>;
-    confirmarColeta(pedidoId: number, motoboyId: number, barcode: string): Promise<{
+    reivindicarPedido(pedidoId: number, motoboyId: number): Promise<{
         ok: boolean;
         pedido_id: number;
         status: string;
     }>;
+    confirmarColeta(pedidoId: number, motoboyId: number, barcode: string): Promise<{
+        ok: boolean;
+        pedido_id: number;
+        status: string;
+        troco: number;
+    }>;
+    uploadComprovante(pedidoId: number, motoboyId: number, base64: string): Promise<{
+        url: string;
+    }>;
     infoMotoboy(motoboyId: number): Promise<{
+        restaurante_nome: any;
+        restaurante_cidade: null;
+        chave_pix: any;
         id: any;
         name: any;
         phone: any;

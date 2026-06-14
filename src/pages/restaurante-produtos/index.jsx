@@ -1,37 +1,118 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getMeusProdutos, criarProduto, toggleProduto,
-  getCategoriasGlobais,
+  getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
+  getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria,
+  getTagsPublicas,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tipo: 'normal', destaque: false };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false };
+
+const TagBadge = ({ slug, tagsMap }) => {
+  const t = tagsMap[slug];
+  if (!t) return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-gray-100 text-gray-600">{slug}</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-orange-100 text-orange-700">{t.name}</span>;
+};
 
 const RestauranteProdutos = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [categoriasGlobais, setCategoriasGlobais] = useState([]);
+  const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
+  const [novaCategoria, setNovaCategoria] = useState('');
+  const [criandoCateg, setCriandoCateg] = useState(false);
+  const [deletandoCateg, setDeletandoCateg] = useState(null);
+  const [showCategPanel, setShowCategPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
+  const [deletando, setDeletando] = useState(null);
+
   const carregar = () => {
     setLoading(true);
-    Promise.all([getMeusProdutos(), getCategoriasGlobais()])
-      .then(([p, c]) => {
+    Promise.all([getMeusProdutos(), getMinhasCategorias(), getCategoriasGlobais(), getTagsPublicas()])
+      .then(([p, mine, global, tagsResp]) => {
         setProdutos(p.produtos ?? []);
-        setCategorias(c.categorias ?? []);
+        setCategorias(mine.categorias ?? []);
+        setCategoriasGlobais(global.categorias ?? []);
+        // Só tags manuais (is_auto=false) — restaurante pode atribuir
+        setTagsDisponiveis((tagsResp.tags ?? []).filter((t) => !t.is_auto));
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { carregar(); }, []);
+
+  const abrirNovo = () => {
+    setEditando(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+
+  const abrirEditar = (p) => {
+    setEditando(p);
+    setForm({
+      name: p.name ?? '',
+      description: p.description ?? '',
+      price: p.price != null ? String(p.price) : '',
+      preco_promo: p.preco_promo != null ? String(p.preco_promo) : '',
+      image_url: p.image_url ?? '',
+      category_id: p.category_id != null ? String(p.category_id) : '',
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      destaque: p.destaque ?? false,
+    });
+    setShowModal(true);
+  };
+
+  const handleCriarCategoria = async (e) => {
+    e.preventDefault();
+    if (!novaCategoria.trim()) return;
+    setCriandoCateg(true);
+    try {
+      const nova = await criarCategoria(novaCategoria.trim());
+      setCategorias((prev) => [...prev, nova].sort((a, b) => a.name.localeCompare(b.name)));
+      setNovaCategoria('');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCriandoCateg(false);
+    }
+  };
+
+  const handleDeletarCategoria = async (cat) => {
+    if (!window.confirm(`Deletar categoria "${cat.name}"? Os produtos ligados perderão esta categoria.`)) return;
+    setDeletandoCateg(cat.id);
+    try {
+      await deletarCategoria(cat.id);
+      setCategorias((prev) => prev.filter((c) => c.id !== cat.id));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setDeletandoCateg(null);
+    }
+  };
+
+  const fecharModal = () => {
+    setShowModal(false);
+    setEditando(null);
+    setForm(EMPTY_FORM);
+  };
+
+  const toggleTag = (tag) => {
+    setForm((f) => ({
+      ...f,
+      tags: f.tags.includes(tag) ? f.tags.filter((t) => t !== tag) : [...f.tags, tag],
+    }));
+  };
 
   const handleToggle = async (produto) => {
     try {
@@ -49,20 +130,25 @@ const RestauranteProdutos = () => {
       return;
     }
     setSalvando(true);
+    const payload = {
+      name: form.name,
+      description: form.description || null,
+      price: parseFloat(form.price),
+      preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : null,
+      image_url: form.image_url || null,
+      category_id: parseInt(form.category_id),
+      tags: form.tags,
+      destaque: form.destaque,
+    };
     try {
-      const novo = await criarProduto({
-        name: form.name,
-        description: form.description || undefined,
-        price: parseFloat(form.price),
-        preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : undefined,
-        image_url: form.image_url || undefined,
-        category_id: parseInt(form.category_id),
-        tipo: form.tipo,
-        destaque: form.destaque,
-      });
-      setProdutos((prev) => [...prev, novo]);
-      setForm(EMPTY_FORM);
-      setShowModal(false);
+      if (editando) {
+        const atualizado = await editarProduto(editando.id, payload);
+        setProdutos((prev) => prev.map((p) => (p.id === editando.id ? atualizado : p)));
+      } else {
+        const novo = await criarProduto(payload);
+        setProdutos((prev) => [...prev, novo]);
+      }
+      fecharModal();
     } catch (e) {
       alert(e.message);
     } finally {
@@ -70,11 +156,30 @@ const RestauranteProdutos = () => {
     }
   };
 
-  const catMap = Object.fromEntries(categorias.map((c) => [c.id, c.name]));
+  const handleDeletar = async (produto) => {
+    if (!window.confirm(`Deletar "${produto.name}"? Esta ação não pode ser desfeita.`)) return;
+    setDeletando(produto.id);
+    try {
+      await deletarProduto(produto.id);
+      setProdutos((prev) => prev.filter((p) => p.id !== produto.id));
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setDeletando(null);
+    }
+  };
+
+  const catMap = Object.fromEntries(
+    [...categorias, ...categoriasGlobais].map((c) => [c.id, c.name])
+  );
+  const tagsMap = Object.fromEntries(tagsDisponiveis.map((t) => [t.slug, t]));
+  // Identifica se alguma tag de promoção está ativa (slug contém 'promo')
+  const temPromo = form.tags.some((s) => s.includes('promo'));
 
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
+    { label: 'Combos', path: '/restaurante/combos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
@@ -106,31 +211,71 @@ const RestauranteProdutos = () => {
       <main className="p-6 max-w-4xl mx-auto">
         {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
 
-        {/* Categorias globais */}
-        <section className="bg-white rounded-xl border border-[#E4E4E7] p-5 mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-[#18181B]">Categorias da plataforma</h2>
-            <p className="text-xs text-[#71717A]">Gerenciadas pelo admin</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {categorias.map((c) => (
-              <span key={c.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white shadow-sm"
-                style={{ background: `linear-gradient(135deg, ${c.color_primary ?? '#FF441F'}, ${c.color_secondary ?? '#FF7A00'})` }}>
-                <span className="text-xs">{c.icon_name}</span>
-                {c.name}
-              </span>
-            ))}
-            {categorias.length === 0 && <p className="text-sm text-[#71717A]">Nenhuma categoria cadastrada</p>}
-          </div>
-        </section>
+        {/* Painel de categorias do restaurante */}
+        <div className="bg-white rounded-xl border border-[#E4E4E7] mb-5">
+          <button
+            type="button"
+            onClick={() => setShowCategPanel((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-[#18181B] text-sm">Minhas Categorias</span>
+              <span className="text-xs text-[#71717A] bg-[#F4F4F5] px-2 py-0.5 rounded-full">{categorias.length}</span>
+            </div>
+            <span className="text-[#71717A] text-xs">{showCategPanel ? '▲' : '▼'}</span>
+          </button>
 
-        {/* Produtos */}
+          {showCategPanel && (
+            <div className="px-5 pb-4 border-t border-[#F4F4F5]">
+              {/* Criar nova */}
+              <form onSubmit={handleCriarCategoria} className="flex gap-2 mt-3 mb-4">
+                <input
+                  value={novaCategoria}
+                  onChange={(e) => setNovaCategoria(e.target.value)}
+                  placeholder="Nome da nova categoria..."
+                  className="flex-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                />
+                <button
+                  type="submit"
+                  disabled={criandoCateg || !novaCategoria.trim()}
+                  className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
+                >
+                  {criandoCateg ? '...' : '+ Criar'}
+                </button>
+              </form>
+
+              {categorias.length === 0 ? (
+                <p className="text-xs text-[#71717A]">Nenhuma categoria própria. Crie acima ou use as globais da plataforma.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categorias.map((c) => (
+                    <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-full px-3 py-1.5">
+                      <span className="text-sm text-[#27272A]">{c.name}</span>
+                      {c.total_produtos > 0 && (
+                        <span className="text-[10px] text-[#71717A]">({c.total_produtos})</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeletarCategoria(c)}
+                        disabled={deletandoCateg === c.id}
+                        className="text-[#A1A1AA] hover:text-red-500 text-sm leading-none disabled:opacity-40"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#18181B]">
             Produtos <span className="text-gray-400 font-normal">({produtos.length})</span>
           </h2>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={abrirNovo}
             className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a]"
           >
             + Novo produto
@@ -144,7 +289,7 @@ const RestauranteProdutos = () => {
         ) : produtos.length === 0 ? (
           <div className="bg-white rounded-xl border p-12 text-center">
             <p className="text-gray-400 mb-3">Nenhum produto cadastrado</p>
-            <button onClick={() => setShowModal(true)} className="text-sm text-[#FF441F] hover:underline">
+            <button onClick={abrirNovo} className="text-sm text-[#FF441F] hover:underline">
               Criar primeiro produto →
             </button>
           </div>
@@ -161,30 +306,43 @@ const RestauranteProdutos = () => {
                       <p className="font-medium text-gray-900 truncate">{p.name}</p>
                       {p.destaque && <span className="text-xs">⭐</span>}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {p.tipo !== 'normal' && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${p.tipo === 'promo' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {p.tipo === 'promo' ? 'PROMO' : 'COMBO'}
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleToggle(p)}
-                        className={`text-xs px-2 py-1 rounded-full font-medium ${
-                          p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                        }`}
-                      >
-                        {p.is_active ? 'Ativo' : 'Inativo'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleToggle(p)}
+                      className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                        p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {p.is_active ? 'Ativo' : 'Inativo'}
+                    </button>
                   </div>
                   {p.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{p.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-semibold text-[#FF441F]">{fmt(p.price)}</p>
-                    {p.tipo === 'promo' && p.preco_promo && (
+                    {p.tags?.includes('promo') && p.preco_promo && (
                       <p className="text-xs text-green-600 font-semibold">{fmt(p.preco_promo)} promo</p>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">{catMap[p.category_id] ?? 'Sem categoria'}</p>
+                  {Array.isArray(p.tags) && p.tags.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {p.tags.map((t) => <TagBadge key={t} slug={t} tagsMap={tagsMap} />)}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-0.5">{catMap[p.category_id] ?? 'Sem categoria'}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => abrirEditar(p)}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDeletar(p)}
+                      disabled={deletando === p.id}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {deletando === p.id ? '...' : 'Deletar'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -192,11 +350,13 @@ const RestauranteProdutos = () => {
         )}
       </main>
 
-      {/* Modal novo produto */}
+      {/* Modal criar / editar produto */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-lg font-bold text-[#18181B] mb-4">Novo Produto</h2>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold text-[#18181B] mb-4">
+              {editando ? 'Editar Produto' : 'Novo Produto'}
+            </h2>
             <form onSubmit={handleSalvar} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
@@ -222,9 +382,7 @@ const RestauranteProdutos = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="number" min="0" step="0.01"
                     value={form.price}
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm"
@@ -237,13 +395,24 @@ const RestauranteProdutos = () => {
                   <select
                     value={form.category_id}
                     onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
-                    className="mx-2 w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Selecionar</option>
-                    {categorias.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
+                    {categorias.length > 0 && (
+                      <optgroup label="Minhas categorias">
+                        {categorias.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {categoriasGlobais.length > 0 && (
+                      <optgroup label="Categorias da plataforma">
+                        {categoriasGlobais.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               </div>
@@ -256,19 +425,34 @@ const RestauranteProdutos = () => {
                   placeholder="https://..."
                 />
               </div>
+
+              {/* Tags — multi-seleção (carregadas da API) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select
-                  value={form.tipo}
-                  onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="normal">Normal</option>
-                  <option value="promo">Promoção</option>
-                  <option value="combo">Combo</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags / Carrosseis (pode marcar várias)</label>
+                {tagsDisponiveis.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">Nenhuma tag disponível. O admin precisa criar tags primeiro.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {tagsDisponiveis.map((t) => (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => toggleTag(t.slug)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                          form.tags.includes(t.slug)
+                            ? 'bg-[#FF441F] text-white border-[#FF441F]'
+                            : 'bg-white text-[#71717A] border-[#E4E4E7] hover:border-[#FF441F]'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              {form.tipo === 'promo' && (
+
+              {/* Preço promo — só aparece se tag promo ativa */}
+              {temPromo && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preço promocional (R$)</label>
                   <input
@@ -280,6 +464,7 @@ const RestauranteProdutos = () => {
                   />
                 </div>
               )}
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -289,10 +474,11 @@ const RestauranteProdutos = () => {
                 />
                 <span className="text-sm text-gray-700">⭐ Destacar produto</span>
               </label>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowModal(false); setForm(EMPTY_FORM); }}
+                  onClick={fecharModal}
                   className="flex-1 py-2 text-sm border rounded-lg text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
@@ -302,7 +488,7 @@ const RestauranteProdutos = () => {
                   disabled={salvando}
                   className="flex-1 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
                 >
-                  {salvando ? 'Salvando...' : 'Salvar'}
+                  {salvando ? 'Salvando...' : editando ? 'Salvar Alterações' : 'Criar Produto'}
                 </button>
               </div>
             </form>

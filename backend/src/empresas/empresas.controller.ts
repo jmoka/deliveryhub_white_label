@@ -36,6 +36,14 @@ export class EmpresasController {
     return this.service.atualizar(id, body);
   }
 
+  @Patch(':id/bloquear')
+  bloquear(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { bloqueado: boolean },
+  ) {
+    return this.service.bloquear(id, body.bloqueado);
+  }
+
   @Delete(':id')
   remover(@Param('id', ParseIntPipe) id: number) {
     return this.service.remover(id);

@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
+import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha } from '../../services/restauranteService';
+import {
+  getCozinhaToken, setCozinhaToken, clearCozinhaToken,
+  getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
+} from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
-import { printComanda, barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
+import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
+import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
 
 const STATUS_INFO = {
-  confirmed: { label: 'Confirmado', next: 'preparing', nextLabel: 'Iniciar Preparo', nextIcon: 'ChefHat', prev: 'pending', prevLabel: 'Pendente', color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800', btnColor: 'bg-orange-500 hover:bg-orange-600' },
-  preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Confirmado', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
+  confirmed: { label: 'Aguardando Preparo', next: 'preparing', nextLabel: 'Iniciar Preparo', nextIcon: 'ChefHat', prev: 'pending', prevLabel: 'Pendente', color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800', btnColor: 'bg-orange-500 hover:bg-orange-600' },
+  preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Ag. Preparo', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
 };
 
 const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
@@ -53,13 +58,6 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
           </p>
         </div>
         <div className="flex flex-col gap-1.5 flex-shrink-0">
-          <button
-            onClick={() => printComanda(pedido, pedido.itens ?? [], restauranteNome)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E4E4E7] rounded-xl text-xs font-semibold text-[#27272A] hover:bg-[#F4F4F5] transition-colors"
-          >
-            <Icon name="Printer" size={13} />
-            Comanda
-          </button>
           <div className="flex items-center justify-center gap-1 px-2 py-1 bg-[#F4F4F5] rounded-lg">
             <Icon name="Barcode" size={11} className="text-[#71717A]" />
             <span className="text-[10px] font-mono text-[#71717A]">{barcodeValue(pedido.id)}</span>
@@ -112,8 +110,71 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
   );
 };
 
+// Login screen para acesso via token (sem conta de dono)
+const CozinhaLogin = ({ onLogin }) => {
+  const [token, setToken] = useState('');
+  const [erro, setErro] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setLoading(true);
+    setCozinhaToken(token.trim());
+    try {
+      await getCozinhaMe();
+      onLogin();
+    } catch {
+      clearCozinhaToken();
+      setErro('Link inválido. Solicite um novo link ao restaurante.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center p-4">
+      <div className="bg-[#232323] rounded-2xl border border-[#2A2A2A] p-6 w-full max-w-sm shadow-2xl">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <Icon name="ChefHat" size={28} className="text-orange-400" />
+          </div>
+          <h1 className="text-lg font-black text-white">Painel da Cozinha</h1>
+          <p className="text-sm text-[#71717A] mt-1">Cole o token recebido do restaurante</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Token de acesso..."
+            required
+            className="w-full bg-[#1A1A1A] border border-[#3A3A3A] rounded-xl px-3 py-3 text-sm font-mono text-white focus:outline-none focus:border-orange-500"
+          />
+          {erro && <p className="text-xs text-red-400">{erro}</p>}
+          <button type="submit" disabled={loading || !token.trim()}
+            className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 disabled:opacity-50 text-sm">
+            {loading ? 'Verificando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const RestauranteCozinha = () => {
   const navigate = useNavigate();
+
+  // Detecta modo token sincronamente — antes da primeira renderização
+  const [modoToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('cozinha_token');
+    if (urlToken) {
+      setCozinhaToken(urlToken);
+      window.history.replaceState({}, '', '/restaurante/cozinha');
+    }
+    return !!getCozinhaToken();
+  });
+  const [authed, setAuthed] = useState(() => !!getCozinhaToken());
   const [pedidos, setPedidos] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
   const [restauranteId, setRestauranteId] = useState(null);
@@ -127,9 +188,35 @@ const RestauranteCozinha = () => {
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
   const [printerInput, setPrinterInput] = useState('');
   const [printerSaved, setPrinterSaved] = useState(false);
+  const [copiadoLink, setCopiadoLink] = useState(false);
+  const [gerandoLink, setGerandoLink] = useState(false);
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
+  const tocarSom = useNotificacaoSonora('cozinha');
+
+  const copiarLinkCozinha = async () => {
+    setGerandoLink(true);
+    try {
+      const { cozinha_token } = await renovarTokenCozinha();
+      const base = window.location.origin;
+      const texto = `${base}/restaurante/cozinha?cozinha_token=${cozinha_token}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(texto);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = texto; el.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(el); el.focus(); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      }
+      setCopiadoLink(true);
+      setTimeout(() => setCopiadoLink(false), 2500);
+    } catch (e) {
+      alert('Erro ao gerar link: ' + e.message);
+    } finally {
+      setGerandoLink(false);
+    }
+  };
 
   const handleSavePrinter = () => {
     setPrinterName(printerInput.trim());
@@ -137,16 +224,14 @@ const RestauranteCozinha = () => {
     setTimeout(() => setPrinterSaved(false), 2000);
   };
 
-  const carregar = useCallback(async (currentRestauranteNome) => {
+  const carregar = useCallback(async (currentRestauranteNome, usarToken = false) => {
     try {
-      const data = await getPedidosCozinha();
+      const data = usarToken ? await getCozinhaPedidos() : await getPedidosCozinha();
       const newPedidos = data.pedidos ?? [];
 
       if (!firstLoad.current) {
         const novos = newPedidos.filter((p) => !prevOrderIds.current.has(p.id));
-        novos.forEach((p) => {
-          printComanda(p, p.itens ?? [], currentRestauranteNome);
-        });
+        if (novos.length > 0) tocarSom();
       }
 
       prevOrderIds.current = new Set(newPedidos.map((p) => p.id));
@@ -162,7 +247,19 @@ const RestauranteCozinha = () => {
   }, []);
 
   useEffect(() => {
+    if (modoToken && !authed) return;
+
     let nome = '';
+
+    if (modoToken) {
+      getCozinhaMe()
+        .then((d) => { nome = d.restaurante?.name ?? ''; setRestauranteNome(nome); setRestauranteId(d.restaurante?.id ?? null); })
+        .catch(() => {});
+      carregar(nome, true);
+      const id = setInterval(() => carregar(nome, true), 30000);
+      return () => clearInterval(id);
+    }
+
     getMinhaEmpresa()
       .then((d) => {
         nome = d.empresa?.name ?? '';
@@ -174,7 +271,7 @@ const RestauranteCozinha = () => {
     carregar(nome);
     const id = setInterval(() => carregar(nome), 30000);
     return () => clearInterval(id);
-  }, [carregar]);
+  }, [carregar, modoToken, authed]);
 
   // Realtime: recarrega cozinha quando pedido muda de status
   useEffect(() => {
@@ -222,8 +319,13 @@ const RestauranteCozinha = () => {
   const handleAvancar = async (pedidoId, novoStatus) => {
     setAtualizando(pedidoId);
     try {
-      await atualizarStatusPedido(pedidoId, novoStatus);
-      await carregar(restauranteNome);
+      if (modoToken) {
+        await atualizarStatusCozinhaPortal(pedidoId, novoStatus);
+        await carregar(restauranteNome, true);
+      } else {
+        await atualizarStatusPedido(pedidoId, novoStatus);
+        await carregar(restauranteNome);
+      }
     } catch (e) {
       alert(e.message);
     } finally {
@@ -233,6 +335,11 @@ const RestauranteCozinha = () => {
 
   const confirmados = pedidos.filter((p) => p.status === 'confirmed');
   const preparando = pedidos.filter((p) => p.status === 'preparing');
+
+  // Modo token: mostrar login se não autenticado
+  if (modoToken && !authed) {
+    return <CozinhaLogin onLogin={() => setAuthed(true)} />;
+  }
 
   if (loading) return (
     <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center">
@@ -244,9 +351,16 @@ const RestauranteCozinha = () => {
     <div className="min-h-screen bg-[#111111]">
       <header className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-5 py-3">
         <div className="flex items-center gap-4 mb-3">
-          <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
-            <Icon name="ArrowLeft" size={18} />
-          </button>
+          {modoToken ? (
+            <button onClick={() => { clearCozinhaToken(); window.location.reload(); }}
+              className="p-2 text-[#71717A] hover:text-red-400 rounded-lg hover:bg-[#2A2A2A]" title="Sair">
+              <Icon name="LogOut" size={18} />
+            </button>
+          ) : (
+            <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+              <Icon name="ArrowLeft" size={18} />
+            </button>
+          )}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#FF441F] rounded-lg flex items-center justify-center flex-shrink-0">
               <Icon name="ChefHat" size={16} className="text-white" />
@@ -261,6 +375,18 @@ const RestauranteCozinha = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               {lastUpdate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) ?? '—'}
             </div>
+            {/* Botão copiar link — só para o dono, não no modo token */}
+            {!modoToken && (
+              <button
+                onClick={copiarLinkCozinha}
+                disabled={gerandoLink}
+                title="Copiar link de acesso para a cozinha"
+                className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${copiadoLink ? 'text-green-400 bg-green-400/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
+              >
+                <Icon name={gerandoLink ? 'Loader2' : copiadoLink ? 'Check' : 'Link'} size={16}
+                  className={gerandoLink ? 'animate-spin' : ''} />
+              </button>
+            )}
             <button onClick={() => { setShowPrinterSettings((v) => !v); setPrinterInput(getPrinterName()); }}
               className={`p-2 rounded-lg transition-colors ${showPrinterSettings ? 'text-[#FF441F] bg-[#FF441F]/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
               title="Configurar impressora">

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa } from '../../services/adminService';
+import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -12,6 +13,7 @@ const AdminNav = ({ active }) => {
     { label: 'Dashboard', path: '/admin' },
     { label: 'Empresas', path: '/admin/empresas' },
     { label: 'Categorias', path: '/admin/categorias' },
+    { label: 'Tags',       path: '/admin/tags' },
     { label: 'Comissões', path: '/admin/comissoes' },
     { label: 'Configurações', path: '/admin/configuracoes' },
   ];
@@ -136,6 +138,7 @@ const Modal = ({ empresa, onClose, onSave }) => {
 
 const AdminEmpresas = () => {
   const navigate = useNavigate();
+  const { isLocalMode, localRestaurantId } = useLocalMode() ?? {};
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -145,7 +148,12 @@ const AdminEmpresas = () => {
     setLoading(true);
     try {
       const data = await getEmpresas();
-      setEmpresas(data.empresas ?? []);
+      let lista = data.empresas ?? [];
+      // Modo local: restringe a 1 restaurante
+      if (isLocalMode && localRestaurantId) {
+        lista = lista.filter((e) => e.id === localRestaurantId);
+      }
+      setEmpresas(lista);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -165,8 +173,20 @@ const AdminEmpresas = () => {
     }
   };
 
+  const handleBloquear = async (empresa) => {
+    const acao = empresa.bloqueado ? 'desbloquear' : 'bloquear';
+    if (!confirm(`${acao.charAt(0).toUpperCase() + acao.slice(1)} "${empresa.name}"?`)) return;
+    try {
+      await bloquearEmpresa(empresa.id, !empresa.bloqueado);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <LocalModeBanner />
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Painel Dev-Admin</h1>
@@ -180,12 +200,14 @@ const AdminEmpresas = () => {
           <h2 className="text-lg font-semibold text-gray-900">
             Empresas <span className="text-gray-400 font-normal text-sm">({empresas.length})</span>
           </h2>
-          <button
-            onClick={() => setModal('novo')}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
-          >
-            + Nova Empresa
-          </button>
+          {!isLocalMode && (
+            <button
+              onClick={() => setModal('novo')}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+            >
+              + Nova Empresa
+            </button>
+          )}
         </div>
 
         {erro && (
@@ -199,7 +221,7 @@ const AdminEmpresas = () => {
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="bg-white rounded-xl border overflow-x-auto">
             {empresas.length === 0 ? (
               <div className="p-12 text-center text-gray-400">
                 <p className="text-lg">Nenhuma empresa cadastrada</p>
@@ -214,21 +236,22 @@ const AdminEmpresas = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">ID</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Nome</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Slug / Link</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Endereço</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Comissão</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Cadastro</th>
-                    <th className="px-4 py-3 w-px whitespace-nowrap"></th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden sm:table-cell">ID</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600">Nome</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Slug / Link</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Endereço</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                    <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden md:table-cell">Comissão</th>
+                    <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden lg:table-cell">Cadastro</th>
+                    <th className="px-2 sm:px-4 py-3 w-px whitespace-nowrap"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {empresas.map((e) => (
                     <tr key={e.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-400">#{e.id}</td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{e.name}</td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
+                      <td className="px-2 sm:px-4 py-3 text-gray-400 hidden sm:table-cell">#{e.id}</td>
+                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 max-w-[120px] sm:max-w-none truncate">{e.name}</td>
+                      <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         {e.slug ? (
                           <a
                             href={`/r/${e.slug}`}
@@ -242,19 +265,30 @@ const AdminEmpresas = () => {
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell max-w-xs truncate">
+                      <td className="px-2 sm:px-4 py-3 text-gray-500 hidden md:table-cell max-w-xs truncate">
                         {e.address ?? '—'}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 sm:px-4 py-3">
+                        {e.bloqueado ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Bloqueado
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
                           {e.comissao_pct ?? 5}%
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-400 text-xs">
+                      <td className="px-2 sm:px-4 py-3 text-right text-gray-400 text-xs hidden lg:table-cell">
                         {new Date(e.created_at).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2 justify-end">
+                      <td className="px-2 sm:px-4 py-3 w-px whitespace-nowrap">
+                        <div className="flex gap-1 sm:gap-2 justify-end">
                           <button
                             onClick={() => navigate(`/admin/empresas/${e.id}`)}
                             className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -268,11 +302,23 @@ const AdminEmpresas = () => {
                             Editar
                           </button>
                           <button
-                            onClick={() => handleRemover(e)}
-                            className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg"
+                            onClick={() => handleBloquear(e)}
+                            className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                              e.bloqueado
+                                ? 'text-green-700 hover:bg-green-50'
+                                : 'text-red-600 hover:bg-red-50'
+                            }`}
                           >
-                            Remover
+                            {e.bloqueado ? 'Desbloquear' : 'Bloquear'}
                           </button>
+                          {!isLocalMode && (
+                            <button
+                              onClick={() => handleRemover(e)}
+                              className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                              Remover
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

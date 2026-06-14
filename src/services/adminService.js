@@ -39,6 +39,7 @@ async function apiFetch(path, options = {}) {
 export const getPlataformaConfig = () => apiFetch('/plataforma/config');
 export const updatePlataformaConfig = (data) =>
   apiFetch('/plataforma/config', { method: 'PATCH', body: JSON.stringify(data) });
+export const getRedeInfo = () => apiFetch('/plataforma/rede');
 export const getMetricas = () => apiFetch('/plataforma/metricas');
 export const getComissoes = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
@@ -51,6 +52,7 @@ export const getEmpresas = () => apiFetch('/empresas');
 export const getEmpresa = (id) => apiFetch(`/empresas/${id}`);
 export const criarEmpresa = (data) => apiFetch('/empresas', { method: 'POST', body: JSON.stringify(data) });
 export const atualizarEmpresa = (id, data) => apiFetch(`/empresas/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const bloquearEmpresa = (id, bloqueado) => apiFetch(`/empresas/${id}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
 export const removerEmpresa = (id) => apiFetch(`/empresas/${id}`, { method: 'DELETE' });
 
 // Config pagamentos por empresa
@@ -74,6 +76,12 @@ export const toggleProduto = (id, ativo) =>
 
 // Categorias por empresa
 export const getCategorias = (empresaId) => apiFetch(`/empresas/${empresaId}/categorias`);
+
+// Tags do catálogo — admin CRUD
+export const getTags = () => apiFetch('/admin/tags');
+export const criarTag = (data) => apiFetch('/admin/tags', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarTag = (id, data) => apiFetch(`/admin/tags/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerTag = (id) => apiFetch(`/admin/tags/${id}`, { method: 'DELETE' });
 
 // Categorias globais (plataforma) — admin
 export const getCategoriasGlobais = () => apiFetch('/categorias/globais');

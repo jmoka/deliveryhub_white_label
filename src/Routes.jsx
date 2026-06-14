@@ -16,6 +16,7 @@ import AdminGuard from './components/AdminGuard';
 import AdminConfiguracoes from './pages/admin-configuracoes';
 import AdminEmpresaDetalhe from './pages/admin-empresa-detalhe';
 import AdminCategorias from './pages/admin-categorias';
+import AdminTags from './pages/admin-tags';
 import RestauranteGuard from './components/RestauranteGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
 import RestauranteProdutos from './pages/restaurante-produtos';
@@ -28,6 +29,7 @@ import RestauranteMotoboys from './pages/restaurante-motoboys';
 import RestauranteCozinha from './pages/restaurante-cozinha';
 import RestauranteCaixa from './pages/restaurante-caixa';
 import RestauranteFinanceiro from './pages/restaurante-financeiro';
+import RestauranteCombos from './pages/restaurante-combos';
 import MotoboyPortal from './pages/motoboy-portal';
 import CustomerProfile from './pages/customer-profile';
 
@@ -51,6 +53,7 @@ const Routes = () => {
         <Route path="/admin/empresas/:id" element={<AdminGuard><AdminEmpresaDetalhe /></AdminGuard>} />
         <Route path="/admin/comissoes" element={<AdminGuard><AdminComissoes /></AdminGuard>} />
         <Route path="/admin/categorias" element={<AdminGuard><AdminCategorias /></AdminGuard>} />
+        <Route path="/admin/tags" element={<AdminGuard><AdminTags /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
 
         {/* Cardápio público por slug — sem auth */}
@@ -64,9 +67,10 @@ const Routes = () => {
         <Route path="/restaurante/clientes" element={<RestauranteGuard><RestauranteClientes /></RestauranteGuard>} />
         <Route path="/restaurante/aparencia" element={<RestauranteGuard><RestauranteAparencia /></RestauranteGuard>} />
         <Route path="/restaurante/motoboys" element={<RestauranteGuard><RestauranteMotoboys /></RestauranteGuard>} />
-        <Route path="/restaurante/cozinha" element={<RestauranteGuard><RestauranteCozinha /></RestauranteGuard>} />
+        <Route path="/restaurante/cozinha" element={<RestauranteCozinha />} />
         <Route path="/restaurante/caixa" element={<RestauranteGuard><RestauranteCaixa /></RestauranteGuard>} />
         <Route path="/restaurante/financeiro" element={<RestauranteGuard><RestauranteFinanceiro /></RestauranteGuard>} />
+        <Route path="/restaurante/combos" element={<RestauranteGuard><RestauranteCombos /></RestauranteGuard>} />
 
         {/* Perfil do cliente */}
         <Route path="/customer-profile" element={<CustomerProfile />} />

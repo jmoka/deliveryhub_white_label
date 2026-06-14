@@ -91,18 +91,18 @@ const CustomerAccountOrderHistory = () => {
         )}
 
         {/* Perfil */}
-        <div className="bg-white rounded-xl border p-4 mb-5 flex items-center gap-4">
-          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+        <div className="bg-white rounded-xl border p-4 mb-5 flex flex-wrap items-center gap-3">
+          <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
             <Icon name="User" size={24} className="text-orange-500" />
           </div>
-          <div className="flex-1">
-            <p className="font-semibold text-gray-900">{userProfile?.name ?? user?.email ?? 'Usuário'}</p>
-            <p className="text-sm text-gray-500">{user?.email}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-900 truncate">{userProfile?.name ?? user?.email ?? 'Usuário'}</p>
+            <p className="text-sm text-gray-500 truncate">{user?.email}</p>
             <p className="text-xs text-gray-400 mt-0.5 capitalize">{userProfile?.role ?? 'customer'}</p>
           </div>
           <button
             onClick={() => navigate('/customer-profile')}
-            className="flex-shrink-0 px-3 py-2 text-xs font-medium text-[#FF441F] border border-[#FF441F]/30 rounded-xl hover:bg-[#FF441F]/5 flex items-center gap-1.5"
+            className="w-full sm:w-auto px-3 py-2 text-xs font-medium text-[#FF441F] border border-[#FF441F]/30 rounded-xl hover:bg-[#FF441F]/5 flex items-center justify-center gap-1.5"
           >
             <Icon name="Settings" size={13} />
             Meu Perfil

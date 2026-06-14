@@ -54,6 +54,7 @@ export class PedidosController {
       restaurant_id: number;
       customer_id?: number;
       payment_method: string;
+      troco_para?: number;
       itens: { product_id: number; quantity: number }[];
     },
     @Req() req: any,
@@ -69,6 +70,17 @@ export class PedidosController {
     @Body() body: { status: string },
   ) {
     return this.service.atualizarStatus(id, body.status as any);
+  }
+
+  // Cliente cancela antes do preparo (pending ou confirmed)
+  @Patch(':id/cancelar')
+  @UseGuards(JwtGuard)
+  cancelarCliente(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { motivo: string },
+    @Req() req: any,
+  ) {
+    return this.service.cancelarCliente(id, req.userId, body.motivo);
   }
 
   // Admin cancela

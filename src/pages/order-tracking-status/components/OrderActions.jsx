@@ -2,19 +2,21 @@ import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const OrderActions = ({ 
+const OrderActions = ({
   orderStatus = 'confirmed',
   orderId = '#12345',
   onCancelOrder = () => {},
   onReorder = () => {},
   primaryColor = '#2563EB',
+  isPago = false,
+  valorDevolver = 0,
   className = ''
 }) => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const canCancel = ['confirmed', 'preparing']?.includes(orderStatus);
+  const canCancel = ['pending', 'confirmed'].includes(orderStatus);
   const canReorder = orderStatus === 'delivered';
 
   const cancelReasons = [
@@ -31,11 +33,9 @@ const OrderActions = ({
 
   const handleConfirmCancel = async () => {
     if (!cancelReason) return;
-    
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      onCancelOrder({ orderId, reason: cancelReason });
+      await onCancelOrder({ orderId, reason: cancelReason });
       setShowCancelModal(false);
     } catch (error) {
       console.error('Error canceling order:', error);
@@ -180,6 +180,21 @@ const OrderActions = ({
                   ))}
                 </div>
               </div>
+
+              {isPago && valorDevolver > 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+                  <Icon name="RefreshCw" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-800">
+                    Valor a devolver:{' '}
+                    <strong>
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorDevolver)}
+                    </strong>
+                    <span className="block text-xs text-blue-600 mt-0.5">
+                      O estorno será processado pelo restaurante.
+                    </span>
+                  </p>
+                </div>
+              )}
 
               <div className="flex space-x-3">
                 <Button

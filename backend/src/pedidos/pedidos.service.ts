@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 const STATUS_VALIDOS = ['pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered', 'canceled'] as const;
@@ -36,14 +36,14 @@ export class PedidosService {
   async buscar(id: number) {
     const { data: pedido, error } = await this.supabase.client
       .from('orders')
-      .select('id, total, status, payment_method, restaurant_id, customer_id, user_id, motoboy_id, motoboy_lat, motoboy_lng, motoboy_location_at, delivery_notes, delivery_occurrence, created_at, updated_at')
+      .select('id, total, troco_para, entrega_pagamento, status, payment_method, restaurant_id, customer_id, user_id, motoboy_id, motoboy_lat, motoboy_lng, motoboy_location_at, delivery_notes, delivery_occurrence, created_at, updated_at')
       .eq('id', id)
       .maybeSingle();
 
     if (error) throw error;
     if (!pedido) throw new NotFoundException(`Pedido ${id} não encontrado`);
 
-    const [{ data: itensRaw }, { data: cliente }, { data: empresa }, { data: motoboy }] = await Promise.all([
+    const [{ data: itensRaw }, { data: cliente }, { data: empresa }, { data: motoboy }, { data: pagamento }] = await Promise.all([
       this.supabase.client
         .from('order_items')
         .select('id, quantity, unit_price, product_id')
@@ -59,6 +59,7 @@ export class PedidosService {
       pedido.motoboy_id
         ? this.supabase.client.from('motoboys').select('id, name, phone, access_token').eq('id', pedido.motoboy_id).maybeSingle()
         : Promise.resolve({ data: null }),
+      this.supabase.client.from('pagamentos').select('id, valor, tipo, status').eq('order_id', id).eq('status', 'paid').maybeSingle(),
     ]);
 
     // Enrich items with product names
@@ -70,13 +71,14 @@ export class PedidosService {
       itens = itens.map((i: any) => ({ ...i, product_name: prodMap[i.product_id] ?? `Produto #${i.product_id}` }));
     }
 
-    return { pedido, itens, cliente, empresa, motoboy };
+    return { pedido, itens, cliente, empresa, motoboy, pagamento_pago: pagamento ?? null };
   }
 
   async criar(body: {
     restaurant_id: number;
     customer_id?: number;
     payment_method: string;
+    troco_para?: number;
     user_id: string;
     itens: { product_id: number; quantity: number }[];
   }) {
@@ -129,6 +131,7 @@ export class PedidosService {
         restaurant_id: body.restaurant_id,
         customer_id: customerId,
         payment_method: body.payment_method,
+        troco_para: body.payment_method === 'cash' && body.troco_para ? body.troco_para : null,
         user_id: body.user_id,
         total: parseFloat(total.toFixed(2)),
         status: 'pending',
@@ -177,5 +180,45 @@ export class PedidosService {
 
   async cancelar(id: number) {
     return this.atualizarStatus(id, 'canceled');
+  }
+
+  async cancelarCliente(id: number, userId: string, motivo: string) {
+    if (!motivo?.trim()) throw new BadRequestException('Motivo do cancelamento é obrigatório');
+
+    const { data: pedido, error } = await this.supabase.client
+      .from('orders')
+      .select('id, status, user_id, total, payment_method')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!pedido) throw new NotFoundException(`Pedido ${id} não encontrado`);
+    if (pedido.user_id !== userId) throw new ForbiddenException('Sem permissão para cancelar este pedido');
+    if (!['pending', 'confirmed'].includes(pedido.status)) {
+      throw new BadRequestException('Pedido não pode ser cancelado após início do preparo');
+    }
+
+    const { data: pagamento } = await this.supabase.client
+      .from('pagamentos')
+      .select('id, valor, tipo')
+      .eq('order_id', id)
+      .eq('status', 'paid')
+      .maybeSingle();
+
+    const { data: atualizado, error: errUpd } = await this.supabase.client
+      .from('orders')
+      .update({ status: 'canceled', cancel_reason: motivo.trim(), updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('id, status, cancel_reason, total, updated_at')
+      .single();
+
+    if (errUpd) throw errUpd;
+
+    const valor_devolver = pagamento?.valor ?? 0;
+    return {
+      pedido: atualizado,
+      valor_devolver,
+      precisa_estorno: valor_devolver > 0,
+    };
   }
 }

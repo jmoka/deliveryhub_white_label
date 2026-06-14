@@ -42,16 +42,24 @@ export declare class PlataformaService {
         pagbank_sandbox: any;
         pagbank_platform_token_masked: string | null;
         configurado: boolean;
+        cloudflare_domain: any;
+        cloudflare_tunnel_token_masked: string | null;
+        cloudflare_configurado: boolean;
     }>;
     updateConfig(body: {
         pagbank_platform_token?: string;
         pagbank_platform_account_id?: string;
         pagbank_sandbox?: boolean;
+        cloudflare_tunnel_token?: string;
+        cloudflare_domain?: string;
     }): Promise<{
         pagbank_platform_account_id: any;
         pagbank_sandbox: any;
         pagbank_platform_token_masked: string | null;
         configurado: boolean;
+        cloudflare_domain: any;
+        cloudflare_tunnel_token_masked: string | null;
+        cloudflare_configurado: boolean;
     }>;
     comissoesPorEmpresa(empresaId: number): Promise<{
         empresa: {

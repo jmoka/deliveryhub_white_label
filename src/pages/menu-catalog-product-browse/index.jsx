@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
+import { imgUrl } from '../../lib/imgUrl';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -49,7 +51,7 @@ const RestCardGrid = ({ r, i }) => {
     >
       <div className="relative h-44 overflow-hidden bg-[#F4F4F5]">
         {r.logo_url
-          ? <img src={r.logo_url} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
+          ? <img src={imgUrl(r.logo_url)} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
           : <div className="w-full h-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center">
               <Icon name="Store" size={52} className="text-[#FF441F]/25" />
             </div>}
@@ -100,7 +102,7 @@ const RestCardList = ({ r, i }) => {
     >
       <div className="w-28 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#F4F4F5]">
         {r.logo_url
-          ? <img src={r.logo_url} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
+          ? <img src={imgUrl(r.logo_url)} alt={r.name} className={`w-full h-full object-cover ${!aberto ? 'grayscale' : ''}`} />
           : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={32} className="text-[#FF441F]/30" /></div>}
       </div>
       <div className="flex-1 min-w-0 py-1">
@@ -129,11 +131,23 @@ const RestCardList = ({ r, i }) => {
 };
 
 /* ── Card produto (comparação) ───────────────────────────────────── */
-const ProdutoCompCard = ({ produto, i, navigate }) => {
-  const temPromo = produto.tipo === 'promo' && produto.preco_promo != null;
+const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const restFechado = rest?.aparencia?.aberto === false;
+  const [added, setAdded] = useState(false);
+
+  const handleClick = () => {
+    if (!rest || restFechado) return;
+    if (onAdd) {
+      onAdd(produto, rest);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 900);
+    } else {
+      navigate(`/r/${rest.slug}`);
+    }
+  };
 
   return (
     <motion.button
@@ -141,13 +155,20 @@ const ProdutoCompCard = ({ produto, i, navigate }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: (i % 12) * 0.04, duration: 0.25 }}
       whileHover={restFechado ? {} : { y: -2, transition: { duration: 0.12 } }}
-      onClick={() => rest && !restFechado && navigate(`/r/${rest.slug}`)}
-      className={`bg-white rounded-2xl border overflow-hidden transition-all text-left w-full ${
+      onClick={handleClick}
+      className={`bg-white rounded-2xl border overflow-hidden transition-all text-left w-full relative ${
         restFechado
           ? 'border-red-200 opacity-70 cursor-not-allowed'
+          : added
+          ? 'border-green-400 shadow-md shadow-green-100'
           : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20'
       }`}
     >
+      {added && (
+        <div className="absolute inset-0 bg-green-500/10 z-10 flex items-center justify-center rounded-2xl pointer-events-none">
+          <span className="bg-green-500 text-white text-xs font-black px-3 py-1 rounded-full shadow">✓ Adicionado!</span>
+        </div>
+      )}
       <div className="relative h-36 bg-[#F4F4F5] overflow-hidden">
         {produto.image_url
           ? <img src={produto.image_url} alt={produto.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
@@ -183,7 +204,7 @@ const ProdutoCompCard = ({ produto, i, navigate }) => {
           <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#F4F4F5]">
             <div className="w-5 h-5 rounded-md overflow-hidden bg-[#F4F4F5] flex-shrink-0">
               {rest.logo_url
-                ? <img src={rest.logo_url} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
+                ? <img src={imgUrl(rest.logo_url)} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
             </div>
             <p className="text-[10px] text-[#71717A] font-medium truncate">{rest.name}</p>
@@ -223,13 +244,99 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
           >
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-white border-2 border-[#E4E4E7] hover:border-[#FF441F]/40 shadow-sm transition-all">
               {r.logo_url
-                ? <img src={r.logo_url} alt={r.name} className="w-full h-full object-cover" />
+                ? <img src={imgUrl(r.logo_url)} alt={r.name} className="w-full h-full object-cover" />
                 : <div className="w-full h-full bg-gradient-to-br from-[#FF441F]/10 to-[#FF7A00]/20 flex items-center justify-center">
                     <Icon name="Store" size={28} className="text-[#FF441F]/40" />
                   </div>}
             </div>
             <p className="text-[10px] sm:text-xs font-semibold text-[#27272A] text-center line-clamp-2 leading-tight px-1">{r.name}</p>
           </motion.button>
+        ))}
+      </div>
+      <button onClick={() => scroll(1)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
+        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+      </button>
+    </div>
+  );
+};
+
+/* ── Card produto carrossel ──────────────────────────────────────── */
+const ProdCarrosselCard = ({ produto, i, navigate, onAdd }) => {
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
+  const preco = temPromo ? produto.preco_promo : produto.price;
+  const rest = produto.restaurante;
+  const fechado = rest?.aparencia?.aberto === false;
+  const [added, setAdded] = useState(false);
+
+  const handleClick = () => {
+    if (!rest || fechado) return;
+    if (onAdd) {
+      onAdd(produto, rest);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 900);
+    } else {
+      navigate(`/r/${rest.slug}`);
+    }
+  };
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: (i % 10) * 0.05 }}
+      whileHover={{ y: fechado ? 0 : -2 }}
+      onClick={handleClick}
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
+        fechado ? 'border-red-200 opacity-70' : added ? 'border-green-400' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      }`}
+    >
+      {added && (
+        <div className="absolute inset-0 bg-green-500/20 z-10 flex items-center justify-center rounded-2xl pointer-events-none">
+          <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">✓</span>
+        </div>
+      )}
+      <div className="relative h-28 bg-[#F4F4F5]">
+        {produto.image_url
+          ? <img src={produto.image_url} alt={produto.name} className={`w-full h-full object-cover ${fechado ? 'grayscale' : ''}`} />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={28} className="text-[#E4E4E7]" /></div>}
+        {!fechado && temPromo && (
+          <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">PROMO</span>
+        )}
+        {produto.tags?.includes('mais_vendido') && (
+          <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow">🔥</span>
+        )}
+      </div>
+      <div className="p-2.5">
+        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{produto.name}</p>
+        <div className="mt-1.5">
+          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(produto.price)}</p>}
+          <p className={`text-sm font-black ${fechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+            {fechado ? '–' : fmt(preco)}
+          </p>
+        </div>
+        {rest && <p className="text-[9px] text-[#71717A] truncate mt-1">{rest.name}</p>}
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Carrossel de produtos ────────────────────────────────────────── */
+const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
+  const scrollRef = useRef(null);
+  const scroll = (dir) => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={() => scroll(-1)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
+        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+      </button>
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
+        {produtos.map((p, i) => (
+          <ProdCarrosselCard key={p.id} produto={p} i={i} navigate={navigate} onAdd={onAdd} />
         ))}
       </div>
       <button onClick={() => scroll(1)}
@@ -289,7 +396,7 @@ const SidebarRight = ({ restaurantes, navigate }) => {
               <span className="text-base font-black text-[#E4E4E7] w-4 flex-shrink-0">{i + 1}</span>
               <div className="w-8 h-8 rounded-xl overflow-hidden bg-[#F4F4F5] flex-shrink-0">
                 {r.logo_url
-                  ? <img src={r.logo_url} alt={r.name} className="w-full h-full object-cover" />
+                  ? <img src={imgUrl(r.logo_url)} alt={r.name} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={14} className="text-[#FF441F]/40" /></div>}
               </div>
               <p className="text-xs font-semibold text-[#18181B] truncate flex-1">{r.name}</p>
@@ -395,14 +502,31 @@ const MenuCatalogProductBrowse = () => {
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
   const [categorias, setCategorias]     = useState(CATEGORIAS_FALLBACK);
+  const [tagsCatalogo, setTagsCatalogo] = useState([]); // tags ativas do admin
   const [loading, setLoading]           = useState(true);
   const [loadProd, setLoadProd]         = useState(true);
   const [erro, setErro]                 = useState(null);
   const [busca, setBusca]               = useState('');
-  const [catAtiva, setCatAtiva]         = useState(null); // null = "todos" (primeiro da lista)
+  const [catAtiva, setCatAtiva]         = useState(null);
   const [viewMode, setViewMode]         = useState('grid');
+  const [badgeCount, setBadgeCount]     = useState(() => cartCount());
+  const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
 
-  /* Stats reais */
+  const handleAddToCart = (produto, restaurante) => {
+    cartAdd(produto, restaurante);
+    setBadgeCount(cartCount());
+    setBadgeTotal(cartTotal());
+  };
+
+  const handleIrCheckout = () => {
+    if (!isAuthenticated()) {
+      sessionStorage.setItem('pending_multi_cart', '1');
+      navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
+      return;
+    }
+    navigate('/shopping-cart-checkout', { state: { multiCart: true } });
+  };
+
   const mediaNota = restaurantes.length > 0
     ? restaurantes.reduce((acc, r) => acc + (r.nota ?? 4.5), 0) / restaurantes.length
     : 0;
@@ -422,10 +546,12 @@ const MenuCatalogProductBrowse = () => {
 
     fetch('/api/categorias/globais')
       .then((r) => r.json())
-      .then((d) => {
-        const cats = d.categorias ?? [];
-        if (cats.length > 0) setCategorias(cats);
-      })
+      .then((d) => { const cats = d.categorias ?? []; if (cats.length > 0) setCategorias(cats); })
+      .catch(() => {});
+
+    fetch('/api/tags')
+      .then((r) => r.json())
+      .then((d) => setTagsCatalogo(d.tags ?? []))
       .catch(() => {});
   }, []);
 
@@ -440,6 +566,24 @@ const MenuCatalogProductBrowse = () => {
         p.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
       )
     : produtos;
+
+  // Carrosseis dinâmicos baseados nas tags ativas do admin
+  const carrosseis = tagsCatalogo
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((tag) => {
+      let prods;
+      if (tag.is_auto) {
+        // Auto: não filtra por tags[] do produto — seria calculado por order_items
+        // No catálogo global usamos os primeiros produtos com destaque como fallback
+        prods = produtos.filter((p) => p.destaque).slice(0, 20);
+      } else {
+        prods = produtos
+          .filter((p) => Array.isArray(p.tags) && p.tags.includes(tag.slug))
+          .slice(0, 20);
+      }
+      return { tag, prods };
+    })
+    .filter(({ prods }) => prods.length > 0);
 
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
@@ -473,14 +617,16 @@ const MenuCatalogProductBrowse = () => {
               <>
                 {isAdmin() && (
                   <button onClick={() => navigate('/admin')}
-                    className="hidden sm:block px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg">
-                    Admin
+                    className="p-2 sm:px-3 sm:py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Painel Admin">
+                    <span className="hidden sm:inline text-xs font-semibold">Admin</span>
+                    <Icon name="LayoutDashboard" size={18} className="sm:hidden" />
                   </button>
                 )}
                 {isRestaurantOwner() && (
                   <button onClick={() => navigate('/restaurante')}
-                    className="hidden sm:block px-3 py-1.5 text-xs font-semibold text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg">
-                    Meu Rest.
+                    className="p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg" title="Meu Painel">
+                    <span className="hidden sm:inline text-xs font-semibold">Meu Rest.</span>
+                    <Icon name="Store" size={18} className="sm:hidden" />
                   </button>
                 )}
                 <button onClick={() => navigate('/customer-account-order-history')}
@@ -507,7 +653,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
       <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto pb-3">
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
             {categorias.map((c, i) => {
               const ativo = catAtiva === c.id;
@@ -560,9 +706,30 @@ const MenuCatalogProductBrowse = () => {
         </div>
       )}
 
+      {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
+      {loadProd ? (
+        <div className="bg-white border-b border-[#E4E4E7]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+            <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
+          </div>
+        </div>
+      ) : (
+        carrosseis.map(({ tag, prods }) => (
+          <div key={tag.id} className="bg-white border-b border-[#E4E4E7]">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+              <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+                <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
+                {tag.name}
+              </p>
+              <ProdCarrossel produtos={prods} navigate={navigate} onAdd={handleAddToCart} />
+            </div>
+          </div>
+        ))
+      )}
+
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
-        <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-3 overflow-x-auto pb-2">
           {categorias.map((c, i) => {
             const ativo = catAtiva === c.id;
             return (
@@ -692,7 +859,7 @@ const MenuCatalogProductBrowse = () => {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {produtosFiltrados.slice(0, 24).map((p, i) => (
-                    <ProdutoCompCard key={p.id} produto={p} i={i} navigate={navigate} />
+                    <ProdutoCompCard key={p.id} produto={p} i={i} navigate={navigate} onAdd={handleAddToCart} />
                   ))}
                 </div>
               )}
@@ -712,6 +879,40 @@ const MenuCatalogProductBrowse = () => {
       <footer className="border-t border-[#E4E4E7] bg-white mt-8 py-6 text-center">
         <p className="text-xs text-[#71717A]">© {new Date().getFullYear()} DeliveryHub · Todos os direitos reservados</p>
       </footer>
+
+      {/* ── Carrinho flutuante ───────────────────────────────────── */}
+      <AnimatePresence>
+        {badgeCount > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3"
+          >
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleIrCheckout}
+              className="flex items-center gap-3 bg-[#FF441F] text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-[#FF441F]/30 font-bold text-sm"
+            >
+              <span className="w-6 h-6 bg-white text-[#FF441F] rounded-full text-xs font-black flex items-center justify-center">
+                {badgeCount}
+              </span>
+              Ver carrinho
+              <span className="text-white/80 text-xs font-semibold">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(badgeTotal)}
+              </span>
+            </motion.button>
+            <button
+              onClick={() => { cartClear(); setBadgeCount(0); setBadgeTotal(0); }}
+              className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-[#71717A] hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Limpar carrinho"
+            >
+              <Icon name="Trash2" size={15} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
