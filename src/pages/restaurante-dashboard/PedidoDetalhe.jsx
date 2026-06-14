@@ -50,7 +50,7 @@ const SectionTitle = ({ icon, label, color = 'text-[#FF441F]' }) => (
   </div>
 );
 
-const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, onDetalheMudou }) => {
+const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, onDetalheMudou, saldoCaixa = 0 }) => {
   const [trocoInput, setTrocoInput] = useState('');
   const [salvandoTroco, setSalvandoTroco] = useState(false);
 
@@ -338,6 +338,19 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
               </p>
               <p className="text-sm text-amber-900">
                 Pegar <strong>{fmt(pedido.troco_para)}</strong> do cliente · Dar <strong>{fmt(troco)}</strong> de troco
+              </p>
+            </div>
+          )}
+          {troco > 0 && saldoCaixa < troco && (
+            <div className="bg-red-50 border-2 border-red-400 rounded-xl p-3 mt-1 space-y-1">
+              <p className="text-xs font-black text-red-700 flex items-center gap-1.5">
+                <Icon name="AlertTriangle" size={13} /> SALDO INSUFICIENTE PARA TROCO
+              </p>
+              <p className="text-sm text-red-800">
+                Caixa tem <strong>{fmt(saldoCaixa)}</strong> · Precisa de <strong>{fmt(troco)}</strong> de troco.
+              </p>
+              <p className="text-xs text-red-600 font-semibold">
+                Insira pelo menos <strong>{fmt(troco - saldoCaixa)}</strong> em dinheiro no caixa antes de enviar o motoboy.
               </p>
             </div>
           )}

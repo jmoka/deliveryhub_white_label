@@ -687,6 +687,7 @@ const RestauranteDashboard = () => {
                         onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
                         motoboys={motoboys}
                         onAtribuir={handleAtribuirMotoboy}
+                        saldoCaixa={caixa?.resumo?.especie_calculada ?? caixa?.valor_inicial ?? 0}
                         onDetalheMudou={async () => {
                           if (!pedidoSelecionadoId) return;
                           try {
