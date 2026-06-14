@@ -1,11 +1,34 @@
 import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import * as os from 'os';
 
 const PRODUTO_FIELDS = 'id, name, description, price, preco_promo, image_url, category_id, restaurant_id, tags, destaque, is_active';
 
 @Controller('r')
 export class CatalogoController {
   constructor(private supabase: SupabaseService) {}
+
+  @Get('acesso')
+  async getAcesso() {
+    const nets = os.networkInterfaces();
+    const ips: string[] = [];
+    for (const iface of Object.values(nets)) {
+      for (const net of iface ?? []) {
+        if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+      }
+    }
+    const { data } = await this.supabase.client
+      .from('platform_settings')
+      .select('config')
+      .eq('id', 1)
+      .maybeSingle();
+    const cfg = ((data?.config ?? {}) as Record<string, any>);
+    return {
+      lan_ips: ips,
+      porta: 4028,
+      cloudflare_domain: cfg.cloudflare_domain || null,
+    };
+  }
 
   @Get()
   async listarRestaurantes() {

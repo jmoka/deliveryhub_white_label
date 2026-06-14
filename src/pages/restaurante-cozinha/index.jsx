@@ -4,6 +4,7 @@ import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../..
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import { printComanda, barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
+import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
@@ -130,6 +131,7 @@ const RestauranteCozinha = () => {
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
+  const tocarSom = useNotificacaoSonora('cozinha');
 
   const handleSavePrinter = () => {
     setPrinterName(printerInput.trim());
@@ -144,6 +146,7 @@ const RestauranteCozinha = () => {
 
       if (!firstLoad.current) {
         const novos = newPedidos.filter((p) => !prevOrderIds.current.has(p.id));
+        if (novos.length > 0) tocarSom();
         novos.forEach((p) => {
           printComanda(p, p.itens ?? [], currentRestauranteNome);
         });

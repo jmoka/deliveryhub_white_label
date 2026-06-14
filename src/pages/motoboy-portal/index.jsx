@@ -7,6 +7,7 @@ import {
 import ColetaBarcode from './ColetaBarcode';
 import EntregaBarcode from './EntregaBarcode';
 import Icon from '../../components/AppIcon';
+import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const OcorrenciaModal = ({ pedido, tipo, onConfirmar, onFechar, salvando }) => {
   const [motivo, setMotivo] = useState('');
@@ -98,7 +99,7 @@ const MotoboyLogin = ({ onLogin }) => {
       onLogin();
     } catch {
       clearMotoboyToken();
-      setErro('Token inválido. Verifique o link recebido do restaurante.');
+      setErro('Senha inválida. Verifique a senha recebida do restaurante.');
     } finally {
       setLoading(false);
     }
@@ -111,14 +112,14 @@ const MotoboyLogin = ({ onLogin }) => {
           <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Icon name="Bike" size={28} className="text-[#FF441F]" />
           </div>
-          <h1 className="text-lg font-black text-[#18181B]">Portal do Motoboy</h1>
-          <p className="text-sm text-[#71717A] mt-1">Cole o token recebido do restaurante</p>
+          <h1 className="text-lg font-black text-[#18181B]">Portal do Entregador</h1>
+          <p className="text-sm text-[#71717A] mt-1">Cole a senha enviada pelo restaurante</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            placeholder="Token de acesso..."
+            placeholder="Senha de acesso..."
             required
             className="w-full border border-[#E4E4E7] rounded-xl px-3 py-3 text-sm font-mono focus:outline-none focus:border-[#FF441F]"
           />
@@ -146,6 +147,8 @@ const MotoboyPortal = () => {
   const [gpsAtivo, setGpsAtivo] = useState(false);
   const [gpsErro, setGpsErro] = useState(null);
   const gpsRef = useRef(null);
+  const prevDisponiveisCount = useRef(0);
+  const tocarSom = useNotificacaoSonora('motoboy');
 
   // Handle URL token on first load
   useEffect(() => {
@@ -173,7 +176,10 @@ const MotoboyPortal = () => {
     }
     try {
       const disponiveisData = await getPedidosDisponiveis();
-      setDisponiveis(disponiveisData.pedidos ?? []);
+      const novosDisponiveis = disponiveisData.pedidos ?? [];
+      if (novosDisponiveis.length > prevDisponiveisCount.current) tocarSom();
+      prevDisponiveisCount.current = novosDisponiveis.length;
+      setDisponiveis(novosDisponiveis);
     } catch {}
   }, []);
 
