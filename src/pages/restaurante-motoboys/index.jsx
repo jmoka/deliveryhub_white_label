@@ -266,6 +266,21 @@ const RestauranteMotoboys = () => {
                       : copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Copiado!'
                       : 'Copiar p/ WhatsApp'}
                   </button>
+                  {/* Copiar só o link */}
+                  {(cfBase || lanBase) && (
+                    <button
+                      onClick={() => copiar(`${(cfBase ?? lanBase)}/motoboy?token=${mb.access_token}`, mb.id, 'link')}
+                      title="Copiar só o link de acesso"
+                      className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 ${
+                        copiado?.id === mb.id && copiado?.tipo === 'link'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-white border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]'
+                      }`}
+                    >
+                      <Icon name={copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Check' : 'Link'} size={11} />
+                      {copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Copiado!' : 'Link'}
+                    </button>
+                  )}
                   {/* Copiar só o token */}
                   <button
                     onClick={() => copiar(mb.access_token, mb.id, 'token')}
