@@ -94,9 +94,16 @@ let PedidosService = class PedidosService {
             if (!prod.is_active)
                 throw new common_1.BadRequestException(`Produto ${item.product_id} inativo`);
         }
-        const total = body.itens.reduce((acc, item) => {
+        const subtotal = body.itens.reduce((acc, item) => {
             return acc + prodMap[item.product_id].price * item.quantity;
         }, 0);
+        const { data: rest } = await this.supabase.client
+            .from('restaurants')
+            .select('frete_motoboy')
+            .eq('id', body.restaurant_id)
+            .maybeSingle();
+        const frete = parseFloat(rest?.frete_motoboy ?? 0);
+        const total = subtotal + frete;
         let customerId = body.customer_id ?? null;
         if (!customerId && body.user_id) {
             const { data: c } = await this.supabase.client

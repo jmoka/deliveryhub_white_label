@@ -100,7 +100,7 @@ const PixScreen = ({ pixData, total, onIrAcompanhar }) => {
 };
 
 /* ── Step 1: Itens ───────────────────────────────────────────────── */
-const StepItens = ({ itens, setItens, onNext, total }) => {
+const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
   const remover = (id) => setItens((p) => p.filter((i) => i.id !== id));
   const altQtd = (id, delta) =>
     setItens((p) => p.map((i) => i.id === id ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
@@ -135,10 +135,24 @@ const StepItens = ({ itens, setItens, onNext, total }) => {
         ))}
       </div>
 
-      {/* Subtotal */}
-      <div className="bg-white rounded-2xl border border-[#E4E4E7] px-4 py-3 flex justify-between">
-        <span className="text-sm text-[#71717A]">Subtotal ({itens.reduce((a, i) => a + i.qtd, 0)} itens)</span>
-        <span className="text-sm font-bold text-[#18181B]">{fmt(total)}</span>
+      {/* Subtotal + frete + total */}
+      <div className="bg-white rounded-2xl border border-[#E4E4E7] px-4 py-3 space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-[#71717A]">Subtotal ({itens.reduce((a, i) => a + i.qtd, 0)} itens)</span>
+          <span className="font-medium text-[#18181B]">{fmt(subtotal)}</span>
+        </div>
+        {frete > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-[#71717A] flex items-center gap-1">
+              <Icon name="Truck" size={13} /> Taxa de entrega
+            </span>
+            <span className="font-medium text-[#18181B]">{fmt(frete)}</span>
+          </div>
+        )}
+        <div className="border-t border-[#E4E4E7] pt-2 flex justify-between font-bold">
+          <span className="text-[#18181B]">Total</span>
+          <span className="text-[#FF441F]">{fmt(total)}</span>
+        </div>
       </div>
 
       <button onClick={onNext}
@@ -257,7 +271,7 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
 );
 
 /* ── Step 3: Confirmar ───────────────────────────────────────────── */
-const StepConfirmar = ({ itens, paymentMethod, trocoPara, total, perfil, loading, erro, onConfirmar, onBack }) => {
+const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, total, perfil, loading, erro, onConfirmar, onBack }) => {
   const payOpt = PAYMENT_OPTIONS.find((o) => o.key === paymentMethod);
   const addr = perfil?.address_json ?? {};
   const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
@@ -290,6 +304,12 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, total, perfil, loading
               <span className="text-[#27272A] font-medium">{fmt(i.price * i.qtd)}</span>
             </div>
           ))}
+          {frete > 0 && (
+            <div className="flex justify-between text-sm text-[#71717A]">
+              <span className="flex items-center gap-1"><Icon name="Truck" size={13} /> Taxa de entrega</span>
+              <span className="font-medium text-[#27272A]">{fmt(frete)}</span>
+            </div>
+          )}
           <div className="border-t border-[#E4E4E7] pt-2 flex justify-between font-bold">
             <span className="text-[#18181B]">Total</span>
             <span className="text-[#FF441F] text-lg">{fmt(total)}</span>
@@ -349,7 +369,7 @@ const SingleCartCheckout = () => {
     return {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug } = restored;
+  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0 } = restored;
 
   const [itens, setItens] = useState(carrinho);
   const [perfil, setPerfil] = useState(null);
@@ -366,7 +386,9 @@ const SingleCartCheckout = () => {
     getPerfil().then(setPerfil).catch(() => {});
   }, []);
 
-  const total = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
+  const frete = parseFloat(freteMotoboy) || 0;
+  const subtotal = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
+  const total = subtotal + frete;
 
   const irParaStep = (n) => { setErro(null); setEtapa(n); };
 
@@ -504,6 +526,8 @@ const SingleCartCheckout = () => {
               key="itens"
               itens={itens}
               setItens={setItens}
+              subtotal={subtotal}
+              frete={frete}
               total={total}
               onNext={() => irParaStep(1)}
             />
@@ -535,6 +559,8 @@ const SingleCartCheckout = () => {
               itens={itens}
               paymentMethod={paymentMethod}
               trocoPara={parseFloat(trocoPara) || 0}
+              subtotal={subtotal}
+              frete={frete}
               total={total}
               perfil={perfil}
               loading={loading}

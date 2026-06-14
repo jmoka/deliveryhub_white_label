@@ -89,7 +89,7 @@ export class CatalogoController {
   async cardapio(@Param('slug') slug: string) {
     const { data: restaurante } = await this.supabase.client
       .from('restaurants')
-      .select('id, name, address, logo_url, business_hours, slug, aparencia')
+      .select('id, name, address, logo_url, business_hours, slug, aparencia, frete_motoboy')
       .eq('slug', slug)
       .maybeSingle();
 

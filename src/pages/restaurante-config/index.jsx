@@ -151,6 +151,7 @@ const RestauranteConfig = () => {
     pagbank_seller_account_id: '',
     taxa_pagbank_percent: '',
     chave_pix: '',
+    frete_motoboy: '',
   });
 
   useEffect(() => {
@@ -163,6 +164,7 @@ const RestauranteConfig = () => {
           pagbank_seller_account_id: d.pagbank_seller_account_id ?? '',
           taxa_pagbank_percent: d.taxa_pagbank_percent != null ? String(d.taxa_pagbank_percent) : '',
           chave_pix: d.chave_pix ?? '',
+          frete_motoboy: d.frete_motoboy != null ? String(d.frete_motoboy) : '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -181,6 +183,7 @@ const RestauranteConfig = () => {
         pagbank_seller_account_id: form.pagbank_seller_account_id.trim(),
         taxa_pagbank_percent: form.taxa_pagbank_percent !== '' ? parseFloat(form.taxa_pagbank_percent) : null,
         chave_pix: form.chave_pix.trim() || null,
+        frete_motoboy: form.frete_motoboy !== '' ? parseFloat(form.frete_motoboy) : 0,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -290,6 +293,26 @@ const RestauranteConfig = () => {
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                   <p className="text-xs text-gray-400 mt-1">Usada para gerar QR Code PIX quando motoboy precisar cobrar na entrega</p>
+                </div>
+
+                {/* Frete Motoboy */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Frete Motoboy (taxa de entrega)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.frete_motoboy}
+                      onChange={(e) => setForm((f) => ({ ...f, frete_motoboy: e.target.value }))}
+                      placeholder="0,00"
+                      className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Valor somado ao pedido e exibido ao cliente no checkout</p>
                 </div>
 
                 <div>

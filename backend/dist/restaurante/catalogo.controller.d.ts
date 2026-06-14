@@ -42,6 +42,7 @@ export declare class CatalogoController {
             business_hours: any;
             slug: any;
             aparencia: any;
+            frete_motoboy: any;
         };
         cardapio: {
             produtos: {

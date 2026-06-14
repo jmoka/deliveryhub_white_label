@@ -101,9 +101,19 @@ export class PedidosService {
       if (!prod.is_active) throw new BadRequestException(`Produto ${item.product_id} inativo`);
     }
 
-    const total = body.itens.reduce((acc, item) => {
+    const subtotal = body.itens.reduce((acc, item) => {
       return acc + prodMap[item.product_id].price * item.quantity;
     }, 0);
+
+    // Busca frete do restaurante e soma ao total
+    const { data: rest } = await this.supabase.client
+      .from('restaurants')
+      .select('frete_motoboy')
+      .eq('id', body.restaurant_id)
+      .maybeSingle();
+
+    const frete = parseFloat(rest?.frete_motoboy ?? 0);
+    const total = subtotal + frete;
 
     // Resolve customer_id — busca existente ou cria novo ao primeiro pedido
     let customerId = body.customer_id ?? null;

@@ -132,6 +132,7 @@ export declare class RestauranteController {
         split_ativo: boolean;
         taxa_pagbank_percent: any;
         chave_pix: any;
+        frete_motoboy: number;
     }>;
     updateConfig(req: any, body: any): Promise<{
         pagbank_sandbox: any;
@@ -142,6 +143,7 @@ export declare class RestauranteController {
         split_ativo: boolean;
         taxa_pagbank_percent: any;
         chave_pix: any;
+        frete_motoboy: number;
     }>;
     toggleStatus(req: any, body: {
         aberto: boolean;
