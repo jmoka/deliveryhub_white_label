@@ -124,6 +124,7 @@ export const setTrocoPara = (pedidoId, troco_para) =>
 
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
+export const renovarTokenCozinha = () => apiFetch('/renovar-token-cozinha', { method: 'PATCH' });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 

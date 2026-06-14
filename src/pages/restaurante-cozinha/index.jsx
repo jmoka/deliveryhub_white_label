@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
+import {
+  getCozinhaToken, setCozinhaToken, clearCozinhaToken,
+  getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
+} from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import { printComanda, barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
@@ -113,8 +117,62 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
   );
 };
 
+// Login screen para acesso via token (sem conta de dono)
+const CozinhaLogin = ({ onLogin }) => {
+  const [token, setToken] = useState('');
+  const [erro, setErro] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setLoading(true);
+    setCozinhaToken(token.trim());
+    try {
+      await getCozinhaMe();
+      onLogin();
+    } catch {
+      clearCozinhaToken();
+      setErro('Link inválido. Solicite um novo link ao restaurante.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center p-4">
+      <div className="bg-[#232323] rounded-2xl border border-[#2A2A2A] p-6 w-full max-w-sm shadow-2xl">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <Icon name="ChefHat" size={28} className="text-orange-400" />
+          </div>
+          <h1 className="text-lg font-black text-white">Painel da Cozinha</h1>
+          <p className="text-sm text-[#71717A] mt-1">Cole o token recebido do restaurante</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Token de acesso..."
+            required
+            className="w-full bg-[#1A1A1A] border border-[#3A3A3A] rounded-xl px-3 py-3 text-sm font-mono text-white focus:outline-none focus:border-orange-500"
+          />
+          {erro && <p className="text-xs text-red-400">{erro}</p>}
+          <button type="submit" disabled={loading || !token.trim()}
+            className="w-full py-3 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 disabled:opacity-50 text-sm">
+            {loading ? 'Verificando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const RestauranteCozinha = () => {
   const navigate = useNavigate();
+  // Modo token: acessado via link de cozinha sem conta de dono
+  const [modoToken, setModoToken] = useState(false);
+  const [authed, setAuthed] = useState(false);
   const [pedidos, setPedidos] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
   const [restauranteId, setRestauranteId] = useState(null);
@@ -139,9 +197,9 @@ const RestauranteCozinha = () => {
     setTimeout(() => setPrinterSaved(false), 2000);
   };
 
-  const carregar = useCallback(async (currentRestauranteNome) => {
+  const carregar = useCallback(async (currentRestauranteNome, usarToken = false) => {
     try {
-      const data = await getPedidosCozinha();
+      const data = usarToken ? await getCozinhaPedidos() : await getPedidosCozinha();
       const newPedidos = data.pedidos ?? [];
 
       if (!firstLoad.current) {
@@ -164,8 +222,34 @@ const RestauranteCozinha = () => {
     }
   }, []);
 
+  // Detectar token na URL (acesso via link de cozinha)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('cozinha_token');
+    if (urlToken) {
+      setCozinhaToken(urlToken);
+      window.history.replaceState({}, '', '/restaurante/cozinha');
+    }
+    if (getCozinhaToken()) {
+      setModoToken(true);
+      setAuthed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (modoToken && !authed) return;
+
     let nome = '';
+
+    if (modoToken) {
+      getCozinhaMe()
+        .then((d) => { nome = d.restaurante?.name ?? ''; setRestauranteNome(nome); setRestauranteId(d.restaurante?.id ?? null); })
+        .catch(() => {});
+      carregar(nome, true);
+      const id = setInterval(() => carregar(nome, true), 30000);
+      return () => clearInterval(id);
+    }
+
     getMinhaEmpresa()
       .then((d) => {
         nome = d.empresa?.name ?? '';
@@ -177,7 +261,7 @@ const RestauranteCozinha = () => {
     carregar(nome);
     const id = setInterval(() => carregar(nome), 30000);
     return () => clearInterval(id);
-  }, [carregar]);
+  }, [carregar, modoToken, authed]);
 
   // Realtime: recarrega cozinha quando pedido muda de status
   useEffect(() => {
@@ -225,8 +309,13 @@ const RestauranteCozinha = () => {
   const handleAvancar = async (pedidoId, novoStatus) => {
     setAtualizando(pedidoId);
     try {
-      await atualizarStatusPedido(pedidoId, novoStatus);
-      await carregar(restauranteNome);
+      if (modoToken) {
+        await atualizarStatusCozinhaPortal(pedidoId, novoStatus);
+        await carregar(restauranteNome, true);
+      } else {
+        await atualizarStatusPedido(pedidoId, novoStatus);
+        await carregar(restauranteNome);
+      }
     } catch (e) {
       alert(e.message);
     } finally {
@@ -236,6 +325,11 @@ const RestauranteCozinha = () => {
 
   const confirmados = pedidos.filter((p) => p.status === 'confirmed');
   const preparando = pedidos.filter((p) => p.status === 'preparing');
+
+  // Modo token: mostrar login se não autenticado
+  if (modoToken && !authed) {
+    return <CozinhaLogin onLogin={() => setAuthed(true)} />;
+  }
 
   if (loading) return (
     <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center">
@@ -247,9 +341,16 @@ const RestauranteCozinha = () => {
     <div className="min-h-screen bg-[#111111]">
       <header className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-5 py-3">
         <div className="flex items-center gap-4 mb-3">
-          <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
-            <Icon name="ArrowLeft" size={18} />
-          </button>
+          {modoToken ? (
+            <button onClick={() => { clearCozinhaToken(); window.location.reload(); }}
+              className="p-2 text-[#71717A] hover:text-red-400 rounded-lg hover:bg-[#2A2A2A]" title="Sair">
+              <Icon name="LogOut" size={18} />
+            </button>
+          ) : (
+            <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+              <Icon name="ArrowLeft" size={18} />
+            </button>
+          )}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#FF441F] rounded-lg flex items-center justify-center flex-shrink-0">
               <Icon name="ChefHat" size={16} className="text-white" />

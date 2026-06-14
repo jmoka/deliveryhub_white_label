@@ -458,6 +458,16 @@ export class RestauranteService {
     return { aberto };
   }
 
+  async renovarTokenCozinha(restaurantId: number) {
+    const novoToken = crypto.randomUUID();
+    const { error } = await this.supabase.client
+      .from('restaurants')
+      .update({ cozinha_token: novoToken })
+      .eq('id', restaurantId);
+    if (error) throw error;
+    return { cozinha_token: novoToken };
+  }
+
   async getCozinha(restaurantId: number) {
     const { data, error } = await this.supabase.client
       .from('orders')

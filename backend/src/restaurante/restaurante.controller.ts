@@ -208,6 +208,11 @@ export class RestauranteController {
     return this.service.getCozinha(req.restaurantId);
   }
 
+  @Patch('renovar-token-cozinha')
+  renovarTokenCozinha(@Req() req: any) {
+    return this.service.renovarTokenCozinha(req.restaurantId);
+  }
+
   @Post('storage/setup')
   setupStorage() {
     return this.service.setupStorage();

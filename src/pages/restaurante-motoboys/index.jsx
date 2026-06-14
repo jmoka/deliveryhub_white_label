@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy } from '../../services/restauranteService';
+import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy, renovarTokenCozinha } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 
 const NavRestaurante = ({ active }) => {
@@ -39,6 +39,8 @@ const RestauranteMotoboys = () => {
   const [copiado, setCopiado] = useState(null); // { id, tipo } | null
   const [renovando, setRenovando] = useState(null); // id | null
   const [acesso, setAcesso] = useState(null); // { lan_ips, porta, cloudflare_domain }
+  const [copiadoCozinha, setCopiadoCozinha] = useState(false);
+  const [renovandoCozinha, setRenovandoCozinha] = useState(false);
 
   const reload = () =>
     listarMotoboys()
@@ -111,33 +113,35 @@ const RestauranteMotoboys = () => {
     ? `https://${acesso.cloudflare_domain}`
     : null;
 
-  const copiarWhatsApp = async (mb) => {
-    setRenovando(mb.id);
+  const copiarLinkCozinha = async () => {
+    setRenovandoCozinha(true);
     try {
-      const atualizado = await renovarTokenMotoboy(mb.id);
-      // Atualiza token na lista local
-      setMotoboys((prev) => prev.map((m) => m.id === mb.id ? { ...m, access_token: atualizado.access_token } : m));
-      const msg = gerarMensagemWhatsApp({ ...mb, access_token: atualizado.access_token });
-      await copiarTexto(msg);
-      setCopiado({ id: mb.id, tipo: 'wa' });
-      setTimeout(() => setCopiado(null), 2500);
+      const { cozinha_token } = await renovarTokenCozinha();
+      const base = cfBase ?? lanBase ?? window.location.origin;
+      await copiarTexto(`${base}/restaurante/cozinha?cozinha_token=${cozinha_token}`);
+      setCopiadoCozinha(true);
+      setTimeout(() => setCopiadoCozinha(false), 2500);
     } catch (err) {
-      setMsg({ tipo: 'erro', texto: 'Erro ao renovar senha: ' + err.message });
+      setMsg({ tipo: 'erro', texto: 'Erro ao gerar link da cozinha: ' + err.message });
     } finally {
-      setRenovando(null);
+      setRenovandoCozinha(false);
     }
   };
 
-  const gerarMensagemWhatsApp = (mb) => {
-    if (cfBase) {
-      // Cloudflare ativo: link direto com token embutido — motoboy clica e entra
-      return `🛵 *Portal do Entregador*\n\nOlá, ${mb.name}!\n\n🔗 Clique para entrar:\n${cfBase}/motoboy?token=${mb.access_token}\n\nSe pedir senha manualmente: *${mb.access_token}*`;
+  const copiarLink = async (mb) => {
+    setRenovando(mb.id);
+    try {
+      const atualizado = await renovarTokenMotoboy(mb.id);
+      setMotoboys((prev) => prev.map((m) => m.id === mb.id ? { ...m, access_token: atualizado.access_token } : m));
+      const base = cfBase ?? lanBase ?? window.location.origin;
+      await copiarTexto(`${base}/motoboy?token=${atualizado.access_token}`);
+      setCopiado({ id: mb.id, tipo: 'link' });
+      setTimeout(() => setCopiado(null), 2500);
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: 'Erro ao gerar link: ' + err.message });
+    } finally {
+      setRenovando(null);
     }
-    if (lanBase) {
-      // Apenas rede local: token separado, aviso claro
-      return `🛵 *Portal do Entregador*\n\nOlá, ${mb.name}!\n\n🔗 Link (só funciona no WiFi do restaurante):\n${lanBase}/motoboy\n\n🔑 Sua senha: *${mb.access_token}*\n\n⚠️ Você precisa estar conectado na mesma rede WiFi do restaurante para acessar.`;
-    }
-    return `🛵 *Portal do Entregador*\n\nOlá, ${mb.name}!\n\n🔑 Sua senha de acesso: *${mb.access_token}*\n\nSolicite o endereço do portal ao restaurante.`;
   };
 
   if (loading) return (
@@ -160,26 +164,30 @@ const RestauranteMotoboys = () => {
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         {/* Aviso de acesso */}
-        {acesso && (
-          <div className={`rounded-xl border px-4 py-3 text-xs space-y-1.5 ${cfBase ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-            {cfBase ? (
-              <>
-                <p className="font-semibold flex items-center gap-1">
-                  <span className="inline-block w-2 h-2 rounded-full bg-green-500" /> Link externo ativo — motoboy pode abrir de qualquer lugar
-                </p>
-                <p className="font-mono text-green-700">{cfBase}/motoboy</p>
-              </>
-            ) : (
-              <>
-                <p className="font-semibold flex items-center gap-1">
-                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500" /> Apenas rede local — link via WhatsApp não funcionará fora do WiFi
-                </p>
-                {lanBase && <p className="font-mono text-amber-700">{lanBase}/motoboy</p>}
-                <p>Para acesso externo (motoboy fora do WiFi), configure o Cloudflare Tunnel em <strong>Admin → Configurações</strong>.</p>
-              </>
-            )}
+        {acesso && !cfBase && (
+          <div className="rounded-xl border px-4 py-2.5 text-xs bg-amber-50 border-amber-200 text-amber-800">
+            ⚠️ Link funciona apenas na mesma rede WiFi. Para acesso externo configure Cloudflare em <strong>Admin → Configurações</strong>.
           </div>
         )}
+        {/* Acesso Cozinha */}
+        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
+          <h2 className="font-bold text-[#18181B] text-sm mb-3 flex items-center gap-2">
+            <Icon name="ChefHat" size={16} className="text-[#FF441F]" /> Acesso Cozinha
+          </h2>
+          <p className="text-xs text-[#71717A] mb-3">Gera um link exclusivo para o tablet/PC da cozinha. Cada cópia invalida o link anterior.</p>
+          <button
+            onClick={copiarLinkCozinha}
+            disabled={renovandoCozinha}
+            className={`w-full py-2.5 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 ${
+              copiadoCozinha ? 'bg-green-500 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
+            }`}
+          >
+            <Icon name={renovandoCozinha ? 'Loader2' : copiadoCozinha ? 'Check' : 'Link'} size={16}
+              className={renovandoCozinha ? 'animate-spin' : ''} />
+            {renovandoCozinha ? 'Gerando...' : copiadoCozinha ? 'Link copiado!' : 'Copiar link da cozinha'}
+          </button>
+        </div>
+
         {/* Form novo motoboy */}
         <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
           <h2 className="font-bold text-[#18181B] text-sm mb-4 flex items-center gap-2">
@@ -239,69 +247,31 @@ const RestauranteMotoboys = () => {
                 </button>
               </div>
 
-              {/* Token + botões de acesso */}
-              <div className="bg-[#F4F4F5] rounded-xl px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-[#71717A] font-medium uppercase tracking-wide mb-0.5">Senha provisória</p>
-                  <p className="font-mono text-sm text-[#18181B] break-all">{mb.access_token}</p>
-                </div>
-                <div className="flex gap-1.5 flex-shrink-0 flex-wrap">
-                  {/* Copiar mensagem WhatsApp — gera nova senha + copia mensagem */}
-                  <button
-                    onClick={() => copiarWhatsApp(mb)}
-                    disabled={renovando === mb.id}
-                    title="Gera nova senha e copia mensagem para WhatsApp"
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-60 ${
-                      copiado?.id === mb.id && copiado?.tipo === 'wa'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-[#25D366] text-white hover:bg-[#1ebe5d]'
-                    }`}
-                  >
-                    <Icon name={
-                      renovando === mb.id ? 'Loader2'
-                      : copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Check'
-                      : 'MessageCircle'
-                    } size={12} className={renovando === mb.id ? 'animate-spin' : ''} />
-                    {renovando === mb.id ? 'Gerando...'
-                      : copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Copiado!'
-                      : 'Copiar p/ WhatsApp'}
-                  </button>
-                  {/* Copiar só o link */}
-                  {(cfBase || lanBase) && (
-                    <button
-                      onClick={() => copiar(`${(cfBase ?? lanBase)}/motoboy?token=${mb.access_token}`, mb.id, 'link')}
-                      title="Copiar só o link de acesso"
-                      className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 ${
-                        copiado?.id === mb.id && copiado?.tipo === 'link'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-white border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]'
-                      }`}
-                    >
-                      <Icon name={copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Check' : 'Link'} size={11} />
-                      {copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Copiado!' : 'Link'}
-                    </button>
-                  )}
-                  {/* Copiar só o token */}
-                  <button
-                    onClick={() => copiar(mb.access_token, mb.id, 'token')}
-                    title="Copiar só a senha"
-                    className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 ${
-                      copiado?.id === mb.id && copiado?.tipo === 'token'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-white border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]'
-                    }`}
-                  >
-                    <Icon name={copiado?.id === mb.id && copiado?.tipo === 'token' ? 'Check' : 'Copy'} size={11} />
-                    {copiado?.id === mb.id && copiado?.tipo === 'token' ? 'Copiado!' : 'Senha'}
-                  </button>
-                </div>
-              </div>
+              {/* Botão copiar link — gera novo token a cada cópia */}
+              <button
+                onClick={() => copiarLink(mb)}
+                disabled={renovando === mb.id}
+                className={`w-full py-2 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 ${
+                  copiado?.id === mb.id && copiado?.tipo === 'link'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
+                }`}
+              >
+                <Icon name={
+                  renovando === mb.id ? 'Loader2'
+                  : copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Check'
+                  : 'Link'
+                } size={15} className={renovando === mb.id ? 'animate-spin' : ''} />
+                {renovando === mb.id ? 'Gerando...'
+                  : copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Link copiado!'
+                  : 'Copiar link de acesso'}
+              </button>
             </div>
           ))}
         </div>
 
         <p className="text-xs text-[#71717A] text-center">
-          Copie a mensagem e cole no WhatsApp do motoboy. Ele abre o link e digita a senha.
+          Copie o link e envie ao motoboy. O link já carrega o acesso automaticamente.
         </p>
       </main>
     </div>
