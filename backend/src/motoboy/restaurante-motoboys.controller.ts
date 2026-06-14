@@ -17,6 +17,11 @@ export class RestauranteMotoboysController {
     return this.service.criar(req.restaurantId, body);
   }
 
+  @Patch(':id/renovar-token')
+  renovarToken(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.service.renovarToken(id, req.restaurantId);
+  }
+
   @Patch(':id/toggle')
   toggle(
     @Param('id', ParseIntPipe) id: number,

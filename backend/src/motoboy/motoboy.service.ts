@@ -25,6 +25,19 @@ export class MotoboyService {
     return data;
   }
 
+  async renovarToken(id: number, restaurantId: number) {
+    const novoToken = crypto.randomUUID();
+    const { data, error } = await this.supabase.client
+      .from('motoboys')
+      .update({ access_token: novoToken })
+      .eq('id', id)
+      .eq('restaurant_id', restaurantId)
+      .select('id, name, phone, access_token, is_active')
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
   async toggle(id: number, restaurantId: number, ativo: boolean) {
     const { data, error } = await this.supabase.client
       .from('motoboys')

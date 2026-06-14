@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarMotoboys, criarMotoboy, toggleMotoboy } from '../../services/restauranteService';
+import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 
 const NavRestaurante = ({ active }) => {
@@ -37,6 +37,7 @@ const RestauranteMotoboys = () => {
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState(null);
   const [copiado, setCopiado] = useState(null); // { id, tipo } | null
+  const [renovando, setRenovando] = useState(null); // id | null
   const [acesso, setAcesso] = useState(null); // { lan_ips, porta, cloudflare_domain }
 
   const reload = () =>
@@ -79,8 +80,25 @@ const RestauranteMotoboys = () => {
     }
   };
 
+  // Funciona em HTTP (LAN) e HTTPS — clipboard API só disponível em contexto seguro
+  const copiarTexto = (texto) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(texto);
+    }
+    // Fallback para HTTP / dispositivos antigos
+    const el = document.createElement('textarea');
+    el.value = texto;
+    el.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    return Promise.resolve();
+  };
+
   const copiar = (texto, id, tipo) => {
-    navigator.clipboard.writeText(texto).then(() => {
+    copiarTexto(texto).then(() => {
       setCopiado({ id, tipo });
       setTimeout(() => setCopiado(null), 2500);
     });
@@ -92,6 +110,23 @@ const RestauranteMotoboys = () => {
   const cfBase = acesso?.cloudflare_domain
     ? `https://${acesso.cloudflare_domain}`
     : null;
+
+  const copiarWhatsApp = async (mb) => {
+    setRenovando(mb.id);
+    try {
+      const atualizado = await renovarTokenMotoboy(mb.id);
+      // Atualiza token na lista local
+      setMotoboys((prev) => prev.map((m) => m.id === mb.id ? { ...m, access_token: atualizado.access_token } : m));
+      const msg = gerarMensagemWhatsApp({ ...mb, access_token: atualizado.access_token });
+      await copiarTexto(msg);
+      setCopiado({ id: mb.id, tipo: 'wa' });
+      setTimeout(() => setCopiado(null), 2500);
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: 'Erro ao renovar senha: ' + err.message });
+    } finally {
+      setRenovando(null);
+    }
+  };
 
   const gerarMensagemWhatsApp = (mb) => {
     if (cfBase) {
@@ -211,18 +246,25 @@ const RestauranteMotoboys = () => {
                   <p className="font-mono text-sm text-[#18181B] break-all">{mb.access_token}</p>
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0 flex-wrap">
-                  {/* Copiar mensagem WhatsApp — ação principal */}
+                  {/* Copiar mensagem WhatsApp — gera nova senha + copia mensagem */}
                   <button
-                    onClick={() => copiar(gerarMensagemWhatsApp(mb), mb.id, 'wa')}
-                    title="Copiar mensagem pronta para WhatsApp"
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
+                    onClick={() => copiarWhatsApp(mb)}
+                    disabled={renovando === mb.id}
+                    title="Gera nova senha e copia mensagem para WhatsApp"
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-60 ${
                       copiado?.id === mb.id && copiado?.tipo === 'wa'
                         ? 'bg-green-500 text-white'
                         : 'bg-[#25D366] text-white hover:bg-[#1ebe5d]'
                     }`}
                   >
-                    <Icon name={copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Check' : 'MessageCircle'} size={12} />
-                    {copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Copiado!' : 'Copiar p/ WhatsApp'}
+                    <Icon name={
+                      renovando === mb.id ? 'Loader2'
+                      : copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Check'
+                      : 'MessageCircle'
+                    } size={12} className={renovando === mb.id ? 'animate-spin' : ''} />
+                    {renovando === mb.id ? 'Gerando...'
+                      : copiado?.id === mb.id && copiado?.tipo === 'wa' ? 'Copiado!'
+                      : 'Copiar p/ WhatsApp'}
                   </button>
                   {/* Copiar só o token */}
                   <button

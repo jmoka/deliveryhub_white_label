@@ -155,6 +155,8 @@ export const toggleMotoboy = (id, ativo) =>
   apiFetch(`/motoboys/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
+export const renovarTokenMotoboy = (id) =>
+  apiFetch(`/motoboys/${id}/renovar-token`, { method: 'PATCH' });
 
 // Combos
 export const getMeusCombos = () => apiFetch('/combos');
