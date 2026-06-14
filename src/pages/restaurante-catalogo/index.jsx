@@ -234,12 +234,13 @@ const RestauranteCatalogo = () => {
 
   const irParaCheckout = () => {
     const restauranteId = data?.restaurante?.id;
+    const freteMotoboy = parseFloat(data?.restaurante?.frete_motoboy ?? 0);
     if (!isAuthenticated()) {
-      sessionStorage.setItem('pending_cart', JSON.stringify({ carrinho, restauranteSlug: slug, restauranteId }));
+      sessionStorage.setItem('pending_cart', JSON.stringify({ carrinho, restauranteSlug: slug, restauranteId, freteMotoboy }));
       navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
       return;
     }
-    navigate('/shopping-cart-checkout', { state: { carrinho, restauranteSlug: slug, restauranteId } });
+    navigate('/shopping-cart-checkout', { state: { carrinho, restauranteSlug: slug, restauranteId, freteMotoboy } });
   };
 
   if (loading) return (

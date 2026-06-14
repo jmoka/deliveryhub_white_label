@@ -433,7 +433,7 @@ export class RestauranteService {
   async getConfig(restaurantId: number) {
     const { data } = await this.supabase.client
       .from('restaurants')
-      .select('payment_config')
+      .select('payment_config, frete_motoboy')
       .eq('id', restaurantId)
       .maybeSingle();
 
@@ -450,6 +450,7 @@ export class RestauranteService {
       split_ativo: !!(cfg.pagbank_seller_account_id),
       taxa_pagbank_percent: cfg.taxa_pagbank_percent ?? null,
       chave_pix: cfg.chave_pix ?? null,
+      frete_motoboy: parseFloat(data?.frete_motoboy ?? 0),
     };
   }
 
@@ -462,6 +463,7 @@ export class RestauranteService {
       pagbank_seller_account_id?: string;
       taxa_pagbank_percent?: number | null;
       chave_pix?: string | null;
+      frete_motoboy?: number;
     },
   ) {
     const { data: atual } = await this.supabase.client
@@ -482,9 +484,12 @@ export class RestauranteService {
     if (body.taxa_pagbank_percent !== undefined) novo.taxa_pagbank_percent = body.taxa_pagbank_percent;
     if (body.chave_pix !== undefined) novo.chave_pix = body.chave_pix;
 
+    const update: Record<string, any> = { payment_config: novo, updated_at: new Date().toISOString() };
+    if (body.frete_motoboy !== undefined) update.frete_motoboy = body.frete_motoboy;
+
     const { error } = await this.supabase.client
       .from('restaurants')
-      .update({ payment_config: novo, updated_at: new Date().toISOString() })
+      .update(update)
       .eq('id', restaurantId);
 
     if (error) throw error;

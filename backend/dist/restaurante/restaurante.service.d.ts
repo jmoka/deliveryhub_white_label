@@ -188,6 +188,7 @@ export declare class RestauranteService {
         split_ativo: boolean;
         taxa_pagbank_percent: any;
         chave_pix: any;
+        frete_motoboy: number;
     }>;
     updateConfig(restaurantId: number, body: {
         pagbank_token?: string;
@@ -196,6 +197,7 @@ export declare class RestauranteService {
         pagbank_seller_account_id?: string;
         taxa_pagbank_percent?: number | null;
         chave_pix?: string | null;
+        frete_motoboy?: number;
     }): Promise<{
         pagbank_sandbox: any;
         pagbank_webhook_url: any;
@@ -205,6 +207,7 @@ export declare class RestauranteService {
         split_ativo: boolean;
         taxa_pagbank_percent: any;
         chave_pix: any;
+        frete_motoboy: number;
     }>;
     toggleStatus(restaurantId: number, aberto: boolean): Promise<{
         aberto: boolean;
