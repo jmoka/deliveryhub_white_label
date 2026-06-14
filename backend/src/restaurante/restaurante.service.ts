@@ -53,6 +53,32 @@ export class RestauranteService {
     });
   }
 
+  async cancelarPedidoAdmin(restaurantId: number, pedidoId: number, motivo: string) {
+    if (!motivo?.trim()) throw new BadRequestException('Motivo do cancelamento é obrigatório');
+
+    const { data: pedido, error } = await this.supabase.client
+      .from('orders')
+      .select('id, status')
+      .eq('id', pedidoId)
+      .eq('restaurant_id', restaurantId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!pedido) throw new NotFoundException('Pedido não encontrado neste restaurante');
+    if (pedido.status === 'canceled') throw new BadRequestException('Pedido já está cancelado');
+
+    const { data, error: errUpd } = await this.supabase.client
+      .from('orders')
+      .update({ status: 'canceled', cancel_reason: motivo.trim(), updated_at: new Date().toISOString() })
+      .eq('id', pedidoId)
+      .eq('restaurant_id', restaurantId)
+      .select('id, status, cancel_reason, total, updated_at')
+      .single();
+
+    if (errUpd) throw errUpd;
+    return data;
+  }
+
   async atualizarStatusPedido(pedidoId: number, restaurantId: number, status: string) {
     const { data: pedido } = await this.supabase.client
       .from('orders')

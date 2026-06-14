@@ -50,6 +50,15 @@ export declare class RestauranteController {
         restaurant_id: any;
         updated_at: any;
     }>;
+    cancelarPedido(id: number, body: {
+        motivo: string;
+    }, req: any): Promise<{
+        id: any;
+        status: any;
+        cancel_reason: any;
+        total: any;
+        updated_at: any;
+    }>;
     setFreteGratis(id: number, req: any): Promise<{
         id: any;
         total: any;
@@ -403,6 +412,7 @@ export declare class RestauranteController {
             motoboy_location_at: any;
             delivery_notes: any;
             delivery_occurrence: any;
+            cancel_reason: any;
             created_at: any;
             updated_at: any;
         };

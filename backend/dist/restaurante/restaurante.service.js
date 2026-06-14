@@ -60,6 +60,32 @@ let RestauranteService = class RestauranteService {
             limite: filtros.limite ?? 50,
         });
     }
+    async cancelarPedidoAdmin(restaurantId, pedidoId, motivo) {
+        if (!motivo?.trim())
+            throw new common_1.BadRequestException('Motivo do cancelamento é obrigatório');
+        const { data: pedido, error } = await this.supabase.client
+            .from('orders')
+            .select('id, status')
+            .eq('id', pedidoId)
+            .eq('restaurant_id', restaurantId)
+            .maybeSingle();
+        if (error)
+            throw error;
+        if (!pedido)
+            throw new common_1.NotFoundException('Pedido não encontrado neste restaurante');
+        if (pedido.status === 'canceled')
+            throw new common_1.BadRequestException('Pedido já está cancelado');
+        const { data, error: errUpd } = await this.supabase.client
+            .from('orders')
+            .update({ status: 'canceled', cancel_reason: motivo.trim(), updated_at: new Date().toISOString() })
+            .eq('id', pedidoId)
+            .eq('restaurant_id', restaurantId)
+            .select('id, status, cancel_reason, total, updated_at')
+            .single();
+        if (errUpd)
+            throw errUpd;
+        return data;
+    }
     async atualizarStatusPedido(pedidoId, restaurantId, status) {
         const { data: pedido } = await this.supabase.client
             .from('orders')

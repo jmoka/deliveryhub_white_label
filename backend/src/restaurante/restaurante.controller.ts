@@ -42,6 +42,15 @@ export class RestauranteController {
     return this.service.atualizarStatusPedido(id, req.restaurantId, body.status);
   }
 
+  @Patch('pedidos/:id/cancelar')
+  cancelarPedido(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { motivo: string },
+    @Req() req: any,
+  ) {
+    return this.service.cancelarPedidoAdmin(req.restaurantId, id, body.motivo);
+  }
+
   @Patch('pedidos/:id/frete-gratis')
   setFreteGratis(
     @Param('id', ParseIntPipe) id: number,

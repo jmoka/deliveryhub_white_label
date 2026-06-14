@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
-import { setTrocoPara, setFreteGratis } from '../../services/restauranteService';
+import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin } from '../../services/restauranteService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -54,6 +54,9 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
   const [trocoInput, setTrocoInput] = useState('');
   const [salvandoTroco, setSalvandoTroco] = useState(false);
   const [zerrandoFrete, setZerrandoFrete] = useState(false);
+  const [showCancelar, setShowCancelar] = useState(false);
+  const [motivoCancelamento, setMotivoCancelamento] = useState('');
+  const [cancelando, setCancelando] = useState(false);
 
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
@@ -66,6 +69,14 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
     try { await setFreteGratis(pedido.id); onDetalheMudou?.(); }
     catch (e) { alert(e.message); }
     finally { setZerrandoFrete(false); }
+  };
+
+  const handleCancelarAdmin = async () => {
+    if (!motivoCancelamento.trim()) return;
+    setCancelando(true);
+    try { await cancelarPedidoAdmin(pedido.id, motivoCancelamento); setMotivoCancelamento(''); setShowCancelar(false); onDetalheMudou?.(); }
+    catch (e) { alert(e.message); }
+    finally { setCancelando(false); }
   };
 
   const handleSalvarTroco = async () => {
@@ -130,9 +141,9 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
           <div>
             <p className="text-sm font-bold text-red-700">Pedido Cancelado</p>
             {pedido.cancel_reason ? (
-              <p className="text-xs text-red-600 mt-0.5">Motivo: {pedido.cancel_reason}</p>
+              <p className="text-xs text-red-600 mt-0.5">Motivo: <strong>{pedido.cancel_reason}</strong></p>
             ) : (
-              <p className="text-xs text-red-500">Este pedido foi cancelado e não pode ser avançado.</p>
+              <p className="text-xs text-red-500">Nenhum motivo informado.</p>
             )}
           </div>
         </div>
@@ -441,6 +452,48 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
       </Section>
 
       {/* Ações */}
+      {!isCanceled && pedido.status !== 'delivered' && (
+        <div className="space-y-2 pb-2">
+          {/* Cancelamento admin */}
+          {!showCancelar ? (
+            <button
+              onClick={() => setShowCancelar(true)}
+              className="w-full py-2.5 border-2 border-red-200 bg-red-50 text-red-600 text-xs font-bold rounded-2xl hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"
+            >
+              <Icon name="XCircle" size={14} /> Cancelar Pedido
+            </button>
+          ) : (
+            <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-3 space-y-2">
+              <p className="text-xs font-bold text-red-700 flex items-center gap-1.5">
+                <Icon name="AlertTriangle" size={13} /> Cancelar Pedido #{pedido.id}
+              </p>
+              <textarea
+                value={motivoCancelamento}
+                onChange={(e) => setMotivoCancelamento(e.target.value)}
+                placeholder="Informe o motivo do cancelamento..."
+                rows={2}
+                className="w-full border border-red-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowCancelar(false); setMotivoCancelamento(''); }}
+                  className="flex-1 py-2 border border-red-200 text-red-500 text-xs font-semibold rounded-xl hover:bg-red-100 transition-colors"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={handleCancelarAdmin}
+                  disabled={cancelando || !motivoCancelamento.trim()}
+                  className="flex-[2] py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl disabled:opacity-50 transition-colors"
+                >
+                  {cancelando ? 'Cancelando...' : 'Confirmar Cancelamento'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {!isCanceled && pedido.status !== 'delivered' && (
         <div className="space-y-2 pb-2">
           {/* Pendente */}

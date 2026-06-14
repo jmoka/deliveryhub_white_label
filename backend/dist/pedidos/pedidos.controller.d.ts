@@ -46,6 +46,7 @@ export declare class PedidosController {
             motoboy_location_at: any;
             delivery_notes: any;
             delivery_occurrence: any;
+            cancel_reason: any;
             created_at: any;
             updated_at: any;
         };

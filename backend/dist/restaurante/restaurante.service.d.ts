@@ -43,6 +43,13 @@ export declare class RestauranteService {
         }[];
         total: number;
     }>;
+    cancelarPedidoAdmin(restaurantId: number, pedidoId: number, motivo: string): Promise<{
+        id: any;
+        status: any;
+        cancel_reason: any;
+        total: any;
+        updated_at: any;
+    }>;
     atualizarStatusPedido(pedidoId: number, restaurantId: number, status: string): Promise<{
         id: any;
         status: any;
@@ -501,6 +508,7 @@ export declare class RestauranteService {
             motoboy_location_at: any;
             delivery_notes: any;
             delivery_occurrence: any;
+            cancel_reason: any;
             created_at: any;
             updated_at: any;
         };
