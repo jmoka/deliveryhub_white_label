@@ -194,7 +194,7 @@ const CarrinhoDesktop = ({ carrinho, onAdicionar, onCheckout }) => (
 const RestauranteCatalogo = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, isRestaurantOwner } = useAuth();
+  const { isAuthenticated, isRestaurantOwner, isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -303,11 +303,26 @@ const RestauranteCatalogo = () => {
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#18181B] text-sm truncate">{restaurante.name}</p>
           </div>
-          {/* Botão painel restaurante — visível sempre que logado como dono */}
+          {/* Botão painel restaurante — visível para dono */}
           {isRestaurantOwner() && (
             <button onClick={() => navigate('/restaurante')}
               className="p-2 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0" title="Meu Painel">
               <Icon name="Store" size={18} />
+            </button>
+          )}
+          {/* Botões cliente — pedidos e perfil */}
+          {isAuthenticated() && !isRestaurantOwner() && !isAdmin() && (
+            <button onClick={() => navigate('/customer-account-order-history')}
+              className="p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
+              title="Meus Pedidos">
+              <Icon name="ClipboardList" size={18} />
+            </button>
+          )}
+          {!isAuthenticated() && (
+            <button onClick={() => navigate('/customer-registration-login')}
+              className="p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
+              title="Entrar">
+              <Icon name="User" size={18} />
             </button>
           )}
           {/* Carrinho icon mobile */}
