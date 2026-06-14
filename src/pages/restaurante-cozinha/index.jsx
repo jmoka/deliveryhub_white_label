@@ -7,7 +7,7 @@ import {
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
-import { printComanda, barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
+import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -58,13 +58,6 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
           </p>
         </div>
         <div className="flex flex-col gap-1.5 flex-shrink-0">
-          <button
-            onClick={() => printComanda(pedido, pedido.itens ?? [], restauranteNome)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E4E4E7] rounded-xl text-xs font-semibold text-[#27272A] hover:bg-[#F4F4F5] transition-colors"
-          >
-            <Icon name="Printer" size={13} />
-            Comanda
-          </button>
           <div className="flex items-center justify-center gap-1 px-2 py-1 bg-[#F4F4F5] rounded-lg">
             <Icon name="Barcode" size={11} className="text-[#71717A]" />
             <span className="text-[10px] font-mono text-[#71717A]">{barcodeValue(pedido.id)}</span>
@@ -239,9 +232,6 @@ const RestauranteCozinha = () => {
       if (!firstLoad.current) {
         const novos = newPedidos.filter((p) => !prevOrderIds.current.has(p.id));
         if (novos.length > 0) tocarSom();
-        novos.forEach((p) => {
-          printComanda(p, p.itens ?? [], currentRestauranteNome);
-        });
       }
 
       prevOrderIds.current = new Set(newPedidos.map((p) => p.id));
