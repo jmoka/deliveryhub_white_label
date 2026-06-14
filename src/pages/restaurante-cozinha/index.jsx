@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
+import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
@@ -186,10 +186,35 @@ const RestauranteCozinha = () => {
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
   const [printerInput, setPrinterInput] = useState('');
   const [printerSaved, setPrinterSaved] = useState(false);
+  const [copiadoLink, setCopiadoLink] = useState(false);
+  const [gerandoLink, setGerandoLink] = useState(false);
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
+
+  const copiarLinkCozinha = async () => {
+    setGerandoLink(true);
+    try {
+      const { cozinha_token } = await renovarTokenCozinha();
+      const base = window.location.origin;
+      const texto = `${base}/restaurante/cozinha?cozinha_token=${cozinha_token}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(texto);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = texto; el.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(el); el.focus(); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      }
+      setCopiadoLink(true);
+      setTimeout(() => setCopiadoLink(false), 2500);
+    } catch (e) {
+      alert('Erro ao gerar link: ' + e.message);
+    } finally {
+      setGerandoLink(false);
+    }
+  };
 
   const handleSavePrinter = () => {
     setPrinterName(printerInput.trim());
@@ -365,6 +390,18 @@ const RestauranteCozinha = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               {lastUpdate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) ?? '—'}
             </div>
+            {/* Botão copiar link — só para o dono, não no modo token */}
+            {!modoToken && (
+              <button
+                onClick={copiarLinkCozinha}
+                disabled={gerandoLink}
+                title="Copiar link de acesso para a cozinha"
+                className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${copiadoLink ? 'text-green-400 bg-green-400/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
+              >
+                <Icon name={gerandoLink ? 'Loader2' : copiadoLink ? 'Check' : 'Link'} size={16}
+                  className={gerandoLink ? 'animate-spin' : ''} />
+              </button>
+            )}
             <button onClick={() => { setShowPrinterSettings((v) => !v); setPrinterInput(getPrinterName()); }}
               className={`p-2 rounded-lg transition-colors ${showPrinterSettings ? 'text-[#FF441F] bg-[#FF441F]/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
               title="Configurar impressora">

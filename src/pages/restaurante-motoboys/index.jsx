@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy, renovarTokenCozinha } from '../../services/restauranteService';
+import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 
 const NavRestaurante = ({ active }) => {
@@ -39,8 +39,6 @@ const RestauranteMotoboys = () => {
   const [copiado, setCopiado] = useState(null); // { id, tipo } | null
   const [renovando, setRenovando] = useState(null); // id | null
   const [acesso, setAcesso] = useState(null); // { lan_ips, porta, cloudflare_domain }
-  const [copiadoCozinha, setCopiadoCozinha] = useState(false);
-  const [renovandoCozinha, setRenovandoCozinha] = useState(false);
 
   const reload = () =>
     listarMotoboys()
@@ -113,22 +111,7 @@ const RestauranteMotoboys = () => {
     ? `https://${acesso.cloudflare_domain}`
     : null;
 
-  const copiarLinkCozinha = async () => {
-    setRenovandoCozinha(true);
-    try {
-      const { cozinha_token } = await renovarTokenCozinha();
-      const base = cfBase ?? lanBase ?? window.location.origin;
-      await copiarTexto(`${base}/restaurante/cozinha?cozinha_token=${cozinha_token}`);
-      setCopiadoCozinha(true);
-      setTimeout(() => setCopiadoCozinha(false), 2500);
-    } catch (err) {
-      setMsg({ tipo: 'erro', texto: 'Erro ao gerar link da cozinha: ' + err.message });
-    } finally {
-      setRenovandoCozinha(false);
-    }
-  };
-
-  const copiarLink = async (mb) => {
+const copiarLink = async (mb) => {
     setRenovando(mb.id);
     try {
       const atualizado = await renovarTokenMotoboy(mb.id);
@@ -169,25 +152,6 @@ const RestauranteMotoboys = () => {
             ⚠️ Link funciona apenas na mesma rede WiFi. Para acesso externo configure Cloudflare em <strong>Admin → Configurações</strong>.
           </div>
         )}
-        {/* Acesso Cozinha */}
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
-          <h2 className="font-bold text-[#18181B] text-sm mb-3 flex items-center gap-2">
-            <Icon name="ChefHat" size={16} className="text-[#FF441F]" /> Acesso Cozinha
-          </h2>
-          <p className="text-xs text-[#71717A] mb-3">Gera um link exclusivo para o tablet/PC da cozinha. Cada cópia invalida o link anterior.</p>
-          <button
-            onClick={copiarLinkCozinha}
-            disabled={renovandoCozinha}
-            className={`w-full py-2.5 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 ${
-              copiadoCozinha ? 'bg-green-500 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
-            }`}
-          >
-            <Icon name={renovandoCozinha ? 'Loader2' : copiadoCozinha ? 'Check' : 'Link'} size={16}
-              className={renovandoCozinha ? 'animate-spin' : ''} />
-            {renovandoCozinha ? 'Gerando...' : copiadoCozinha ? 'Link copiado!' : 'Copiar link da cozinha'}
-          </button>
-        </div>
-
         {/* Form novo motoboy */}
         <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
           <h2 className="font-bold text-[#18181B] text-sm mb-4 flex items-center gap-2">
