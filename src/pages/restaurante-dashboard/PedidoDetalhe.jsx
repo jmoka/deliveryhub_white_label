@@ -381,7 +381,7 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
                 <button
                   onClick={handleSalvarTroco}
                   disabled={salvandoTroco || !trocoInput || parseFloat(trocoInput.replace(',', '.')) <= pedido.total}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors"
+                  className="flex-shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors"
                 >
                   {salvandoTroco ? '...' : 'OK'}
                 </button>
