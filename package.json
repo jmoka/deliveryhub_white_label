@@ -64,7 +64,7 @@
   "scripts": {
     "build": "nest build",
     
-    "start": "nest start, serve -s build -l ${PORT:-4028}",
+    "start": "nest start",
     "serve": "vite preview"
   },
   "eslintConfig": {
