@@ -2,7 +2,7 @@
 
 A modern React-based project utilizing the latest frontend technologies and tools for building responsive web applications.
 
-## 🚀 Features
+## 🚀 Features.
 
 - **React 18** - React version with improved rendering and concurrent features
 - **Vite** - Lightning-fast build tool and development server
