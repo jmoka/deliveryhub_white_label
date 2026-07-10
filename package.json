@@ -53,6 +53,7 @@
     "react-router-hash-link": "^2.4.3",
     "recharts": "^2.15.2",
     "redux": "^5.0.1",
+    "serve": "^14.2.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-elevation": "^2.0.0",
@@ -63,7 +64,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "vite preview --host 0.0.0.0 --port ${PORT:-4028}",
+    "start": "serve -s build -l ${PORT:-4028}",
     "serve": "vite preview"
   },
   "eslintConfig": {
