@@ -62,9 +62,9 @@
     "zustand": "^5.0.14"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "start": "serve -s build -l ${PORT:-4028}",
+    "build": "nest build",
+    
+    "start": "nest start, serve -s build -l ${PORT:-4028}",
     "serve": "vite preview"
   },
   "eslintConfig": {
