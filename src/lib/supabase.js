@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Em dev: usa window.location.origin como URL base do Supabase.
-// O Vite proxeia /rest/v1, /auth/v1, /storage/v1, /realtime/v1 para o Supabase local (127.0.0.1:54331).
-// Isso permite acesso via qualquer IP na rede (LAN, Cloudflare Tunnel) sem mudar .env.
-// Em produção: usa VITE_SUPABASE_URL normalmente.
-const supabaseUrl = import.meta.env.DEV
+// Em dev, se VITE_SUPABASE_URL apontar pro Supabase local (127.0.0.1/localhost),
+// usa window.location.origin — o Vite proxeia /rest/v1, /auth/v1, /storage/v1,
+// /realtime/v1 pro Supabase local, permitindo acesso via qualquer IP na rede
+// (LAN, Cloudflare Tunnel) sem mudar .env.
+// Se VITE_SUPABASE_URL apontar pra um Supabase remoto (Cloud ou VPS), usa a URL
+// direto — não existe proxy pra endereço externo.
+const isLocalSupabaseUrl = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(
+  import.meta.env.VITE_SUPABASE_URL ?? ''
+);
+
+const supabaseUrl = (import.meta.env.DEV && isLocalSupabaseUrl)
   ? window.location.origin
   : import.meta.env.VITE_SUPABASE_URL;
 
