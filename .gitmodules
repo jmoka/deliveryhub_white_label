@@ -1,0 +1,3 @@
+[submodule "server_delivery"]
+	path = server_delivery
+	url = git@github.com:jmoka/serer_delivery.git
