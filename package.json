@@ -62,7 +62,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "nuxt build",
+    "build": "vite build",
+    "start": "vite preview --host 0.0.0.0 --port ${PORT:-4028}",
     "serve": "vite preview"
   },
   "eslintConfig": {
