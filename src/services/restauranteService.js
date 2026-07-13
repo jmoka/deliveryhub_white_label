@@ -64,6 +64,10 @@ export const toggleProduto = (id, ativo) =>
 export const getCategoriasGlobais = () =>
   fetch(apiPath('/api/categorias/globais')).then((r) => r.json());
 
+// Tipos de estabelecimento (restaurante, farmácia, mat. construção...) — sem auth
+export const getTiposEstabelecimento = () =>
+  fetch(apiPath('/api/establishment-types')).then((r) => r.json());
+
 export const getMinhasCategorias = () => apiFetch('/categorias');
 
 export const criarCategoria = (name) =>

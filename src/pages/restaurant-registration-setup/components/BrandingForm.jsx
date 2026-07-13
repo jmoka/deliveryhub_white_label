@@ -103,13 +103,13 @@ const BrandingForm = ({
           Identidade Visual
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure a marca e cores do seu restaurante
+          Configure a marca e cores do seu estabelecimento
         </p>
       </div>
       {/* Logo Upload */}
       <div className="space-y-4">
         <label className="block text-sm font-medium text-foreground">
-          Logo do Restaurante
+          Logo do Estabelecimento
         </label>
         
         <div
@@ -255,7 +255,7 @@ const BrandingForm = ({
           </div>
           <div className="flex-1">
             <h5 className="font-semibold text-foreground">
-              {formData?.restaurantName || 'Nome do Restaurante'}
+              {formData?.restaurantName || 'Nome do Estabelecimento'}
             </h5>
             <p className="text-sm text-muted-foreground">
               {formData?.cuisineType || 'Tipo de Cozinha'}

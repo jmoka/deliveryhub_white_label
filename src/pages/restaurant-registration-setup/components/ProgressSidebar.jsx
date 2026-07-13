@@ -11,7 +11,7 @@ const ProgressSidebar = ({
     {
       id: 'business',
       title: 'Informações do Negócio',
-      description: 'Nome, tipo de cozinha e dados básicos',
+      description: 'Nome, tipo de estabelecimento e dados básicos',
       icon: 'Store'
     },
     {

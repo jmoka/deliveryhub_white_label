@@ -7,7 +7,7 @@ import ContactDetailsForm from './components/ContactDetailsForm';
 import OperatingHoursForm from './components/OperatingHoursForm';
 import BrandingForm from './components/BrandingForm';
 import ProgressSidebar from './components/ProgressSidebar';
-import { registrarRestaurante } from '../../services/restauranteService';
+import { registrarRestaurante, getTiposEstabelecimento } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const RestaurantRegistrationSetup = () => {
@@ -17,9 +17,11 @@ const RestaurantRegistrationSetup = () => {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [tiposEstabelecimento, setTiposEstabelecimento] = useState([]);
   const [formData, setFormData] = useState({
     // Business Information
     restaurantName: '',
+    establishmentTypeId: '',
     cuisineType: '',
     description: '',
     cnpj: '',
@@ -70,6 +72,10 @@ const RestaurantRegistrationSetup = () => {
     if (savedCompleted) {
       setCompletedSteps(JSON.parse(savedCompleted));
     }
+
+    getTiposEstabelecimento()
+      .then((d) => setTiposEstabelecimento(d.tipos ?? []))
+      .catch(() => setTiposEstabelecimento([]));
   }, []);
 
   // Save data to localStorage whenever formData changes
@@ -103,11 +109,16 @@ const RestaurantRegistrationSetup = () => {
     const newErrors = {};
 
     switch (currentStep) {
-      case 'business':
-        if (!formData?.restaurantName?.trim()) {
-          newErrors.restaurantName = 'Nome do restaurante é obrigatório';
+      case 'business': {
+        if (!formData?.establishmentTypeId) {
+          newErrors.establishmentTypeId = 'Tipo de estabelecimento é obrigatório';
         }
-        if (!formData?.cuisineType) {
+        if (!formData?.restaurantName?.trim()) {
+          newErrors.restaurantName = 'Nome do estabelecimento é obrigatório';
+        }
+        const tipoSelecionado = tiposEstabelecimento.find((t) => String(t.id) === String(formData?.establishmentTypeId));
+        const isRestaurante = !tipoSelecionado || tipoSelecionado.name === 'Restaurante';
+        if (isRestaurante && !formData?.cuisineType) {
           newErrors.cuisineType = 'Tipo de cozinha é obrigatório';
         }
         if (!formData?.deliveryFee || parseFloat(formData?.deliveryFee) < 0) {
@@ -117,6 +128,7 @@ const RestaurantRegistrationSetup = () => {
           newErrors.deliveryTime = 'Tempo de entrega deve ser pelo menos 10 minutos';
         }
         break;
+      }
 
       case 'contact':
         if (!formData?.whatsapp?.trim()) {
@@ -231,6 +243,7 @@ const RestaurantRegistrationSetup = () => {
         name: formData.restaurantName,
         address: address || undefined,
         business_hours: formData.operatingHours,
+        type_id: formData.establishmentTypeId ? Number(formData.establishmentTypeId) : undefined,
       });
 
       localStorage.removeItem('restaurantSetupData');
@@ -254,6 +267,7 @@ const RestaurantRegistrationSetup = () => {
             formData={formData}
             onInputChange={handleInputChange}
             errors={errors}
+            tiposEstabelecimento={tiposEstabelecimento}
           />
         );
       case 'contact':
@@ -318,7 +332,7 @@ const RestaurantRegistrationSetup = () => {
                   DeliveryHub
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  Configuração do Restaurante
+                  Configuração do Estabelecimento
                 </p>
               </div>
             </div>
@@ -378,7 +392,7 @@ const RestaurantRegistrationSetup = () => {
                     {getStepTitle()}
                   </h2>
                   <p className="text-muted-foreground">
-                    Preencha as informações abaixo para configurar seu restaurante
+                    Preencha as informações abaixo para configurar seu estabelecimento
                   </p>
                 </div>
 

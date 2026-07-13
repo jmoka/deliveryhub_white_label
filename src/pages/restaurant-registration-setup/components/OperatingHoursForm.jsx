@@ -84,7 +84,7 @@ const OperatingHoursForm = ({
           Horário de Funcionamento
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure os horários de funcionamento do seu restaurante
+          Configure os horários de funcionamento do seu estabelecimento
         </p>
       </div>
       <div className="space-y-4">

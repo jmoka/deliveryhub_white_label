@@ -40,7 +40,7 @@ const ContactDetailsForm = ({
           Informações de Contato
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure os dados de contato e endereço do seu restaurante
+          Configure os dados de contato e endereço do seu estabelecimento
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -62,10 +62,10 @@ const ContactDetailsForm = ({
           name="email"
           value={formData?.email || ''}
           onChange={onInputChange}
-          placeholder="contato@seurestaurante.com"
+          placeholder="contato@seuestabelecimento.com"
           error={errors?.email}
           required
-          description="Email principal do restaurante"
+          description="Email principal do estabelecimento"
         />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
