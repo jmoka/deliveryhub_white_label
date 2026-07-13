@@ -1,4 +1,6 @@
-const API = '/api/motoboy';
+import { apiPath } from '../lib/apiUrl';
+
+const API = apiPath('/api/motoboy');
 const TOKEN_KEY = 'motoboy_access_token';
 
 export const getMotoboyToken = () => localStorage.getItem(TOKEN_KEY);

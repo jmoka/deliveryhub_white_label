@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { apiPath } from '../lib/apiUrl';
 
-const API = '/api';
+const API = apiPath('/api');
 
 async function apiFetch(path, options = {}) {
   const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
