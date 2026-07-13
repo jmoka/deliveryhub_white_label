@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy } from '../../services/restauranteService';
+import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 
 const NavRestaurante = ({ active }) => {
@@ -48,7 +49,7 @@ const RestauranteMotoboys = () => {
 
   useEffect(() => {
     reload();
-    fetch('/api/r/acesso')
+    fetch(apiPath('/api/r/acesso'))
       .then((r) => r.json())
       .then(setAcesso)
       .catch(() => {});

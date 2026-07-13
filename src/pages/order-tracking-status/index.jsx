@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 import OrderActions from './components/OrderActions';
 
@@ -38,7 +39,7 @@ const OrderTrackingStatus = () => {
       const token = sessionResult?.data?.session?.access_token;
       if (!token) return;
 
-      const res = await fetch(`/api/pedidos/${orderId}`, {
+      const res = await fetch(`${apiPath('/api/pedidos')}/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -112,7 +113,7 @@ const OrderTrackingStatus = () => {
     try {
       const sessionResult = await supabase.auth.getSession();
       const token = sessionResult?.data?.session?.access_token;
-      const res = await fetch(`/api/pedidos/${oid}/cancelar`, {
+      const res = await fetch(`${apiPath('/api/pedidos')}/${oid}/cancelar`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ motivo: reason }),

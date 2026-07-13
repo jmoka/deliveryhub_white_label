@@ -1,11 +1,12 @@
 import { supabase } from '../lib/supabase';
+import { apiPath } from '../lib/apiUrl';
 
 async function apiFetch(options = {}) {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
   const token = session?.access_token;
   if (!token) throw new Error('Sessão expirada. Faça login.');
 
-  const res = await fetch('/api/perfil', {
+  const res = await fetch(apiPath('/api/perfil'), {
     ...options,
     headers: {
       'Content-Type': 'application/json',

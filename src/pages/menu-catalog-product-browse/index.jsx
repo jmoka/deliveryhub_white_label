@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
 import { imgUrl } from '../../lib/imgUrl';
+import { apiPath } from '../../lib/apiUrl';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -532,24 +533,24 @@ const MenuCatalogProductBrowse = () => {
     : 0;
 
   useEffect(() => {
-    fetch('/api/r')
+    fetch(apiPath('/api/r'))
       .then((r) => r.json())
       .then((d) => setRestaurantes(d.restaurantes ?? []))
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
 
-    fetch('/api/r/produtos')
+    fetch(apiPath('/api/r/produtos'))
       .then((r) => r.json())
       .then((d) => setProdutos(d.produtos ?? []))
       .catch(() => setProdutos([]))
       .finally(() => setLoadProd(false));
 
-    fetch('/api/categorias/globais')
+    fetch(apiPath('/api/categorias/globais'))
       .then((r) => r.json())
       .then((d) => { const cats = d.categorias ?? []; if (cats.length > 0) setCategorias(cats); })
       .catch(() => {});
 
-    fetch('/api/tags')
+    fetch(apiPath('/api/tags'))
       .then((r) => r.json())
       .then((d) => setTagsCatalogo(d.tags ?? []))
       .catch(() => {});

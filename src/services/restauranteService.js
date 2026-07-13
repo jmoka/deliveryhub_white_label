@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { apiPath } from '../lib/apiUrl';
 
-const API = '/api/restaurante';
+const API = apiPath('/api/restaurante');
 
 async function apiFetch(path, options = {}) {
   const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
@@ -61,7 +62,7 @@ export const toggleProduto = (id, ativo) =>
 
 // Categorias globais da plataforma (sem auth — endpoint público)
 export const getCategoriasGlobais = () =>
-  fetch('/api/categorias/globais').then((r) => r.json());
+  fetch(apiPath('/api/categorias/globais')).then((r) => r.json());
 
 export const getMinhasCategorias = () => apiFetch('/categorias');
 
@@ -143,7 +144,7 @@ export const uploadImagem = async (file, folder = 'geral') => {
   const form = new FormData();
   form.append('file', file);
 
-  const res = await fetch(`/api/restaurante/storage/upload?folder=${encodeURIComponent(folder)}`, {
+  const res = await fetch(`${apiPath('/api/restaurante')}/storage/upload?folder=${encodeURIComponent(folder)}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form,
@@ -178,14 +179,14 @@ export const deletarCombo = (id) =>
 
 // Tags públicas — sem auth
 export const getTagsPublicas = () =>
-  fetch('/api/tags').then((r) => r.json());
+  fetch(apiPath('/api/tags')).then((r) => r.json());
 
 export const getCarrosseis = (restaurantId) =>
-  fetch(`/api/tags/carrosseis/${restaurantId}`).then((r) => r.json());
+  fetch(`${apiPath('/api/tags')}/carrosseis/${restaurantId}`).then((r) => r.json());
 
 // Endpoint público — sem auth
 export const getCardapioPorSlug = async (slug) => {
-  const res = await fetch(`/api/r/${slug}`);
+  const res = await fetch(`${apiPath('/api/r')}/${slug}`);
   const contentType = res.headers.get('content-type') ?? '';
   const isJson = contentType.includes('application/json');
   if (!res.ok) {

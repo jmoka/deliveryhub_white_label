@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -34,7 +35,7 @@ const CustomerAccountOrderHistory = () => {
         const token = sessionResult?.data?.session?.access_token;
         if (!token) throw new Error('Sessão expirada');
 
-        const res = await fetch('/api/pedidos/meus', {
+        const res = await fetch(apiPath('/api/pedidos/meus'), {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

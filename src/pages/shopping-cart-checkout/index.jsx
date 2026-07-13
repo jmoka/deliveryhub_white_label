@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
+import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 import StepEndereco from './StepEndereco';
 import { getPerfil } from '../../services/perfilService';
@@ -430,7 +431,7 @@ const SingleCartCheckout = () => {
       if (!token) throw new Error('Sessão expirada. Faça login.');
 
       const trocoParsed = parseFloat(trocoPara) || null;
-      const resP = await fetch('/api/pedidos', {
+      const resP = await fetch(apiPath('/api/pedidos'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -448,7 +449,7 @@ const SingleCartCheckout = () => {
 
       if (paymentMethod === 'pix') {
         const user = (await supabase.auth.getUser())?.data?.user;
-        const resPix = await fetch('/api/pagamentos/pix', {
+        const resPix = await fetch(apiPath('/api/pagamentos/pix'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({

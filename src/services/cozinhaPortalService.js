@@ -1,4 +1,6 @@
-const API = '/api/cozinha-portal';
+import { apiPath } from '../lib/apiUrl';
+
+const API = apiPath('/api/cozinha-portal');
 const TOKEN_KEY = 'cozinha_access_token';
 
 export const getCozinhaToken = () => localStorage.getItem(TOKEN_KEY);
