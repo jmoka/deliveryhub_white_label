@@ -556,17 +556,27 @@ const MenuCatalogProductBrowse = () => {
       .catch(() => {});
   }, []);
 
+  // catAtiva === null: sem filtro de categoria (mostra tudo)
+  const produtosPorCategoria = catAtiva === null
+    ? produtos
+    : produtos.filter((p) => p.category_id === catAtiva);
+
+  const restaurantesComCategoria = catAtiva === null
+    ? null
+    : new Set(produtosPorCategoria.map((p) => p.restaurant_id));
+
   const filtrados = restaurantes.filter((r) =>
-    r.name.toLowerCase().includes(busca.toLowerCase()) ||
-    (r.address ?? '').toLowerCase().includes(busca.toLowerCase()),
+    (restaurantesComCategoria === null || restaurantesComCategoria.has(r.id)) &&
+    (r.name.toLowerCase().includes(busca.toLowerCase()) ||
+     (r.address ?? '').toLowerCase().includes(busca.toLowerCase())),
   );
 
   const produtosFiltrados = busca
-    ? produtos.filter((p) =>
+    ? produtosPorCategoria.filter((p) =>
         p.name.toLowerCase().includes(busca.toLowerCase()) ||
         p.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
       )
-    : produtos;
+    : produtosPorCategoria;
 
   // Carrosseis dinâmicos baseados nas tags ativas do admin
   const carrosseis = tagsCatalogo
@@ -783,9 +793,20 @@ const MenuCatalogProductBrowse = () => {
           <section>
             <div className="flex items-center justify-between mb-4 gap-3">
               <div>
-                <h2 className="font-bold text-[#18181B] text-base">
-                  {catAtiva === null ? 'Todos os restaurantes' : categorias.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
-                </h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-bold text-[#18181B] text-base">
+                    {catAtiva === null ? 'Todos os restaurantes' : categorias.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
+                  </h2>
+                  {catAtiva !== null && (
+                    <button
+                      onClick={() => setCatAtiva(null)}
+                      className="flex items-center gap-1 text-xs font-semibold text-[#FF441F] bg-[#FF441F]/10 hover:bg-[#FF441F]/20 rounded-full px-2.5 py-1 transition-colors"
+                    >
+                      <Icon name="X" size={12} />
+                      Limpar filtro
+                    </button>
+                  )}
+                </div>
                 {!loading && (
                   <p className="text-xs text-[#71717A] mt-0.5">
                     {filtrados.length} {filtrados.length === 1 ? 'restaurante' : 'restaurantes'}
