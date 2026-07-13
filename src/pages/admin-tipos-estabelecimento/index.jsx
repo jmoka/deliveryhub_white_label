@@ -126,6 +126,21 @@ const Modal = ({ tipo, onClose, onSave }) => {
                 </button>
               ))}
             </div>
+            <div className="mt-2">
+              <input
+                value={form.icon_name}
+                onChange={(e) => set('icon_name', e.target.value)}
+                className="w-full border rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Ou digite o nome exato do ícone (ex: Store)"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Não achou o ícone que quer? Busque o nome em{' '}
+                <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                  lucide.dev/icons
+                </a>{' '}
+                e digite aqui exatamente como aparece (PascalCase, ex: <code>ShoppingBasket</code>).
+              </p>
+            </div>
           </div>
 
           {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
