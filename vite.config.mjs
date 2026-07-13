@@ -21,7 +21,7 @@ export default defineConfig({
     proxy: {
       // Backend NestJS
       '/api': {
-        target: 'http://148.230.76.22:3000/projects/app_desenvolvimento/app/server_delivery:3002',
+        target: 'https://app-desenvolvimento-server-delivery.ubjifz.easypanel.host/',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
