@@ -152,6 +152,11 @@ const RestauranteConfig = () => {
     taxa_pagbank_percent: '',
     chave_pix: '',
     frete_motoboy: '',
+    motoboy_comissao_tipo: 'fixo',
+    motoboy_comissao_valor_fixo: '',
+    motoboy_comissao_percentual: '',
+    motoboy_comissao_valor_km: '',
+    motoboy_comissao_km_fallback: '',
   });
 
   useEffect(() => {
@@ -165,6 +170,11 @@ const RestauranteConfig = () => {
           taxa_pagbank_percent: d.taxa_pagbank_percent != null ? String(d.taxa_pagbank_percent) : '',
           chave_pix: d.chave_pix ?? '',
           frete_motoboy: d.frete_motoboy != null ? String(d.frete_motoboy) : '',
+          motoboy_comissao_tipo: d.motoboy_comissao_tipo ?? 'fixo',
+          motoboy_comissao_valor_fixo: d.motoboy_comissao_valor_fixo != null ? String(d.motoboy_comissao_valor_fixo) : '',
+          motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
+          motoboy_comissao_valor_km: d.motoboy_comissao_valor_km != null ? String(d.motoboy_comissao_valor_km) : '',
+          motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -184,6 +194,11 @@ const RestauranteConfig = () => {
         taxa_pagbank_percent: form.taxa_pagbank_percent !== '' ? parseFloat(form.taxa_pagbank_percent) : null,
         chave_pix: form.chave_pix.trim() || null,
         frete_motoboy: form.frete_motoboy !== '' ? parseFloat(form.frete_motoboy) : 0,
+        motoboy_comissao_tipo: form.motoboy_comissao_tipo,
+        motoboy_comissao_valor_fixo: form.motoboy_comissao_valor_fixo !== '' ? parseFloat(form.motoboy_comissao_valor_fixo) : 0,
+        motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
+        motoboy_comissao_valor_km: form.motoboy_comissao_valor_km !== '' ? parseFloat(form.motoboy_comissao_valor_km) : 0,
+        motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -313,6 +328,73 @@ const RestauranteConfig = () => {
                     />
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Valor somado ao pedido e exibido ao cliente no checkout</p>
+                </div>
+
+                {/* Comissão do motoboy */}
+                <div className="border-t pt-4 mt-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Comissão do Motoboy
+                  </label>
+                  <p className="text-xs text-gray-400 mb-2">Quanto o entregador recebe por entrega — separado do frete cobrado do cliente</p>
+
+                  <select
+                    value={form.motoboy_comissao_tipo}
+                    onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_tipo: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 mb-2"
+                  >
+                    <option value="fixo">Valor fixo por entrega</option>
+                    <option value="percentual">Percentual sobre o frete</option>
+                    <option value="km">Por km rodado</option>
+                  </select>
+
+                  {form.motoboy_comissao_tipo === 'fixo' && (
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$</span>
+                      <input type="number" min="0" step="0.01"
+                        value={form.motoboy_comissao_valor_fixo}
+                        onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_valor_fixo: e.target.value }))}
+                        placeholder="0,00"
+                        className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                    </div>
+                  )}
+
+                  {form.motoboy_comissao_tipo === 'percentual' && (
+                    <div className="relative">
+                      <input type="number" min="0" max="100" step="0.01"
+                        value={form.motoboy_comissao_percentual}
+                        onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_percentual: e.target.value }))}
+                        placeholder="Ex: 80"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">%</span>
+                    </div>
+                  )}
+
+                  {form.motoboy_comissao_tipo === 'km' && (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$/km</span>
+                        <input type="number" min="0" step="0.01"
+                          value={form.motoboy_comissao_valor_km}
+                          onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_valor_km: e.target.value }))}
+                          placeholder="0,00"
+                          className="w-full border rounded-lg pl-16 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$</span>
+                        <input type="number" min="0" step="0.01"
+                          value={form.motoboy_comissao_km_fallback}
+                          onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_km_fallback: e.target.value }))}
+                          placeholder="0,00"
+                          className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        O valor de segurança é usado quando não conseguimos calcular a distância (endereço não localizado).
+                        {config?.geocode_falhou && (
+                          <span className="text-amber-600 font-medium"> ⚠️ O endereço do seu estabelecimento não foi localizado — edite-o em "Meu Estabelecimento" pra habilitar o cálculo por km.</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

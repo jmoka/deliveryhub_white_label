@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarMotoboys, criarMotoboy, toggleMotoboy, renovarTokenMotoboy } from '../../services/restauranteService';
-import { apiPath } from '../../lib/apiUrl';
+import {
+  listarMotoboys, listarSolicitacoesMotoboy, aceitarSolicitacaoMotoboy,
+  recusarSolicitacaoMotoboy, removerAfiliacaoMotoboy,
+} from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 
 const NavRestaurante = ({ active }) => {
@@ -31,100 +33,141 @@ const NavRestaurante = ({ active }) => {
   );
 };
 
+const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando }) => {
+  const [motivo, setMotivo] = useState('');
+  const [mostrarRecusa, setMostrarRecusa] = useState(false);
+  const mb = solicitacao.motoboy;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onFechar}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+            {mb.foto_perfil_url
+              ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center"><Icon name="User" size={24} className="text-[#A1A1AA]" /></div>}
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">{mb.name}</h3>
+            <p className="text-sm text-gray-500">{mb.phone}</p>
+            <p className="text-xs text-gray-400">{mb.email}</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase">Documentos</p>
+          <div className="grid grid-cols-2 gap-2">
+            {mb.documento_frente_url && (
+              <a href={mb.documento_frente_url} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-50">
+                <img src={mb.documento_frente_url} alt="Documento frente" className="w-full h-full object-cover" />
+              </a>
+            )}
+            {mb.documento_verso_url && (
+              <a href={mb.documento_verso_url} target="_blank" rel="noreferrer" className="block rounded-xl overflow-hidden border border-gray-200 aspect-video bg-gray-50">
+                <img src={mb.documento_verso_url} alt="Documento verso" className="w-full h-full object-cover" />
+              </a>
+            )}
+          </div>
+          {mb.comprovante_endereco_url && (
+            <a href={mb.comprovante_endereco_url} target="_blank" rel="noreferrer"
+              className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-blue-600 hover:bg-blue-50">
+              <Icon name="FileText" size={16} /> Ver comprovante de endereço
+            </a>
+          )}
+        </div>
+
+        {mostrarRecusa ? (
+          <div className="mt-5 space-y-2">
+            <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3}
+              placeholder="Motivo da recusa (opcional)"
+              className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none" />
+            <div className="flex gap-2">
+              <button onClick={() => setMostrarRecusa(false)} className="flex-1 py-2.5 border rounded-xl text-sm text-gray-700 hover:bg-gray-50">
+                Voltar
+              </button>
+              <button onClick={() => onRecusar(solicitacao.id, motivo)} disabled={processando}
+                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
+                Confirmar recusa
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2 mt-5">
+            <button onClick={() => setMostrarRecusa(true)} disabled={processando}
+              className="flex-1 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 disabled:opacity-50">
+              Recusar
+            </button>
+            <button onClick={() => onAceitar(solicitacao.id)} disabled={processando}
+              className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 disabled:opacity-50">
+              {processando ? 'Aguarde...' : 'Aceitar'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const RestauranteMotoboys = () => {
   const [motoboys, setMotoboys] = useState([]);
+  const [solicitacoes, setSolicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', phone: '' });
-  const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState(null);
-  const [copiado, setCopiado] = useState(null); // { id, tipo } | null
-  const [renovando, setRenovando] = useState(null); // id | null
-  const [acesso, setAcesso] = useState(null); // { lan_ips, porta, cloudflare_domain }
+  const [ficha, setFicha] = useState(null); // solicitacao selecionada
+  const [processando, setProcessando] = useState(false);
+  const [removendo, setRemovendo] = useState(null);
 
-  const reload = () =>
-    listarMotoboys()
-      .then((r) => setMotoboys(r.motoboys ?? []))
+  const reload = useCallback(() => {
+    setLoading(true);
+    Promise.all([listarMotoboys(), listarSolicitacoesMotoboy()])
+      .then(([mbs, sols]) => {
+        setMotoboys(mbs.motoboys ?? []);
+        setSolicitacoes(sols.solicitacoes ?? []);
+      })
       .catch((e) => setMsg({ tipo: 'erro', texto: e.message }))
       .finally(() => setLoading(false));
-
-  useEffect(() => {
-    reload();
-    fetch(apiPath('/api/r/acesso'))
-      .then((r) => r.json())
-      .then(setAcesso)
-      .catch(() => {});
   }, []);
 
-  const handleCriar = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
-    setSalvando(true);
+  useEffect(() => { reload(); }, [reload]);
+
+  const handleAceitar = async (id) => {
+    setProcessando(true);
     try {
-      await criarMotoboy({ name: form.name.trim(), phone: form.phone.trim() || undefined });
-      setForm({ name: '', phone: '' });
-      setMsg({ tipo: 'ok', texto: 'Motoboy criado!' });
+      await aceitarSolicitacaoMotoboy(id);
+      setFicha(null);
+      setMsg({ tipo: 'ok', texto: 'Motoboy aceito!' });
       setTimeout(() => setMsg(null), 3000);
       reload();
     } catch (err) {
       setMsg({ tipo: 'erro', texto: err.message });
     } finally {
-      setSalvando(false);
+      setProcessando(false);
     }
   };
 
-  const handleToggle = async (mb) => {
+  const handleRecusar = async (id, motivo) => {
+    setProcessando(true);
     try {
-      await toggleMotoboy(mb.id, !mb.is_active);
-      setMotoboys((prev) => prev.map((m) => m.id === mb.id ? { ...m, is_active: !m.is_active } : m));
+      await recusarSolicitacaoMotoboy(id, motivo);
+      setFicha(null);
+      reload();
     } catch (err) {
       setMsg({ tipo: 'erro', texto: err.message });
-    }
-  };
-
-  // Funciona em HTTP (LAN) e HTTPS — clipboard API só disponível em contexto seguro
-  const copiarTexto = (texto) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      return navigator.clipboard.writeText(texto);
-    }
-    // Fallback para HTTP / dispositivos antigos
-    const el = document.createElement('textarea');
-    el.value = texto;
-    el.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
-    document.body.appendChild(el);
-    el.focus();
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    return Promise.resolve();
-  };
-
-  const copiar = (texto, id, tipo) => {
-    copiarTexto(texto).then(() => {
-      setCopiado({ id, tipo });
-      setTimeout(() => setCopiado(null), 2500);
-    });
-  };
-
-  const lanBase = acesso?.lan_ips?.[0]
-    ? `http://${acesso.lan_ips[0]}:${acesso.porta ?? 4028}`
-    : null;
-  const cfBase = acesso?.cloudflare_domain
-    ? `https://${acesso.cloudflare_domain}`
-    : null;
-
-const copiarLink = async (mb) => {
-    setRenovando(mb.id);
-    try {
-      const atualizado = await renovarTokenMotoboy(mb.id);
-      setMotoboys((prev) => prev.map((m) => m.id === mb.id ? { ...m, access_token: atualizado.access_token } : m));
-      const base = cfBase ?? lanBase ?? window.location.origin;
-      await copiarTexto(`${base}/motoboy?token=${atualizado.access_token}`);
-      setCopiado({ id: mb.id, tipo: 'link' });
-      setTimeout(() => setCopiado(null), 2500);
-    } catch (err) {
-      setMsg({ tipo: 'erro', texto: 'Erro ao gerar link: ' + err.message });
     } finally {
-      setRenovando(null);
+      setProcessando(false);
+    }
+  };
+
+  const handleRemover = async (mb) => {
+    if (!window.confirm(`Remover "${mb.name}" dos seus entregadores?`)) return;
+    setRemovendo(mb.id);
+    try {
+      await removerAfiliacaoMotoboy(mb.id);
+      setMotoboys((prev) => prev.filter((m) => m.id !== mb.id));
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setRemovendo(null);
     }
   };
 
@@ -140,45 +183,13 @@ const copiarLink = async (mb) => {
         <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-black text-[#18181B]">Motoboys</h1>
-            <p className="text-sm text-[#71717A]">Cadastro e links de acesso</p>
+            <p className="text-sm text-[#71717A]">Entregadores afiliados ao seu estabelecimento</p>
           </div>
           <NavRestaurante active="/restaurante/motoboys" />
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-        {/* Aviso de acesso */}
-        {acesso && !cfBase && (
-          <div className="rounded-xl border px-4 py-2.5 text-xs bg-amber-50 border-amber-200 text-amber-800">
-            ⚠️ Link funciona apenas na mesma rede WiFi. Para acesso externo configure Cloudflare em <strong>Admin → Configurações</strong>.
-          </div>
-        )}
-        {/* Form novo motoboy */}
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
-          <h2 className="font-bold text-[#18181B] text-sm mb-4 flex items-center gap-2">
-            <Icon name="UserPlus" size={16} className="text-[#FF441F]" /> Novo motoboy
-          </h2>
-          <form onSubmit={handleCriar} className="flex flex-col sm:flex-row gap-2">
-            <input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Nome"
-              required
-              className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
-            />
-            <input
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              placeholder="Telefone (opcional)"
-              className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
-            />
-            <button type="submit" disabled={salvando}
-              className="px-5 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 whitespace-nowrap">
-              {salvando ? '...' : '+ Adicionar'}
-            </button>
-          </form>
-        </div>
-
         {msg && (
           <div className={`text-sm rounded-xl px-4 py-3 ${
             msg.tipo === 'ok' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'
@@ -187,58 +198,73 @@ const copiarLink = async (mb) => {
           </div>
         )}
 
-        {/* Lista */}
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] divide-y divide-[#F4F4F5]">
-          {motoboys.length === 0 ? (
-            <p className="p-5 text-sm text-[#71717A] text-center">Nenhum motoboy cadastrado</p>
-          ) : motoboys.map((mb) => (
-            <div key={mb.id} className="p-4 space-y-3">
-              {/* Linha superior: avatar + nome + toggle */}
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${mb.is_active ? 'bg-[#FF441F]/10' : 'bg-[#F4F4F5]'}`}>
-                  <Icon name="Bike" size={16} className={mb.is_active ? 'text-[#FF441F]' : 'text-[#A1A1AA]'} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#18181B]">{mb.name}</p>
-                  {mb.phone && <p className="text-xs text-[#71717A]">{mb.phone}</p>}
-                </div>
-                <button
-                  onClick={() => handleToggle(mb)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors flex-shrink-0 ${
-                    mb.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'
-                  }`}
-                >
-                  {mb.is_active ? 'Desativar' : 'Ativar'}
+        {solicitacoes.length > 0 && (
+          <div className="bg-white rounded-2xl border border-amber-200 p-5">
+            <h2 className="font-bold text-[#18181B] text-sm mb-4 flex items-center gap-2">
+              <Icon name="Bell" size={16} className="text-amber-500" /> Solicitações pendentes ({solicitacoes.length})
+            </h2>
+            <div className="space-y-2">
+              {solicitacoes.map((s) => (
+                <button key={s.id} onClick={() => setFicha(s)}
+                  className="w-full flex items-center gap-3 border border-[#E4E4E7] rounded-xl p-3 hover:border-[#FF441F]/40 hover:shadow-sm transition-all text-left">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                    {s.motoboy.foto_perfil_url
+                      ? <img src={s.motoboy.foto_perfil_url} alt={s.motoboy.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center"><Icon name="User" size={16} className="text-[#A1A1AA]" /></div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#18181B] truncate">{s.motoboy.name}</p>
+                    <p className="text-xs text-[#71717A]">{s.motoboy.phone}</p>
+                  </div>
+                  <Icon name="ChevronRight" size={16} className="text-[#A1A1AA] flex-shrink-0" />
                 </button>
-              </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-              {/* Botão copiar link — gera novo token a cada cópia */}
+        <div className="bg-white rounded-2xl border border-[#E4E4E7] divide-y divide-[#F4F4F5]">
+          <div className="p-4">
+            <h2 className="font-bold text-[#18181B] text-sm flex items-center gap-2">
+              <Icon name="Bike" size={16} className="text-[#FF441F]" /> Entregadores ativos ({motoboys.length})
+            </h2>
+          </div>
+          {motoboys.length === 0 ? (
+            <p className="p-5 text-sm text-[#71717A] text-center">
+              Nenhum motoboy afiliado ainda. O entregador se cadastra pelo app e solicita atender aqui.
+            </p>
+          ) : motoboys.map((mb) => (
+            <div key={mb.id} className="p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
+                {mb.foto_perfil_url
+                  ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#18181B]">{mb.name}</p>
+                {mb.phone && <p className="text-xs text-[#71717A]">{mb.phone}</p>}
+              </div>
               <button
-                onClick={() => copiarLink(mb)}
-                disabled={renovando === mb.id}
-                className={`w-full py-2 text-sm font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 ${
-                  copiado?.id === mb.id && copiado?.tipo === 'link'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
-                }`}
+                onClick={() => handleRemover(mb)}
+                disabled={removendo === mb.id}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 flex-shrink-0"
               >
-                <Icon name={
-                  renovando === mb.id ? 'Loader2'
-                  : copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Check'
-                  : 'Link'
-                } size={15} className={renovando === mb.id ? 'animate-spin' : ''} />
-                {renovando === mb.id ? 'Gerando...'
-                  : copiado?.id === mb.id && copiado?.tipo === 'link' ? 'Link copiado!'
-                  : 'Copiar link de acesso'}
+                {removendo === mb.id ? '...' : 'Remover'}
               </button>
             </div>
           ))}
         </div>
-
-        <p className="text-xs text-[#71717A] text-center">
-          Copie o link e envie ao motoboy. O link já carrega o acesso automaticamente.
-        </p>
       </main>
+
+      {ficha && (
+        <FichaModal
+          solicitacao={ficha}
+          onFechar={() => setFicha(null)}
+          onAceitar={handleAceitar}
+          onRecusar={handleRecusar}
+          processando={processando}
+        />
+      )}
     </div>
   );
 };
