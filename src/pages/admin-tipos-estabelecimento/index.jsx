@@ -138,7 +138,7 @@ const Modal = ({ tipo, onClose, onSave }) => {
                 <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" className="text-blue-600 underline">
                   lucide.dev/icons
                 </a>{' '}
-                e digite aqui exatamente como aparece (PascalCase, ex: <code>ShoppingBasket</code>).
+                e digite aqui o nome do ícone (aceita qualquer formato, ex: <code>shopping-basket</code> ou <code>ShoppingBasket</code>).
               </p>
             </div>
           </div>
