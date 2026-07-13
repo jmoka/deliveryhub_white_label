@@ -32,6 +32,7 @@ import RestauranteCaixa from './pages/restaurante-caixa';
 import RestauranteFinanceiro from './pages/restaurante-financeiro';
 import RestauranteCombos from './pages/restaurante-combos';
 import MotoboyPortal from './pages/motoboy-portal';
+import MotoboyCadastro from './pages/motoboy-cadastro';
 import CustomerProfile from './pages/customer-profile';
 
 const Routes = () => {
@@ -80,6 +81,7 @@ const Routes = () => {
         {/* Motoboy portal — token-based, sem Supabase Auth */}
         <Route path="/motoboy" element={<MotoboyPortal />} />
         <Route path="/motoboy/login" element={<MotoboyPortal />} />
+        <Route path="/motoboy/cadastro" element={<MotoboyCadastro />} />
 
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>

@@ -1,15 +1,13 @@
 import { apiPath } from '../lib/apiUrl';
+import { getMotoboyToken, setMotoboyToken, clearMotoboyToken } from './motoboyAuthService';
 
 const API = apiPath('/api/motoboy');
-const TOKEN_KEY = 'motoboy_access_token';
 
-export const getMotoboyToken = () => localStorage.getItem(TOKEN_KEY);
-export const setMotoboyToken = (token) => localStorage.setItem(TOKEN_KEY, token);
-export const clearMotoboyToken = () => localStorage.removeItem(TOKEN_KEY);
+export { getMotoboyToken, setMotoboyToken, clearMotoboyToken };
 
 async function motoboyFetch(path, options = {}) {
   const token = getMotoboyToken();
-  if (!token) throw new Error('Token de motoboy não encontrado. Use o link recebido do restaurante.');
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
 
   const res = await fetch(`${API}${path}`, {
     ...options,
@@ -50,7 +48,8 @@ export const registrarOcorrencia = (pedidoId, tipo, motivo) =>
     body: JSON.stringify({ tipo, motivo }),
   });
 
-export const getPedidosDisponiveis = () => motoboyFetch('/pedidos/disponiveis');
+export const getPedidosDisponiveis = (restaurantId) =>
+  motoboyFetch(`/pedidos/disponiveis?restaurant_id=${restaurantId}`);
 
 export const pegarPedido = (pedidoId) =>
   motoboyFetch(`/pedidos/${pedidoId}/pegar`, { method: 'POST' });
@@ -69,3 +68,17 @@ export const uploadComprovantePix = (pedidoId, base64) =>
     method: 'POST',
     body: JSON.stringify({ base64 }),
   });
+
+// Estabelecimentos — buscar/solicitar afiliação
+export const getEstabelecimentosDisponiveis = (busca) =>
+  motoboyFetch(`/estabelecimentos${busca ? `?busca=${encodeURIComponent(busca)}` : ''}`);
+
+export const solicitarAfiliacao = (restaurantId) =>
+  motoboyFetch(`/estabelecimentos/${restaurantId}/solicitar`, { method: 'POST' });
+
+export const getMinhasAfiliacoes = () => motoboyFetch('/estabelecimentos/minhas');
+
+// Ganhos / comissões
+export const getGanhosResumo = () => motoboyFetch('/ganhos');
+export const getGanhosHistorico = (restaurantId) =>
+  motoboyFetch(`/ganhos/historico${restaurantId ? `?restaurant_id=${restaurantId}` : ''}`);

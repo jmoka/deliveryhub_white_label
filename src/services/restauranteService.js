@@ -160,16 +160,17 @@ export const uploadImagem = async (file, folder = 'geral') => {
   return json; // { url: string }
 };
 
-// Motoboys
+// Motoboys — afiliação (motoboy solicita, restaurante aceita/recusa)
 export const listarMotoboys = () => apiFetch('/motoboys');
-export const criarMotoboy = (data) =>
-  apiFetch('/motoboys', { method: 'POST', body: JSON.stringify(data) });
-export const toggleMotoboy = (id, ativo) =>
-  apiFetch(`/motoboys/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
+export const listarSolicitacoesMotoboy = () => apiFetch('/motoboys/solicitacoes');
+export const aceitarSolicitacaoMotoboy = (id) =>
+  apiFetch(`/motoboys/solicitacoes/${id}/aceitar`, { method: 'PATCH' });
+export const recusarSolicitacaoMotoboy = (id, motivo) =>
+  apiFetch(`/motoboys/solicitacoes/${id}/recusar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
+export const removerAfiliacaoMotoboy = (motoboyId) =>
+  apiFetch(`/motoboys/${motoboyId}/remover`, { method: 'PATCH' });
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
-export const renovarTokenMotoboy = (id) =>
-  apiFetch(`/motoboys/${id}/renovar-token`, { method: 'PATCH' });
 
 // Combos
 export const getMeusCombos = () => apiFetch('/combos');
