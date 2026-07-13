@@ -6,6 +6,7 @@ import Icon from '../../components/AppIcon';
 import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
 import { imgUrl } from '../../lib/imgUrl';
 import { apiPath } from '../../lib/apiUrl';
+import { getMotoboyToken } from '../../services/motoboyAuthService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -620,6 +621,13 @@ const MenuCatalogProductBrowse = () => {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
+            {!getMotoboyToken() && (
+              <button onClick={() => navigate('/motoboy/cadastro')}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
+                <Icon name="Bike" size={16} />
+                Seja um entregador
+              </button>
+            )}
             <button onClick={() => navigate('/shopping-cart-checkout')}
               className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
               <Icon name="ShoppingCart" size={20} />
@@ -898,7 +906,20 @@ const MenuCatalogProductBrowse = () => {
         <SidebarRight restaurantes={filtrados} navigate={navigate} />
       </div>
 
-      <footer className="border-t border-[#E4E4E7] bg-white mt-8 py-6 text-center">
+      <footer className="border-t border-[#E4E4E7] bg-white mt-8 py-6 text-center space-y-2">
+        <div className="flex items-center justify-center gap-2 flex-wrap text-xs">
+          <button onClick={() => navigate('/restaurant-registration-setup')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+            <Icon name="Store" size={12} /> Cadastrar estabelecimento
+          </button>
+          {!getMotoboyToken() && (
+            <>
+              <span className="text-[#E4E4E7]">·</span>
+              <button onClick={() => navigate('/motoboy/cadastro')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+                <Icon name="Bike" size={12} /> Seja um entregador
+              </button>
+            </>
+          )}
+        </div>
         <p className="text-xs text-[#71717A]">© {new Date().getFullYear()} DeliveryHub · Todos os direitos reservados</p>
       </footer>
 

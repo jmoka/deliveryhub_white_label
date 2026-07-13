@@ -369,6 +369,9 @@ const AbaGanhos = () => {
                   {new Date(h.criado_em).toLocaleDateString('pt-BR')} · {h.tipo}
                   {h.distancia_km != null && ` · ${h.distancia_km} km`}
                 </p>
+                <p className="text-[10px] text-[#A1A1AA]">
+                  Frete {fmt(h.frete_repassado)} + adicional {fmt(h.valor_base ?? h.comissao_valor - h.frete_repassado)}
+                </p>
               </div>
               <p className="text-sm font-bold text-green-600">{fmt(h.comissao_valor)}</p>
             </div>

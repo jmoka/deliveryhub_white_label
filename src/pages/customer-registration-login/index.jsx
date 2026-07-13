@@ -6,6 +6,7 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
 import { authService } from '../../services/authService';
+import { getMotoboyToken } from '../../services/motoboyAuthService';
 
 const TAB_LOGIN = 'login';
 const TAB_REGISTER = 'register';
@@ -169,6 +170,26 @@ const CustomerRegistrationLogin = () => {
           <p className="text-center text-xs text-gray-400">
             Você precisará estar logado para completar o cadastro do estabelecimento.
           </p>
+
+          {!getMotoboyToken() && (
+            <>
+              {/* Separador */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400">Quer entregar com a gente?</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              {/* CTA Entregador */}
+              <button
+                onClick={() => navigate('/motoboy/cadastro')}
+                className="w-full py-3 px-4 bg-[#FF441F] hover:bg-[#E63A19] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
+              >
+                <Icon name="Bike" size={18} className="text-white" />
+                Cadastrar como entregador
+              </button>
+            </>
+          )}
         </div>
       </main>
 

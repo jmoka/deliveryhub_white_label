@@ -335,16 +335,18 @@ const RestauranteConfig = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Comissão do Motoboy
                   </label>
-                  <p className="text-xs text-gray-400 mb-2">Quanto o entregador recebe por entrega — separado do frete cobrado do cliente</p>
+                  <p className="text-xs text-gray-400 mb-2">
+                    O motoboy sempre recebe o frete cobrado do cliente. Escolha um adicional pra somar em cima disso.
+                  </p>
 
                   <select
                     value={form.motoboy_comissao_tipo}
                     onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_tipo: e.target.value }))}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 mb-2"
                   >
-                    <option value="fixo">Valor fixo por entrega</option>
-                    <option value="percentual">Percentual sobre o frete</option>
-                    <option value="km">Por km rodado</option>
+                    <option value="fixo">+ Valor fixo por entrega</option>
+                    <option value="percentual">+ Percentual do frete</option>
+                    <option value="km">+ Valor por km rodado</option>
                   </select>
 
                   {form.motoboy_comissao_tipo === 'fixo' && (
@@ -395,6 +397,14 @@ const RestauranteConfig = () => {
                       </p>
                     </div>
                   )}
+
+                  <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mt-2">
+                    Exemplo: frete de R$ {form.frete_motoboy || '0,00'} {
+                      form.motoboy_comissao_tipo === 'fixo' ? `+ R$ ${form.motoboy_comissao_valor_fixo || '0,00'} fixo`
+                      : form.motoboy_comissao_tipo === 'percentual' ? `+ ${form.motoboy_comissao_percentual || '0'}% do frete`
+                      : `+ R$ ${form.motoboy_comissao_valor_km || '0,00'} por km rodado`
+                    } = total que o motoboy recebe nessa entrega.
+                  </p>
                 </div>
 
                 <div>
