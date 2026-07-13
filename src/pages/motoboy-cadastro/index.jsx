@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import { cadastro, setMotoboyToken, arquivoParaBase64 } from '../../services/motoboyAuthService';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CAMPOS_ARQUIVO = [
   { name: 'foto_perfil', label: 'Foto de perfil', obrigatorio: true, icon: 'User', accept: 'image/*' },
@@ -12,6 +13,7 @@ const CAMPOS_ARQUIVO = [
 
 const MotoboyCadastro = () => {
   const navigate = useNavigate();
+  const { refreshUserProfile } = useAuth();
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
   const [arquivos, setArquivos] = useState({});
   const [previews, setPreviews] = useState({});
@@ -42,6 +44,7 @@ const MotoboyCadastro = () => {
     try {
       const { token } = await cadastro({ ...form, ...arquivos });
       setMotoboyToken(token);
+      refreshUserProfile(); // se era cliente logado, o role virou 'motoboy' no banco
       navigate('/motoboy');
     } catch (err) {
       setErro(err.message);

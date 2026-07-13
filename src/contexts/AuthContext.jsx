@@ -143,6 +143,12 @@ export const AuthProvider = ({ children }) => {
 
   const clearError = () => setAuthError(null)
 
+  // Recarrega o perfil do banco — usado quando algo fora do fluxo normal de
+  // login muda o role da conta (ex: cadastro de motoboy promove pra 'motoboy').
+  const refreshUserProfile = () => {
+    if (user?.id) fetchUserProfile(user.id)
+  }
+
   const isAdmin = () => {
     return userProfile?.role === 'admin'
   }
@@ -166,7 +172,8 @@ export const AuthProvider = ({ children }) => {
     clearError,
     isAdmin,
     isRestaurantOwner,
-    isAuthenticated
+    isAuthenticated,
+    refreshUserProfile
   }
 
   return (

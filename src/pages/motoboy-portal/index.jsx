@@ -7,6 +7,7 @@ import {
   getGanhosResumo, getGanhosHistorico,
 } from '../../services/motoboyService';
 import { login, completarCadastro, arquivoParaBase64, getMotoboyToken, setMotoboyToken, clearMotoboyToken } from '../../services/motoboyAuthService';
+import { useAuth } from '../../contexts/AuthContext';
 import ColetaBarcode from './ColetaBarcode';
 import EntregaBarcode from './EntregaBarcode';
 import Icon from '../../components/AppIcon';
@@ -158,6 +159,7 @@ const CAMPOS_ARQUIVO_COMPLETAR = [
 
 // Motoboys cadastrados antes do login por senha (link antigo do restaurante) completam aqui.
 const CompletarCadastro = ({ nomeAtual, onCompletar }) => {
+  const { refreshUserProfile } = useAuth();
   const [form, setForm] = useState({ name: nomeAtual ?? '', phone: '', email: '', password: '' });
   const [arquivos, setArquivos] = useState({});
   const [previews, setPreviews] = useState({});
@@ -183,6 +185,7 @@ const CompletarCadastro = ({ nomeAtual, onCompletar }) => {
     try {
       const { token } = await completarCadastro({ ...form, ...arquivos });
       setMotoboyToken(token);
+      refreshUserProfile(); // se era cliente logado, o role virou 'motoboy' no banco
       onCompletar();
     } catch (err) {
       setErro(err.message);
