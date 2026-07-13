@@ -149,31 +149,25 @@ const CustomerRegistrationLogin = () => {
                 primaryColor="#2563EB"
               />
             )}
-
-            {/* Hint dev */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800 font-medium mb-1">Conta admin (desenvolvimento):</p>
-              <p className="text-xs text-blue-700">Email: admin@test.com · Senha: Test@1234</p>
-            </div>
           </div>
 
           {/* Separador */}
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">É um restaurante?</span>
+            <span className="text-xs text-gray-400">Tem um estabelecimento?</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* CTA Restaurante */}
+          {/* CTA Estabelecimento */}
           <button
             onClick={() => navigate('/restaurant-registration-setup')}
             className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
           >
             <Icon name="Store" size={18} className="text-white" />
-            Cadastrar meu restaurante
+            Cadastrar meu estabelecimento
           </button>
           <p className="text-center text-xs text-gray-400">
-            Você precisará estar logado para completar o cadastro do restaurante.
+            Você precisará estar logado para completar o cadastro do estabelecimento.
           </p>
         </div>
       </main>

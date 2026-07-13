@@ -2,12 +2,17 @@ import React from 'react';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
-const BusinessInformationForm = ({ 
-  formData, 
-  onInputChange, 
+const BusinessInformationForm = ({
+  formData,
+  onInputChange,
   errors = {},
-  className = '' 
+  tiposEstabelecimento = [],
+  className = ''
 }) => {
+  const tipoOptions = tiposEstabelecimento.map((t) => ({ value: String(t.id), label: t.name }));
+  const tipoSelecionado = tiposEstabelecimento.find((t) => String(t.id) === String(formData?.establishmentTypeId));
+  const isRestaurante = !tipoSelecionado || tipoSelecionado.name === 'Restaurante';
+
   const cuisineOptions = [
     { value: 'brasileira', label: 'Brasileira' },
     { value: 'italiana', label: 'Italiana' },
@@ -34,13 +39,27 @@ const BusinessInformationForm = ({
           Informações do Negócio
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure as informações básicas do seu restaurante
+          Configure as informações básicas do seu estabelecimento
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="md:col-span-2">
+          <Select
+            label="Tipo de Estabelecimento"
+            name="establishmentTypeId"
+            options={tipoOptions}
+            value={formData?.establishmentTypeId || ''}
+            onChange={(value) => onInputChange({ target: { name: 'establishmentTypeId', value } })}
+            placeholder="Selecione o tipo de estabelecimento"
+            error={errors?.establishmentTypeId}
+            required
+            description="Restaurante, farmácia, material de construção..."
+          />
+        </div>
+
+        <div className="md:col-span-2">
           <Input
-            label="Nome do Restaurante"
+            label="Nome do Estabelecimento"
             type="text"
             name="restaurantName"
             value={formData?.restaurantName || ''}
@@ -52,18 +71,20 @@ const BusinessInformationForm = ({
           />
         </div>
 
-        <Select
-          label="Tipo de Cozinha"
-          name="cuisineType"
-          options={cuisineOptions}
-          value={formData?.cuisineType || ''}
-          onChange={(value) => onInputChange({ target: { name: 'cuisineType', value } })}
-          placeholder="Selecione o tipo de cozinha"
-          error={errors?.cuisineType}
-          required
-          searchable
-          description="Categoria principal do seu restaurante"
-        />
+        {isRestaurante && (
+          <Select
+            label="Tipo de Cozinha"
+            name="cuisineType"
+            options={cuisineOptions}
+            value={formData?.cuisineType || ''}
+            onChange={(value) => onInputChange({ target: { name: 'cuisineType', value } })}
+            placeholder="Selecione o tipo de cozinha"
+            error={errors?.cuisineType}
+            required
+            searchable
+            description="Categoria principal do seu restaurante"
+          />
+        )}
 
         <Input
           label="CNPJ"
@@ -78,12 +99,12 @@ const BusinessInformationForm = ({
       </div>
       <div>
         <Input
-          label="Descrição do Restaurante"
+          label="Descrição do Estabelecimento"
           type="textarea"
           name="description"
           value={formData?.description || ''}
           onChange={onInputChange}
-          placeholder="Descreva seu restaurante, especialidades e diferenciais..."
+          placeholder="Descreva seu estabelecimento, especialidades e diferenciais..."
           error={errors?.description}
           rows={4}
           description="Uma boa descrição ajuda a atrair mais clientes"

@@ -840,7 +840,7 @@ const MenuCatalogProductBrowse = () => {
                   {!busca && (
                     <button onClick={() => navigate('/restaurant-registration-setup')}
                       className="mt-4 px-5 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
-                      Cadastrar restaurante
+                      Cadastrar estabelecimento
                     </button>
                   )}
                 </motion.div>
