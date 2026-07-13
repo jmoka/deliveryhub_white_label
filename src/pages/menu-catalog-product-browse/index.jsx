@@ -628,11 +628,13 @@ const MenuCatalogProductBrowse = () => {
                 Painel do motoboy
               </button>
             ) : (
-              <button onClick={() => navigate('/motoboy/cadastro')}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
-                <Icon name="Bike" size={16} />
-                Seja um entregador
-              </button>
+              isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
+                <button onClick={() => navigate('/motoboy/cadastro')}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
+                  <Icon name="Bike" size={16} />
+                  Seja um entregador
+                </button>
+              )
             )}
             <button onClick={() => navigate('/shopping-cart-checkout')}
               className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
@@ -917,16 +919,18 @@ const MenuCatalogProductBrowse = () => {
           <button onClick={() => navigate('/restaurant-registration-setup')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
             <Icon name="Store" size={12} /> Cadastrar estabelecimento
           </button>
-          <span className="text-[#E4E4E7]">·</span>
-          {getMotoboyToken() ? (
-            <button onClick={() => navigate('/motoboy')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
-              <Icon name="Bike" size={12} /> Painel do motoboy
-            </button>
-          ) : (
+          {(getMotoboyToken() || (isAuthenticated() && !isAdmin() && !isRestaurantOwner())) && (
             <>
-              <button onClick={() => navigate('/motoboy/cadastro')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
-                <Icon name="Bike" size={12} /> Seja um entregador
-              </button>
+              <span className="text-[#E4E4E7]">·</span>
+              {getMotoboyToken() ? (
+                <button onClick={() => navigate('/motoboy')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+                  <Icon name="Bike" size={12} /> Painel do motoboy
+                </button>
+              ) : (
+                <button onClick={() => navigate('/motoboy/cadastro')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+                  <Icon name="Bike" size={12} /> Seja um entregador
+                </button>
+              )}
             </>
           )}
         </div>
