@@ -295,12 +295,12 @@ const RestauranteCatalogo = () => {
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#F4F4F5] rounded-lg text-[#71717A] hover:text-[#27272A] transition-colors">
             <Icon name="ArrowLeft" size={18} />
           </button>
-          <button onClick={() => navigate('/')} className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-[#FF441F] rounded-lg flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
               <Icon name="Utensils" size={14} className="text-white" />
             </div>
             <span className="font-black text-[#18181B] text-sm hidden sm:block">DeliveryHub</span>
-          </button>
+          </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#18181B] text-sm truncate">{restaurante.name}</p>
           </div>
