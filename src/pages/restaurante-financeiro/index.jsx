@@ -4,6 +4,7 @@ import { getRelatorio, getMinhaEmpresa, getCaixa, getCaixaHistorico, aprovarConf
 import Icon from '../../components/AppIcon';
 import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
+import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -58,6 +59,7 @@ const buildRange = (modo, dia, mes, ano, ini, fim) => {
 
 const RestauranteFinanceiro = () => {
   const navigate = useNavigate();
+  const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const [restauranteNome, setRestauranteNome] = useState('');
   const [modo, setModo] = useState('dia');
   const [dia, setDia]   = useState(today());
@@ -122,8 +124,13 @@ const RestauranteFinanceiro = () => {
         <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
           {LINKS.map((l) => (
             <button key={l.path} onClick={() => navigate(l.path)}
-              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante/financeiro' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
+              className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante/financeiro' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
               {l.label}
+              {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white">
+                  {pendentesMotoboy}
+                </span>
+              )}
             </button>
           ))}
         </nav>

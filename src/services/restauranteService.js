@@ -162,7 +162,9 @@ export const uploadImagem = async (file, folder = 'geral') => {
 
 // Motoboys — afiliação (motoboy solicita, restaurante aceita/recusa)
 export const listarMotoboys = () => apiFetch('/motoboys');
-export const listarSolicitacoesMotoboy = () => apiFetch('/motoboys/solicitacoes');
+export const listarSolicitacoesMotoboy = (status = 'pendente') =>
+  apiFetch(`/motoboys/solicitacoes${status !== 'pendente' ? `?status=${status}` : ''}`);
+export const contarSolicitacoesMotoboyPendentes = () => apiFetch('/motoboys/solicitacoes/count');
 export const aceitarSolicitacaoMotoboy = (id) =>
   apiFetch(`/motoboys/solicitacoes/${id}/aceitar`, { method: 'PATCH' });
 export const recusarSolicitacaoMotoboy = (id, motivo) =>

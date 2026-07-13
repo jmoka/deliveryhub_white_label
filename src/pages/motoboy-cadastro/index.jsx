@@ -4,10 +4,10 @@ import Icon from '../../components/AppIcon';
 import { cadastro, setMotoboyToken, arquivoParaBase64 } from '../../services/motoboyAuthService';
 
 const CAMPOS_ARQUIVO = [
-  { name: 'foto_perfil', label: 'Foto de perfil', obrigatorio: true, icon: 'User' },
-  { name: 'documento_frente', label: 'Documento com foto (CNH ou RG)', obrigatorio: true, icon: 'IdCard' },
-  { name: 'documento_verso', label: 'Verso do documento (opcional)', obrigatorio: false, icon: 'IdCard' },
-  { name: 'comprovante_endereco', label: 'Comprovante de endereço', obrigatorio: true, icon: 'FileText' },
+  { name: 'foto_perfil', label: 'Foto de perfil', obrigatorio: true, icon: 'User', accept: 'image/*' },
+  { name: 'documento_frente', label: 'Documento com foto (CNH ou RG)', obrigatorio: true, icon: 'IdCard', accept: 'image/*,application/pdf' },
+  { name: 'documento_verso', label: 'Verso do documento (opcional)', obrigatorio: false, icon: 'IdCard', accept: 'image/*,application/pdf' },
+  { name: 'comprovante_endereco', label: 'Comprovante de endereço', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' },
 ];
 
 const MotoboyCadastro = () => {
@@ -84,7 +84,7 @@ const MotoboyCadastro = () => {
                 <span className="flex-1 text-sm text-[#27272A] truncate">
                   {previews[campo.name] ?? `${campo.label}${campo.obrigatorio ? ' *' : ''}`}
                 </span>
-                <input type="file" accept="image/*,application/pdf" className="hidden"
+                <input type="file" accept={campo.accept} className="hidden"
                   onChange={(e) => handleArquivo(campo.name, e.target.files?.[0])} />
               </label>
             ))}

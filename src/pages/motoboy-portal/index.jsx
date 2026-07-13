@@ -151,9 +151,9 @@ const MotoboyLogin = ({ onLogin }) => {
 };
 
 const CAMPOS_ARQUIVO_COMPLETAR = [
-  { name: 'foto_perfil', label: 'Foto de perfil', icon: 'User' },
-  { name: 'documento_frente', label: 'Documento com foto', icon: 'IdCard' },
-  { name: 'comprovante_endereco', label: 'Comprovante de endereço', icon: 'FileText' },
+  { name: 'foto_perfil', label: 'Foto de perfil', icon: 'User', accept: 'image/*' },
+  { name: 'documento_frente', label: 'Documento com foto', icon: 'IdCard', accept: 'image/*,application/pdf' },
+  { name: 'comprovante_endereco', label: 'Comprovante de endereço', icon: 'FileText', accept: 'image/*,application/pdf' },
 ];
 
 // Motoboys cadastrados antes do login por senha (link antigo do restaurante) completam aqui.
@@ -213,7 +213,7 @@ const CompletarCadastro = ({ nomeAtual, onCompletar }) => {
               <label key={campo.name} className="flex items-center gap-3 border border-dashed border-[#E4E4E7] rounded-xl px-3 py-2.5 cursor-pointer hover:border-[#FF441F]/50">
                 <Icon name={previews[campo.name] ? 'CheckCircle2' : campo.icon} size={18} className={previews[campo.name] ? 'text-green-600' : 'text-[#71717A]'} />
                 <span className="flex-1 text-sm text-[#27272A] truncate">{previews[campo.name] ?? campo.label}</span>
-                <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => handleArquivo(campo.name, e.target.files?.[0])} />
+                <input type="file" accept={campo.accept} className="hidden" onChange={(e) => handleArquivo(campo.name, e.target.files?.[0])} />
               </label>
             ))}
           </div>

@@ -18,6 +18,7 @@ import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
 import PedidoTimeline from './PedidoTimeline';
 import MobileMenu from './MobileMenu';
+import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -59,6 +60,7 @@ const LINKS = [
 const RestauranteDashboard = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const pendentesMotoboy = useSolicitacoesMotoboyCount();
 
   const [empresa, setEmpresa] = useState(null);
   const [statusAberto, setStatusAberto] = useState(false);
@@ -396,8 +398,13 @@ const RestauranteDashboard = () => {
         <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
           {LINKS.map((l) => (
             <button key={l.path} onClick={() => navigate(l.path)}
-              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
+              className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
               {l.label}
+              {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white">
+                  {pendentesMotoboy}
+                </span>
+              )}
             </button>
           ))}
           <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
@@ -415,6 +422,7 @@ const RestauranteDashboard = () => {
           <MobileMenu
             links={LINKS}
             currentPath="/restaurante"
+            pendentesMotoboy={pendentesMotoboy}
             onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
             onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
           />
