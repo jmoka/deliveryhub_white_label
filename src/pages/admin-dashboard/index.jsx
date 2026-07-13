@@ -84,6 +84,9 @@ const AdminDashboard = () => {
           <button onClick={() => navigate('/admin/categorias')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Categorias
           </button>
+          <button onClick={() => navigate('/admin/tipos-estabelecimento')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+            Tipos
+          </button>
           <button onClick={() => navigate('/admin/tags')} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
             Tags
           </button>

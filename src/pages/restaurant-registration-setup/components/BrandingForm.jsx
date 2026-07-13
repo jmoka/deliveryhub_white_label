@@ -264,6 +264,8 @@ const BrandingForm = ({
           <Button
             variant="default"
             size="sm"
+            disabled
+            title="Disponível após finalizar o cadastro"
             style={{ backgroundColor: formData?.primaryColor || '#2563EB' }}
           >
             Ver Cardápio

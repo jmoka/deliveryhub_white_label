@@ -92,3 +92,12 @@ export const atualizarCategoriaGlobal = (id, data) =>
   apiFetch(`/categorias/globais/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerCategoriaGlobal = (id) =>
   apiFetch(`/categorias/globais/${id}`, { method: 'DELETE' });
+
+// Tipos de estabelecimento (restaurante, farmácia, mat. construção...) — admin
+export const getTiposEstabelecimento = () => apiFetch('/establishment-types');
+export const criarTipoEstabelecimento = (data) =>
+  apiFetch('/establishment-types', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarTipoEstabelecimento = (id, data) =>
+  apiFetch(`/establishment-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerTipoEstabelecimento = (id) =>
+  apiFetch(`/establishment-types/${id}`, { method: 'DELETE' });
