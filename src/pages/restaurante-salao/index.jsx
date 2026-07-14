@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
+  adicionarItensComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
+  listarGarcons, getMeusProdutos,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
@@ -68,17 +70,31 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
   const [acrescimoInput, setAcrescimoInput] = useState('');
   const [forma, setForma] = useState('pix');
   const [gorjeta, setGorjeta] = useState('');
+  const [gorjetaPercentual, setGorjetaPercentual] = useState(0);
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
+  const [garcons, setGarcons] = useState([]);
+  const [garcomSelecionado, setGarcomSelecionado] = useState('');
+
+  const [produtos, setProdutos] = useState([]);
+  const [produtoSelecionado, setProdutoSelecionado] = useState('');
+  const [quantidadeItem, setQuantidadeItem] = useState(1);
+
   const carregar = useCallback(async () => {
-    const c = await getSalaoComandaDetalhe(comandaId);
+    const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
     setComanda(c);
     setDescontoInput(String(c.desconto_valor ?? 0));
     setAcrescimoInput(String(c.acrescimo_valor ?? 0));
+    setGorjetaPercentual(sugestao.percentual);
+    setGorjeta((v) => (v === '' ? String(sugestao.valor_sugerido) : v));
   }, [comandaId]);
 
   useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    listarGarcons().then(setGarcons).catch(() => {});
+    getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {});
+  }, []);
 
   const acao = async (fn) => {
     setErro(null);
@@ -103,6 +119,20 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
     acao(async () => { await pagarComandaSalao(comandaId, forma, gorjeta ? Number(gorjeta) : undefined); onFechar(); });
   };
 
+  const transferir = () => {
+    if (!garcomSelecionado) return;
+    acao(() => transferirGarcomComanda(comandaId, Number(garcomSelecionado)));
+  };
+
+  const incluirItem = () => {
+    if (!produtoSelecionado) return;
+    acao(async () => {
+      await adicionarItensComandaSalao(comandaId, [{ product_id: Number(produtoSelecionado), quantity: Number(quantidadeItem) || 1 }]);
+      setProdutoSelecionado('');
+      setQuantidadeItem(1);
+    });
+  };
+
   if (!comanda) return null;
 
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
@@ -114,7 +144,7 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
         <div className="flex justify-between items-start mb-3">
           <div>
             <h2 className="text-base font-bold text-[#18181B]">
-              {comanda.mesas ? `Mesa ${comanda.mesas.numero}` : 'Comanda avulsa'}
+              Comanda #{comanda.numero_comanda ?? comanda.id} — {comanda.mesas ? `Mesa ${comanda.mesas.numero}` : 'Avulsa'}
             </h2>
             <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
             <p className="text-xs text-[#71717A]">Garçom: {comanda.garcons?.nome ?? '—'}</p>
@@ -122,6 +152,18 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
           <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
             {comanda.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
           </span>
+        </div>
+
+        <div className="flex items-center gap-2 mb-3">
+          <select value={garcomSelecionado} onChange={(e) => setGarcomSelecionado(e.target.value)}
+            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+            <option value="">Transferir pra outro garçom...</option>
+            {garcons.filter((g) => g.id !== comanda.garcom_id).map((g) => (
+              <option key={g.id} value={g.id}>{g.nome}</option>
+            ))}
+          </select>
+          <button onClick={transferir} disabled={!garcomSelecionado || salvando}
+            className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
         </div>
 
         <div className="space-y-1 mb-3">
@@ -139,6 +181,24 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
             </div>
           ))}
         </div>
+
+        {comanda.status === 'aberta' && (
+          <div className="flex items-center gap-2 mb-3 bg-[#F4F4F5] rounded-xl p-2">
+            <select value={produtoSelecionado} onChange={(e) => setProdutoSelecionado(e.target.value)}
+              className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+              <option value="">Incluir produto...</option>
+              {produtos.map((p) => (
+                <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)}</option>
+              ))}
+            </select>
+            <input type="number" min={1} value={quantidadeItem} onChange={(e) => setQuantidadeItem(e.target.value)}
+              className="w-14 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs text-center" />
+            <button onClick={incluirItem} disabled={!produtoSelecionado || salvando}
+              className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
+              <Icon name="Plus" size={14} />
+            </button>
+          </div>
+        )}
 
         <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
           <div className="flex justify-between text-sm"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
@@ -169,9 +229,14 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
             <option value="debit_card">Cartão de débito</option>
             <option value="cash">Dinheiro</option>
           </select>
-          <label className="text-xs text-[#71717A]">Gorjeta (opcional)</label>
+          <label className="text-xs text-[#71717A]">
+            Gorjeta {gorjetaPercentual > 0 ? `(sugerida ${gorjetaPercentual}% — ajustável)` : '(opcional)'}
+          </label>
           <input type="number" value={gorjeta} onChange={(e) => setGorjeta(e.target.value)}
             className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1">
+            <span>Total + gorjeta</span><span>{fmt(totalFinal + Number(gorjeta || 0))}</span>
+          </div>
         </div>
 
         {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
@@ -242,7 +307,7 @@ const RestauranteSalao = () => {
                   disabled={!m.comanda}
                   className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[m.status] ?? ''} disabled:opacity-70`}>
                   <p className="text-lg font-black">{m.numero}</p>
-                  {m.comanda && <p className="text-[10px] font-medium">{fmt(m.comanda.total)}</p>}
+                  {m.comanda && <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>}
                 </button>
               ))}
               {mesas.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">Nenhuma mesa cadastrada.</p>}
@@ -255,7 +320,7 @@ const RestauranteSalao = () => {
                   className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
                   <div>
                     <p className="text-sm font-medium text-[#18181B]">
-                      {c.mesas ? `Mesa ${c.mesas.numero}` : 'Avulsa'} — {c.cliente_mesa_nome}
+                      #{c.numero_comanda ?? c.id} — {c.mesas ? `Mesa ${c.mesas.numero}` : 'Avulsa'} — {c.cliente_mesa_nome}
                     </p>
                     <p className="text-xs text-[#71717A]">Garçom: {c.garcons?.nome ?? '—'} · {c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
                   </div>

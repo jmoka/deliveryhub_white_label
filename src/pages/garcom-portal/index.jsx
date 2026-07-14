@@ -341,7 +341,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
           <Icon name="ArrowLeft" size={16} /> Voltar
         </button>
         <h1 className="text-base font-bold text-[#18181B]">
-          {comanda.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa'}
+          #{comanda.numero_comanda ?? comanda.id} — {comanda.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa'}
         </h1>
         <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
         {fechada && (
@@ -480,7 +480,7 @@ const GarcomHome = () => {
               className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
               <div>
                 <p className="text-sm font-medium text-[#18181B]">
-                  {c.mesa_id ? `Mesa ${c.mesa_id}` : 'Avulsa'} — {c.cliente_mesa_nome}
+                  #{c.numero_comanda ?? c.id} — {c.mesa_id ? `Mesa ${c.mesa_id}` : 'Avulsa'} — {c.cliente_mesa_nome}
                 </p>
                 <p className="text-xs text-[#71717A]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
               </div>

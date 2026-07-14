@@ -155,6 +155,7 @@ const Guia = () => {
 };
 
 const RestauranteConfig = () => {
+  const tipoRestaurante = useTipoRestaurante();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -174,6 +175,7 @@ const RestauranteConfig = () => {
     motoboy_comissao_percentual: '',
     motoboy_comissao_valor_km: '',
     motoboy_comissao_km_fallback: '',
+    gorjeta_percentual: '',
   });
 
   useEffect(() => {
@@ -193,6 +195,7 @@ const RestauranteConfig = () => {
           motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
           motoboy_comissao_valor_km: d.motoboy_comissao_valor_km != null ? String(d.motoboy_comissao_valor_km) : '',
           motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
+          gorjeta_percentual: d.gorjeta_percentual != null ? String(d.gorjeta_percentual) : '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -218,6 +221,7 @@ const RestauranteConfig = () => {
         motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
         motoboy_comissao_valor_km: form.motoboy_comissao_valor_km !== '' ? parseFloat(form.motoboy_comissao_valor_km) : 0,
         motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
+        gorjeta_percentual: form.gorjeta_percentual !== '' ? parseFloat(form.gorjeta_percentual) : 0,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -443,6 +447,27 @@ const RestauranteConfig = () => {
                     } = total que o motoboy recebe nessa entrega.
                   </p>
                 </div>
+                )}
+
+                {tipoRestaurante && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gorjeta sugerida (% sobre o subtotal da comanda)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number" min="0" max="30" step="0.5"
+                        value={form.gorjeta_percentual}
+                        onChange={(e) => setForm((f) => ({ ...f, gorjeta_percentual: e.target.value }))}
+                        placeholder="Ex: 10"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      O caixa vê esse valor sugerido ao fechar a conta (PDV do Salão) — ainda pode ajustar na hora.
+                    </p>
+                  </div>
                 )}
 
                 <div>
