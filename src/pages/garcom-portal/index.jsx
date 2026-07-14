@@ -236,7 +236,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="p-4 border-b border-[#E4E4E7] sticky top-0 bg-white">
+      <div className="p-4 border-b border-[#E4E4E7] sticky top-0 bg-white max-w-2xl w-full mx-auto">
         <div className="flex items-center gap-2 mb-3">
           <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="ArrowLeft" size={20} /></button>
           <h2 className="text-base font-bold text-[#18181B]">Adicionar produto</h2>
@@ -249,7 +249,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
           {categorias.map((c) => (
             <button key={c} onClick={() => setCategoria(c)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
                 categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
               }`}>
               {c === 'todas' ? 'Todas' : c}
@@ -258,20 +258,23 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3">
+      <div className="flex-1 overflow-y-auto p-4 max-w-2xl w-full mx-auto space-y-2">
         {filtrados.map((p) => (
           <button key={p.id} onClick={() => setProdutoAtivo(p)}
-            className="bg-white border border-[#E4E4E7] rounded-xl p-2 text-left active:scale-95 transition-transform">
-            <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#F4F4F5] mb-2">
+            className="w-full bg-white border border-[#E4E4E7] rounded-xl p-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
               {p.image_url
                 ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={22} className="text-[#A1A1AA]" /></div>}
+                : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
             </div>
-            <p className="text-xs font-semibold text-[#18181B] leading-tight truncate">{p.name}</p>
-            <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[#18181B] truncate">{p.name}</p>
+              <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+            </div>
+            <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
         ))}
-        {filtrados.length === 0 && <p className="col-span-2 text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}
+        {filtrados.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}
       </div>
 
       {produtoAtivo && (
