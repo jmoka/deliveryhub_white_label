@@ -168,9 +168,10 @@ body{font-family:'Courier New',monospace;font-size:20px;padding:12px;color:#000;
 .center{text-align:center;display:block}
 .big{font-size:32px;font-weight:900;text-align:center;letter-spacing:2px;margin:10px 0;text-transform:uppercase}
 hr{border:none;border-top:2px dashed #000;margin:10px 0}
-.item{padding:6px 0;font-size:22px;font-weight:700}
-.obs{font-size:18px;font-weight:700;padding-left:12px}
-.qty{font-weight:900}
+.item-nome{font-size:22px;font-weight:900;margin-top:4px}
+.item-qtd{font-size:22px;font-weight:900}
+.item-desc,.item-obs{font-size:18px;font-weight:400;padding-left:4px;margin-top:2px}
+.separador{border:none;border-top:1px dashed #000;margin:14px 0}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="big">${setorNome ?? 'Setor'}</div>
@@ -180,7 +181,13 @@ ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">${com
 ${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_telefone}</div>` : ''}
 <div class="center" style="font-size:14px">${hora}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span> ${i.product_name}${i.observacao ? `<div class="obs">obs: ${i.observacao}</div>` : ''}</div>`).join('')}
+${itens.map((i, idx) => `
+<div class="item-nome">${i.product_name}</div>
+<div class="item-qtd">Qtd: ${i.quantity}</div>
+${i.description ? `<div class="item-desc">Descrição: ${i.description}</div>` : ''}
+${i.observacao ? `<div class="item-obs">Obs: ${i.observacao}</div>` : ''}
+${idx < itens.length - 1 ? '<hr class="separador"/>' : ''}
+`).join('')}
 <hr/>
 <script>
 window.print();

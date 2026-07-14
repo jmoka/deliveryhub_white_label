@@ -6,6 +6,13 @@ de comando `lpstat`/`lp` (suporte secundário, sem dependência compilada extra)
 import platform
 import subprocess
 
+# Marcador de "negrito desligado" (ver salao.service.ts, formatarTicketTexto) — o comando
+# ESC/POS real (ESC E 0x00) tem um byte NUL, que o Postgres TEXT não aceita armazenar.
+# O backend guarda esse marcador no lugar e só aqui, na hora de mandar pra impressora de
+# verdade, ele vira o byte de controle real.
+_MARCADOR_NEGRITO_OFF = "\x01BOLDOFF\x01"
+_NEGRITO_OFF_REAL = "\x1b\x45\x00"
+
 
 def _sistema() -> str:
     return platform.system()
@@ -36,6 +43,7 @@ def listar_impressoras() -> list[str]:
 
 def imprimir_texto(nome_impressora: str, conteudo: str) -> None:
     sistema = _sistema()
+    conteudo = conteudo.replace(_MARCADOR_NEGRITO_OFF, _NEGRITO_OFF_REAL)
 
     if sistema == "Windows":
         import win32print
