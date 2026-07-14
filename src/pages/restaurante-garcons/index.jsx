@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   listarGarcons, criarGarcom, atualizarGarcom, removerGarcom,
-  listarMesas, criarMesa, removerMesa,
+  listarMesas, criarMesa, removerMesa, criarMesasEmLote,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
@@ -174,6 +174,12 @@ const MesasTab = () => {
   const [nome, setNome] = useState('');
   const [erro, setErro] = useState(null);
 
+  const [loteDe, setLoteDe] = useState('');
+  const [loteAte, setLoteAte] = useState('');
+  const [loteErro, setLoteErro] = useState(null);
+  const [loteSalvando, setLoteSalvando] = useState(false);
+  const [loteResultado, setLoteResultado] = useState(null);
+
   const carregar = useCallback(() => listarMesas().then(setMesas), []);
   useEffect(() => { carregar(); }, [carregar]);
 
@@ -186,6 +192,23 @@ const MesasTab = () => {
       carregar();
     } catch (err) {
       setErro(err.message);
+    }
+  };
+
+  const criarLote = async (e) => {
+    e.preventDefault();
+    setLoteErro(null);
+    setLoteResultado(null);
+    setLoteSalvando(true);
+    try {
+      const resultado = await criarMesasEmLote(Number(loteDe), Number(loteAte));
+      setLoteResultado(resultado);
+      setLoteDe(''); setLoteAte('');
+      carregar();
+    } catch (err) {
+      setLoteErro(err.message);
+    } finally {
+      setLoteSalvando(false);
     }
   };
 
@@ -214,6 +237,32 @@ const MesasTab = () => {
         </div>
         {erro && <p className="text-xs text-red-600 w-full">{erro}</p>}
         <button type="submit" className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl">Adicionar mesa</button>
+      </form>
+
+      <form onSubmit={criarLote} className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4">
+        <p className="text-xs font-semibold text-[#71717A] mb-2">Criar várias de uma vez (mesas fixas numeradas)</p>
+        <div className="flex flex-wrap gap-2 items-end">
+          <div>
+            <label className="text-xs text-[#71717A]">De</label>
+            <input type="number" value={loteDe} onChange={(e) => setLoteDe(e.target.value)} required
+              className="w-24 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <div>
+            <label className="text-xs text-[#71717A]">Até</label>
+            <input type="number" value={loteAte} onChange={(e) => setLoteAte(e.target.value)} required
+              className="w-24 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <button type="submit" disabled={loteSalvando}
+            className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
+            {loteSalvando ? 'Criando...' : 'Criar mesas'}
+          </button>
+        </div>
+        {loteErro && <p className="text-xs text-red-600 mt-2">{loteErro}</p>}
+        {loteResultado && (
+          <p className="text-xs text-emerald-700 mt-2">
+            {loteResultado.criadas} mesa(s) criada(s){loteResultado.ja_existiam > 0 ? `, ${loteResultado.ja_existiam} já existiam (puladas)` : ''}.
+          </p>
+        )}
       </form>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
