@@ -198,6 +198,9 @@ const RestauranteAparencia = () => {
               aspect="wide"
               placeholder="https://exemplo.com/logo.jpg"
             />
+            <p className="text-[10px] text-[#A1A1AA] mt-1.5">
+              Ideal: <strong>500×500px</strong>, imagem quadrada — aparece tanto em card retangular quanto em selo redondo.
+            </p>
             {form.logo_url && (
               <div className="mt-3 flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#E4E4E7] flex-shrink-0">
@@ -220,6 +223,9 @@ const RestauranteAparencia = () => {
               aspect="banner"
               placeholder="https://exemplo.com/banner.jpg"
             />
+            <p className="text-[10px] text-[#A1A1AA] mt-1.5">
+              Ideal: <strong>1200×400px</strong> (paisagem, 3:1) — ocupa a largura toda no topo da página.
+            </p>
           </Section>
 
           {/* ── Fundo ─────────────────────────────────────────────── */}
@@ -261,6 +267,11 @@ const RestauranteAparencia = () => {
                 placeholder="https://exemplo.com/fundo.jpg"
               />
             )}
+            {fundoTipo === 'imagem' && (
+              <p className="text-[10px] text-[#A1A1AA] mt-1.5">
+                Ideal: <strong>1920×1080px</strong> — cobre a tela toda atrás do conteúdo.
+              </p>
+            )}
           </Section>
 
           {/* ── Carrossel ─────────────────────────────────────────── */}
@@ -284,6 +295,9 @@ const RestauranteAparencia = () => {
                 aspect="wide"
                 placeholder="URL da imagem do carrossel..."
               />
+              <p className="text-[10px] text-[#A1A1AA]">
+                Ideal: <strong>800×500px</strong> (paisagem, ~8:5) — mesma proporção pra todas ficarem alinhadas no carrossel.
+              </p>
             </div>
           </Section>
 
