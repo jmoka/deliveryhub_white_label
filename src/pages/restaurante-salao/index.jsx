@@ -126,9 +126,16 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
 
         <div className="space-y-1 mb-3">
           {(comanda.itens ?? []).map((item) => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span>{item.quantity}x {item.products?.name}</span>
-              <span>{fmt(item.quantity * item.unit_price)}</span>
+            <div key={item.id} className="flex justify-between items-center text-sm gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                  {item.products?.image_url
+                    ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={14} className="text-[#A1A1AA]" /></div>}
+                </div>
+                <span className="truncate">{item.quantity}x {item.products?.name}</span>
+              </div>
+              <span className="flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
             </div>
           ))}
         </div>
