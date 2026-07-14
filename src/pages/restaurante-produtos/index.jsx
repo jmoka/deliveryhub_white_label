@@ -7,6 +7,7 @@ import {
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import ImageUpload from '../../components/ui/ImageUpload';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
@@ -453,12 +454,12 @@ const RestauranteProdutos = () => {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">URL da imagem</label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">Imagem do produto</label>
+                <ImageUpload
                   value={form.image_url}
-                  onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="https://..."
+                  onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
+                  folder="produtos"
+                  aspect="square"
                 />
               </div>
 
