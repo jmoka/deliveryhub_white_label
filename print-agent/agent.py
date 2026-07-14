@@ -12,6 +12,8 @@ import config
 import printers
 from backend_client import BackendClient
 
+VERSAO = "1.0.0"
+
 INTERVALO_POLL_SEGUNDOS = 3
 INTERVALO_REPORTAR_IMPRESSORAS_CICLOS = 100  # ~5 min com poll de 3s
 
@@ -79,8 +81,10 @@ def rodar() -> None:
     parser = argparse.ArgumentParser(description="Agente local de impressão DeliveryHub")
     parser.add_argument("--token", help="Token de pareamento (gerado em /restaurante/impressoras)")
     parser.add_argument("--backend-url", help="URL do backend, se diferente do padrão")
+    parser.add_argument("--version", action="version", version=f"agente-impressao {VERSAO}")
     args = parser.parse_args()
 
+    log(f"Agente de impressão DeliveryHub v{VERSAO}")
     cfg = garantir_pareado(args)
     client = BackendClient(cfg["backend_url"], cfg["token"])
 
