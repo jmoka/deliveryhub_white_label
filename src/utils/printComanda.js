@@ -164,20 +164,23 @@ export const printTicketSetor = (itens, comanda, setorNome) => {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${setorNome}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
+body{font-family:'Courier New',monospace;font-size:20px;padding:12px;color:#000;max-width:340px;margin:0 auto}
 .center{text-align:center;display:block}
-.big{font-size:22px;font-weight:900;text-align:center;letter-spacing:2px;margin:8px 0;text-transform:uppercase}
-hr{border:none;border-top:1px dashed #000;margin:8px 0}
-.item{display:flex;gap:8px;padding:3px 0;font-size:16px}
-.qty{font-weight:900;min-width:28px}
+.big{font-size:32px;font-weight:900;text-align:center;letter-spacing:2px;margin:10px 0;text-transform:uppercase}
+hr{border:none;border-top:2px dashed #000;margin:10px 0}
+.item{padding:6px 0;font-size:22px;font-weight:700}
+.obs{font-size:18px;font-weight:700;padding-left:12px}
+.qty{font-weight:900}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="big">${setorNome ?? 'Setor'}</div>
-<div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
-${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
-<div class="center" style="font-size:11px">${hora}</div>
+<div class="center" style="font-size:20px;font-weight:bold">${mesa}</div>
+${comanda?.garcons?.nome ? `<div class="center" style="font-size:18px;font-weight:bold">Garçom: ${comanda.garcons.nome}</div>` : ''}
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_nome}</div>` : ''}
+${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_telefone}</div>` : ''}
+<div class="center" style="font-size:14px">${hora}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span> ${i.product_name}${i.observacao ? `<div class="obs">obs: ${i.observacao}</div>` : ''}</div>`).join('')}
 <hr/>
 <script>
 window.print();
