@@ -388,13 +388,17 @@ const RestauranteCatalogo = () => {
             <Icon name="Clock" size={14} className="text-[#FF7A00]" />
             <span className="text-sm text-[#27272A]">{ap.tempo_entrega ?? '25-40 min'}</span>
           </div>
-          <div className="w-px h-4 bg-[#E4E4E7] flex-shrink-0" />
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <Icon name="Bike" size={14} className="text-[#FF441F]" />
-            <span className="text-sm text-[#27272A]">
-              {ap.frete === 0 || ap.frete === '0' ? 'Frete grátis' : ap.frete ? fmt(Number(ap.frete)) : 'Frete grátis'}
-            </span>
-          </div>
+          {restaurante.frete_motoboy != null && (
+            <>
+              <div className="w-px h-4 bg-[#E4E4E7] flex-shrink-0" />
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Icon name="Bike" size={14} className="text-[#FF441F]" />
+                <span className="text-sm text-[#27272A]">
+                  {Number(restaurante.frete_motoboy) === 0 ? 'Frete grátis' : fmt(Number(restaurante.frete_motoboy))}
+                </span>
+              </div>
+            </>
+          )}
           {ap.pedido_minimo && (
             <>
               <div className="w-px h-4 bg-[#E4E4E7] flex-shrink-0" />
