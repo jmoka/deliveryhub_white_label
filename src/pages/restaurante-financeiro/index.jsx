@@ -5,6 +5,7 @@ import Icon from '../../components/AppIcon';
 import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
+import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -61,6 +62,7 @@ const buildRange = (modo, dia, mes, ano, ini, fim) => {
 const RestauranteFinanceiro = () => {
   const navigate = useNavigate();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
+  const slugLoja = useMinhaLojaSlug();
   const [restauranteNome, setRestauranteNome] = useState('');
   const [modo, setModo] = useState('dia');
   const [dia, setDia]   = useState(today());
@@ -134,6 +136,12 @@ const RestauranteFinanceiro = () => {
               )}
             </button>
           ))}
+          {slugLoja && (
+            <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
+              className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+              <Icon name="ExternalLink" size={14} /> Loja
+            </button>
+          )}
         </nav>
         <button onClick={() => navigate('/restaurante')} className="md:hidden flex items-center gap-1.5 text-sm text-[#71717A]">
           <Icon name="ChevronLeft" size={16} /> Voltar

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getClientes, criarCliente, atualizarCliente } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtData = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
@@ -180,6 +181,7 @@ const RestauranteClientes = () => {
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },
   ];
+  const slugLoja = useMinhaLojaSlug();
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
@@ -200,6 +202,12 @@ const RestauranteClientes = () => {
                 {l.label}
               </button>
             ))}
+            {slugLoja && (
+              <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
+                className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+                <Icon name="ExternalLink" size={14} /> Loja
+              </button>
+            )}
             <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
               className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
               Sair

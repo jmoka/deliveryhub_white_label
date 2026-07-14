@@ -414,6 +414,12 @@ const RestauranteDashboard = () => {
               )}
             </button>
           ))}
+          {empresa?.slug && (
+            <button onClick={() => window.open(`/r/${empresa.slug}`, '_blank')}
+              className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+              <Icon name="ExternalLink" size={14} /> Loja
+            </button>
+          )}
           <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
             className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
         </nav>
@@ -430,6 +436,7 @@ const RestauranteDashboard = () => {
             links={LINKS}
             currentPath="/restaurante"
             pendentesMotoboy={pendentesMotoboy}
+            slugLoja={empresa?.slug}
             onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
             onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
           />

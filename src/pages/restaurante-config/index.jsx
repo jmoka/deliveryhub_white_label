@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getConfig, updateConfig } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 
 // URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento
 const WEBHOOK_URL = `${window.location.origin}/api/pagamentos/webhook`;
@@ -12,6 +13,7 @@ const PAGBANK_URL = 'https://pagseguro.uol.com.br';
 const NavRestaurante = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const slugLoja = useMinhaLojaSlug();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
@@ -33,6 +35,12 @@ const NavRestaurante = () => {
           {l.label}
         </button>
       ))}
+      {slugLoja && (
+        <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
+          className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+          <Icon name="ExternalLink" size={14} /> Loja
+        </button>
+      )}
       <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
         className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
         Sair

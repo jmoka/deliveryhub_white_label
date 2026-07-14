@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const MobileMenu = ({ links, currentPath, onNavigate, onSair, pendentesMotoboy = 0 }) => (
+const MobileMenu = ({ links, currentPath, onNavigate, onSair, pendentesMotoboy = 0, slugLoja }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
     animate={{ opacity: 1, y: 0 }}
@@ -21,6 +21,12 @@ const MobileMenu = ({ links, currentPath, onNavigate, onSair, pendentesMotoboy =
         )}
       </button>
     ))}
+    {slugLoja && (
+      <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
+        className="w-full text-left px-4 py-3 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 flex items-center gap-2">
+        Loja
+      </button>
+    )}
     <button onClick={onSair}
       className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl border border-red-200">
       Sair

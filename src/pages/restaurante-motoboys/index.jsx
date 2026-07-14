@@ -6,10 +6,12 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
+import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 
 const NavRestaurante = ({ active }) => {
   const navigate = useNavigate();
   const pendentes = useSolicitacoesMotoboyCount();
+  const slugLoja = useMinhaLojaSlug();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
@@ -37,6 +39,12 @@ const NavRestaurante = ({ active }) => {
           )}
         </button>
       ))}
+      {slugLoja && (
+        <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
+          className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+          <Icon name="ExternalLink" size={14} /> Loja
+        </button>
+      )}
     </nav>
   );
 };
