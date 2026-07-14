@@ -38,3 +38,25 @@ export const atualizarStatusCozinhaPortal = (pedidoId, status) =>
     method: 'PATCH',
     body: JSON.stringify({ status }),
   });
+
+// KDS por setor (módulo Salão) — mesmo token de cozinha, endpoint diferente
+const API_KDS = apiPath('/api/kds-portal');
+async function kdsFetch(path, options = {}) {
+  const token = getCozinhaToken();
+  if (!token) throw new Error('Token de cozinha não encontrado. Use o link recebido do restaurante.');
+
+  const res = await fetch(`${API_KDS}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'x-cozinha-token': token, ...options.headers },
+  });
+  const contentType = res.headers.get('content-type') ?? '';
+  const isJson = contentType.includes('application/json');
+  if (!res.ok) {
+    const err = isJson ? await res.json().catch(() => ({})) : {};
+    throw new Error(err?.message ?? `HTTP ${res.status}`);
+  }
+  return isJson ? res.json() : {};
+}
+
+export const getKdsItens = (impressoraId) => kdsFetch(`/itens?impressora_id=${impressoraId}`);
+export const marcarItemPronto = (itemId) => kdsFetch(`/itens/${itemId}/pronto`, { method: 'PATCH' });

@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -136,12 +137,18 @@ const RestauranteCombos = () => {
   const produtosSelecionados = new Set(form.items.map((i) => i.product_id));
   const produtosDisponiveis = produtos.filter((p) => !produtosSelecionados.has(p.id));
 
+  const tipoRestaurante = useTipoRestaurante();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Combos', path: '/restaurante/combos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Entregas', path: '/restaurante/entregas' },
+    ...(tipoRestaurante ? [
+      { label: 'Salão', path: '/restaurante/salao' },
+      { label: 'Garçons', path: '/restaurante/garcons' },
+      { label: 'Impressoras', path: '/restaurante/impressoras' },
+    ] : []),
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },

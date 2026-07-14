@@ -35,6 +35,12 @@ import RestauranteCombos from './pages/restaurante-combos';
 import MotoboyPortal from './pages/motoboy-portal';
 import MotoboyCadastro from './pages/motoboy-cadastro';
 import CustomerProfile from './pages/customer-profile';
+import GarcomPortal from './pages/garcom-portal';
+import RestauranteGarcons from './pages/restaurante-garcons';
+import RestauranteImpressoras from './pages/restaurante-impressoras';
+import RestauranteSalao from './pages/restaurante-salao';
+import RestauranteKdsSetor from './pages/restaurante-kds-setor';
+import MesaAcompanhar from './pages/mesa-acompanhar';
 
 const Routes = () => {
   return (
@@ -77,6 +83,12 @@ const Routes = () => {
         <Route path="/restaurante/financeiro" element={<RestauranteGuard><RestauranteFinanceiro /></RestauranteGuard>} />
         <Route path="/restaurante/combos" element={<RestauranteGuard><RestauranteCombos /></RestauranteGuard>} />
 
+        {/* Módulo Salão — só estabelecimentos tipo Restaurante */}
+        <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />
+        <Route path="/restaurante/garcons" element={<RestauranteGuard><RestauranteGarcons /></RestauranteGuard>} />
+        <Route path="/restaurante/impressoras" element={<RestauranteGuard><RestauranteImpressoras /></RestauranteGuard>} />
+        <Route path="/restaurante/kds" element={<RestauranteKdsSetor />} />
+
         {/* Perfil do cliente */}
         <Route path="/customer-profile" element={<CustomerProfile />} />
 
@@ -84,6 +96,12 @@ const Routes = () => {
         <Route path="/motoboy" element={<MotoboyPortal />} />
         <Route path="/motoboy/login" element={<MotoboyPortal />} />
         <Route path="/motoboy/cadastro" element={<MotoboyCadastro />} />
+
+        {/* Garçom portal — login próprio via key+senha, sem Supabase Auth */}
+        <Route path="/garcom/:loginKey" element={<GarcomPortal />} />
+
+        {/* Acompanhamento público da mesa via QR — sem login */}
+        <Route path="/mesa/acompanhar/:token" element={<MesaAcompanhar />} />
 
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
