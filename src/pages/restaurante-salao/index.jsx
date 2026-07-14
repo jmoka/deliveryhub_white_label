@@ -144,7 +144,7 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
         <div className="flex justify-between items-start mb-3">
           <div>
             <h2 className="text-base font-bold text-[#18181B]">
-              Comanda #{comanda.numero_comanda ?? comanda.id} — {comanda.mesas ? `Mesa ${comanda.mesas.numero}` : 'Avulsa'}
+              Comanda #{comanda.numero_comanda ?? comanda.id}{comanda.mesas ? ` — Mesa ${comanda.mesas.numero}` : ''}
             </h2>
             <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
             <p className="text-xs text-[#71717A]">Garçom: {comanda.garcons?.nome ?? '—'}</p>
@@ -307,7 +307,13 @@ const RestauranteSalao = () => {
                   disabled={!m.comanda}
                   className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[m.status] ?? ''} disabled:opacity-70`}>
                   <p className="text-lg font-black">{m.numero}</p>
-                  {m.comanda && <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>}
+                  {m.comanda && (
+                    <>
+                      <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>
+                      <p className="text-[10px] truncate">{m.comanda.cliente_mesa_nome}</p>
+                      <p className="text-[10px] text-[#71717A] truncate">{m.comanda.garcons?.nome ?? '—'}</p>
+                    </>
+                  )}
                 </button>
               ))}
               {mesas.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">Nenhuma mesa cadastrada.</p>}
@@ -320,7 +326,7 @@ const RestauranteSalao = () => {
                   className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
                   <div>
                     <p className="text-sm font-medium text-[#18181B]">
-                      #{c.numero_comanda ?? c.id} — {c.mesas ? `Mesa ${c.mesas.numero}` : 'Avulsa'} — {c.cliente_mesa_nome}
+                      #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
                     </p>
                     <p className="text-xs text-[#71717A]">Garçom: {c.garcons?.nome ?? '—'} · {c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
                   </div>

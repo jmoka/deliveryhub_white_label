@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  login, getGarcomToken, setGarcomToken,
+  login, getGarcomToken, setGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda,
   abrirComanda, adicionarItens, enviarItens, fecharComanda,
 } from '../../services/garcomService';
@@ -341,7 +341,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
           <Icon name="ArrowLeft" size={16} /> Voltar
         </button>
         <h1 className="text-base font-bold text-[#18181B]">
-          #{comanda.numero_comanda ?? comanda.id} — {comanda.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa'}
+          #{comanda.numero_comanda ?? comanda.id}{comanda.mesa_id ? ` — Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : ''}
         </h1>
         <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
         {fechada && (
@@ -415,12 +415,15 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
 };
 
 const GarcomHome = () => {
+  const [meuId, setMeuId] = useState(null);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [aba, setAba] = useState('mesas');
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => { getMe().then((m) => setMeuId(m.id)).catch(() => {}); }, []);
 
   const carregar = useCallback(async () => {
     try {
@@ -435,6 +438,11 @@ const GarcomHome = () => {
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  const clicarMesa = (mesa) => {
+    if (mesa.status === 'livre') { setMesaParaAbrir(mesa); return; }
+    if (mesa.comanda && mesa.comanda.garcom_id === meuId) { setComandaAtivaId(mesa.comanda.id); }
+  };
 
   if (comandaAtivaId) {
     return <ComandaDetalhe comandaId={comandaAtivaId} onVoltar={() => { setComandaAtivaId(null); carregar(); }} />;
@@ -460,17 +468,22 @@ const GarcomHome = () => {
         <div className="p-6 text-sm text-[#71717A]">Carregando...</div>
       ) : aba === 'mesas' ? (
         <div className="p-4 grid grid-cols-3 gap-3">
-          {mesas.map((mesa) => (
-            <button
-              key={mesa.id}
-              onClick={() => (mesa.status === 'livre' ? setMesaParaAbrir(mesa) : null)}
-              disabled={mesa.status !== 'livre'}
-              className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[mesa.status] ?? ''} disabled:opacity-70`}
-            >
-              <p className="text-lg font-black">{mesa.numero}</p>
-              <p className="text-[10px] font-medium">{MESA_STATUS_LABEL[mesa.status] ?? mesa.status}</p>
-            </button>
-          ))}
+          {mesas.map((mesa) => {
+            const minhaComanda = mesa.status !== 'livre' && mesa.comanda && mesa.comanda.garcom_id === meuId;
+            const clicavel = mesa.status === 'livre' || minhaComanda;
+            return (
+              <button
+                key={mesa.id}
+                onClick={() => clicarMesa(mesa)}
+                disabled={!clicavel}
+                className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[mesa.status] ?? ''} disabled:opacity-70`}
+              >
+                <p className="text-lg font-black">{mesa.numero}</p>
+                <p className="text-[10px] font-medium">{MESA_STATUS_LABEL[mesa.status] ?? mesa.status}</p>
+                {minhaComanda && <p className="text-[10px] truncate">{mesa.comanda.cliente_mesa_nome}</p>}
+              </button>
+            );
+          })}
           {mesas.length === 0 && <p className="col-span-3 text-sm text-[#A1A1AA] text-center py-6">Nenhuma mesa cadastrada.</p>}
         </div>
       ) : (
@@ -480,7 +493,7 @@ const GarcomHome = () => {
               className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
               <div>
                 <p className="text-sm font-medium text-[#18181B]">
-                  #{c.numero_comanda ?? c.id} — {c.mesa_id ? `Mesa ${c.mesa_id}` : 'Avulsa'} — {c.cliente_mesa_nome}
+                  #{c.numero_comanda ?? c.id}{c.mesa_id ? ` — Mesa ${c.mesa_id}` : ''} — {c.cliente_mesa_nome}
                 </p>
                 <p className="text-xs text-[#71717A]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
               </div>

@@ -45,6 +45,7 @@ export const login = async (loginKey, password) => {
   return data;
 };
 
+export const getMe = () => garcomFetch('/me');
 export const getMesas = () => garcomFetch('/mesas');
 export const getProdutos = () => garcomFetch('/produtos');
 export const getMinhasComandas = () => garcomFetch('/comandas');

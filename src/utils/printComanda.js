@@ -158,7 +158,7 @@ document.head.appendChild(s);
 export const printTicketSetor = (itens, comanda, setorNome) => {
   if (!itens?.length) return;
 
-  const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Avulsa';
+  const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : null;
   const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${setorNome}</title>
@@ -175,7 +175,7 @@ hr{border:none;border-top:2px dashed #000;margin:10px 0}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="big">${setorNome ?? 'Setor'}</div>
-<div class="center" style="font-size:20px;font-weight:bold">${mesa}</div>
+${mesa ? `<div class="center" style="font-size:20px;font-weight:bold">${mesa}</div>` : ''}
 ${comanda?.garcons?.nome ? `<div class="center" style="font-size:18px;font-weight:bold">Garçom: ${comanda.garcons.nome}</div>` : ''}
 ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_nome}</div>` : ''}
 ${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_telefone}</div>` : ''}

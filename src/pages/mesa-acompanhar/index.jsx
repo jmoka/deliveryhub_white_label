@@ -43,7 +43,7 @@ const MesaAcompanhar = () => {
             <Icon name="UtensilsCrossed" size={26} className="text-[#FF441F]" />
           </div>
           <h1 className="text-lg font-black text-[#18181B]">{dados.restaurante}</h1>
-          <p className="text-sm text-[#71717A]">{dados.mesa}</p>
+          {dados.mesa && <p className="text-sm text-[#71717A]">{dados.mesa}</p>}
         </div>
 
         <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3 text-center">
