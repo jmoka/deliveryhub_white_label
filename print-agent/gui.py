@@ -12,6 +12,7 @@ from tkinter import ttk, messagebox
 import config
 import printers
 from agent import BackendClient, VERSAO, ciclo_processar_jobs, ciclo_reportar_impressoras, definir_ouvinte_log
+from config import DEFAULT_BACKEND_URL
 
 
 class AgenteGUI:
@@ -37,6 +38,10 @@ class AgenteGUI:
         ttk.Label(frame, text="Token de pareamento").pack(anchor="w")
         self.token_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.token_var, show="•").pack(fill=tk.X, pady=(0, 8))
+
+        ttk.Label(frame, text="URL do servidor").pack(anchor="w")
+        self.backend_url_var = tk.StringVar(value=DEFAULT_BACKEND_URL)
+        ttk.Entry(frame, textvariable=self.backend_url_var).pack(fill=tk.X, pady=(0, 8))
 
         self.status_var = tk.StringVar(value="Desconectado")
         ttk.Label(frame, textvariable=self.status_var, foreground="#B91C1C").pack(anchor="w", pady=(0, 8))
@@ -69,6 +74,7 @@ class AgenteGUI:
 
     def _carregar_config_existente(self) -> None:
         cfg = config.carregar()
+        self.backend_url_var.set(cfg.get("backend_url") or DEFAULT_BACKEND_URL)
         if cfg.get("token"):
             self.token_var.set(cfg["token"])
             self._ligar()
@@ -92,7 +98,8 @@ class AgenteGUI:
             messagebox.showwarning("Token vazio", "Cole o token gerado em /restaurante/impressoras.")
             return False
 
-        cfg = config.definir_token(token)
+        backend_url = self.backend_url_var.get().strip() or DEFAULT_BACKEND_URL
+        cfg = config.definir_token(token, backend_url)
         self.client = BackendClient(cfg["backend_url"], cfg["token"])
 
         try:
