@@ -165,11 +165,130 @@ const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
   );
 };
 
+const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
+  const [quantidade, setQuantidade] = useState(1);
+  const [observacao, setObservacao] = useState('');
+  const [salvando, setSalvando] = useState(false);
+
+  const confirmar = async () => {
+    setSalvando(true);
+    try {
+      await onConfirmar({ product_id: produto.id, quantity: quantidade, observacao: observacao.trim() || undefined });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+            {produto.image_url
+              ? <img src={produto.image_url} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={20} className="text-[#A1A1AA]" /></div>}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-[#18181B] truncate">{produto.name}</p>
+            <p className="text-xs text-[#71717A]">{fmt(produto.price)}</p>
+          </div>
+        </div>
+
+        <label className="text-xs text-[#71717A]">Quantidade</label>
+        <div className="flex items-center gap-3 mt-1 mb-3">
+          <button onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex items-center justify-center text-lg font-bold text-[#27272A]">−</button>
+          <span className="text-lg font-bold text-[#18181B] w-8 text-center">{quantidade}</span>
+          <button onClick={() => setQuantidade((q) => q + 1)}
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex items-center justify-center text-lg font-bold text-[#27272A]">+</button>
+        </div>
+
+        <label className="text-xs text-[#71717A]">Observação (opcional)</label>
+        <textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={2}
+          placeholder="Ex: sem cebola, ponto da carne..."
+          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
+
+        <div className="flex gap-2">
+          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A]">
+            Cancelar
+          </button>
+          <button onClick={confirmar} disabled={salvando}
+            className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+            {salvando ? 'Adicionando...' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
+  const [busca, setBusca] = useState('');
+  const [categoria, setCategoria] = useState('todas');
+  const [produtoAtivo, setProdutoAtivo] = useState(null);
+
+  const categorias = ['todas', ...new Set(produtos.map((p) => p.category_name ?? 'Outros'))];
+  const filtrados = produtos.filter((p) => {
+    const bateBusca = p.name.toLowerCase().includes(busca.toLowerCase());
+    const bateCategoria = categoria === 'todas' || (p.category_name ?? 'Outros') === categoria;
+    return bateBusca && bateCategoria;
+  });
+
+  return (
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      <div className="p-4 border-b border-[#E4E4E7] sticky top-0 bg-white">
+        <div className="flex items-center gap-2 mb-3">
+          <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="ArrowLeft" size={20} /></button>
+          <h2 className="text-base font-bold text-[#18181B]">Adicionar produto</h2>
+        </div>
+        <div className="relative">
+          <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..." autoFocus
+            className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+        </div>
+        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
+          {categorias.map((c) => (
+            <button key={c} onClick={() => setCategoria(c)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+                categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
+              }`}>
+              {c === 'todas' ? 'Todas' : c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-3">
+        {filtrados.map((p) => (
+          <button key={p.id} onClick={() => setProdutoAtivo(p)}
+            className="bg-white border border-[#E4E4E7] rounded-xl p-2 text-left active:scale-95 transition-transform">
+            <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#F4F4F5] mb-2">
+              {p.image_url
+                ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={22} className="text-[#A1A1AA]" /></div>}
+            </div>
+            <p className="text-xs font-semibold text-[#18181B] leading-tight truncate">{p.name}</p>
+            <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+          </button>
+        ))}
+        {filtrados.length === 0 && <p className="col-span-2 text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}
+      </div>
+
+      {produtoAtivo && (
+        <QuickAddModal
+          produto={produtoAtivo}
+          onFechar={() => setProdutoAtivo(null)}
+          onConfirmar={async (item) => { await onAdicionado(item); setProdutoAtivo(null); }}
+        />
+      )}
+    </div>
+  );
+};
+
 const ComandaDetalhe = ({ comandaId, onVoltar }) => {
   const [comanda, setComanda] = useState(null);
   const [produtos, setProdutos] = useState([]);
-  const [produtoSelecionado, setProdutoSelecionado] = useState('');
-  const [quantidade, setQuantidade] = useState(1);
+  const [mostrarPicker, setMostrarPicker] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mostrarFechar, setMostrarFechar] = useState(false);
   const [erro, setErro] = useState(null);
@@ -182,13 +301,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  const adicionar = async () => {
-    if (!produtoSelecionado) return;
+  const adicionarProduto = async (item) => {
     setErro(null);
     try {
-      await adicionarItens(comandaId, [{ product_id: Number(produtoSelecionado), quantity: Number(quantidade) || 1 }]);
-      setProdutoSelecionado('');
-      setQuantidade(1);
+      await adicionarItens(comandaId, [item]);
       await carregar();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível adicionar o item.');
@@ -244,6 +360,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-[#18181B] truncate">{item.quantity}x {item.products?.name}</p>
                 <p className="text-xs text-[#71717A]">{fmt(item.unit_price)} un.</p>
+                {item.observacao && <p className="text-xs text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 mt-0.5 inline-block">{item.observacao}</p>}
               </div>
             </div>
             <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
@@ -260,20 +377,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
 
       {!fechada && (
         <div className="p-4 bg-white border-t border-[#E4E4E7] fixed bottom-0 left-0 right-0">
-          <div className="flex gap-2 mb-2">
-            <select value={produtoSelecionado} onChange={(e) => setProdutoSelecionado(e.target.value)}
-              className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
-              <option value="">Selecione um produto</option>
-              {produtos.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)}</option>
-              ))}
-            </select>
-            <input type="number" min={1} value={quantidade} onChange={(e) => setQuantidade(e.target.value)}
-              className="w-16 border border-[#E4E4E7] rounded-xl px-2 py-2 text-sm text-center" />
-            <button onClick={adicionar} className="px-3 py-2 bg-zinc-800 text-white rounded-xl text-sm font-medium">
-              <Icon name="Plus" size={16} />
-            </button>
-          </div>
+          <button onClick={() => setMostrarPicker(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
+            <Icon name="Plus" size={18} /> Adicionar produto
+          </button>
           {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
           <div className="flex gap-2">
             <button onClick={enviar} disabled={!temPendente || enviando}
@@ -291,6 +398,14 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
 
       {mostrarFechar && (
         <FecharComandaModal comanda={comanda} onFechar={() => setMostrarFechar(false)} onFechada={() => { setMostrarFechar(false); onVoltar(); }} />
+      )}
+
+      {mostrarPicker && (
+        <ProdutoPickerModal
+          produtos={produtos}
+          onFechar={() => setMostrarPicker(false)}
+          onAdicionado={adicionarProduto}
+        />
       )}
     </div>
   );
