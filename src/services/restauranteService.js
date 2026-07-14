@@ -227,6 +227,11 @@ export const atualizarImpressora = (id, data) =>
 export const removerImpressora = (id) =>
   apiFetch(`/impressoras/${id}`, { method: 'DELETE' });
 
+// Agente de impressão local
+export const getImpressorasDetectadas = () => apiFetch('/impressoras/detectadas');
+export const gerarTokenAgente = () => apiFetch('/agente-impressao/gerar-token', { method: 'POST' });
+export const getStatusAgente = () => apiFetch('/agente-impressao/status');
+
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
 export const getSalaoComandas = () => apiFetch('/salao/comandas');
