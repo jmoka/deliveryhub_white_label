@@ -149,6 +149,11 @@ const RestauranteImpressoras = () => {
     carregar();
   };
 
+  const vincularDetectada = async (id, nomeSistema) => {
+    await atualizarImpressora(id, { nome_sistema: nomeSistema || null });
+    carregar();
+  };
+
   const remover = async (id) => {
     if (!window.confirm('Remover esta impressora?')) return;
     await removerImpressora(id);
@@ -221,6 +226,19 @@ const RestauranteImpressoras = () => {
                   {imp.ativo ? 'Ativa' : 'Inativa'}
                 </span>
               </div>
+
+              {detectadas.length > 0 && (
+                <div className="mt-3">
+                  <label className="text-xs text-[#71717A]">Vincular impressora detectada</label>
+                  <select value={imp.nome_sistema ?? ''} onChange={(e) => vincularDetectada(imp.id, e.target.value)}
+                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm mt-1">
+                    <option value="">Nenhuma (manual/rede)</option>
+                    {detectadas.map((d) => (
+                      <option key={d.id} value={d.nome_sistema}>{d.nome_sistema}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] rounded-xl px-3 py-2">
                 <span className="text-xs font-mono text-[#71717A] truncate flex-1">{linkKds(imp)}</span>
                 <button onClick={() => navigator.clipboard?.writeText(linkKds(imp))} className="text-xs font-bold text-[#FF441F]">Copiar</button>
