@@ -42,6 +42,7 @@ const LINKS = [
   { label: 'Cozinha', path: '/restaurante/cozinha' },
   { label: 'Produtos', path: '/restaurante/produtos' },
   { label: 'Pedidos', path: '/restaurante/pedidos' },
+  { label: 'Entregas', path: '/restaurante/entregas' },
   { label: 'Motoboys', path: '/restaurante/motoboys' },
   { label: 'Clientes', path: '/restaurante/clientes' },
   { label: 'Financeiro', path: '/restaurante/financeiro' },

@@ -46,6 +46,11 @@ export const getMeusPedidos = (params = {}) => {
 export const atualizarStatusPedido = (id, status) =>
   apiFetch(`/pedidos/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
 
+export const entregarPedidoProprio = (id) =>
+  apiFetch(`/pedidos/${id}/entregar-proprio`, { method: 'PATCH' });
+
+export const listarEntregas = () => apiFetch('/entregas');
+
 export const getMeusProdutos = () => apiFetch('/produtos');
 
 export const criarProduto = (data) =>

@@ -175,6 +175,7 @@ const RestauranteClientes = () => {
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
+    { label: 'Entregas', path: '/restaurante/entregas' },
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },

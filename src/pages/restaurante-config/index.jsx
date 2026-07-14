@@ -16,6 +16,7 @@ const NavRestaurante = () => {
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
+    { label: 'Entregas', path: '/restaurante/entregas' },
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },
@@ -152,6 +153,7 @@ const RestauranteConfig = () => {
     taxa_pagbank_percent: '',
     chave_pix: '',
     frete_motoboy: '',
+    usa_motoboy: true,
     motoboy_comissao_tipo: 'fixo',
     motoboy_comissao_valor_fixo: '',
     motoboy_comissao_percentual: '',
@@ -170,6 +172,7 @@ const RestauranteConfig = () => {
           taxa_pagbank_percent: d.taxa_pagbank_percent != null ? String(d.taxa_pagbank_percent) : '',
           chave_pix: d.chave_pix ?? '',
           frete_motoboy: d.frete_motoboy != null ? String(d.frete_motoboy) : '',
+          usa_motoboy: d.usa_motoboy ?? true,
           motoboy_comissao_tipo: d.motoboy_comissao_tipo ?? 'fixo',
           motoboy_comissao_valor_fixo: d.motoboy_comissao_valor_fixo != null ? String(d.motoboy_comissao_valor_fixo) : '',
           motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
@@ -194,6 +197,7 @@ const RestauranteConfig = () => {
         taxa_pagbank_percent: form.taxa_pagbank_percent !== '' ? parseFloat(form.taxa_pagbank_percent) : null,
         chave_pix: form.chave_pix.trim() || null,
         frete_motoboy: form.frete_motoboy !== '' ? parseFloat(form.frete_motoboy) : 0,
+        usa_motoboy: form.usa_motoboy,
         motoboy_comissao_tipo: form.motoboy_comissao_tipo,
         motoboy_comissao_valor_fixo: form.motoboy_comissao_valor_fixo !== '' ? parseFloat(form.motoboy_comissao_valor_fixo) : 0,
         motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
@@ -327,10 +331,28 @@ const RestauranteConfig = () => {
                       className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Valor somado ao pedido e exibido ao cliente no checkout</p>
+                  <p className="text-xs text-gray-400 mt-1">Valor somado ao pedido e exibido ao cliente no checkout (independente de usar motoboy ou não)</p>
+                </div>
+
+                {/* Como a entrega é feita */}
+                <div className="border-t pt-4 mt-2">
+                  <label className="flex items-center justify-between gap-3 cursor-pointer">
+                    <span>
+                      <span className="block text-sm font-medium text-gray-700">Usar motoboy</span>
+                      <span className="block text-xs text-gray-400 mt-0.5">
+                        {form.usa_motoboy
+                          ? 'Motoboys afiliados podem pegar seus pedidos prontos'
+                          : 'Desligado: as entregas são feitas pela própria loja, sem envolver motoboy'}
+                      </span>
+                    </span>
+                    <input type="checkbox" checked={form.usa_motoboy}
+                      onChange={(e) => setForm((f) => ({ ...f, usa_motoboy: e.target.checked }))}
+                      className="w-5 h-5 accent-orange-500 flex-shrink-0" />
+                  </label>
                 </div>
 
                 {/* Comissão do motoboy */}
+                {form.usa_motoboy && (
                 <div className="border-t pt-4 mt-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Comissão do Motoboy
@@ -406,6 +428,7 @@ const RestauranteConfig = () => {
                     } = total que o motoboy recebe nessa entrega.
                   </p>
                 </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
