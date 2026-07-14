@@ -411,13 +411,18 @@ const RestauranteCatalogo = () => {
         </div>
       </div>
 
-      {/* ── Carrossel de imagens ───────────────────────────────────── */}
+      {/* ── Carrossel de imagens — fluxo contínuo direita → esquerda ─── */}
       {ap.carousel_images?.length > 0 && (
         <div className="max-w-screen-xl mx-auto px-4 pt-4">
-          <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            {ap.carousel_images.map((src, i) => (
-              <img key={i} src={src} alt="" className="h-32 sm:h-40 w-52 sm:w-64 object-cover rounded-2xl flex-shrink-0 shadow-sm" />
-            ))}
+          <div className="overflow-hidden">
+            <div
+              className="flex gap-3 w-max animate-carrossel-continuo"
+              style={{ '--carrossel-duracao': `${ap.carousel_images.length * 6}s` }}
+            >
+              {[...ap.carousel_images, ...ap.carousel_images].map((src, i) => (
+                <img key={i} src={src} alt="" className="h-32 sm:h-40 w-52 sm:w-64 object-cover rounded-2xl flex-shrink-0 shadow-sm" />
+              ))}
+            </div>
           </div>
         </div>
       )}
