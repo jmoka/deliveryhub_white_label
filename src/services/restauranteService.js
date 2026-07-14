@@ -226,6 +226,8 @@ export const atualizarImpressora = (id, data) =>
   apiFetch(`/impressoras/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerImpressora = (id) =>
   apiFetch(`/impressoras/${id}`, { method: 'DELETE' });
+export const testarImpressora = (id) =>
+  apiFetch(`/impressoras/${id}/teste`, { method: 'POST' });
 
 // Agente de impressão local
 export const getImpressorasDetectadas = () => apiFetch('/impressoras/detectadas');

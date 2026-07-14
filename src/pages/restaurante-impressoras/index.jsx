@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   listarImpressoras, criarImpressora, atualizarImpressora, removerImpressora,
-  getImpressorasDetectadas, gerarTokenAgente, getStatusAgente,
+  getImpressorasDetectadas, gerarTokenAgente, getStatusAgente, testarImpressora,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
@@ -160,6 +160,19 @@ const RestauranteImpressoras = () => {
     carregar();
   };
 
+  const [testando, setTestando] = useState(null);
+  const testar = async (id) => {
+    setTestando(id);
+    try {
+      await testarImpressora(id);
+      alert('Teste enviado! O agente deve imprimir em alguns segundos.');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setTestando(null);
+    }
+  };
+
   const linkKds = (imp) => `${window.location.origin}/restaurante/kds?impressora_id=${imp.id}&setor=${encodeURIComponent(imp.setor)}`;
 
   return (
@@ -243,6 +256,12 @@ const RestauranteImpressoras = () => {
                 <span className="text-xs font-mono text-[#71717A] truncate flex-1">{linkKds(imp)}</span>
                 <button onClick={() => navigator.clipboard?.writeText(linkKds(imp))} className="text-xs font-bold text-[#FF441F]">Copiar</button>
               </div>
+              {imp.nome_sistema && (
+                <button onClick={() => testar(imp.id)} disabled={testando === imp.id}
+                  className="w-full mt-3 py-1.5 text-xs font-bold border border-[#FF441F] text-[#FF441F] rounded-lg hover:bg-[#FF441F]/5 disabled:opacity-50">
+                  {testando === imp.id ? 'Enviando...' : '🖨 Testar impressão'}
+                </button>
+              )}
               <div className="flex gap-2 mt-3">
                 <button onClick={() => toggleAtiva(imp)} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] rounded-lg text-[#71717A] hover:bg-[#F4F4F5]">
                   {imp.ativo ? 'Desativar' : 'Ativar'}
