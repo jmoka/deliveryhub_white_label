@@ -234,10 +234,17 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
 
       <div className="p-4 space-y-2">
         {(comanda.itens ?? []).map((item) => (
-          <div key={item.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center">
-            <div>
-              <p className="text-sm font-medium text-[#18181B]">{item.quantity}x {item.products?.name}</p>
-              <p className="text-xs text-[#71717A]">{fmt(item.unit_price)} un.</p>
+          <div key={item.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                {item.products?.image_url
+                  ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#18181B] truncate">{item.quantity}x {item.products?.name}</p>
+                <p className="text-xs text-[#71717A]">{fmt(item.unit_price)} un.</p>
+              </div>
             </div>
             <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
               item.status === 'pendente' ? 'bg-zinc-100 text-zinc-600' : item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
