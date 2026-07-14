@@ -292,7 +292,10 @@ const RestauranteCatalogo = () => {
       {/* ── Header global ──────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7]">
         <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#F4F4F5] rounded-lg text-[#71717A] hover:text-[#27272A] transition-colors">
+          <button
+            onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/'); }}
+            className="p-2 hover:bg-[#F4F4F5] rounded-lg text-[#71717A] hover:text-[#27272A] transition-colors"
+          >
             <Icon name="ArrowLeft" size={18} />
           </button>
           <div className="flex items-center gap-2">
