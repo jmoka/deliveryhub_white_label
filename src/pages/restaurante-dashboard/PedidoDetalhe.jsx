@@ -50,13 +50,19 @@ const SectionTitle = ({ icon, label, color = 'text-[#FF441F]' }) => (
   </div>
 );
 
-const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose, onDetalheMudou, saldoCaixa = 0 }) => {
+const PedidoDetalhe = ({
+  detalhe, onAvancar, onReimprimir, atualizando, onClose, onDetalheMudou, saldoCaixa = 0,
+  motoboys = [], onAtribuir, onEntregarProprio,
+}) => {
   const [trocoInput, setTrocoInput] = useState('');
   const [salvandoTroco, setSalvandoTroco] = useState(false);
   const [zerrandoFrete, setZerrandoFrete] = useState(false);
   const [showCancelar, setShowCancelar] = useState(false);
   const [motivoCancelamento, setMotivoCancelamento] = useState('');
   const [cancelando, setCancelando] = useState(false);
+  const [motoboySelecionado, setMotoboySelecionado] = useState('');
+  const [atribuindo, setAtribuindo] = useState(false);
+  const [entregandoProprio, setEntregandoProprio] = useState(false);
 
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
@@ -86,6 +92,22 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
     try { await setTrocoPara(pedido.id, val); setTrocoInput(''); onDetalheMudou?.(); }
     catch (e) { alert(e.message); }
     finally { setSalvandoTroco(false); }
+  };
+
+  const handleAtribuir = async () => {
+    if (!motoboySelecionado) return;
+    setAtribuindo(true);
+    try { await onAtribuir?.(pedido.id, Number(motoboySelecionado)); onDetalheMudou?.(); }
+    catch (e) { alert(e.message); }
+    finally { setAtribuindo(false); }
+  };
+
+  const handleEntregarProprio = async () => {
+    if (!confirm('Marcar este pedido como entregue pela própria loja (sem motoboy)?')) return;
+    setEntregandoProprio(true);
+    try { await onEntregarProprio?.(pedido); onDetalheMudou?.(); }
+    catch (e) { alert(e.message); }
+    finally { setEntregandoProprio(false); }
   };
 
   const isCanceled = pedido.status === 'canceled';
@@ -258,6 +280,44 @@ const PedidoDetalhe = ({ detalhe, onAvancar, onReimprimir, atualizando, onClose,
                 <p className="text-xs text-[#71717A]">Aguardando sinal GPS do motoboy</p>
               </div>
             )}
+          </div>
+        </Section>
+      )}
+
+      {/* Sem motoboy atribuído ainda — atribuir ou entregar pela própria loja */}
+      {!isCanceled && !pedido.motoboy_id && ['ready', 'out_for_delivery'].includes(pedido.status) && (
+        <Section>
+          <SectionTitle icon="Truck" label="Entrega" color="text-indigo-600" />
+          <div className="p-4 space-y-3">
+            {motoboys.length > 0 && (
+              <div className="flex gap-2">
+                <select
+                  value={motoboySelecionado}
+                  onChange={(e) => setMotoboySelecionado(e.target.value)}
+                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400"
+                >
+                  <option value="">Atribuir a um motoboy...</option>
+                  {motoboys.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}{m.phone ? ` · ${m.phone}` : ''}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleAtribuir}
+                  disabled={!motoboySelecionado || atribuindo}
+                  className="flex-shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors"
+                >
+                  {atribuindo ? '...' : 'Atribuir'}
+                </button>
+              </div>
+            )}
+            <button
+              onClick={handleEntregarProprio}
+              disabled={entregandoProprio}
+              className="w-full py-2.5 border-2 border-green-300 bg-green-50 text-green-700 text-sm font-bold rounded-xl hover:bg-green-100 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <Icon name="Store" size={15} />
+              {entregandoProprio ? 'Confirmando...' : 'Marcar como entregue (entrega própria)'}
+            </button>
           </div>
         </Section>
       )}

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa, fecharETransferir,
   adicionarSaida, buscarPedidoDetalhe, atualizarStatusPedido, toggleStatusRestaurante,
-  listarMotoboys, atribuirMotoboy, getRelatorioFretes,
+  listarMotoboys, atribuirMotoboy, entregarPedidoProprio, getRelatorioFretes,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
@@ -49,6 +49,7 @@ const LINKS = [
   { label: 'Cozinha', path: '/restaurante/cozinha' },
   { label: 'Produtos', path: '/restaurante/produtos' },
   { label: 'Pedidos', path: '/restaurante/pedidos' },
+  { label: 'Entregas', path: '/restaurante/entregas' },
   { label: 'Motoboys', path: '/restaurante/motoboys' },
   { label: 'Clientes', path: '/restaurante/clientes' },
   { label: 'Financeiro', path: '/restaurante/financeiro' },
@@ -327,6 +328,12 @@ const RestauranteDashboard = () => {
       setCaixa(novoCaixa);
       setPedidoDetalhe(novoDetalhe);
     } catch (e) { alert(e.message); }
+  };
+
+  const handleEntregarProprio = async (pedido) => {
+    await entregarPedidoProprio(pedido.id);
+    const [novoDetalhe] = await Promise.all([buscarPedidoDetalhe(pedido.id)]);
+    setPedidoDetalhe(novoDetalhe);
   };
 
   const handleAdicionarSaida = async (dados) => {
@@ -810,6 +817,7 @@ const RestauranteDashboard = () => {
                         onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
                         motoboys={motoboys}
                         onAtribuir={handleAtribuirMotoboy}
+                        onEntregarProprio={handleEntregarProprio}
                         saldoCaixa={caixa?.resumo?.especie_calculada ?? caixa?.valor_inicial ?? 0}
                         onDetalheMudou={async () => {
                           if (!pedidoSelecionadoId) return;
