@@ -4,6 +4,7 @@ import { getConfig, updateConfig } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 // URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento
 const WEBHOOK_URL = `${window.location.origin}/api/pagamentos/webhook`;
@@ -14,11 +15,17 @@ const NavRestaurante = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const slugLoja = useMinhaLojaSlug();
+  const tipoRestaurante = useTipoRestaurante();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Entregas', path: '/restaurante/entregas' },
+    ...(tipoRestaurante ? [
+      { label: 'Salão', path: '/restaurante/salao' },
+      { label: 'Garçons', path: '/restaurante/garcons' },
+      { label: 'Impressoras', path: '/restaurante/impressoras' },
+    ] : []),
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },

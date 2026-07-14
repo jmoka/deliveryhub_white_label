@@ -6,6 +6,7 @@ import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -51,6 +52,12 @@ const LINKS = [
   { label: 'Config', path: '/restaurante/config' },
 ];
 
+const SALAO_LINKS = [
+  { label: 'Salão', path: '/restaurante/salao' },
+  { label: 'Garçons', path: '/restaurante/garcons' },
+  { label: 'Impressoras', path: '/restaurante/impressoras' },
+];
+
 const buildRange = (modo, dia, mes, ano, ini, fim) => {
   if (modo === 'dia')     return { de: startOf(dia), ate: endOf(dia), label: new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR') };
   if (modo === 'mes') { const [y, m] = mes.split('-'); return { de: startOf(`${y}-${m}-01`), ate: endOf(`${y}-${m}-${String(lastDay(mes)).padStart(2, '0')}`), label: new Date(mes + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) }; }
@@ -63,6 +70,7 @@ const RestauranteFinanceiro = () => {
   const navigate = useNavigate();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const slugLoja = useMinhaLojaSlug();
+  const tipoRestaurante = useTipoRestaurante();
   const [restauranteNome, setRestauranteNome] = useState('');
   const [modo, setModo] = useState('dia');
   const [dia, setDia]   = useState(today());
@@ -125,7 +133,11 @@ const RestauranteFinanceiro = () => {
           <p className="text-sm text-[#71717A]">Gestão financeira gerencial</p>
         </div>
         <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
-          {LINKS.map((l) => (
+          {[
+            ...LINKS.slice(0, 6),
+            ...(tipoRestaurante ? SALAO_LINKS : []),
+            ...LINKS.slice(6),
+          ].map((l) => (
             <button key={l.path} onClick={() => navigate(l.path)}
               className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante/financeiro' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
               {l.label}

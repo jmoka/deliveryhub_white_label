@@ -207,3 +207,42 @@ export const getCardapioPorSlug = async (slug) => {
   }
   return res.json();
 };
+
+// Módulo Salão — garçons (CRUD pelo dono)
+export const listarGarcons = () => apiFetch('/garcons');
+export const getGarconsOnline = () => apiFetch('/garcons/online');
+export const criarGarcom = (data) =>
+  apiFetch('/garcons', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarGarcom = (id, data) =>
+  apiFetch(`/garcons/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerGarcom = (id) =>
+  apiFetch(`/garcons/${id}`, { method: 'DELETE' });
+
+// Módulo Salão — impressoras por setor
+export const listarImpressoras = () => apiFetch('/impressoras');
+export const criarImpressora = (data) =>
+  apiFetch('/impressoras', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarImpressora = (id, data) =>
+  apiFetch(`/impressoras/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerImpressora = (id) =>
+  apiFetch(`/impressoras/${id}`, { method: 'DELETE' });
+
+// Módulo Salão — PDV do caixa (mesas/comandas do salão)
+export const getSalaoMesas = () => apiFetch('/salao/mesas');
+export const getSalaoComandas = () => apiFetch('/salao/comandas');
+export const getSalaoComandaDetalhe = (id) => apiFetch(`/salao/comandas/${id}`);
+export const aplicarDescontoComanda = (id, valor) =>
+  apiFetch(`/salao/comandas/${id}/desconto`, { method: 'PATCH', body: JSON.stringify({ valor }) });
+export const aplicarAcrescimoComanda = (id, valor) =>
+  apiFetch(`/salao/comandas/${id}/acrescimo`, { method: 'PATCH', body: JSON.stringify({ valor }) });
+export const cancelarComandaSalao = (id) =>
+  apiFetch(`/salao/comandas/${id}/cancelar`, { method: 'POST' });
+export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor) =>
+  apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor }) });
+
+// Módulo Salão — mesas (CRUD simples pelo dono, cadastro inicial das mesas físicas)
+export const listarMesas = () => apiFetch('/mesas-cadastro');
+export const criarMesa = (data) =>
+  apiFetch('/mesas-cadastro', { method: 'POST', body: JSON.stringify(data) });
+export const removerMesa = (id) =>
+  apiFetch(`/mesas-cadastro/${id}`, { method: 'DELETE' });

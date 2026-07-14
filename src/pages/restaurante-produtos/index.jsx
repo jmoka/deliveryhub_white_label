@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
   getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria,
-  getTagsPublicas,
+  getTagsPublicas, listarImpressoras,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false, impressora_id: '' };
 
 const TagBadge = ({ slug, tagsMap }) => {
   const t = tagsMap[slug];
@@ -26,6 +27,8 @@ const RestauranteProdutos = () => {
   const [categorias, setCategorias] = useState([]);
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
+  const [impressoras, setImpressoras] = useState([]);
+  const tipoRestaurante = useTipoRestaurante();
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
@@ -53,6 +56,7 @@ const RestauranteProdutos = () => {
   };
 
   useEffect(() => { carregar(); }, []);
+  useEffect(() => { if (tipoRestaurante) listarImpressoras().then(setImpressoras).catch(() => {}); }, [tipoRestaurante]);
 
   const abrirNovo = () => {
     setEditando(null);
@@ -71,6 +75,7 @@ const RestauranteProdutos = () => {
       category_id: p.category_id != null ? String(p.category_id) : '',
       tags: Array.isArray(p.tags) ? p.tags : [],
       destaque: p.destaque ?? false,
+      impressora_id: p.impressora_id != null ? String(p.impressora_id) : '',
     });
     setShowModal(true);
   };
@@ -141,6 +146,7 @@ const RestauranteProdutos = () => {
       category_id: parseInt(form.category_id),
       tags: form.tags,
       destaque: form.destaque,
+      impressora_id: form.impressora_id ? parseInt(form.impressora_id) : null,
     };
     try {
       if (editando) {
@@ -184,6 +190,11 @@ const RestauranteProdutos = () => {
     { label: 'Combos', path: '/restaurante/combos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Entregas', path: '/restaurante/entregas' },
+    ...(tipoRestaurante ? [
+      { label: 'Salão', path: '/restaurante/salao' },
+      { label: 'Garçons', path: '/restaurante/garcons' },
+      { label: 'Impressoras', path: '/restaurante/impressoras' },
+    ] : []),
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },
@@ -426,6 +437,21 @@ const RestauranteProdutos = () => {
                   </select>
                 </div>
               </div>
+              {tipoRestaurante && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Impressora / setor</label>
+                  <select
+                    value={form.impressora_id}
+                    onChange={(e) => setForm((f) => ({ ...f, impressora_id: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">Sem impressora</option>
+                    {impressoras.map((imp) => (
+                      <option key={imp.id} value={imp.id}>{imp.nome} ({imp.setor})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">URL da imagem</label>
                 <input

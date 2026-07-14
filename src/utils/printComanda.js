@@ -152,3 +152,52 @@ document.head.appendChild(s);
     if (w) { w.document.write(html); w.document.close(); }
   }
 };
+
+// Ticket de setor do módulo Salão (cozinha/bar/salgados...) — só os itens novos
+// enviados agora, nunca reimprime os que já foram (ver order_items.status no backend).
+export const printTicketSetor = (itens, comanda, setorNome) => {
+  if (!itens?.length) return;
+
+  const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Avulsa';
+  const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${setorNome}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
+.center{text-align:center;display:block}
+.big{font-size:22px;font-weight:900;text-align:center;letter-spacing:2px;margin:8px 0;text-transform:uppercase}
+hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.item{display:flex;gap:8px;padding:3px 0;font-size:16px}
+.qty{font-weight:900;min-width:28px}
+@media print{button{display:none!important}}
+</style></head><body>
+<div class="big">${setorNome ?? 'Setor'}</div>
+<div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
+<div class="center" style="font-size:11px">${hora}</div>
+<hr/>
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name}</span></div>`).join('')}
+<hr/>
+<script>
+window.print();
+try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
+</script>
+</body></html>`;
+
+  const frameId = `setor-frame-${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.id = frameId;
+  iframe.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe);
+
+  try {
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+  } catch {
+    iframe.remove();
+    const w = window.open('', '_blank', 'width=440,height=680');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+};

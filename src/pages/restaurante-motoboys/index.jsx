@@ -7,17 +7,24 @@ import {
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const NavRestaurante = ({ active }) => {
   const navigate = useNavigate();
   const pendentes = useSolicitacoesMotoboyCount();
   const slugLoja = useMinhaLojaSlug();
+  const tipoRestaurante = useTipoRestaurante();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Entregas', path: '/restaurante/entregas' },
     { label: 'Motoboys', path: '/restaurante/motoboys' },
+    ...(tipoRestaurante ? [
+      { label: 'Salão', path: '/restaurante/salao' },
+      { label: 'Garçons', path: '/restaurante/garcons' },
+      { label: 'Impressoras', path: '/restaurante/impressoras' },
+    ] : []),
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Designer', path: '/restaurante/aparencia' },
     { label: 'Config', path: '/restaurante/config' },
