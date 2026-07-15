@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
-  getMesas, getProdutos, getMinhasComandas, getComanda,
+  getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
+import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -597,6 +598,10 @@ const GarcomHome = () => {
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [avisoPronto, setAvisoPronto] = useState(null);
+
+  const tocarAlarmePronto = useNotificacaoSonora('motoboy');
+  const idsProntosVistos = useRef(new Set());
 
   useEffect(() => {
     getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); }).catch((err) => {
@@ -620,6 +625,28 @@ const GarcomHome = () => {
   useEffect(() => { carregar(); }, [carregar]);
   useEffect(() => { if (salaoModo === 'comandas') setAba('comandas'); }, [salaoModo]);
 
+  // Sem push real — polling comparando quais itens "prontos" já vimos, igual à tela da
+  // cozinha. Só alerta enquanto essa aba estiver aberta.
+  useEffect(() => {
+    if (bloqueado) return;
+    const checar = async () => {
+      try {
+        const itens = await getItensProntos();
+        const novos = itens.filter((i) => !idsProntosVistos.current.has(i.item_id));
+        idsProntosVistos.current = new Set(itens.map((i) => i.item_id));
+        if (novos.length > 0) {
+          tocarAlarmePronto();
+          const i = novos[0];
+          setAvisoPronto(`${i.product_name} — ${i.mesa ?? `Comanda #${i.numero_comanda}`} está pronto pra buscar!`);
+          setTimeout(() => setAvisoPronto(null), 8000);
+        }
+      } catch {}
+    };
+    checar();
+    const interval = setInterval(checar, 15000);
+    return () => clearInterval(interval);
+  }, [bloqueado, tocarAlarmePronto]);
+
   const clicarMesa = (mesa) => {
     if (mesa.status === 'livre') {
       if (salaoModo === 'comandas') return;
@@ -631,18 +658,29 @@ const GarcomHome = () => {
 
   if (bloqueado) return <RestauranteFechado />;
 
+  const avisoProntoToast = avisoPronto && (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-emerald-600 text-white text-sm font-bold px-4 py-3 rounded-xl shadow-2xl max-w-[90vw] text-center flex items-center gap-2">
+      <Icon name="BellRing" size={16} className="flex-shrink-0" />
+      {avisoPronto}
+    </div>
+  );
+
   if (comandaAtivaId) {
     return (
-      <ComandaDetalhe
-        comandaId={comandaAtivaId}
-        onVoltar={() => { setComandaAtivaId(null); carregar(); }}
-        podePagamentoParcial={permissoes?.pagamento_parcial !== false}
-      />
+      <>
+        {avisoProntoToast}
+        <ComandaDetalhe
+          comandaId={comandaAtivaId}
+          onVoltar={() => { setComandaAtivaId(null); carregar(); }}
+          podePagamentoParcial={permissoes?.pagamento_parcial !== false}
+        />
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] pb-6">
+      {avisoProntoToast}
       <div className="bg-white border-b border-[#E4E4E7] p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-base font-bold text-[#18181B]">Salão</h1>
