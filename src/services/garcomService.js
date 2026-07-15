@@ -60,6 +60,12 @@ export const abrirComanda = ({ mesa_id, cliente_nome, cliente_telefone }) =>
 export const adicionarItens = (comandaId, itens) =>
   garcomFetch(`/comandas/${comandaId}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
 
+export const editarItem = (comandaId, itemId, body) =>
+  garcomFetch(`/comandas/${comandaId}/itens/${itemId}`, { method: 'PATCH', body: JSON.stringify(body) });
+
+export const removerItem = (comandaId, itemId) =>
+  garcomFetch(`/comandas/${comandaId}/itens/${itemId}`, { method: 'DELETE' });
+
 export const enviarItens = (comandaId) =>
   garcomFetch(`/comandas/${comandaId}/enviar`, { method: 'POST' });
 

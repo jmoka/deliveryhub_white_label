@@ -177,8 +177,8 @@ hr{border:none;border-top:2px dashed #000;margin:10px 0}
 <div class="big">${setorNome ?? 'Setor'}</div>
 ${mesa ? `<div class="center" style="font-size:20px;font-weight:bold">${mesa}</div>` : ''}
 ${comanda?.garcons?.nome ? `<div class="center" style="font-size:18px;font-weight:bold">Garçom: ${comanda.garcons.nome}</div>` : ''}
-${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_nome}</div>` : ''}
-${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">${comanda.cliente_mesa_telefone}</div>` : ''}
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">Cliente: ${comanda.cliente_mesa_nome}</div>` : ''}
+${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">Whatsapp: ${comanda.cliente_mesa_telefone}</div>` : ''}
 <div class="center" style="font-size:14px">${hora}</div>
 <hr/>
 ${itens.map((i, idx) => `

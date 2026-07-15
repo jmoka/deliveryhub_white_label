@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
-  adicionarItensComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
+  adicionarItensComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
@@ -133,6 +133,11 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
     });
   };
 
+  const removerItem = (item) => {
+    if (!window.confirm(`Remover ${item.products?.name}?`)) return;
+    acao(() => removerItemComandaSalao(comandaId, item.id));
+  };
+
   if (!comanda) return null;
 
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
@@ -177,7 +182,14 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
                 </div>
                 <span className="truncate">{item.quantity}x {item.products?.name}</span>
               </div>
-              <span className="flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span>{fmt(item.quantity * item.unit_price)}</span>
+                {['aberta', 'fechada_garcom'].includes(comanda.status) && (
+                  <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                    <Icon name="X" size={11} />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
