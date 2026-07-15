@@ -27,7 +27,7 @@ const NavRestaurante = ({ active }) => {
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Cozinha', path: '/restaurante/cozinha' },
-    ...(tipoRestaurante ? [{ label: 'Produção', path: '/restaurante/producao' }] : []),
+    ...(tipoRestaurante ? [{ label: 'Produção', path: '/restaurante/producao' }, { label: 'Bar', path: '/restaurante/bar' }] : []),
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
     { label: 'Sessão', path: '/restaurante/sessao' },

@@ -63,7 +63,10 @@ const LINKS = [
   { label: 'Sessão', path: '/restaurante/sessao' },
 ];
 
-const COPA_LINK = [{ label: 'Produção', path: '/restaurante/producao' }];
+const COPA_LINK = [
+  { label: 'Produção', path: '/restaurante/producao' },
+  { label: 'Bar', path: '/restaurante/bar' },
+];
 
 const SALAO_LINKS = [
   { label: 'Salão', path: '/restaurante/salao' },
