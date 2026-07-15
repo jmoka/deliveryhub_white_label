@@ -290,7 +290,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
   );
 };
 
-const PagamentoParcial = ({ comanda, onRegistrado }) => {
+const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
   const [valor, setValor] = useState('');
   const [forma, setForma] = useState('pix');
   const [erro, setErro] = useState(null);
@@ -330,7 +330,7 @@ const PagamentoParcial = ({ comanda, onRegistrado }) => {
           ))}
         </div>
       )}
-      {saldo > 0.01 && (
+      {saldo > 0.01 && podePagamentoParcial && (
         <div className="flex items-center gap-1.5 pt-1">
           <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
             className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
@@ -347,12 +347,15 @@ const PagamentoParcial = ({ comanda, onRegistrado }) => {
           </button>
         </div>
       )}
+      {saldo > 0.01 && !podePagamentoParcial && (
+        <p className="text-xs text-[#A1A1AA] pt-1">Você não tem permissão para registrar pagamento parcial.</p>
+      )}
       {erro && <p className="text-xs text-red-600">{erro}</p>}
     </div>
   );
 };
 
-const ComandaDetalhe = ({ comandaId, onVoltar }) => {
+const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [comanda, setComanda] = useState(null);
   const [produtos, setProdutos] = useState([]);
   const [mostrarPicker, setMostrarPicker] = useState(false);
@@ -476,7 +479,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
       </div>
 
       <div className="px-4 pb-4">
-        <PagamentoParcial comanda={comanda} onRegistrado={carregar} />
+        <PagamentoParcial comanda={comanda} onRegistrado={carregar} podePagamentoParcial={podePagamentoParcial} />
       </div>
 
       {!fechada && (
@@ -497,10 +500,19 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
             </button>
           </div>
           {(comanda.gorjeta_sugestao?.valor_sugerido ?? 0) > 0 ? (
-            <div className="mt-2 space-y-0.5">
-              <p className="text-right text-xs text-[#71717A]">Valor da comanda: <strong className="text-[#18181B]">{fmt(total)}</strong></p>
-              <p className="text-right text-xs text-[#71717A]">Gorjeta sugerida ({comanda.gorjeta_sugestao.percentual}%): <strong className="text-[#18181B]">{fmt(comanda.gorjeta_sugestao.valor_sugerido)}</strong></p>
-              <p className="text-right text-xs text-[#71717A]">Total (comanda + gorjeta): <strong className="text-[#18181B]">{fmt(total + comanda.gorjeta_sugestao.valor_sugerido)}</strong></p>
+            <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A]">Valor da comanda</span>
+                <span className="text-[#18181B]">{fmt(total)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A]">Gorjeta</span>
+                <span className="text-[#18181B]">{fmt(comanda.gorjeta_sugestao.valor_sugerido)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+                <span>Total (comanda + gorjeta)</span>
+                <span>{fmt(total + comanda.gorjeta_sugestao.valor_sugerido)}</span>
+              </div>
             </div>
           ) : (
             <p className="text-right text-xs text-[#71717A] mt-2">Total: <strong className="text-[#18181B]">{fmt(total)}</strong></p>
@@ -547,6 +559,7 @@ const RestauranteFechado = () => (
 
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
+  const [permissoes, setPermissoes] = useState({});
   const [bloqueado, setBloqueado] = useState(false);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
@@ -556,7 +569,7 @@ const GarcomHome = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMe().then((m) => setMeuId(m.id)).catch((err) => {
+    getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); }).catch((err) => {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
     });
   }, []);
@@ -584,7 +597,13 @@ const GarcomHome = () => {
   if (bloqueado) return <RestauranteFechado />;
 
   if (comandaAtivaId) {
-    return <ComandaDetalhe comandaId={comandaAtivaId} onVoltar={() => { setComandaAtivaId(null); carregar(); }} />;
+    return (
+      <ComandaDetalhe
+        comandaId={comandaAtivaId}
+        onVoltar={() => { setComandaAtivaId(null); carregar(); }}
+        podePagamentoParcial={permissoes?.pagamento_parcial !== false}
+      />
+    );
   }
 
   return (

@@ -113,7 +113,9 @@ const GarcomCard = ({ garcom, onMudou }) => {
   };
 
   const togglePermissao = async (chave) => {
-    await atualizarGarcom(garcom.id, { permissoes: { ...garcom.permissoes, [chave]: !garcom.permissoes[chave] } });
+    // pagamento_parcial é default ligado (undefined = true) — as outras são default desligado.
+    const atual = chave === 'pagamento_parcial' ? garcom.permissoes?.[chave] !== false : !!garcom.permissoes?.[chave];
+    await atualizarGarcom(garcom.id, { permissoes: { ...garcom.permissoes, [chave]: !atual } });
     onMudou();
   };
 
@@ -154,6 +156,14 @@ const GarcomCard = ({ garcom, onMudou }) => {
             {chave === 'desconto' ? 'Pode dar desconto' : chave === 'cancelar' ? 'Pode cancelar' : 'Pode dar acréscimo'}
           </button>
         ))}
+        {/* Default ligado (diferente das outras) — pagamento parcial já era permitido sem
+            restrição antes dessa permissão existir, então só desativa quem o dono desmarcar. */}
+        <button onClick={() => togglePermissao('pagamento_parcial')}
+          className={`text-[10px] px-2 py-1 rounded-full font-medium border ${
+            garcom.permissoes?.pagamento_parcial !== false ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-[#F4F4F5] text-[#A1A1AA] border-[#E4E4E7]'
+          }`}>
+          Pagamento parcial
+        </button>
       </div>
 
       <div className="flex gap-2 mt-3">
