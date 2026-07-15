@@ -4,7 +4,7 @@ import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
-  listarGarcons, getMeusProdutos,
+  listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
@@ -12,6 +12,7 @@ import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 
 const NavRestaurante = ({ active }) => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const MESA_STATUS_COR = {
   aguardando_pagamento: 'bg-blue-100 text-blue-700 border-blue-200',
 };
 
-const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
+const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [comanda, setComanda] = useState(null);
   const [descontoInput, setDescontoInput] = useState('');
   const [acrescimoInput, setAcrescimoInput] = useState('');
@@ -80,6 +81,10 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
   const [produtos, setProdutos] = useState([]);
   const [produtoSelecionado, setProdutoSelecionado] = useState('');
   const [quantidadeItem, setQuantidadeItem] = useState(1);
+
+  const [valorPagamento, setValorPagamento] = useState('');
+  const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
+  const [mesaDestino, setMesaDestino] = useState('');
 
   const carregar = useCallback(async () => {
     const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
@@ -138,6 +143,25 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
     acao(() => removerItemComandaSalao(comandaId, item.id));
   };
 
+  const registrarPagamento = () => {
+    const v = Number(valorPagamento);
+    if (!v || v <= 0) return;
+    acao(async () => {
+      await registrarPagamentoParcialSalao(comandaId, v, formaPagamentoParcial);
+      setValorPagamento('');
+    });
+  };
+
+  const transferirMesaOuComanda = () => {
+    if (!mesaDestino) return;
+    if (!window.confirm('Transferir esta comanda?')) return;
+    acao(async () => {
+      await transferirComandaSalao(comandaId, { mesa_id: Number(mesaDestino) });
+      setMesaDestino('');
+      onFechar();
+    });
+  };
+
   if (!comanda) return null;
 
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
@@ -168,6 +192,20 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
             ))}
           </select>
           <button onClick={transferir} disabled={!garcomSelecionado || salvando}
+            className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
+        </div>
+
+        <div className="flex items-center gap-2 mb-3">
+          <select value={mesaDestino} onChange={(e) => setMesaDestino(e.target.value)}
+            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+            <option value="">Transferir mesa/comanda pra...</option>
+            {(mesas ?? []).filter((m) => m.id !== comanda.mesa_id).map((m) => (
+              <option key={m.id} value={m.id}>
+                Mesa {m.numero}{m.comanda ? ` (ocupada — junta comandas)` : ''}
+              </option>
+            ))}
+          </select>
+          <button onClick={transferirMesaOuComanda} disabled={!mesaDestino || salvando}
             className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
         </div>
 
@@ -230,6 +268,40 @@ const ComandaModal = ({ comandaId, onFechar, onMudou }) => {
           </div>
           <div className="flex justify-between text-base font-bold text-[#18181B]">
             <span>Total</span><span>{fmt(totalFinal)}</span>
+          </div>
+        </div>
+
+        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-[#71717A]">Saldo devedor</span>
+            <strong className={(comanda.saldo?.saldo ?? 0) > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>
+              {fmt(comanda.saldo?.saldo ?? totalFinal)}
+            </strong>
+          </div>
+          {(comanda.pagamentos ?? []).length > 0 && (
+            <div className="space-y-0.5">
+              {comanda.pagamentos.map((p) => (
+                <p key={p.id} className="text-xs text-[#71717A] flex justify-between">
+                  <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
+                  <span>{fmt(p.valor)}</span>
+                </p>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <input type="number" value={valorPagamento} onChange={(e) => setValorPagamento(e.target.value)} placeholder="Valor"
+              className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+            <select value={formaPagamentoParcial} onChange={(e) => setFormaPagamentoParcial(e.target.value)}
+              className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+              <option value="pix">PIX</option>
+              <option value="credit_card">Cartão de crédito</option>
+              <option value="debit_card">Cartão de débito</option>
+              <option value="cash">Dinheiro</option>
+            </select>
+            <button onClick={registrarPagamento} disabled={!valorPagamento || salvando}
+              className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
+              Pagar parcial
+            </button>
           </div>
         </div>
 
@@ -352,7 +424,7 @@ const RestauranteSalao = () => {
       </div>
 
       {comandaAtiva && (
-        <ComandaModal comandaId={comandaAtiva} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
+        <ComandaModal comandaId={comandaAtiva} mesas={mesas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
       )}
     </div>
   );
