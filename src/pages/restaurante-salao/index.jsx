@@ -5,7 +5,7 @@ import {
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
-  editarPagamentoParcialSalao, removerPagamentoParcialSalao,
+  editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente } from '../../utils/printComanda';
@@ -495,12 +495,151 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   );
 };
 
+// Venda direta no balcão — operador escolhe produtos e paga na hora, sem mesa/garçom.
+// Itens continuam indo pra fila de preparo normal (cozinha/bar).
+const VendaDiretaModal = ({ onFechar, onVendida }) => {
+  const [produtos, setProdutos] = useState([]);
+  const [produtoSelecionado, setProdutoSelecionado] = useState('');
+  const [quantidadeItem, setQuantidadeItem] = useState(1);
+  const [carrinho, setCarrinho] = useState([]);
+  const [forma, setForma] = useState('pix');
+  const [valorRecebido, setValorRecebido] = useState('');
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => { getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {}); }, []);
+
+  const total = carrinho.reduce((acc, i) => acc + i.quantity * i.price, 0);
+  const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - total : null;
+
+  const adicionar = () => {
+    if (!produtoSelecionado) return;
+    const p = produtos.find((x) => String(x.id) === produtoSelecionado);
+    if (!p) return;
+    setCarrinho((c) => {
+      const existente = c.find((i) => i.product_id === p.id);
+      if (existente) {
+        return c.map((i) => (i.product_id === p.id ? { ...i, quantity: i.quantity + Number(quantidadeItem) } : i));
+      }
+      return [...c, { product_id: p.id, name: p.name, price: p.price, quantity: Number(quantidadeItem) }];
+    });
+    setProdutoSelecionado('');
+    setQuantidadeItem(1);
+  };
+
+  const removerDoCarrinho = (productId) => setCarrinho((c) => c.filter((i) => i.product_id !== productId));
+
+  const confirmar = async () => {
+    if (!carrinho.length) return;
+    if (forma === 'cash' && valorRecebido && Number(valorRecebido) < total) {
+      setErro('Valor recebido não pode ser menor que o total.');
+      return;
+    }
+    setErro(null);
+    setSalvando(true);
+    try {
+      const res = await venderDireto(
+        carrinho.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+        forma,
+        forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined,
+      );
+      printReciboCliente(
+        res, carrinho.map((i) => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price })),
+        { subtotal: total, total, formaPagamento: forma, trocoDado: Math.max(troco ?? 0, 0) },
+      );
+      onVendida();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível concluir a venda.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4" onClick={onFechar}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-base font-bold text-[#18181B] mb-3">Venda direta (balcão)</h2>
+
+        <div className="flex items-center gap-2 mb-3 bg-[#F4F4F5] rounded-xl p-2">
+          <select value={produtoSelecionado} onChange={(e) => setProdutoSelecionado(e.target.value)}
+            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+            <option value="">Escolher produto...</option>
+            {produtos.map((p) => (
+              <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)}</option>
+            ))}
+          </select>
+          <input type="number" min={1} value={quantidadeItem} onChange={(e) => setQuantidadeItem(e.target.value)}
+            className="w-14 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs text-center" />
+          <button onClick={adicionar} disabled={!produtoSelecionado}
+            className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
+            <Icon name="Plus" size={14} />
+          </button>
+        </div>
+
+        <div className="space-y-1 mb-3">
+          {carrinho.map((i) => (
+            <div key={i.product_id} className="flex justify-between items-center text-sm gap-2">
+              <span className="truncate">{i.quantity}x {i.name}</span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span>{fmt(i.quantity * i.price)}</span>
+                <button onClick={() => removerDoCarrinho(i.product_id)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                  <Icon name="X" size={11} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {carrinho.length === 0 && <p className="text-xs text-[#A1A1AA] text-center py-3">Carrinho vazio.</p>}
+        </div>
+
+        <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
+          <div className="flex justify-between text-base font-bold text-[#18181B]">
+            <span>Total</span><span>{fmt(total)}</span>
+          </div>
+          <label className="text-xs text-[#71717A]">Forma de pagamento</label>
+          <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+            <option value="pix">PIX</option>
+            <option value="credit_card">Cartão de crédito</option>
+            <option value="debit_card">Cartão de débito</option>
+            <option value="cash">Dinheiro</option>
+          </select>
+          {forma === 'cash' && (
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
+                placeholder="Valor recebido do cliente"
+                className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+              {troco !== null && (
+                <span className={`text-sm font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                  Troco: {fmt(Math.max(troco, 0))}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
+
+        <div className="flex gap-2 mt-4">
+          <button onClick={onFechar} disabled={salvando}
+            className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+            Cancelar
+          </button>
+          <button onClick={confirmar} disabled={salvando || carrinho.length === 0}
+            className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+            {salvando ? 'Processando...' : 'Confirmar venda'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RestauranteSalao = () => {
   const [garconsOnline, setGarconsOnline] = useState([]);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [comandaAtiva, setComandaAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mostrarVendaDireta, setMostrarVendaDireta] = useState(false);
 
   const carregar = useCallback(async () => {
     const [g, m, c] = await Promise.all([getGarconsOnline(), getSalaoMesas(), getSalaoComandas()]);
@@ -523,6 +662,13 @@ const RestauranteSalao = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-4">
+        <div className="flex justify-end mb-4">
+          <button onClick={() => setMostrarVendaDireta(true)}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
+            <Icon name="ShoppingCart" size={15} /> Venda direta (balcão)
+          </button>
+        </div>
+
         <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4">
           <p className="text-xs font-semibold text-[#71717A] mb-2">Garçons online agora</p>
           <div className="flex flex-wrap gap-2">
@@ -580,6 +726,13 @@ const RestauranteSalao = () => {
 
       {comandaAtiva && (
         <ComandaModal comandaId={comandaAtiva} mesas={mesas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
+      )}
+
+      {mostrarVendaDireta && (
+        <VendaDiretaModal
+          onFechar={() => setMostrarVendaDireta(false)}
+          onVendida={() => { setMostrarVendaDireta(false); carregar(); }}
+        />
       )}
     </div>
   );

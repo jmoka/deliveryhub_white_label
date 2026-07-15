@@ -241,6 +241,8 @@ export const getStatusAgente = () => apiFetch('/agente-impressao/status');
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
 export const getSalaoComandas = () => apiFetch('/salao/comandas');
+export const venderDireto = (itens, forma_pagamento, valor_recebido) =>
+  apiFetch('/salao/venda-direta', { method: 'POST', body: JSON.stringify({ itens, forma_pagamento, valor_recebido }) });
 export const getSalaoComandaDetalhe = (id) => apiFetch(`/salao/comandas/${id}`);
 export const aplicarDescontoComanda = (id, valor) =>
   apiFetch(`/salao/comandas/${id}/desconto`, { method: 'PATCH', body: JSON.stringify({ valor }) });
