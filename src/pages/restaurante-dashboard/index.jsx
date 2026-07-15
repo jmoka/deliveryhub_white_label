@@ -62,6 +62,8 @@ const LINKS = [
   { label: 'Config', path: '/restaurante/config' },
 ];
 
+const COPA_LINK = [{ label: 'Copa/Bar', path: '/restaurante/impressoras' }];
+
 const SALAO_LINKS = [
   { label: 'Salão', path: '/restaurante/salao' },
   { label: 'Garçons', path: '/restaurante/garcons' },
@@ -73,7 +75,11 @@ const RestauranteDashboard = () => {
   const { signOut } = useAuth();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const tipoRestaurante = useTipoRestaurante();
-  const navLinks = [...LINKS.slice(0, 6), ...(tipoRestaurante ? SALAO_LINKS : []), ...LINKS.slice(6)];
+  const navLinks = [
+    ...LINKS.slice(0, 2), ...(tipoRestaurante ? COPA_LINK : []),
+    ...LINKS.slice(2, 6), ...(tipoRestaurante ? SALAO_LINKS : []),
+    ...LINKS.slice(6),
+  ];
 
   const [empresa, setEmpresa] = useState(null);
   const [statusAberto, setStatusAberto] = useState(false);

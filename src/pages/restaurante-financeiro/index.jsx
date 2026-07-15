@@ -52,6 +52,8 @@ const LINKS = [
   { label: 'Config', path: '/restaurante/config' },
 ];
 
+const COPA_LINK = [{ label: 'Copa/Bar', path: '/restaurante/impressoras' }];
+
 const SALAO_LINKS = [
   { label: 'Salão', path: '/restaurante/salao' },
   { label: 'Garçons', path: '/restaurante/garcons' },
@@ -134,7 +136,9 @@ const RestauranteFinanceiro = () => {
         </div>
         <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
           {[
-            ...LINKS.slice(0, 6),
+            ...LINKS.slice(0, 2),
+            ...(tipoRestaurante ? COPA_LINK : []),
+            ...LINKS.slice(2, 6),
             ...(tipoRestaurante ? SALAO_LINKS : []),
             ...LINKS.slice(6),
           ].map((l) => (
