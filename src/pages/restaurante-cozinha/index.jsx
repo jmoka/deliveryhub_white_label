@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha } from '../../services/restauranteService';
+import {
+  getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha,
+  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante,
+} from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
+  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirGrupo,
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
-import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
+import { barcodeValue, getPrinterName, setPrinterName, printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -190,6 +194,8 @@ const RestauranteCozinha = () => {
   const [printerSaved, setPrinterSaved] = useState(false);
   const [copiadoLink, setCopiadoLink] = useState(false);
   const [gerandoLink, setGerandoLink] = useState(false);
+  const [impressorasCozinha, setImpressorasCozinha] = useState(null);
+  const [gruposSalao, setGruposSalao] = useState([]);
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -246,10 +252,29 @@ const RestauranteCozinha = () => {
     }
   }, []);
 
+  // Itens de comanda do salão roteados pra impressora(s) de setor "Cozinha" — mesmo
+  // padrão do painel de Produção/Bar, só que embutido aqui pra dar visão única.
+  const carregarSalao = useCallback(async (impressoras, usarToken = false) => {
+    if (!impressoras?.length) { setGruposSalao([]); return; }
+    try {
+      const getItens = usarToken ? getKdsItens : getKdsItensRestaurante;
+      const listas = await Promise.all(
+        impressoras.map((imp) => getItens(imp.id).then((r) => (r.grupos ?? []).map((g) => ({ ...g, impressora_id: imp.id })))),
+      );
+      setGruposSalao(listas.flat());
+    } catch {
+      // silencioso — não quebra a tela principal de delivery por causa do salão
+    }
+  }, []);
+
   useEffect(() => {
     if (modoToken && !authed) return;
 
     let nome = '';
+    const getImpressoras = modoToken ? getKdsImpressoras : listarImpressoras;
+    getImpressoras()
+      .then((lista) => setImpressorasCozinha((lista ?? []).filter((i) => (i.setor ?? '').toLowerCase().includes('cozinha'))))
+      .catch(() => setImpressorasCozinha([]));
 
     if (modoToken) {
       getCozinhaMe()
@@ -272,6 +297,13 @@ const RestauranteCozinha = () => {
     const id = setInterval(() => carregar(nome), 30000);
     return () => clearInterval(id);
   }, [carregar, modoToken, authed]);
+
+  useEffect(() => {
+    if (!impressorasCozinha) return;
+    carregarSalao(impressorasCozinha, modoToken);
+    const id = setInterval(() => carregarSalao(impressorasCozinha, modoToken), 15000);
+    return () => clearInterval(id);
+  }, [impressorasCozinha, modoToken, carregarSalao]);
 
   // Realtime: recarrega cozinha quando pedido muda de status
   useEffect(() => {
@@ -330,6 +362,29 @@ const RestauranteCozinha = () => {
       alert(e.message);
     } finally {
       setAtualizando(null);
+    }
+  };
+
+  const marcarProntoSalao = async (itemId) => {
+    try {
+      if (modoToken) await marcarItemPronto(itemId);
+      else await marcarItemProntoRestaurante(itemId);
+      carregarSalao(impressorasCozinha, modoToken);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const reimprimirSalao = async (grupo) => {
+    try {
+      const res = modoToken
+        ? await reimprimirGrupo(grupo.order_id, grupo.impressora_id)
+        : await reimprimirGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+      if (res.via === 'navegador') {
+        printTicketSetor(grupo.itens, { mesaLabel: grupo.mesa, cliente_mesa_nome: grupo.cliente }, 'Cozinha');
+      }
+    } catch (e) {
+      alert(e.message);
     }
   };
 
@@ -513,7 +568,53 @@ const RestauranteCozinha = () => {
         </div>
       </main>
 
-      {pedidos.length === 0 && !loading && (
+      {impressorasCozinha?.length > 0 && (
+        <div className="px-5 pb-5 max-w-5xl mx-auto">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-3 h-3 rounded-full bg-purple-400" />
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Comandas do Salão</h2>
+            {gruposSalao.length > 0 && (
+              <span className="ml-auto bg-purple-500 text-white text-xs font-black px-2 py-0.5 rounded-full">
+                {gruposSalao.reduce((s, g) => s + g.itens.length, 0)}
+              </span>
+            )}
+          </div>
+          {gruposSalao.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
+              <Icon name="UtensilsCrossed" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+              <p className="text-[#71717A] text-sm">Nenhum item de comanda pendente</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {gruposSalao.map((g) => (
+                <div key={`${g.impressora_id}-${g.order_id}`} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
+                    <button onClick={() => reimprimirSalao(g)}
+                      className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+                      <Icon name="Printer" size={11} /> Reimpressão
+                    </button>
+                  </div>
+                  {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
+                  <div className="space-y-2 mt-2">
+                    {g.itens.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
+                        <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
+                        <button onClick={() => marcarProntoSalao(item.id)}
+                          className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
+                          Pronto
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {pedidos.length === 0 && gruposSalao.length === 0 && !loading && (
         <div className="text-center py-20">
           <Icon name="UtensilsCrossed" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
           <p className="text-[#71717A] text-lg font-semibold">Cozinha tranquila</p>

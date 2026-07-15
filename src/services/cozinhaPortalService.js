@@ -58,6 +58,7 @@ async function kdsFetch(path, options = {}) {
   return isJson ? res.json() : {};
 }
 
+export const getKdsImpressoras = () => kdsFetch('/impressoras');
 export const getKdsItens = (impressoraId) => kdsFetch(`/itens?impressora_id=${impressoraId}`);
 export const marcarItemPronto = (itemId) => kdsFetch(`/itens/${itemId}/pronto`, { method: 'PATCH' });
 export const reimprimirGrupo = (orderId, impressoraId) =>
