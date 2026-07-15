@@ -158,7 +158,7 @@ document.head.appendChild(s);
 export const printTicketSetor = (itens, comanda, setorNome) => {
   if (!itens?.length) return;
 
-  const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : null;
+  const mesa = comanda?.mesaLabel ?? (comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : null);
   const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${setorNome}</title>

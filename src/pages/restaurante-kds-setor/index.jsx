@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
-  getKdsItens, marcarItemPronto,
+  getKdsItens, marcarItemPronto, reimprimirGrupo,
 } from '../../services/cozinhaPortalService';
+import { printTicketSetor } from '../../utils/printComanda';
 import Icon from '../../components/AppIcon';
 
 const KdsLogin = ({ onLogin }) => {
@@ -89,6 +90,17 @@ const RestauranteKdsSetor = () => {
     carregar();
   };
 
+  const reimprimir = async (grupo) => {
+    try {
+      const res = await reimprimirGrupo(grupo.order_id, impressoraId);
+      if (res.via === 'navegador') {
+        printTicketSetor(grupo.itens, { mesaLabel: grupo.mesa, cliente_mesa_nome: grupo.cliente }, setorNome);
+      }
+    } catch (err) {
+      setErro(err.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1A1A1A] p-4">
       <div className="flex items-center justify-between mb-4">
@@ -99,7 +111,13 @@ const RestauranteKdsSetor = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {grupos.map((g) => (
           <div key={g.order_id} className="bg-[#232323] border border-[#2A2A2A] rounded-2xl p-4">
-            <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
+              <button onClick={() => reimprimir(g)}
+                className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+                <Icon name="Printer" size={11} /> Reimpressão
+              </button>
+            </div>
             {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
             <div className="space-y-2 mt-2">
               {g.itens.map((item) => (
