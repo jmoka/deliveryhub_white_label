@@ -157,7 +157,8 @@ document.head.appendChild(s);
 // módulo Salão: garçom só coleta a forma, quem emite o recibo de fato é o caixa).
 export const printReciboCliente = (comanda, itens, valores, restauranteNome) => {
   const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-  const { subtotal, desconto = 0, acrescimo = 0, gorjeta = 0, total, formaPagamento, trocoDado } = valores;
+  const { subtotal, desconto = 0, acrescimo = 0, gorjeta = 0, total, formaPagamento, trocoDado, pagamentos = [] } = valores;
+  const PAGAMENTO_ORIGEM = { garcom: 'garçom', estabelecimento: 'caixa' };
   const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
   const hora = new Date().toLocaleString('pt-BR');
 
@@ -189,7 +190,13 @@ ${acrescimo > 0 ? `<div class="linha"><span>Acréscimo</span><span>+ ${fmt(acres
 ${gorjeta > 0 ? `<div class="linha"><span>Gorjeta</span><span>${fmt(gorjeta)}</span></div>` : ''}
 <hr/>
 <div class="total"><span>TOTAL</span><span>${fmt(total)}</span></div>
+${pagamentos.length > 0 ? `
+<hr/>
+<div class="center" style="font-size:11px;font-weight:bold">PAGAMENTOS</div>
+${pagamentos.map((p) => `<div class="linha"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})</span><span>${fmt(p.valor)}</span></div>`).join('')}
+` : `
 <div class="linha"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>
+`}
 ${trocoDado > 0 ? `<div class="linha"><span>Troco</span><span>${fmt(trocoDado)}</span></div>` : ''}
 <hr/>
 <div class="foot">Obrigado pela preferência!</div>

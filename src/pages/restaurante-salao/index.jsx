@@ -153,6 +153,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           total: res?.total ?? valorACobrarFinal,
           formaPagamento: forma,
           trocoDado: res?.troco ?? 0,
+          pagamentos: res?.pagamentos ?? [],
         });
       }
       onFechar();
