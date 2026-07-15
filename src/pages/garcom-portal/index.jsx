@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import {
   login, getGarcomToken, setGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda,
-  abrirComanda, adicionarItens, enviarItens, fecharComanda,
+  abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import Icon from '../../components/AppIcon';
@@ -314,6 +314,29 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
     }
   };
 
+  const alterarQuantidade = async (item, delta) => {
+    const novaQtd = item.quantity + delta;
+    if (novaQtd < 1) return;
+    setErro(null);
+    try {
+      await editarItem(comandaId, item.id, { quantity: novaQtd });
+      await carregar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível alterar a quantidade.');
+    }
+  };
+
+  const removerItemComanda = async (item) => {
+    if (!window.confirm(`Remover ${item.products?.name}?`)) return;
+    setErro(null);
+    try {
+      await removerItem(comandaId, item.id);
+      await carregar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível remover o item.');
+    }
+  };
+
   const enviar = async () => {
     setEnviando(true);
     setErro(null);
@@ -366,11 +389,21 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
                 {item.observacao && <p className="text-xs text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 mt-0.5 inline-block">{item.observacao}</p>}
               </div>
             </div>
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-              item.status === 'pendente' ? 'bg-zinc-100 text-zinc-600' : item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
-            }`}>
-              {item.status === 'pendente' ? 'Não enviado' : item.status === 'enviado' ? 'Enviado' : 'Pronto'}
-            </span>
+            {item.status === 'pendente' ? (
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">−</button>
+                <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">+</button>
+                <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 text-red-500 flex items-center justify-center">
+                  <Icon name="X" size={12} />
+                </button>
+              </div>
+            ) : (
+              <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
+              }`}>
+                {item.status === 'enviado' ? 'Enviado' : 'Pronto'}
+              </span>
+            )}
           </div>
         ))}
         {(comanda.itens ?? []).length === 0 && (

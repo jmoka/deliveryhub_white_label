@@ -248,6 +248,8 @@ export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor) =>
   apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor }) });
 export const adicionarItensComandaSalao = (id, itens) =>
   apiFetch(`/salao/comandas/${id}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
+export const removerItemComandaSalao = (id, itemId) =>
+  apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'DELETE' });
 export const transferirGarcomComanda = (id, garcom_id) =>
   apiFetch(`/salao/comandas/${id}/transferir-garcom`, { method: 'PATCH', body: JSON.stringify({ garcom_id }) });
 export const getSugestaoGorjeta = (id) => apiFetch(`/salao/comandas/${id}/sugestao-gorjeta`);
