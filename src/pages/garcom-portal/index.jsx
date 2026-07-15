@@ -499,24 +499,20 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
               Fechar comanda
             </button>
           </div>
-          {(comanda.gorjeta_sugestao?.valor_sugerido ?? 0) > 0 ? (
-            <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Valor da comanda</span>
-                <span className="text-[#18181B]">{fmt(total)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Gorjeta</span>
-                <span className="text-[#18181B]">{fmt(comanda.gorjeta_sugestao.valor_sugerido)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
-                <span>Total (comanda + gorjeta)</span>
-                <span>{fmt(total + comanda.gorjeta_sugestao.valor_sugerido)}</span>
-              </div>
+          <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-[#71717A]">Valor da comanda</span>
+              <span className="text-[#18181B]">{fmt(total)}</span>
             </div>
-          ) : (
-            <p className="text-right text-xs text-[#71717A] mt-2">Total: <strong className="text-[#18181B]">{fmt(total)}</strong></p>
-          )}
+            <div className="flex justify-between text-sm">
+              <span className="text-[#71717A]">Gorjeta</span>
+              <span className="text-[#18181B]">{fmt(comanda.gorjeta_sugestao?.valor_sugerido ?? 0)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+              <span>Total (comanda + gorjeta)</span>
+              <span>{fmt(total + (comanda.gorjeta_sugestao?.valor_sugerido ?? 0))}</span>
+            </div>
+          </div>
         </div>
       )}
 
