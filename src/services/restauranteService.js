@@ -254,6 +254,10 @@ export const transferirGarcomComanda = (id, garcom_id) =>
   apiFetch(`/salao/comandas/${id}/transferir-garcom`, { method: 'PATCH', body: JSON.stringify({ garcom_id }) });
 export const registrarPagamentoParcialSalao = (id, valor, forma_pagamento) =>
   apiFetch(`/salao/comandas/${id}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento }) });
+export const editarPagamentoParcialSalao = (id, pagamentoId, valor, forma_pagamento) =>
+  apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}`, { method: 'PATCH', body: JSON.stringify({ valor, forma_pagamento }) });
+export const removerPagamentoParcialSalao = (id, pagamentoId) =>
+  apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}`, { method: 'DELETE' });
 export const transferirComandaSalao = (id, { mesa_id, comanda_destino_id }) =>
   apiFetch(`/salao/comandas/${id}/transferir`, { method: 'PATCH', body: JSON.stringify({ mesa_id, comanda_destino_id }) });
 export const getSugestaoGorjeta = (id) => apiFetch(`/salao/comandas/${id}/sugestao-gorjeta`);

@@ -5,6 +5,7 @@ import {
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
+  editarPagamentoParcialSalao, removerPagamentoParcialSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
@@ -85,6 +86,9 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
   const [mesaDestino, setMesaDestino] = useState('');
+  const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
+  const [valorEdicao, setValorEdicao] = useState('');
+  const [formaEdicao, setFormaEdicao] = useState('pix');
 
   const carregar = useCallback(async () => {
     const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
@@ -150,6 +154,26 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
       await registrarPagamentoParcialSalao(comandaId, v, formaPagamentoParcial);
       setValorPagamento('');
     });
+  };
+
+  const iniciarEdicaoPagamento = (p) => {
+    setPagamentoEditandoId(p.id);
+    setValorEdicao(String(p.valor));
+    setFormaEdicao(p.forma_pagamento);
+  };
+
+  const salvarEdicaoPagamento = () => {
+    const v = Number(valorEdicao);
+    if (!v || v <= 0) return;
+    acao(async () => {
+      await editarPagamentoParcialSalao(comandaId, pagamentoEditandoId, v, formaEdicao);
+      setPagamentoEditandoId(null);
+    });
+  };
+
+  const removerPagamento = (p) => {
+    if (!window.confirm('Remover este pagamento parcial?')) return;
+    acao(() => removerPagamentoParcialSalao(comandaId, p.id));
   };
 
   const transferirMesaOuComanda = () => {
@@ -279,12 +303,38 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             </strong>
           </div>
           {(comanda.pagamentos ?? []).length > 0 && (
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {comanda.pagamentos.map((p) => (
-                <p key={p.id} className="text-xs text-[#71717A] flex justify-between">
-                  <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
-                  <span>{fmt(p.valor)}</span>
-                </p>
+                pagamentoEditandoId === p.id ? (
+                  <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-lg p-1.5">
+                    <input type="number" value={valorEdicao} onChange={(e) => setValorEdicao(e.target.value)}
+                      className="w-16 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs" />
+                    <select value={formaEdicao} onChange={(e) => setFormaEdicao(e.target.value)}
+                      className="flex-1 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs">
+                      <option value="pix">PIX</option>
+                      <option value="credit_card">Cartão de crédito</option>
+                      <option value="debit_card">Cartão de débito</option>
+                      <option value="cash">Dinheiro</option>
+                    </select>
+                    <button onClick={salvarEdicaoPagamento} disabled={!valorEdicao || salvando}
+                      className="text-xs font-bold text-emerald-700 disabled:opacity-40 flex-shrink-0">Salvar</button>
+                    <button onClick={() => setPagamentoEditandoId(null)}
+                      className="text-xs text-[#71717A] flex-shrink-0">Cancelar</button>
+                  </div>
+                ) : (
+                  <div key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
+                    <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span>{fmt(p.valor)}</span>
+                      <button onClick={() => iniciarEdicaoPagamento(p)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-[#71717A] flex items-center justify-center">
+                        <Icon name="Pencil" size={10} />
+                      </button>
+                      <button onClick={() => removerPagamento(p)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                        <Icon name="X" size={11} />
+                      </button>
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           )}
