@@ -144,15 +144,17 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
         comandaId, forma, gorjeta ? Number(gorjeta) : undefined,
         forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
       );
-      printReciboCliente(comanda, comanda.itens ?? [], {
-        subtotal,
-        desconto: Number(descontoInput || 0),
-        acrescimo: Number(acrescimoInput || 0),
-        gorjeta: Number(gorjeta || 0),
-        total: res?.total ?? valorACobrarFinal,
-        formaPagamento: forma,
-        trocoDado: res?.troco ?? 0,
-      });
+      if (res?.recibo?.via !== 'agente') {
+        printReciboCliente(comanda, comanda.itens ?? [], {
+          subtotal,
+          desconto: Number(descontoInput || 0),
+          acrescimo: Number(acrescimoInput || 0),
+          gorjeta: Number(gorjeta || 0),
+          total: res?.total ?? valorACobrarFinal,
+          formaPagamento: forma,
+          trocoDado: res?.troco ?? 0,
+        });
+      }
       onFechar();
     });
   };
@@ -543,10 +545,12 @@ const VendaDiretaModal = ({ onFechar, onVendida }) => {
         forma,
         forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined,
       );
-      printReciboCliente(
-        res, carrinho.map((i) => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price })),
-        { subtotal: total, total, formaPagamento: forma, trocoDado: Math.max(troco ?? 0, 0) },
-      );
+      if (res?.recibo?.via !== 'agente') {
+        printReciboCliente(
+          res, carrinho.map((i) => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price })),
+          { subtotal: total, total, formaPagamento: forma, trocoDado: Math.max(troco ?? 0, 0) },
+        );
+      }
       onVendida();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível concluir a venda.');

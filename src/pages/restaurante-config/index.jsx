@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getConfig, updateConfig } from '../../services/restauranteService';
+import { getConfig, updateConfig, listarImpressoras } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
@@ -177,7 +177,13 @@ const RestauranteConfig = () => {
     motoboy_comissao_km_fallback: '',
     gorjeta_percentual: '',
     salao_modo: 'ambos',
+    recibo_impressora_id: '',
   });
+  const [impressoras, setImpressoras] = useState([]);
+
+  useEffect(() => {
+    if (tipoRestaurante) listarImpressoras().then(setImpressoras).catch(() => {});
+  }, [tipoRestaurante]);
 
   useEffect(() => {
     getConfig()
@@ -198,6 +204,7 @@ const RestauranteConfig = () => {
           motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
           gorjeta_percentual: d.gorjeta_percentual != null ? String(d.gorjeta_percentual) : '',
           salao_modo: d.salao_modo ?? 'ambos',
+          recibo_impressora_id: d.recibo_impressora_id != null ? String(d.recibo_impressora_id) : '',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -225,6 +232,7 @@ const RestauranteConfig = () => {
         motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
         gorjeta_percentual: form.gorjeta_percentual !== '' ? parseFloat(form.gorjeta_percentual) : 0,
         salao_modo: form.salao_modo,
+        recibo_impressora_id: form.recibo_impressora_id !== '' ? Number(form.recibo_impressora_id) : null,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -489,6 +497,27 @@ const RestauranteConfig = () => {
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
                       Controla o que o garçom pode abrir no portal dele.
+                    </p>
+                  </div>
+                )}
+
+                {tipoRestaurante && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Impressora do recibo
+                    </label>
+                    <select
+                      value={form.recibo_impressora_id}
+                      onChange={(e) => setForm((f) => ({ ...f, recibo_impressora_id: e.target.value }))}
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      <option value="">Nenhuma — imprimir pelo navegador</option>
+                      {impressoras.map((imp) => (
+                        <option key={imp.id} value={imp.id}>{imp.nome} ({imp.setor})</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recibo de venda (pagamento final e venda direta) sai direto nessa impressora se ela tiver o agente local pareado — senão cai no navegador.
                     </p>
                   </div>
                 )}
