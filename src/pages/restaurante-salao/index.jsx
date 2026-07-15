@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe,
@@ -71,6 +71,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [descontoInput, setDescontoInput] = useState('');
   const [acrescimoInput, setAcrescimoInput] = useState('');
   const [forma, setForma] = useState('pix');
+  const formaTocada = useRef(false);
   const [gorjeta, setGorjeta] = useState('');
   const [gorjetaPercentual, setGorjetaPercentual] = useState(0);
   const [erro, setErro] = useState(null);
@@ -99,6 +100,11 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
     setAcrescimoInput(String(c.acrescimo_valor ?? 0));
     setGorjetaPercentual(sugestao.percentual);
     setGorjeta((v) => (v === '' ? String(sugestao.valor_sugerido) : v));
+    // Pré-preenche com a forma que o garçom já informou ao fechar a comanda — só na
+    // primeira carga, pra não sobrescrever se o caixa já mudou manualmente.
+    if (!formaTocada.current && c.payment_method) {
+      setForma(c.payment_method);
+    }
   }, [comandaId]);
 
   useEffect(() => { carregar(); }, [carregar]);
@@ -392,7 +398,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
         <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
           <label className="text-xs text-[#71717A]">Forma de pagamento</label>
-          <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+          <select value={forma} onChange={(e) => { formaTocada.current = true; setForma(e.target.value); }} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
             <option value="pix">PIX</option>
             <option value="credit_card">Cartão de crédito</option>
             <option value="debit_card">Cartão de débito</option>
