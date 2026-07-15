@@ -533,6 +533,18 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
               <span>Total (comanda + gorjeta)</span>
               <span>{fmt(total + (comanda.gorjeta_sugestao?.valor_sugerido ?? 0))}</span>
             </div>
+            {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A]">Já pago</span>
+                  <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
+                  <span>Falta pagar (com gorjeta)</span>
+                  <span>{fmt((comanda.saldo?.saldo ?? total) + (comanda.gorjeta_sugestao?.valor_sugerido ?? 0))}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

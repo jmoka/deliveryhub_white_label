@@ -416,6 +416,18 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               <span>Total (comanda + gorjeta)</span>
               <span>{fmt(totalFinal + Number(gorjeta || 0))}</span>
             </div>
+            {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A]">Já pago</span>
+                  <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
+                  <span>Falta pagar (com gorjeta)</span>
+                  <span>{fmt(valorACobrarFinal)}</span>
+                </div>
+              </>
+            )}
           </div>
           {forma === 'cash' && (
             <div className="flex items-center gap-1.5">
