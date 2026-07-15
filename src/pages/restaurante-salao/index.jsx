@@ -368,8 +368,19 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           </label>
           <input type="number" value={gorjeta} onChange={(e) => setGorjeta(e.target.value)}
             className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
-          <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1">
-            <span>Total + gorjeta</span><span>{fmt(totalFinal + Number(gorjeta || 0))}</span>
+          <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-[#71717A]">Valor da comanda</span>
+              <span className="text-[#18181B]">{fmt(totalFinal)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[#71717A]">Gorjeta</span>
+              <span className="text-[#18181B]">{fmt(Number(gorjeta || 0))}</span>
+            </div>
+            <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+              <span>Total (comanda + gorjeta)</span>
+              <span>{fmt(totalFinal + Number(gorjeta || 0))}</span>
+            </div>
           </div>
         </div>
 

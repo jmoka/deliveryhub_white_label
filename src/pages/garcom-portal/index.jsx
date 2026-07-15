@@ -496,7 +496,15 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
               Fechar comanda
             </button>
           </div>
-          <p className="text-right text-xs text-[#71717A] mt-2">Total: <strong className="text-[#18181B]">{fmt(total)}</strong></p>
+          {(comanda.gorjeta_sugestao?.valor_sugerido ?? 0) > 0 ? (
+            <div className="mt-2 space-y-0.5">
+              <p className="text-right text-xs text-[#71717A]">Valor da comanda: <strong className="text-[#18181B]">{fmt(total)}</strong></p>
+              <p className="text-right text-xs text-[#71717A]">Gorjeta sugerida ({comanda.gorjeta_sugestao.percentual}%): <strong className="text-[#18181B]">{fmt(comanda.gorjeta_sugestao.valor_sugerido)}</strong></p>
+              <p className="text-right text-xs text-[#71717A]">Total (comanda + gorjeta): <strong className="text-[#18181B]">{fmt(total + comanda.gorjeta_sugestao.valor_sugerido)}</strong></p>
+            </div>
+          ) : (
+            <p className="text-right text-xs text-[#71717A] mt-2">Total: <strong className="text-[#18181B]">{fmt(total)}</strong></p>
+          )}
         </div>
       )}
 
