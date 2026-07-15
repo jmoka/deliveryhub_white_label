@@ -97,6 +97,8 @@ const RestauranteDashboard = () => {
   const [menuAberto, setMenuAberto] = useState(false);
   const [nomeOperador, setNomeOperador] = useState('');
   const [pedidosAbertos, setPedidosAbertos] = useState([]);
+  const [comandasAbertas, setComandasAbertas] = useState([]);
+  const [mesasAbertas, setMesasAbertas] = useState([]);
   const [restauranteId, setRestauranteId] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const alertaTimers = useRef({});
@@ -363,10 +365,12 @@ const RestauranteDashboard = () => {
       await recarregarCaixa();
       setShowFechar(false);
       setPedidoSelecionadoId(null); setPedidoDetalhe(null);
-      setPedidosAbertos([]);
+      setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]);
     } catch (e) {
-      if (e.data?.pedidos) {
-        setPedidosAbertos(e.data.pedidos);
+      if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) {
+        setPedidosAbertos(e.data.pedidos ?? []);
+        setComandasAbertas(e.data.comandas ?? []);
+        setMesasAbertas(e.data.mesas ?? []);
       } else {
         alert(e.message);
       }
@@ -381,7 +385,7 @@ const RestauranteDashboard = () => {
       await recarregarCaixa();
       setShowFechar(false);
       setPedidoSelecionadoId(null); setPedidoDetalhe(null);
-      setPedidosAbertos([]);
+      setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]);
     } catch (e) { alert(e.message); } finally { setFechando(false); }
   };
 
@@ -894,9 +898,11 @@ const RestauranteDashboard = () => {
           aberto_em={caixa?.aberto_em}
           valorInicial={caixa?.valor_inicial}
           pedidosAbertos={pedidosAbertos}
+          comandasAbertas={comandasAbertas}
+          mesasAbertas={mesasAbertas}
           onConfirmar={handleFecharCaixa}
           onFecharETransferir={handleFecharETransferir}
-          onCancelar={() => { setShowFechar(false); setPedidosAbertos([]); }}
+          onCancelar={() => { setShowFechar(false); setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]); }}
           fechando={fechando}
         />
       )}

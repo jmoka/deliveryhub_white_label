@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  login, getGarcomToken, setGarcomToken, getMe,
+  login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento,
@@ -515,8 +515,31 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
   );
 };
 
+const RESTAURANTE_FECHADO_MSG = 'Restaurante fechado. Aguarde o caixa ser aberto para entrar.';
+
+const RestauranteFechado = () => (
+  <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 w-full max-w-sm shadow-lg text-center">
+      <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <Icon name="Lock" size={28} className="text-red-600" />
+      </div>
+      <h1 className="text-lg font-black text-[#18181B]">Restaurante fechado</h1>
+      <p className="text-sm text-[#71717A] mt-1">Aguarde o caixa ser aberto para acessar o salão.</p>
+      <button onClick={() => window.location.reload()}
+        className="w-full mt-4 py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] text-sm">
+        Tentar novamente
+      </button>
+      <button onClick={() => { clearGarcomToken(); window.location.reload(); }}
+        className="w-full mt-2 py-2.5 text-xs font-medium text-[#71717A] hover:text-red-600">
+        Sair
+      </button>
+    </div>
+  </div>
+);
+
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
+  const [bloqueado, setBloqueado] = useState(false);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [aba, setAba] = useState('mesas');
@@ -524,7 +547,11 @@ const GarcomHome = () => {
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { getMe().then((m) => setMeuId(m.id)).catch(() => {}); }, []);
+  useEffect(() => {
+    getMe().then((m) => setMeuId(m.id)).catch((err) => {
+      if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
+    });
+  }, []);
 
   const carregar = useCallback(async () => {
     try {
@@ -532,7 +559,8 @@ const GarcomHome = () => {
       setMesas(m);
       setComandas(c);
     } catch (err) {
-      if (!getGarcomToken()) window.location.reload();
+      if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
+      else if (!getGarcomToken()) window.location.reload();
     } finally {
       setLoading(false);
     }
@@ -545,6 +573,8 @@ const GarcomHome = () => {
     if (mesa.comanda && mesa.comanda.garcom_id === meuId) { setComandaAtivaId(mesa.comanda.id); }
   };
 
+  if (bloqueado) return <RestauranteFechado />;
+
   if (comandaAtivaId) {
     return <ComandaDetalhe comandaId={comandaAtivaId} onVoltar={() => { setComandaAtivaId(null); carregar(); }} />;
   }
@@ -552,7 +582,13 @@ const GarcomHome = () => {
   return (
     <div className="min-h-screen bg-[#F4F4F5] pb-6">
       <div className="bg-white border-b border-[#E4E4E7] p-4">
-        <h1 className="text-base font-bold text-[#18181B]">Salão</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-base font-bold text-[#18181B]">Salão</h1>
+          <button onClick={() => { clearGarcomToken(); window.location.reload(); }}
+            className="flex items-center gap-1 text-xs font-medium text-[#71717A] hover:text-red-600 px-2 py-1">
+            <Icon name="LogOut" size={14} /> Sair
+          </button>
+        </div>
         <div className="flex gap-2 mt-3">
           <button onClick={() => setAba('mesas')}
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>

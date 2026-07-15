@@ -116,7 +116,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
       await onRefresh();
       setModal(null);
     } catch (e) {
-      if (e.data?.pedidos) alert('Existem pedidos em aberto');
+      if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) alert(e.data.message ?? 'Existem pedidos, comandas ou mesas em aberto');
       else alert(e.message);
     }
     finally { setFechando(false); }

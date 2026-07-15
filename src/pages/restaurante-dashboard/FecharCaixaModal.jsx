@@ -12,18 +12,19 @@ const Row = ({ label, value, bold, accent, muted }) => (
   </div>
 );
 
-// ── Tela 1: pedidos abertos ──────────────────────────────────────────────────
-const PedidosAbertosView = ({ pedidosAbertos, onTransferir, onCancelar, fechando }) => {
+// ── Tela 1: pedidos/comandas/mesas em aberto ──────────────────────────────────
+const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onTransferir, onCancelar, fechando }) => {
   const [novoOperador, setNovoOperador] = useState('');
   const [novoValor, setNovoValor] = useState('');
   const [modoTransf, setModoTransf] = useState(false);
+  const totalPendencias = pedidosAbertos.length + comandasAbertas.length;
 
   if (modoTransf) return (
     <>
       <div className="text-center mb-4">
         <p className="text-2xl mb-1">🔄</p>
         <h2 className="text-base font-bold text-[#18181B]">Transferir e Abrir Novo Caixa</h2>
-        <p className="text-xs text-[#71717A] mt-0.5">{pedidosAbertos.length} pedido(s) serão transferidos</p>
+        <p className="text-xs text-[#71717A] mt-0.5">{totalPendencias} pedido(s)/comanda(s) serão transferidos</p>
       </div>
       <div className="space-y-3 mb-4">
         <div>
@@ -52,21 +53,58 @@ const PedidosAbertosView = ({ pedidosAbertos, onTransferir, onCancelar, fechando
     <>
       <div className="text-center mb-4">
         <p className="text-2xl mb-1">⚠️</p>
-        <h2 className="text-base font-bold text-[#18181B]">Pedidos em Aberto</h2>
-        <p className="text-xs text-[#71717A] mt-0.5">Caixa não pode fechar com pedidos em andamento</p>
+        <h2 className="text-base font-bold text-[#18181B]">Pendências em Aberto</h2>
+        <p className="text-xs text-[#71717A] mt-0.5">Caixa não pode fechar com pedidos, comandas ou mesas em andamento</p>
       </div>
-      <div className="bg-orange-50 rounded-xl p-3 mb-4 max-h-40 overflow-y-auto">
-        {pedidosAbertos.map((p) => (
-          <div key={p.id} className="flex justify-between text-xs py-1 border-b border-orange-100 last:border-0">
-            <span className="font-semibold text-[#18181B]">#{p.id}</span>
-            <span className="text-[#71717A]">{fmt(p.total)} · {p.status}</span>
+      {pedidosAbertos.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Pedidos delivery</p>
+          <div className="bg-orange-50 rounded-xl p-3 max-h-32 overflow-y-auto">
+            {pedidosAbertos.map((p) => (
+              <div key={p.id} className="flex justify-between text-xs py-1 border-b border-orange-100 last:border-0">
+                <span className="font-semibold text-[#18181B]">#{p.id}</span>
+                <span className="text-[#71717A]">{fmt(p.total)} · {p.status}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      <p className="text-xs text-[#71717A] mb-4 text-center">Resolva os pedidos ou transfira para um novo operador.</p>
+        </div>
+      )}
+      {comandasAbertas.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Comandas do salão</p>
+          <div className="bg-orange-50 rounded-xl p-3 max-h-32 overflow-y-auto">
+            {comandasAbertas.map((c) => (
+              <div key={c.id} className="flex justify-between text-xs py-1 border-b border-orange-100 last:border-0">
+                <span className="font-semibold text-[#18181B]">{c.mesas ? `Mesa ${c.mesas.numero}` : `Comanda #${c.id}`}</span>
+                <span className="text-[#71717A]">{c.status === 'aberta' ? 'Em aberto' : 'Aguard. pagamento'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {mesasAbertas.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Mesas ocupadas</p>
+          <div className="bg-orange-50 rounded-xl p-3 max-h-32 overflow-y-auto">
+            {mesasAbertas.map((m) => (
+              <div key={m.id} className="flex justify-between text-xs py-1 border-b border-orange-100 last:border-0">
+                <span className="font-semibold text-[#18181B]">Mesa {m.numero}{m.nome ? ` - ${m.nome}` : ''}</span>
+                <span className="text-[#71717A]">{m.status === 'ocupada' ? 'Ocupada' : 'Aguard. pagamento'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <p className="text-xs text-[#71717A] mb-4 text-center">
+        {mesasAbertas.length > 0 && totalPendencias === 0
+          ? 'Libere a(s) mesa(s) manualmente antes de fechar o caixa.'
+          : 'Resolva os pedidos/comandas ou transfira para um novo operador.'}
+      </p>
       <div className="flex gap-2">
         <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">Cancelar</button>
-        <button onClick={() => setModoTransf(true)} className="flex-1 py-2.5 text-sm bg-[#FF441F] text-white rounded-xl font-bold hover:bg-[#E63A19]">Transferir</button>
+        {totalPendencias > 0 && (
+          <button onClick={() => setModoTransf(true)} className="flex-1 py-2.5 text-sm bg-[#FF441F] text-white rounded-xl font-bold hover:bg-[#E63A19]">Transferir</button>
+        )}
       </div>
     </>
   );
@@ -177,17 +215,24 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, onFechar, onCancelar,
 // ── Modal principal ───────────────────────────────────────────────────────────
 const FecharCaixaModal = ({
   resumo, aberto_em, valorInicial,
-  pedidosAbertos,
+  pedidosAbertos, comandasAbertas, mesasAbertas,
   onConfirmar, onFecharETransferir, onCancelar,
   fechando,
 }) => {
-  const temPedidosAbertos = (pedidosAbertos ?? []).length > 0;
+  const temPendencias = (pedidosAbertos ?? []).length > 0 || (comandasAbertas ?? []).length > 0 || (mesasAbertas ?? []).length > 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
-        {temPedidosAbertos
-          ? <PedidosAbertosView pedidosAbertos={pedidosAbertos} onTransferir={onFecharETransferir} onCancelar={onCancelar} fechando={fechando} />
+        {temPendencias
+          ? <PedidosAbertosView
+              pedidosAbertos={pedidosAbertos ?? []}
+              comandasAbertas={comandasAbertas ?? []}
+              mesasAbertas={mesasAbertas ?? []}
+              onTransferir={onFecharETransferir}
+              onCancelar={onCancelar}
+              fechando={fechando}
+            />
           : <DestinacaoView resumo={resumo} aberto_em={aberto_em} valorInicial={valorInicial} onFechar={onConfirmar} onCancelar={onCancelar} fechando={fechando} />
         }
       </div>
