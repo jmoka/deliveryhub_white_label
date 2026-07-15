@@ -30,6 +30,7 @@ import RestauranteMotoboys from './pages/restaurante-motoboys';
 import RestauranteEntregas from './pages/restaurante-entregas';
 import RestauranteCozinha from './pages/restaurante-cozinha';
 import RestauranteProducao from './pages/restaurante-producao';
+import RestauranteSessao from './pages/restaurante-sessao';
 import RestauranteCaixa from './pages/restaurante-caixa';
 import RestauranteFinanceiro from './pages/restaurante-financeiro';
 import RestauranteCombos from './pages/restaurante-combos';
@@ -80,7 +81,8 @@ const Routes = () => {
         <Route path="/restaurante/motoboys" element={<RestauranteGuard><RestauranteMotoboys /></RestauranteGuard>} />
         <Route path="/restaurante/entregas" element={<RestauranteGuard><RestauranteEntregas /></RestauranteGuard>} />
         <Route path="/restaurante/cozinha" element={<RestauranteCozinha />} />
-        <Route path="/restaurante/producao" element={<RestauranteProducao />} />
+        <Route path="/restaurante/producao" element={<RestauranteGuard><RestauranteProducao /></RestauranteGuard>} />
+        <Route path="/restaurante/sessao" element={<RestauranteGuard><RestauranteSessao /></RestauranteGuard>} />
         <Route path="/restaurante/caixa" element={<RestauranteGuard><RestauranteCaixa /></RestauranteGuard>} />
         <Route path="/restaurante/financeiro" element={<RestauranteGuard><RestauranteFinanceiro /></RestauranteGuard>} />
         <Route path="/restaurante/combos" element={<RestauranteGuard><RestauranteCombos /></RestauranteGuard>} />

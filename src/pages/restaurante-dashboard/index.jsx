@@ -60,6 +60,7 @@ const LINKS = [
   { label: 'Caixa', path: '/restaurante/caixa' },
   { label: 'Designer', path: '/restaurante/aparencia' },
   { label: 'Config', path: '/restaurante/config' },
+  { label: 'Sessão', path: '/restaurante/sessao' },
 ];
 
 const COPA_LINK = [{ label: 'Produção', path: '/restaurante/producao' }];

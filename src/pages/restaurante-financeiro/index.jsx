@@ -50,6 +50,7 @@ const LINKS = [
   { label: 'Financeiro', path: '/restaurante/financeiro' },
   { label: 'Designer', path: '/restaurante/aparencia' },
   { label: 'Config', path: '/restaurante/config' },
+  { label: 'Sessão', path: '/restaurante/sessao' },
 ];
 
 const COPA_LINK = [{ label: 'Produção', path: '/restaurante/producao' }];
