@@ -176,6 +176,7 @@ const RestauranteConfig = () => {
     motoboy_comissao_valor_km: '',
     motoboy_comissao_km_fallback: '',
     gorjeta_percentual: '',
+    salao_modo: 'ambos',
   });
 
   useEffect(() => {
@@ -196,6 +197,7 @@ const RestauranteConfig = () => {
           motoboy_comissao_valor_km: d.motoboy_comissao_valor_km != null ? String(d.motoboy_comissao_valor_km) : '',
           motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
           gorjeta_percentual: d.gorjeta_percentual != null ? String(d.gorjeta_percentual) : '',
+          salao_modo: d.salao_modo ?? 'ambos',
         }));
       })
       .catch((e) => setErro(e.message))
@@ -222,6 +224,7 @@ const RestauranteConfig = () => {
         motoboy_comissao_valor_km: form.motoboy_comissao_valor_km !== '' ? parseFloat(form.motoboy_comissao_valor_km) : 0,
         motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
         gorjeta_percentual: form.gorjeta_percentual !== '' ? parseFloat(form.gorjeta_percentual) : 0,
+        salao_modo: form.salao_modo,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -466,6 +469,26 @@ const RestauranteConfig = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       O caixa vê esse valor sugerido ao fechar a conta (PDV do Salão) — ainda pode ajustar na hora.
+                    </p>
+                  </div>
+                )}
+
+                {tipoRestaurante && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Modo de venda do Salão
+                    </label>
+                    <select
+                      value={form.salao_modo}
+                      onChange={(e) => setForm((f) => ({ ...f, salao_modo: e.target.value }))}
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      <option value="ambos">Mesas e comandas avulsas</option>
+                      <option value="mesas">Somente mesas</option>
+                      <option value="comandas">Somente comandas avulsas</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Controla o que o garçom pode abrir no portal dele.
                     </p>
                   </div>
                 )}

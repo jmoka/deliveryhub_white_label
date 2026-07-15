@@ -589,6 +589,7 @@ const RestauranteFechado = () => (
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
   const [permissoes, setPermissoes] = useState({});
+  const [salaoModo, setSalaoModo] = useState('ambos');
   const [bloqueado, setBloqueado] = useState(false);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
@@ -598,7 +599,7 @@ const GarcomHome = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); }).catch((err) => {
+    getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); }).catch((err) => {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
     });
   }, []);
@@ -617,9 +618,14 @@ const GarcomHome = () => {
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { if (salaoModo === 'comandas') setAba('comandas'); }, [salaoModo]);
 
   const clicarMesa = (mesa) => {
-    if (mesa.status === 'livre') { setMesaParaAbrir(mesa); return; }
+    if (mesa.status === 'livre') {
+      if (salaoModo === 'comandas') return;
+      setMesaParaAbrir(mesa);
+      return;
+    }
     if (mesa.comanda && mesa.comanda.garcom_id === meuId) { setComandaAtivaId(mesa.comanda.id); }
   };
 
@@ -646,10 +652,12 @@ const GarcomHome = () => {
           </button>
         </div>
         <div className="flex gap-2 mt-3">
-          <button onClick={() => setAba('mesas')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
-            Mesas
-          </button>
+          {salaoModo !== 'comandas' && (
+            <button onClick={() => setAba('mesas')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+              Mesas
+            </button>
+          )}
           <button onClick={() => setAba('comandas')}
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'comandas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
             Minhas comandas ({comandas.length})
@@ -663,7 +671,7 @@ const GarcomHome = () => {
         <div className="p-4 grid grid-cols-3 gap-3">
           {mesas.map((mesa) => {
             const minhaComanda = mesa.status !== 'livre' && mesa.comanda && mesa.comanda.garcom_id === meuId;
-            const clicavel = mesa.status === 'livre' || minhaComanda;
+            const clicavel = (mesa.status === 'livre' && salaoModo !== 'comandas') || minhaComanda;
             return (
               <button
                 key={mesa.id}
@@ -697,12 +705,14 @@ const GarcomHome = () => {
         </div>
       )}
 
-      <button
-        onClick={() => setMesaParaAbrir(null)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#FF441F] text-white shadow-lg flex items-center justify-center"
-      >
-        <Icon name="Plus" size={24} />
-      </button>
+      {salaoModo !== 'mesas' && (
+        <button
+          onClick={() => setMesaParaAbrir(null)}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#FF441F] text-white shadow-lg flex items-center justify-center"
+        >
+          <Icon name="Plus" size={24} />
+        </button>
+      )}
 
       {mesaParaAbrir !== undefined && (
         <AbrirComandaModal
