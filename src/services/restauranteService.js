@@ -240,7 +240,11 @@ export const getStatusAgente = () => apiFetch('/agente-impressao/status');
 
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
+export const bloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/bloquear`, { method: 'PATCH' });
+export const desbloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/desbloquear`, { method: 'PATCH' });
 export const getSalaoComandas = () => apiFetch('/salao/comandas');
+export const abrirComandaSalao = ({ mesa_id, cliente_nome, cliente_telefone }) =>
+  apiFetch('/salao/comandas/abrir', { method: 'POST', body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone }) });
 export const venderDireto = (itens, forma_pagamento, valor_recebido) =>
   apiFetch('/salao/venda-direta', { method: 'POST', body: JSON.stringify({ itens, forma_pagamento, valor_recebido }) });
 export const getSalaoComandaDetalhe = (id) => apiFetch(`/salao/comandas/${id}`);
@@ -254,6 +258,8 @@ export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_rece
   apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido }) });
 export const adicionarItensComandaSalao = (id, itens) =>
   apiFetch(`/salao/comandas/${id}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
+export const editarItemComandaSalao = (id, itemId, body) =>
+  apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const removerItemComandaSalao = (id, itemId) =>
   apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'DELETE' });
 export const transferirGarcomComanda = (id, garcom_id) =>

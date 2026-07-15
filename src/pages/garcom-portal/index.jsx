@@ -17,8 +17,9 @@ const MESA_STATUS_COR = {
   livre: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   ocupada: 'bg-orange-100 text-orange-700 border-orange-200',
   aguardando_pagamento: 'bg-blue-100 text-blue-700 border-blue-200',
+  bloqueada: 'bg-zinc-200 text-zinc-500 border-zinc-300',
 };
-const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento' };
+const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento', bloqueada: 'Bloqueada' };
 
 const GarcomLogin = ({ loginKey, onLogin }) => {
   const [password, setPassword] = useState('');

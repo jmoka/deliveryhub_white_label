@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
-  adicionarItensComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
+  adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto,
+  abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente } from '../../utils/printComanda';
@@ -65,6 +66,58 @@ const MESA_STATUS_COR = {
   livre: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   ocupada: 'bg-orange-100 text-orange-700 border-orange-200',
   aguardando_pagamento: 'bg-blue-100 text-blue-700 border-blue-200',
+  bloqueada: 'bg-zinc-200 text-zinc-500 border-zinc-300',
+};
+const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento', bloqueada: 'Bloqueada' };
+
+// Estabelecimento abre mesa/comanda direto, sem precisar de garçom.
+const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
+  const [nome, setNome] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setSalvando(true);
+    try {
+      const comanda = await abrirComandaSalao({ mesa_id: mesa?.id ?? null, cliente_nome: nome.trim(), cliente_telefone: telefone.trim() });
+      onAberta(comanda);
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível abrir a comanda.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] mb-1">
+          {mesa ? `Abrir Mesa ${mesa.numero}` : 'Abrir comanda avulsa'}
+        </h2>
+        <p className="text-xs text-[#71717A] mb-4">Nome e telefone do cliente são obrigatórios antes de vender.</p>
+        <form onSubmit={submit} className="space-y-3">
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600">{erro}</p>}
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onFechar}
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+              {salvando ? 'Abrindo...' : 'Abrir'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
@@ -177,6 +230,12 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const removerItem = (item) => {
     if (!window.confirm(`Remover ${item.products?.name}?`)) return;
     acao(() => removerItemComandaSalao(comandaId, item.id));
+  };
+
+  const alterarQuantidadeItem = (item, delta) => {
+    const novaQtd = item.quantity + delta;
+    if (novaQtd < 1) return;
+    acao(() => editarItemComandaSalao(comandaId, item.id, { quantity: novaQtd }));
   };
 
   const registrarPagamento = () => {
@@ -305,12 +364,16 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                 </div>
                 <span className="truncate">{item.quantity}x {item.products?.name}</span>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 <span>{fmt(item.quantity * item.unit_price)}</span>
                 {['aberta', 'fechada_garcom'].includes(comanda.status) && (
-                  <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
-                    <Icon name="X" size={11} />
-                  </button>
+                  <>
+                    <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">−</button>
+                    <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">+</button>
+                    <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                      <Icon name="X" size={11} />
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -645,6 +708,8 @@ const RestauranteSalao = () => {
   const [comandaAtiva, setComandaAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mostrarVendaDireta, setMostrarVendaDireta] = useState(false);
+  const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
+  const [erro, setErro] = useState(null);
 
   const carregar = useCallback(async () => {
     const [g, m, c] = await Promise.all([getGarconsOnline(), getSalaoMesas(), getSalaoComandas()]);
@@ -653,6 +718,16 @@ const RestauranteSalao = () => {
     setComandas(c);
     setLoading(false);
   }, []);
+
+  const acaoMesa = async (fn) => {
+    setErro(null);
+    try {
+      await fn();
+      await carregar();
+    } catch (err) {
+      setErro(err.message);
+    }
+  };
 
   useEffect(() => {
     carregar();
@@ -693,18 +768,30 @@ const RestauranteSalao = () => {
             <p className="text-sm font-bold text-[#18181B] mb-2">Mesas</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
               {mesas.map((m) => (
-                <button key={m.id} onClick={() => m.comanda && setComandaAtiva(m.comanda.id)}
-                  disabled={!m.comanda}
-                  className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[m.status] ?? ''} disabled:opacity-70`}>
-                  <p className="text-lg font-black">{m.numero}</p>
-                  {m.comanda && (
-                    <>
-                      <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>
-                      <p className="text-[10px] truncate">{m.comanda.cliente_mesa_nome}</p>
-                      <p className="text-[10px] text-[#71717A] truncate">{m.comanda.garcons?.nome ?? '—'}</p>
-                    </>
+                <div key={m.id} className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[m.status] ?? ''}`}>
+                  <button
+                    onClick={() => { if (m.comanda) setComandaAtiva(m.comanda.id); else if (m.status === 'livre') setMesaParaAbrir(m); }}
+                    disabled={!m.comanda && m.status !== 'livre'}
+                    className="w-full disabled:opacity-70"
+                  >
+                    <p className="text-lg font-black">{m.numero}</p>
+                    <p className="text-[10px] font-medium">{MESA_STATUS_LABEL[m.status] ?? m.status}</p>
+                    {m.comanda && (
+                      <>
+                        <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>
+                        <p className="text-[10px] truncate">{m.comanda.cliente_mesa_nome}</p>
+                        <p className="text-[10px] text-[#71717A] truncate">{m.comanda.garcons?.nome ?? '—'}</p>
+                      </>
+                    )}
+                  </button>
+                  {(m.status === 'livre' || m.status === 'bloqueada') && (
+                    <button
+                      onClick={() => acaoMesa(() => (m.status === 'livre' ? bloquearMesaSalao(m.id) : desbloquearMesaSalao(m.id)))}
+                      className="mt-1 text-[9px] font-bold underline opacity-70 hover:opacity-100">
+                      {m.status === 'livre' ? 'Bloquear' : 'Desbloquear'}
+                    </button>
                   )}
-                </button>
+                </div>
               ))}
               {mesas.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">Nenhuma mesa cadastrada.</p>}
             </div>
@@ -727,7 +814,16 @@ const RestauranteSalao = () => {
             </div>
           </>
         )}
+        {erro && <p className="text-xs text-red-600 mt-3">{erro}</p>}
       </div>
+
+      <button
+        onClick={() => setMesaParaAbrir(null)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-zinc-800 text-white shadow-lg flex items-center justify-center"
+        title="Abrir comanda avulsa"
+      >
+        <Icon name="Plus" size={24} />
+      </button>
 
       {comandaAtiva && (
         <ComandaModal comandaId={comandaAtiva} mesas={mesas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
@@ -737,6 +833,14 @@ const RestauranteSalao = () => {
         <VendaDiretaModal
           onFechar={() => setMostrarVendaDireta(false)}
           onVendida={() => { setMostrarVendaDireta(false); carregar(); }}
+        />
+      )}
+
+      {mesaParaAbrir !== undefined && (
+        <AbrirComandaModal
+          mesa={mesaParaAbrir}
+          onFechar={() => setMesaParaAbrir(undefined)}
+          onAberta={(comanda) => { setMesaParaAbrir(undefined); setComandaAtiva(comanda.id); carregar(); }}
         />
       )}
     </div>
