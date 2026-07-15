@@ -326,11 +326,11 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                     <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span>{fmt(p.valor)}</span>
-                      <button onClick={() => iniciarEdicaoPagamento(p)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-[#71717A] flex items-center justify-center">
-                        <Icon name="Pencil" size={10} />
+                      <button onClick={() => iniciarEdicaoPagamento(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                        <Icon name="Pencil" size={13} strokeWidth={2.5} />
                       </button>
-                      <button onClick={() => removerPagamento(p)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
-                        <Icon name="X" size={11} />
+                      <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
+                        <Icon name="X" size={14} strokeWidth={2.5} />
                       </button>
                     </div>
                   </div>
