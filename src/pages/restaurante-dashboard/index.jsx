@@ -23,6 +23,9 @@ import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
+const PAGAMENTO_LABEL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito' };
+const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_card: '💳' };
+
 const STATUS_LABELS = {
   pending:          { label: 'Recebido',   color: 'bg-yellow-100 text-yellow-800' },
   confirmed:        { label: 'Aguardando Preparo', color: 'bg-blue-100 text-blue-800' },
@@ -654,7 +657,7 @@ const RestauranteDashboard = () => {
             {(() => {
               const pedidos      = caixa.pedidos ?? [];
               const saidas       = caixa.saidas ?? [];
-              const vendasCash   = pedidos.filter((p) => p.status === 'delivered' && p.payment_method === 'cash').reduce((s, p) => s + (p.total ?? 0), 0);
+              const vendasCash   = pedidos.filter((p) => ['delivered', 'paga'].includes(p.status) && p.payment_method === 'cash').reduce((s, p) => s + (p.total ?? 0), 0);
               const saidas_cash  = saidas.filter((s) => !s.meio || s.meio === 'dinheiro').reduce((s, x) => s + (x.valor ?? 0), 0);
               const saldoEspecie = (caixa.valor_inicial ?? 0) + vendasCash - saidas_cash;
               const saldoDigital = (r?.total_vendas ?? 0) - vendasCash;
@@ -683,6 +686,22 @@ const RestauranteDashboard = () => {
                 </div>
               );
             })()}
+
+            {/* Recebido por forma de pagamento (delivery + salão combinados) */}
+            {Object.keys(r?.por_pagamento ?? {}).length > 0 && (
+              <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+                <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-3">Recebido por forma de pagamento</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(r.por_pagamento).map(([metodo, valor]) => (
+                    <div key={metodo} className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 text-center">
+                      <p className="text-lg">{PAGAMENTO_ICONE[metodo] ?? '💰'}</p>
+                      <p className="text-base font-black text-[#18181B]">{fmt(valor)}</p>
+                      <p className="text-[10px] text-[#71717A]">{PAGAMENTO_LABEL[metodo] ?? metodo}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Barra caixa */}
             <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 flex items-center gap-3 flex-wrap">
