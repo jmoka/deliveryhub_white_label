@@ -4,11 +4,13 @@ import {
   login, getGarcomToken, setGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
+  registrarPagamento,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 
 const MESA_STATUS_COR = {
   livre: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -288,6 +290,68 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
   );
 };
 
+const PagamentoParcial = ({ comanda, onRegistrado }) => {
+  const [valor, setValor] = useState('');
+  const [forma, setForma] = useState('pix');
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
+  const saldo = comanda.saldo?.saldo ?? 0;
+
+  const registrar = async () => {
+    const v = Number(valor);
+    if (!v || v <= 0) return;
+    setErro(null);
+    setSalvando(true);
+    try {
+      await registrarPagamento(comanda.id, v, forma);
+      setValor('');
+      await onRegistrado();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível registrar o pagamento.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E4E4E7] p-3 space-y-2">
+      <div className="flex justify-between text-sm">
+        <span className="text-[#71717A]">Saldo devedor</span>
+        <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>{fmt(saldo)}</strong>
+      </div>
+      {(comanda.pagamentos ?? []).length > 0 && (
+        <div className="space-y-0.5">
+          {comanda.pagamentos.map((p) => (
+            <p key={p.id} className="text-xs text-[#71717A] flex justify-between">
+              <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
+              <span>{fmt(p.valor)}</span>
+            </p>
+          ))}
+        </div>
+      )}
+      {saldo > 0.01 && (
+        <div className="flex items-center gap-1.5 pt-1">
+          <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
+            className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+          <select value={forma} onChange={(e) => setForma(e.target.value)}
+            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+            <option value="pix">PIX</option>
+            <option value="credit_card">Cartão de crédito</option>
+            <option value="debit_card">Cartão de débito</option>
+            <option value="cash">Dinheiro</option>
+          </select>
+          <button onClick={registrar} disabled={salvando || !valor}
+            className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
+            Pagar
+          </button>
+        </div>
+      )}
+      {erro && <p className="text-xs text-red-600">{erro}</p>}
+    </div>
+  );
+};
+
 const ComandaDetalhe = ({ comandaId, onVoltar }) => {
   const [comanda, setComanda] = useState(null);
   const [produtos, setProdutos] = useState([]);
@@ -409,6 +473,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar }) => {
         {(comanda.itens ?? []).length === 0 && (
           <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhum item ainda.</p>
         )}
+      </div>
+
+      <div className="px-4 pb-4">
+        <PagamentoParcial comanda={comanda} onRegistrado={carregar} />
       </div>
 
       {!fechada && (
