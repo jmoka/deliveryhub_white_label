@@ -52,7 +52,7 @@ const LINKS = [
   { label: 'Config', path: '/restaurante/config' },
 ];
 
-const COPA_LINK = [{ label: 'Copa/Bar', path: '/restaurante/impressoras' }];
+const COPA_LINK = [{ label: 'Copa/Bar', path: '/restaurante/bar' }];
 
 const SALAO_LINKS = [
   { label: 'Salão', path: '/restaurante/salao' },
