@@ -193,7 +193,14 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
               <div className="space-y-1 max-h-28 overflow-y-auto">
                 {[...saidas].reverse().map((s, i) => (
                   <div key={i} className="flex justify-between text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
-                    <span className="text-[#71717A] truncate mr-2">{MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}</span>
+                    <span className="text-[#71717A] truncate mr-2 flex items-center gap-1">
+                      {MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}
+                      {s.tipo && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-100 text-red-700 flex-shrink-0">
+                          {s.tipo === 'troco' ? 'Troco' : s.tipo === 'gorjeta' ? 'Gorjeta' : s.tipo}
+                        </span>
+                      )}
+                    </span>
                     <span className="font-bold text-red-600 flex-shrink-0">- {fmt(s.valor)}</span>
                   </div>
                 ))}

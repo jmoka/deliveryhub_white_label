@@ -85,6 +85,8 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
+  const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
+  const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
   const [mesaDestino, setMesaDestino] = useState('');
   const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
@@ -125,7 +127,17 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   };
 
   const pagar = () => {
-    acao(async () => { await pagarComandaSalao(comandaId, forma, gorjeta ? Number(gorjeta) : undefined); onFechar(); });
+    if (forma === 'cash' && valorRecebidoFinal && Number(valorRecebidoFinal) < valorACobrarFinal) {
+      setErro('Valor recebido não pode ser menor que o valor a pagar.');
+      return;
+    }
+    acao(async () => {
+      await pagarComandaSalao(
+        comandaId, forma, gorjeta ? Number(gorjeta) : undefined,
+        forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
+      );
+      onFechar();
+    });
   };
 
   const transferir = () => {
@@ -150,9 +162,17 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const registrarPagamento = () => {
     const v = Number(valorPagamento);
     if (!v || v <= 0) return;
+    if (formaPagamentoParcial === 'cash' && valorRecebidoParcial && Number(valorRecebidoParcial) < v) {
+      setErro('Valor recebido não pode ser menor que o valor a pagar.');
+      return;
+    }
     acao(async () => {
-      await registrarPagamentoParcialSalao(comandaId, v, formaPagamentoParcial);
+      await registrarPagamentoParcialSalao(
+        comandaId, v, formaPagamentoParcial,
+        formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) : undefined,
+      );
       setValorPagamento('');
+      setValorRecebidoParcial('');
     });
   };
 
@@ -190,6 +210,9 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
+  const valorACobrarFinal = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + Number(gorjeta || 0)).toFixed(2));
+  const trocoFinal = forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) - valorACobrarFinal : null;
+  const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4" onClick={onFechar}>
@@ -353,6 +376,18 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               Pagar parcial
             </button>
           </div>
+          {formaPagamentoParcial === 'cash' && (
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
+                placeholder="Valor recebido do cliente"
+                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+              {trocoParcial !== null && (
+                <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                  Troco: {fmt(Math.max(trocoParcial, 0))}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
@@ -382,6 +417,18 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               <span>{fmt(totalFinal + Number(gorjeta || 0))}</span>
             </div>
           </div>
+          {forma === 'cash' && (
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={valorRecebidoFinal} onChange={(e) => setValorRecebidoFinal(e.target.value)}
+                placeholder="Valor recebido do cliente"
+                className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+              {trocoFinal !== null && (
+                <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                  Troco: {fmt(Math.max(trocoFinal, 0))}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}

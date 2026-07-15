@@ -293,19 +293,26 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
 const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
   const [valor, setValor] = useState('');
   const [forma, setForma] = useState('pix');
+  const [valorRecebido, setValorRecebido] = useState('');
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
   const saldo = comanda.saldo?.saldo ?? 0;
+  const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
 
   const registrar = async () => {
     const v = Number(valor);
     if (!v || v <= 0) return;
+    if (forma === 'cash' && valorRecebido && Number(valorRecebido) < v) {
+      setErro('Valor recebido não pode ser menor que o valor a pagar.');
+      return;
+    }
     setErro(null);
     setSalvando(true);
     try {
-      await registrarPagamento(comanda.id, v, forma);
+      await registrarPagamento(comanda.id, v, forma, forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined);
       setValor('');
+      setValorRecebido('');
       await onRegistrado();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível registrar o pagamento.');
@@ -331,20 +338,34 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
         </div>
       )}
       {saldo > 0.01 && podePagamentoParcial && (
-        <div className="flex items-center gap-1.5 pt-1">
-          <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
-            className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
-          <select value={forma} onChange={(e) => setForma(e.target.value)}
-            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
-            <option value="pix">PIX</option>
-            <option value="credit_card">Cartão de crédito</option>
-            <option value="debit_card">Cartão de débito</option>
-            <option value="cash">Dinheiro</option>
-          </select>
-          <button onClick={registrar} disabled={salvando || !valor}
-            className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
-            Pagar
-          </button>
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center gap-1.5">
+            <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
+              className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+            <select value={forma} onChange={(e) => setForma(e.target.value)}
+              className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+              <option value="pix">PIX</option>
+              <option value="credit_card">Cartão de crédito</option>
+              <option value="debit_card">Cartão de débito</option>
+              <option value="cash">Dinheiro</option>
+            </select>
+            <button onClick={registrar} disabled={salvando || !valor}
+              className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
+              Pagar
+            </button>
+          </div>
+          {forma === 'cash' && (
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
+                placeholder="Valor recebido do cliente"
+                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+              {troco !== null && (
+                <span className={`text-xs font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                  Troco: {fmt(Math.max(troco, 0))}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
       {saldo > 0.01 && !podePagamentoParcial && (
