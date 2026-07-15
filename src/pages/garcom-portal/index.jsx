@@ -384,6 +384,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [enviando, setEnviando] = useState(false);
   const [mostrarFechar, setMostrarFechar] = useState(false);
   const [erro, setErro] = useState(null);
+  const [mostrarQr, setMostrarQr] = useState(false);
 
   const carregar = useCallback(async () => {
     const [c, p] = await Promise.all([getComanda(comandaId), getProdutos()]);
@@ -460,6 +461,23 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-2 py-1 mt-2 inline-block">
             Fechada — aguardando pagamento no caixa
           </p>
+        )}
+        {comanda.tracking_token && (
+          <div className="mt-2">
+            <button onClick={() => setMostrarQr((v) => !v)}
+              className="flex items-center gap-1 text-xs font-bold text-[#FF441F]">
+              <Icon name="QrCode" size={14} /> {mostrarQr ? 'Esconder QR' : 'Mostrar QR pro cliente'}
+            </button>
+            {mostrarQr && (
+              <div className="mt-2 bg-white border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/mesa/acompanhar/${comanda.tracking_token}`)}`}
+                  alt="QR de acompanhamento" width={150} height={150}
+                />
+                <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

@@ -8,6 +8,7 @@ import {
   editarPagamentoParcialSalao, removerPagamentoParcialSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
+import { printReciboCliente } from '../../utils/printComanda';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
@@ -89,6 +90,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
   const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
   const [mesaDestino, setMesaDestino] = useState('');
+  const [mostrarQr, setMostrarQr] = useState(false);
   const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
@@ -138,10 +140,19 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
       return;
     }
     acao(async () => {
-      await pagarComandaSalao(
+      const res = await pagarComandaSalao(
         comandaId, forma, gorjeta ? Number(gorjeta) : undefined,
         forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
       );
+      printReciboCliente(comanda, comanda.itens ?? [], {
+        subtotal,
+        desconto: Number(descontoInput || 0),
+        acrescimo: Number(acrescimoInput || 0),
+        gorjeta: Number(gorjeta || 0),
+        total: res?.total ?? valorACobrarFinal,
+        formaPagamento: forma,
+        trocoDado: res?.troco ?? 0,
+      });
       onFechar();
     });
   };
@@ -235,6 +246,24 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             {comanda.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
           </span>
         </div>
+
+        {comanda.tracking_token && (
+          <div className="mb-3">
+            <button onClick={() => setMostrarQr((v) => !v)}
+              className="flex items-center gap-1 text-xs font-bold text-[#FF441F]">
+              <Icon name="QrCode" size={14} /> {mostrarQr ? 'Esconder QR' : 'Mostrar QR pro cliente'}
+            </button>
+            {mostrarQr && (
+              <div className="mt-2 bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/mesa/acompanhar/${comanda.tracking_token}`)}`}
+                  alt="QR de acompanhamento" width={150} height={150}
+                />
+                <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-2 mb-3">
           <select value={garcomSelecionado} onChange={(e) => setGarcomSelecionado(e.target.value)}

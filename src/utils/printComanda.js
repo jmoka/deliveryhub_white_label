@@ -153,6 +153,69 @@ document.head.appendChild(s);
   }
 };
 
+// Recibo do cliente — emitido pelo caixa no momento em que a comanda é paga (ideia 9 do
+// módulo Salão: garçom só coleta a forma, quem emite o recibo de fato é o caixa).
+export const printReciboCliente = (comanda, itens, valores, restauranteNome) => {
+  const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+  const { subtotal, desconto = 0, acrescimo = 0, gorjeta = 0, total, formaPagamento, trocoDado } = valores;
+  const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
+  const hora = new Date().toLocaleString('pt-BR');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
+.center{text-align:center;display:block}
+.rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
+hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.item{display:flex;gap:8px;padding:3px 0;font-size:14px;justify-content:space-between}
+.linha{display:flex;justify-content:space-between;font-size:13px;padding:1px 0}
+.total{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding:4px 0}
+.foot{font-size:11px;text-align:center;margin-top:8px}
+@media print{button{display:none!important}}
+</style></head><body>
+<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
+<div class="center" style="font-size:11px;letter-spacing:1px">RECIBO DE PAGAMENTO</div>
+<hr/>
+<div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
+<div class="center" style="font-size:11px">${hora}</div>
+<hr/>
+${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i.products?.name}</span><span>${fmt(i.quantity * (i.unit_price ?? 0))}</span></div>`).join('')}
+<hr/>
+<div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+${desconto > 0 ? `<div class="linha"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
+${acrescimo > 0 ? `<div class="linha"><span>Acréscimo</span><span>+ ${fmt(acrescimo)}</span></div>` : ''}
+${gorjeta > 0 ? `<div class="linha"><span>Gorjeta</span><span>${fmt(gorjeta)}</span></div>` : ''}
+<hr/>
+<div class="total"><span>TOTAL</span><span>${fmt(total)}</span></div>
+<div class="linha"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>
+${trocoDado > 0 ? `<div class="linha"><span>Troco</span><span>${fmt(trocoDado)}</span></div>` : ''}
+<hr/>
+<div class="foot">Obrigado pela preferência!</div>
+<script>
+window.print();
+try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
+</script>
+</body></html>`;
+
+  const frameId = `recibo-frame-${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.id = frameId;
+  iframe.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe);
+
+  try {
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+  } catch {
+    iframe.remove();
+    const w = window.open('', '_blank', 'width=440,height=680');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+};
+
 // Ticket de setor do módulo Salão (cozinha/bar/salgados...) — só os itens novos
 // enviados agora, nunca reimprime os que já foram (ver order_items.status no backend).
 export const printTicketSetor = (itens, comanda, setorNome) => {
