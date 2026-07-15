@@ -145,6 +145,8 @@ export const getKdsItensRestaurante = (impressoraId) => apiFetch(`/kds?impressor
 export const marcarItemProntoRestaurante = (itemId) => apiFetch(`/kds/itens/${itemId}/pronto`, { method: 'PATCH' });
 export const reimprimirGrupoRestaurante = (orderId, impressoraId) =>
   apiFetch(`/kds/comandas/${orderId}/reimprimir?impressora_id=${impressoraId}`, { method: 'POST' });
+export const iniciarPreparoGrupoRestaurante = (orderId, impressoraId) =>
+  apiFetch(`/kds/comandas/${orderId}/iniciar-preparo?impressora_id=${impressoraId}`, { method: 'PATCH' });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const getRelatorioFretes = (periodo = 'hoje') => apiFetch(`/relatorio/fretes?periodo=${encodeURIComponent(periodo)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });

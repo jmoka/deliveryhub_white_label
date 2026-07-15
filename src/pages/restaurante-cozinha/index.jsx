@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha,
-  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante,
+  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, iniciarPreparoGrupoRestaurante,
 } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
-  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirGrupo,
+  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirGrupo, iniciarPreparoGrupo,
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
@@ -388,8 +388,33 @@ const RestauranteCozinha = () => {
     }
   };
 
+  const iniciarPreparoSalao = async (grupo) => {
+    try {
+      if (modoToken) await iniciarPreparoGrupo(grupo.order_id, grupo.impressora_id);
+      else await iniciarPreparoGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+      carregarSalao(impressorasCozinha, modoToken);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   const confirmados = pedidos.filter((p) => p.status === 'confirmed');
   const preparando = pedidos.filter((p) => p.status === 'preparing');
+  const gruposSalaoAguardando = gruposSalao.filter((g) => g.status === 'aguardando');
+  const gruposSalaoPreparando = gruposSalao.filter((g) => g.status === 'preparando');
+
+  const grupoTs = (g) => Math.min(...g.itens.map((i) => new Date(i.enviado_em).getTime()));
+
+  // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.
+  const aguardandoPreparo = [
+    ...confirmados.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
+    ...gruposSalaoAguardando.map((g) => ({ tipo: 'salao', ts: grupoTs(g), grupo: g })),
+  ].sort((a, b) => a.ts - b.ts);
+
+  const emPreparo = [
+    ...preparando.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
+    ...gruposSalaoPreparando.map((g) => ({ tipo: 'salao', ts: grupoTs(g), grupo: g })),
+  ].sort((a, b) => a.ts - b.ts);
 
   // Modo token: mostrar login se não autenticado
   if (modoToken && !authed) {
@@ -525,20 +550,44 @@ const RestauranteCozinha = () => {
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-blue-400" />
             <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Preparo</h2>
-            {confirmados.length > 0 && (
-              <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{confirmados.length}</span>
+            {aguardandoPreparo.length > 0 && (
+              <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{aguardandoPreparo.length}</span>
             )}
           </div>
-          {confirmados.length === 0 ? (
+          {aguardandoPreparo.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
               <Icon name="CheckCircle" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
               <p className="text-[#71717A] text-sm">Nenhum pedido aguardando</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {confirmados.map((p) => (
-                <OrderCard key={p.id} pedido={p} onAvancar={handleAvancar} onVoltar={handleAvancar}
-                  atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
+              {aguardandoPreparo.map((entry) => (
+                entry.tipo === 'delivery' ? (
+                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                    atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
+                ) : (
+                  <div key={`s-${entry.grupo.impressora_id}-${entry.grupo.order_id}`} className="rounded-2xl border-2 border-purple-300 bg-purple-950/20 p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-bold text-white">{entry.grupo.mesa ?? 'Avulsa'} <span className="text-purple-300 font-normal">· Salão</span></p>
+                      <button onClick={() => reimprimirSalao(entry.grupo)}
+                        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+                        <Icon name="Printer" size={11} /> Reimpressão
+                      </button>
+                    </div>
+                    {entry.grupo.cliente && <p className="text-xs text-[#71717A] mb-2">{entry.grupo.cliente}</p>}
+                    <div className="space-y-2 mt-2">
+                      {entry.grupo.itens.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
+                          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={() => iniciarPreparoSalao(entry.grupo)}
+                      className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+                      <Icon name="ChefHat" size={13} /> Iniciar Preparo
+                    </button>
+                  </div>
+                )
               ))}
             </div>
           )}
@@ -548,71 +597,49 @@ const RestauranteCozinha = () => {
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
             <h2 className="text-white font-bold text-sm uppercase tracking-wider">Em Preparo</h2>
-            {preparando.length > 0 && (
-              <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{preparando.length}</span>
+            {emPreparo.length > 0 && (
+              <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{emPreparo.length}</span>
             )}
           </div>
-          {preparando.length === 0 ? (
+          {emPreparo.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
               <Icon name="ChefHat" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
               <p className="text-[#71717A] text-sm">Nenhum pedido em preparo</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {preparando.map((p) => (
-                <OrderCard key={p.id} pedido={p} onAvancar={handleAvancar} onVoltar={handleAvancar}
-                  atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
+              {emPreparo.map((entry) => (
+                entry.tipo === 'delivery' ? (
+                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                    atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
+                ) : (
+                  <div key={`s-${entry.grupo.impressora_id}-${entry.grupo.order_id}`} className="rounded-2xl border-2 border-purple-300 bg-purple-950/20 p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-bold text-white">{entry.grupo.mesa ?? 'Avulsa'} <span className="text-purple-300 font-normal">· Salão</span></p>
+                      <button onClick={() => reimprimirSalao(entry.grupo)}
+                        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+                        <Icon name="Printer" size={11} /> Reimpressão
+                      </button>
+                    </div>
+                    {entry.grupo.cliente && <p className="text-xs text-[#71717A] mb-2">{entry.grupo.cliente}</p>}
+                    <div className="space-y-2 mt-2">
+                      {entry.grupo.itens.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
+                          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
+                          <button onClick={() => marcarProntoSalao(item.id)}
+                            className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
+                            Pronto
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
               ))}
             </div>
           )}
         </div>
       </main>
-
-      {impressorasCozinha?.length > 0 && (
-        <div className="px-5 pb-5 max-w-5xl mx-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-3 h-3 rounded-full bg-purple-400" />
-            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Comandas do Salão</h2>
-            {gruposSalao.length > 0 && (
-              <span className="ml-auto bg-purple-500 text-white text-xs font-black px-2 py-0.5 rounded-full">
-                {gruposSalao.reduce((s, g) => s + g.itens.length, 0)}
-              </span>
-            )}
-          </div>
-          {gruposSalao.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
-              <Icon name="UtensilsCrossed" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
-              <p className="text-[#71717A] text-sm">Nenhum item de comanda pendente</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {gruposSalao.map((g) => (
-                <div key={`${g.impressora_id}-${g.order_id}`} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
-                    <button onClick={() => reimprimirSalao(g)}
-                      className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
-                      <Icon name="Printer" size={11} /> Reimpressão
-                    </button>
-                  </div>
-                  {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
-                  <div className="space-y-2 mt-2">
-                    {g.itens.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
-                        <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-                        <button onClick={() => marcarProntoSalao(item.id)}
-                          className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
-                          Pronto
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {pedidos.length === 0 && gruposSalao.length === 0 && !loading && (
         <div className="text-center py-20">

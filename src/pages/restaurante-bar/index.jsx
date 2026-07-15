@@ -1,9 +1,41 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, iniciarPreparoGrupoRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import Icon from '../../components/AppIcon';
+
+const GrupoCard = ({ g, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+  <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${g.status === 'aguardando' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+    <div className="flex items-center justify-between mb-1">
+      <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
+      <button onClick={() => onReimprimir(g)}
+        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+        <Icon name="Printer" size={11} /> Reimpressão
+      </button>
+    </div>
+    {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
+    <div className="space-y-2 mt-2">
+      {g.itens.map((item) => (
+        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
+          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
+          {g.status === 'preparando' && (
+            <button onClick={() => onMarcarPronto(item.id)}
+              className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
+              Pronto
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+    {g.status === 'aguardando' && (
+      <button onClick={() => onIniciarPreparo(g)}
+        className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+        <Icon name="ChefHat" size={13} /> Iniciar Preparo
+      </button>
+    )}
+  </div>
+);
 
 // Painel de pedidos do Bar/Copa — mesmo padrão de acesso da tela de Cozinha (dono já
 // logado, sem link/token separado), só que mostra itens por setor de impressora em vez
@@ -33,7 +65,14 @@ const RestauranteBar = () => {
       const listas = await Promise.all(
         impressoras.map((imp) => getKdsItensRestaurante(imp.id).then((r) => (r.grupos ?? []).map((g) => ({ ...g, impressora_id: imp.id })))),
       );
-      const todosGrupos = listas.flat();
+      // Ordem de chegada — quando há mais de uma impressora do mesmo setor, o flat()
+      // junta na ordem das impressoras, não na ordem real de envio. Ordena pelo item
+      // mais antigo de cada grupo pra ficar cronológico de verdade.
+      const todosGrupos = listas.flat().sort((a, b) => {
+        const tsA = Math.min(...a.itens.map((i) => new Date(i.enviado_em).getTime()));
+        const tsB = Math.min(...b.itens.map((i) => new Date(i.enviado_em).getTime()));
+        return tsA - tsB;
+      });
 
       if (!firstLoad.current) {
         const idsAgora = new Set();
@@ -71,6 +110,11 @@ const RestauranteBar = () => {
     carregar(impressorasBar);
   };
 
+  const iniciarPreparo = async (grupo) => {
+    await iniciarPreparoGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+    carregar(impressorasBar);
+  };
+
   const reimprimir = async (grupo) => {
     try {
       const res = await reimprimirGrupoRestaurante(grupo.order_id, grupo.impressora_id);
@@ -87,6 +131,9 @@ const RestauranteBar = () => {
       <div className="w-10 h-10 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
     </div>
   );
+
+  const aguardando = grupos.filter((g) => g.status === 'aguardando');
+  const preparando = grupos.filter((g) => g.status === 'preparando');
 
   return (
     <div className="min-h-screen bg-[#111111]">
@@ -131,37 +178,50 @@ const RestauranteBar = () => {
           </button>
         </div>
       ) : (
-        <main className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
-          {grupos.map((g) => (
-            <div key={`${g.impressora_id}-${g.order_id}`} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
-                <button onClick={() => reimprimir(g)}
-                  className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
-                  <Icon name="Printer" size={11} /> Reimpressão
-                </button>
+        <main className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-blue-400" />
+              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Preparo</h2>
+              {aguardando.length > 0 && (
+                <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{aguardando.length}</span>
+              )}
+            </div>
+            {aguardando.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
+                <Icon name="CheckCircle" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+                <p className="text-[#71717A] text-sm">Nenhum pedido aguardando</p>
               </div>
-              {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
-              <div className="space-y-2 mt-2">
-                {g.itens.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
-                    <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-                    <button onClick={() => marcarPronto(item.id)}
-                      className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
-                      Pronto
-                    </button>
-                  </div>
+            ) : (
+              <div className="space-y-3">
+                {aguardando.map((g) => (
+                  <GrupoCard key={`${g.impressora_id}-${g.order_id}`} g={g} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                 ))}
               </div>
+            )}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
+              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Em Preparo</h2>
+              {preparando.length > 0 && (
+                <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{preparando.length}</span>
+              )}
             </div>
-          ))}
-          {grupos.length === 0 && (
-            <div className="col-span-full text-center py-16">
-              <Icon name="Martini" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
-              <p className="text-[#71717A] text-lg font-semibold">Bar tranquilo</p>
-              <p className="text-[#3A3A3A] text-sm mt-1">Nenhum item pendente agora</p>
-            </div>
-          )}
+            {preparando.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
+                <Icon name="Martini" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+                <p className="text-[#71717A] text-sm">Nenhum item em preparo</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {preparando.map((g) => (
+                  <GrupoCard key={`${g.impressora_id}-${g.order_id}`} g={g} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                ))}
+              </div>
+            )}
+          </div>
         </main>
       )}
 

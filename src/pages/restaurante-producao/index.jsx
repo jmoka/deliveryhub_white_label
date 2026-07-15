@@ -1,9 +1,41 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, iniciarPreparoGrupoRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import Icon from '../../components/AppIcon';
+
+const GrupoCard = ({ g, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+  <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${g.status === 'aguardando' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+    <div className="flex items-center justify-between mb-1">
+      <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
+      <button onClick={() => onReimprimir(g)}
+        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+        <Icon name="Printer" size={11} /> Reimpressão
+      </button>
+    </div>
+    {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
+    <div className="space-y-2 mt-2">
+      {g.itens.map((item) => (
+        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
+          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
+          {g.status === 'preparando' && (
+            <button onClick={() => onMarcarPronto(item.id)}
+              className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
+              Pronto
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+    {g.status === 'aguardando' && (
+      <button onClick={() => onIniciarPreparo(g)}
+        className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+        <Icon name="ChefHat" size={13} /> Iniciar Preparo
+      </button>
+    )}
+  </div>
+);
 
 // Linha de produção do Salão — visão unificada de TODOS os setores (cozinha, bar,
 // salgados...) num painel só, dono acessa direto logado (sem link/token separado, mesmo
@@ -66,6 +98,11 @@ const RestauranteProducao = () => {
 
   const marcarPronto = async (itemId) => {
     await marcarItemProntoRestaurante(itemId);
+    carregar(impressoras);
+  };
+
+  const iniciarPreparo = async (grupo) => {
+    await iniciarPreparoGrupoRestaurante(grupo.order_id, grupo.impressora_id);
     carregar(impressoras);
   };
 
@@ -134,6 +171,8 @@ const RestauranteProducao = () => {
         <main className="p-5 max-w-6xl mx-auto space-y-8">
           {(impressoras ?? []).map((imp) => {
             const grupos = gruposPorImpressora[imp.id] ?? [];
+            const aguardando = grupos.filter((g) => g.status === 'aguardando');
+            const preparando = grupos.filter((g) => g.status === 'preparando');
             return (
               <div key={imp.id}>
                 <div className="flex items-center gap-2 mb-3">
@@ -150,30 +189,33 @@ const RestauranteProducao = () => {
                     <p className="text-[#71717A] text-sm">Nenhum item pendente em {imp.setor}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {grupos.map((g) => (
-                      <div key={`${g.impressora_id}-${g.order_id}`} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
-                          <button onClick={() => reimprimir(g, imp.setor)}
-                            className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
-                            <Icon name="Printer" size={11} /> Reimpressão
-                          </button>
-                        </div>
-                        {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
-                        <div className="space-y-2 mt-2">
-                          {g.itens.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
-                              <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-                              <button onClick={() => marcarPronto(item.id)}
-                                className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
-                                Pronto
-                              </button>
-                            </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Aguardando Preparo</p>
+                      {aguardando.length === 0 ? (
+                        <p className="text-xs text-[#71717A]">Nenhum</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {aguardando.map((g) => (
+                            <GrupoCard key={`${g.impressora_id}-${g.order_id}`} g={g}
+                              onReimprimir={(gr) => reimprimir(gr, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                           ))}
                         </div>
-                      </div>
-                    ))}
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Em Preparo</p>
+                      {preparando.length === 0 ? (
+                        <p className="text-xs text-[#71717A]">Nenhum</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {preparando.map((g) => (
+                            <GrupoCard key={`${g.impressora_id}-${g.order_id}`} g={g}
+                              onReimprimir={(gr) => reimprimir(gr, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

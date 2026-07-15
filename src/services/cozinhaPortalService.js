@@ -63,3 +63,5 @@ export const getKdsItens = (impressoraId) => kdsFetch(`/itens?impressora_id=${im
 export const marcarItemPronto = (itemId) => kdsFetch(`/itens/${itemId}/pronto`, { method: 'PATCH' });
 export const reimprimirGrupo = (orderId, impressoraId) =>
   kdsFetch(`/comandas/${orderId}/reimprimir?impressora_id=${impressoraId}`, { method: 'POST' });
+export const iniciarPreparoGrupo = (orderId, impressoraId) =>
+  kdsFetch(`/comandas/${orderId}/iniciar-preparo?impressora_id=${impressoraId}`, { method: 'PATCH' });
