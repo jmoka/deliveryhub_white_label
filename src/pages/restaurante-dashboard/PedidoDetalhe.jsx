@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
-import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, revisarOcorrenciaPedido } from '../../services/restauranteService';
+import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin } from '../../services/restauranteService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -63,7 +63,6 @@ const PedidoDetalhe = ({
   const [motoboySelecionado, setMotoboySelecionado] = useState('');
   const [atribuindo, setAtribuindo] = useState(false);
   const [entregandoProprio, setEntregandoProprio] = useState(false);
-  const [revisando, setRevisando] = useState(false);
 
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
@@ -101,14 +100,6 @@ const PedidoDetalhe = ({
     try { await onAtribuir?.(pedido.id, Number(motoboySelecionado)); onDetalheMudou?.(); }
     catch (e) { alert(e.message); }
     finally { setAtribuindo(false); }
-  };
-
-  const handleRevisarOcorrencia = async () => {
-    if (!confirm('Revisar ocorrência? O pedido volta pro início da fila (status "Recebido"), sem motoboy atribuído.')) return;
-    setRevisando(true);
-    try { await revisarOcorrenciaPedido(pedido.id); onDetalheMudou?.(); }
-    catch (e) { alert(e.message); }
-    finally { setRevisando(false); }
   };
 
   const handleEntregarProprio = async () => {
@@ -347,13 +338,6 @@ const PedidoDetalhe = ({
           <p className={`text-xs leading-relaxed ${
             pedido.delivery_occurrence === 'cancelada' ? 'text-red-600' : 'text-orange-600'
           }`}>{pedido.delivery_notes}</p>
-          <button onClick={handleRevisarOcorrencia} disabled={revisando}
-            className={`mt-3 w-full py-2 bg-white border text-xs font-bold rounded-xl hover:bg-black/5 disabled:opacity-50 flex items-center justify-center gap-1.5 ${
-              pedido.delivery_occurrence === 'cancelada' ? 'border-red-300 text-red-700' : 'border-orange-300 text-orange-700'
-            }`}>
-            <Icon name="RotateCcw" size={13} />
-            {revisando ? 'Revisando...' : 'Revisar — volta pro início da fila'}
-          </button>
         </div>
       )}
 

@@ -138,9 +138,6 @@ export const setFreteGratis = (pedidoId) =>
 export const cancelarPedidoAdmin = (pedidoId, motivo) =>
   apiFetch(`/pedidos/${pedidoId}/cancelar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
 
-export const revisarOcorrenciaPedido = (pedidoId) =>
-  apiFetch(`/pedidos/${pedidoId}/revisar-ocorrencia`, { method: 'PATCH' });
-
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const renovarTokenCozinha = () => apiFetch('/renovar-token-cozinha', { method: 'PATCH' });
@@ -183,6 +180,8 @@ export const aceitarSolicitacaoMotoboy = (id) =>
   apiFetch(`/motoboys/solicitacoes/${id}/aceitar`, { method: 'PATCH' });
 export const recusarSolicitacaoMotoboy = (id, motivo) =>
   apiFetch(`/motoboys/solicitacoes/${id}/recusar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
+export const revisarSolicitacaoMotoboy = (id) =>
+  apiFetch(`/motoboys/solicitacoes/${id}/revisar`, { method: 'PATCH' });
 export const removerAfiliacaoMotoboy = (motoboyId) =>
   apiFetch(`/motoboys/${motoboyId}/remover`, { method: 'PATCH' });
 export const atribuirMotoboy = (pedidoId, motoboyId) =>

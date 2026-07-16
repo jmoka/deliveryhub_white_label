@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   listarMotoboys, listarSolicitacoesMotoboy, aceitarSolicitacaoMotoboy,
-  recusarSolicitacaoMotoboy, removerAfiliacaoMotoboy,
+  recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
@@ -161,6 +161,7 @@ const RestauranteMotoboys = () => {
   const [ficha, setFicha] = useState(null); // solicitacao selecionada
   const [processando, setProcessando] = useState(false);
   const [removendo, setRemovendo] = useState(null);
+  const [revisando, setRevisando] = useState(null);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -201,6 +202,18 @@ const RestauranteMotoboys = () => {
       setMsg({ tipo: 'erro', texto: err.message });
     } finally {
       setProcessando(false);
+    }
+  };
+
+  const handleRevisar = async (id) => {
+    setRevisando(id);
+    try {
+      await revisarSolicitacaoMotoboy(id);
+      reload();
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setRevisando(null);
     }
   };
 
@@ -329,9 +342,18 @@ const RestauranteMotoboys = () => {
                     <p className="text-sm font-semibold text-[#18181B] truncate">{s.motoboy.name}</p>
                     <p className="text-xs text-[#71717A]">{s.motoboy.phone}</p>
                   </div>
-                  <p className="text-xs text-[#A1A1AA] flex-shrink-0">
-                    {s.respondido_em && new Date(s.respondido_em).toLocaleDateString('pt-BR')}
-                  </p>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <p className="text-xs text-[#A1A1AA]">
+                      {s.respondido_em && new Date(s.respondido_em).toLocaleDateString('pt-BR')}
+                    </p>
+                    <button
+                      onClick={() => handleRevisar(s.id)}
+                      disabled={revisando === s.id}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50"
+                    >
+                      {revisando === s.id ? '...' : 'Revisão'}
+                    </button>
+                  </div>
                 </div>
                 {s.motivo_recusa && (
                   <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mt-2">{s.motivo_recusa}</p>
