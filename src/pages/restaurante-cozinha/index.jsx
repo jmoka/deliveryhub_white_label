@@ -474,8 +474,14 @@ const RestauranteCozinha = () => {
     }
   };
 
-  const confirmados = pedidos.filter((p) => p.status === 'confirmed');
-  const preparando = pedidos.filter((p) => p.status === 'preparing');
+  // Só mostra pedido delivery aqui se ele tiver item roteado pra impressora de setor
+  // "Cozinha" — antes mostrava TODO pedido delivery independente do produto, por isso
+  // Bar/Cozinha ficavam misturados. Roteamento vem do produto (config em /produtos).
+  const idsDeliveryRoteadosParaCozinha = new Set(
+    itensSalao.filter((i) => i.tipo === 'delivery').map((i) => i.order_id),
+  );
+  const confirmados = pedidos.filter((p) => p.status === 'confirmed' && idsDeliveryRoteadosParaCozinha.has(p.id));
+  const preparando = pedidos.filter((p) => p.status === 'preparing' && idsDeliveryRoteadosParaCozinha.has(p.id));
   const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado');
   const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando');
 
