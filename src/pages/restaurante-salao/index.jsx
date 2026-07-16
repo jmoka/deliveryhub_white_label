@@ -10,6 +10,7 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente } from '../../utils/printComanda';
+import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
@@ -432,15 +433,29 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               className="flex items-center gap-1 text-xs font-bold text-[#FF441F]">
               <Icon name="QrCode" size={14} /> {mostrarQr ? 'Esconder QR' : 'Mostrar QR pro cliente'}
             </button>
-            {mostrarQr && (
-              <div className="mt-2 bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/mesa/acompanhar/${comanda.tracking_token}`)}`}
-                  alt="QR de acompanhamento" width={150} height={150}
-                />
-                <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
-              </div>
-            )}
+            {mostrarQr && (() => {
+              const urls = getAcompanharUrls(comanda.tracking_token);
+              return (
+                <div className="mt-2 flex flex-wrap gap-3">
+                  <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urls.principal)}`}
+                      alt="QR de acompanhamento" width={150} height={150}
+                    />
+                    <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
+                  </div>
+                  {urls.lan && (
+                    <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urls.lan)}`}
+                        alt="QR de acompanhamento (rede local)" width={150} height={150}
+                      />
+                      <p className="text-[10px] text-[#71717A]">Rede local — use se o celular não abrir o de cima</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
