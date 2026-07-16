@@ -1,54 +1,89 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, iniciarPreparoGrupoRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import Icon from '../../components/AppIcon';
 
-const GrupoCard = ({ g, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
-  <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${g.status === 'aguardando' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
-    <div className="flex items-center justify-between mb-1">
-      <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
-      <button onClick={() => onReimprimir(g)}
-        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
-        <Icon name="Printer" size={11} /> Reimpressão
-      </button>
+const formatDuracao = (ms) => {
+  if (ms < 0) ms = 0;
+  const totalSeg = Math.floor(ms / 1000);
+  const min = Math.floor(totalSeg / 60);
+  const seg = totalSeg % 60;
+  return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
+};
+
+// Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
+// o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
+// pra dar visibilidade do tempo total gasto até ficar pronto.
+const ItemCard = ({ item, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+  const enviadoEm = new Date(item.enviado_em).getTime();
+  const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
+  const tempoEspera = (preparandoEm ?? now) - enviadoEm;
+  const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
+  const tempoTotal = now - enviadoEm;
+
+  return (
+    <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+        <button onClick={() => onReimprimir(item)}
+          className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
+          <Icon name="Printer" size={11} /> Reimpressão
+        </button>
+      </div>
+      {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
+      <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
+        <Icon name="MapPin" size={12} />
+        <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+        {item.garcom && (
+          <>
+            <span className="text-[#3A3A3A]">•</span>
+            <Icon name="User" size={12} />
+            <span>{item.garcom}</span>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
+        <span className="flex items-center gap-1 text-blue-400">
+          <Icon name="Clock" size={11} /> espera {formatDuracao(tempoEspera)}
+        </span>
+        {item.status === 'preparando' && (
+          <span className="flex items-center gap-1 text-orange-400">
+            <Icon name="Flame" size={11} /> preparo {formatDuracao(tempoPreparo)}
+          </span>
+        )}
+        <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
+      </div>
+      {item.status === 'enviado' ? (
+        <button onClick={() => onIniciarPreparo(item)}
+          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="ChefHat" size={13} /> Iniciar Preparo
+        </button>
+      ) : (
+        <button onClick={() => onMarcarPronto(item.id)}
+          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Check" size={13} /> Pronto
+        </button>
+      )}
     </div>
-    {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
-    <div className="space-y-2 mt-2">
-      {g.itens.map((item) => (
-        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
-          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-          {g.status === 'preparando' && (
-            <button onClick={() => onMarcarPronto(item.id)}
-              className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
-              Pronto
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-    {g.status === 'aguardando' && (
-      <button onClick={() => onIniciarPreparo(g)}
-        className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="ChefHat" size={13} /> Iniciar Preparo
-      </button>
-    )}
-  </div>
-);
+  );
+};
 
 // Linha de produção do Salão — visão unificada de TODOS os setores (cozinha, bar,
 // salgados...) num painel só, dono acessa direto logado (sem link/token separado, mesmo
 // padrão de acesso da tela de Cozinha do delivery). Cada setor é uma impressora
-// cadastrada; itens vêm de order_items roteados pra ela (ver GET /restaurante/kds).
+// cadastrada; itens vêm de order_items roteados pra ela (ver GET /restaurante/kds),
+// lista PLANA por item (não agrupa por mesa/comanda), com cronômetro de espera/preparo.
 const RestauranteProducao = () => {
   const navigate = useNavigate();
   const [impressoras, setImpressoras] = useState(null);
-  const [gruposPorImpressora, setGruposPorImpressora] = useState({});
+  const [itensPorImpressora, setItensPorImpressora] = useState({});
   const [restauranteNome, setRestauranteNome] = useState('');
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [now, setNow] = useState(Date.now());
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
@@ -58,16 +93,21 @@ const RestauranteProducao = () => {
     listarImpressoras().then(setImpressoras).catch((e) => setErro(e.message));
   }, []);
 
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, []);
+
   const carregar = useCallback(async (lista) => {
     try {
       const resultados = await Promise.all(
-        lista.map((imp) => getKdsItensRestaurante(imp.id).then((r) => [imp, r.grupos ?? []])),
+        lista.map((imp) => getKdsItensRestaurante(imp.id).then((r) => [imp, r.itens ?? []])),
       );
       const porImpressora = {};
       const idsAgora = new Set();
-      for (const [imp, grupos] of resultados) {
-        porImpressora[imp.id] = grupos.map((g) => ({ ...g, impressora_id: imp.id }));
-        for (const g of grupos) for (const i of g.itens) idsAgora.add(i.id);
+      for (const [imp, itens] of resultados) {
+        porImpressora[imp.id] = itens;
+        for (const i of itens) idsAgora.add(i.id);
       }
 
       if (!firstLoad.current) {
@@ -78,7 +118,7 @@ const RestauranteProducao = () => {
       }
       prevItemIds.current = idsAgora;
 
-      setGruposPorImpressora(porImpressora);
+      setItensPorImpressora(porImpressora);
       setLastUpdate(new Date());
       setErro(null);
     } catch (e) {
@@ -101,16 +141,16 @@ const RestauranteProducao = () => {
     carregar(impressoras);
   };
 
-  const iniciarPreparo = async (grupo) => {
-    await iniciarPreparoGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+  const iniciarPreparo = async (item) => {
+    await iniciarPreparoItemRestaurante(item.id);
     carregar(impressoras);
   };
 
-  const reimprimir = async (grupo, setorNome) => {
+  const reimprimir = async (item, setorNome) => {
     try {
-      const res = await reimprimirGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+      const res = await reimprimirItemRestaurante(item.id);
       if (res.via === 'navegador') {
-        printTicketSetor(grupo.itens, { mesaLabel: grupo.mesa, cliente_mesa_nome: grupo.cliente }, setorNome);
+        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente }, setorNome);
       }
     } catch (e) {
       setErro(e.message);
@@ -123,7 +163,7 @@ const RestauranteProducao = () => {
     </div>
   );
 
-  const totalItens = Object.values(gruposPorImpressora).reduce((s, gs) => s + gs.reduce((s2, g) => s2 + g.itens.length, 0), 0);
+  const totalItens = Object.values(itensPorImpressora).reduce((s, itens) => s + itens.length, 0);
 
   return (
     <div className="min-h-screen bg-[#111111]">
@@ -170,21 +210,21 @@ const RestauranteProducao = () => {
       ) : (
         <main className="p-5 max-w-6xl mx-auto space-y-8">
           {(impressoras ?? []).map((imp) => {
-            const grupos = gruposPorImpressora[imp.id] ?? [];
-            const aguardando = grupos.filter((g) => g.status === 'aguardando');
-            const preparando = grupos.filter((g) => g.status === 'preparando');
+            const itens = itensPorImpressora[imp.id] ?? [];
+            const aguardando = itens.filter((i) => i.status === 'enviado');
+            const preparando = itens.filter((i) => i.status === 'preparando');
             return (
               <div key={imp.id}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-2.5 h-2.5 rounded-full bg-orange-400" />
                   <h2 className="text-white font-bold text-sm uppercase tracking-wider">{imp.setor}</h2>
-                  {grupos.length > 0 && (
+                  {itens.length > 0 && (
                     <span className="bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">
-                      {grupos.reduce((s, g) => s + g.itens.length, 0)}
+                      {itens.length}
                     </span>
                   )}
                 </div>
-                {grupos.length === 0 ? (
+                {itens.length === 0 ? (
                   <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-6 text-center mb-2">
                     <p className="text-[#71717A] text-sm">Nenhum item pendente em {imp.setor}</p>
                   </div>
@@ -196,9 +236,9 @@ const RestauranteProducao = () => {
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {aguardando.map((g) => (
-                            <GrupoCard key={`${g.impressora_id}-${g.order_id}`} g={g}
-                              onReimprimir={(gr) => reimprimir(gr, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                          {aguardando.map((item) => (
+                            <ItemCard key={item.id} item={item} now={now}
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                           ))}
                         </div>
                       )}
@@ -209,9 +249,9 @@ const RestauranteProducao = () => {
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {preparando.map((g) => (
-                            <GrupoCard key={`${g.impressora_id}-${g.order_id}`} g={g}
-                              onReimprimir={(gr) => reimprimir(gr, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                          {preparando.map((item) => (
+                            <ItemCard key={item.id} item={item} now={now}
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                           ))}
                         </div>
                       )}

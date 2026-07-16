@@ -143,10 +143,10 @@ export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const renovarTokenCozinha = () => apiFetch('/renovar-token-cozinha', { method: 'PATCH' });
 export const getKdsItensRestaurante = (impressoraId) => apiFetch(`/kds?impressora_id=${impressoraId}`);
 export const marcarItemProntoRestaurante = (itemId) => apiFetch(`/kds/itens/${itemId}/pronto`, { method: 'PATCH' });
-export const reimprimirGrupoRestaurante = (orderId, impressoraId) =>
-  apiFetch(`/kds/comandas/${orderId}/reimprimir?impressora_id=${impressoraId}`, { method: 'POST' });
-export const iniciarPreparoGrupoRestaurante = (orderId, impressoraId) =>
-  apiFetch(`/kds/comandas/${orderId}/iniciar-preparo?impressora_id=${impressoraId}`, { method: 'PATCH' });
+export const reimprimirItemRestaurante = (itemId) =>
+  apiFetch(`/kds/itens/${itemId}/reimprimir`, { method: 'POST' });
+export const iniciarPreparoItemRestaurante = (itemId) =>
+  apiFetch(`/kds/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const getRelatorioFretes = (periodo = 'hoje') => apiFetch(`/relatorio/fretes?periodo=${encodeURIComponent(periodo)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });

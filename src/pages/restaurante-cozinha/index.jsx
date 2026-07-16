@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha,
-  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirGrupoRestaurante, iniciarPreparoGrupoRestaurante,
+  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante,
 } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
-  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirGrupo, iniciarPreparoGrupo,
+  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem,
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
@@ -114,6 +114,43 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
   );
 };
 
+// Card de item do salão (não agrupa por mesa/comanda) — mostra mesa e garçom inline,
+// ordenado junto com os pedidos de delivery pela ordem de chegada.
+const SalaoItemCard = ({ item, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+  <div className="rounded-2xl border-2 border-purple-300 bg-purple-950/20 p-4">
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name} <span className="text-purple-300 font-normal text-xs">· Salão</span></span>
+      <button onClick={() => onReimprimir(item)}
+        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
+        <Icon name="Printer" size={11} /> Reimpressão
+      </button>
+    </div>
+    {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
+    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
+      <Icon name="MapPin" size={12} />
+      <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+      {item.garcom && (
+        <>
+          <span className="text-[#3A3A3A]">•</span>
+          <Icon name="User" size={12} />
+          <span>{item.garcom}</span>
+        </>
+      )}
+    </div>
+    {item.status === 'enviado' ? (
+      <button onClick={() => onIniciarPreparo(item)}
+        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+        <Icon name="ChefHat" size={13} /> Iniciar Preparo
+      </button>
+    ) : (
+      <button onClick={() => onMarcarPronto(item.id)}
+        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+        <Icon name="Check" size={13} /> Pronto
+      </button>
+    )}
+  </div>
+);
+
 // Login screen para acesso via token (sem conta de dono)
 const CozinhaLogin = ({ onLogin }) => {
   const [token, setToken] = useState('');
@@ -195,7 +232,7 @@ const RestauranteCozinha = () => {
   const [copiadoLink, setCopiadoLink] = useState(false);
   const [gerandoLink, setGerandoLink] = useState(false);
   const [impressorasCozinha, setImpressorasCozinha] = useState(null);
-  const [gruposSalao, setGruposSalao] = useState([]);
+  const [itensSalao, setItensSalao] = useState([]);
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -255,13 +292,13 @@ const RestauranteCozinha = () => {
   // Itens de comanda do salão roteados pra impressora(s) de setor "Cozinha" — mesmo
   // padrão do painel de Produção/Bar, só que embutido aqui pra dar visão única.
   const carregarSalao = useCallback(async (impressoras, usarToken = false) => {
-    if (!impressoras?.length) { setGruposSalao([]); return; }
+    if (!impressoras?.length) { setItensSalao([]); return; }
     try {
       const getItens = usarToken ? getKdsItens : getKdsItensRestaurante;
       const listas = await Promise.all(
-        impressoras.map((imp) => getItens(imp.id).then((r) => (r.grupos ?? []).map((g) => ({ ...g, impressora_id: imp.id })))),
+        impressoras.map((imp) => getItens(imp.id).then((r) => r.itens ?? [])),
       );
-      setGruposSalao(listas.flat());
+      setItensSalao(listas.flat());
     } catch {
       // silencioso — não quebra a tela principal de delivery por causa do salão
     }
@@ -375,23 +412,21 @@ const RestauranteCozinha = () => {
     }
   };
 
-  const reimprimirSalao = async (grupo) => {
+  const reimprimirSalao = async (item) => {
     try {
-      const res = modoToken
-        ? await reimprimirGrupo(grupo.order_id, grupo.impressora_id)
-        : await reimprimirGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+      const res = modoToken ? await reimprimirItem(item.id) : await reimprimirItemRestaurante(item.id);
       if (res.via === 'navegador') {
-        printTicketSetor(grupo.itens, { mesaLabel: grupo.mesa, cliente_mesa_nome: grupo.cliente }, 'Cozinha');
+        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente }, 'Cozinha');
       }
     } catch (e) {
       alert(e.message);
     }
   };
 
-  const iniciarPreparoSalao = async (grupo) => {
+  const iniciarPreparoSalao = async (item) => {
     try {
-      if (modoToken) await iniciarPreparoGrupo(grupo.order_id, grupo.impressora_id);
-      else await iniciarPreparoGrupoRestaurante(grupo.order_id, grupo.impressora_id);
+      if (modoToken) await iniciarPreparoItem(item.id);
+      else await iniciarPreparoItemRestaurante(item.id);
       carregarSalao(impressorasCozinha, modoToken);
     } catch (e) {
       alert(e.message);
@@ -400,20 +435,18 @@ const RestauranteCozinha = () => {
 
   const confirmados = pedidos.filter((p) => p.status === 'confirmed');
   const preparando = pedidos.filter((p) => p.status === 'preparing');
-  const gruposSalaoAguardando = gruposSalao.filter((g) => g.status === 'aguardando');
-  const gruposSalaoPreparando = gruposSalao.filter((g) => g.status === 'preparando');
-
-  const grupoTs = (g) => Math.min(...g.itens.map((i) => new Date(i.enviado_em).getTime()));
+  const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado');
+  const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando');
 
   // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.
   const aguardandoPreparo = [
     ...confirmados.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
-    ...gruposSalaoAguardando.map((g) => ({ tipo: 'salao', ts: grupoTs(g), grupo: g })),
+    ...itensSalaoAguardando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
   ].sort((a, b) => a.ts - b.ts);
 
   const emPreparo = [
     ...preparando.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
-    ...gruposSalaoPreparando.map((g) => ({ tipo: 'salao', ts: grupoTs(g), grupo: g })),
+    ...itensSalaoPreparando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
   ].sort((a, b) => a.ts - b.ts);
 
   // Modo token: mostrar login se não autenticado
@@ -566,27 +599,8 @@ const RestauranteCozinha = () => {
                   <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} onAvancar={handleAvancar} onVoltar={handleAvancar}
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
-                  <div key={`s-${entry.grupo.impressora_id}-${entry.grupo.order_id}`} className="rounded-2xl border-2 border-purple-300 bg-purple-950/20 p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-bold text-white">{entry.grupo.mesa ?? 'Avulsa'} <span className="text-purple-300 font-normal">· Salão</span></p>
-                      <button onClick={() => reimprimirSalao(entry.grupo)}
-                        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
-                        <Icon name="Printer" size={11} /> Reimpressão
-                      </button>
-                    </div>
-                    {entry.grupo.cliente && <p className="text-xs text-[#71717A] mb-2">{entry.grupo.cliente}</p>}
-                    <div className="space-y-2 mt-2">
-                      {entry.grupo.itens.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
-                          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={() => iniciarPreparoSalao(entry.grupo)}
-                      className="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-                      <Icon name="ChefHat" size={13} /> Iniciar Preparo
-                    </button>
-                  </div>
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item}
+                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
                 )
               ))}
             </div>
@@ -613,27 +627,8 @@ const RestauranteCozinha = () => {
                   <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} onAvancar={handleAvancar} onVoltar={handleAvancar}
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
-                  <div key={`s-${entry.grupo.impressora_id}-${entry.grupo.order_id}`} className="rounded-2xl border-2 border-purple-300 bg-purple-950/20 p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-bold text-white">{entry.grupo.mesa ?? 'Avulsa'} <span className="text-purple-300 font-normal">· Salão</span></p>
-                      <button onClick={() => reimprimirSalao(entry.grupo)}
-                        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
-                        <Icon name="Printer" size={11} /> Reimpressão
-                      </button>
-                    </div>
-                    {entry.grupo.cliente && <p className="text-xs text-[#71717A] mb-2">{entry.grupo.cliente}</p>}
-                    <div className="space-y-2 mt-2">
-                      {entry.grupo.itens.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between bg-[#111111] rounded-xl px-3 py-2">
-                          <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-                          <button onClick={() => marcarProntoSalao(item.id)}
-                            className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
-                            Pronto
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item}
+                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
                 )
               ))}
             </div>
@@ -641,7 +636,7 @@ const RestauranteCozinha = () => {
         </div>
       </main>
 
-      {pedidos.length === 0 && gruposSalao.length === 0 && !loading && (
+      {pedidos.length === 0 && itensSalao.length === 0 && !loading && (
         <div className="text-center py-20">
           <Icon name="UtensilsCrossed" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
           <p className="text-[#71717A] text-lg font-semibold">Cozinha tranquila</p>

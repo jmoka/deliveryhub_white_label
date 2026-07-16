@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
-  getKdsItens, marcarItemPronto, reimprimirGrupo,
+  getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem,
 } from '../../services/cozinhaPortalService';
 import { printTicketSetor } from '../../utils/printComanda';
 import Icon from '../../components/AppIcon';
@@ -58,14 +58,14 @@ const RestauranteKdsSetor = () => {
     if (urlToken) setCozinhaToken(urlToken);
     return !!getCozinhaToken();
   });
-  const [grupos, setGrupos] = useState([]);
+  const [itens, setItens] = useState([]);
   const [erro, setErro] = useState(null);
 
   const carregar = useCallback(async () => {
     if (!impressoraId) return;
     try {
-      const { grupos } = await getKdsItens(impressoraId);
-      setGrupos(grupos);
+      const { itens } = await getKdsItens(impressoraId);
+      setItens(itens);
       setErro(null);
     } catch (err) {
       if (!getCozinhaToken()) setAuthed(false);
@@ -90,11 +90,16 @@ const RestauranteKdsSetor = () => {
     carregar();
   };
 
-  const reimprimir = async (grupo) => {
+  const iniciarPreparo = async (item) => {
+    await iniciarPreparoItem(item.id);
+    carregar();
+  };
+
+  const reimprimir = async (item) => {
     try {
-      const res = await reimprimirGrupo(grupo.order_id, impressoraId);
+      const res = await reimprimirItem(item.id);
       if (res.via === 'navegador') {
-        printTicketSetor(grupo.itens, { mesaLabel: grupo.mesa, cliente_mesa_nome: grupo.cliente }, setorNome);
+        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente }, setorNome);
       }
     } catch (err) {
       setErro(err.message);
@@ -109,30 +114,40 @@ const RestauranteKdsSetor = () => {
       </div>
       {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {grupos.map((g) => (
-          <div key={g.order_id} className="bg-[#232323] border border-[#2A2A2A] rounded-2xl p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-white">{g.mesa ?? 'Avulsa'}</p>
-              <button onClick={() => reimprimir(g)}
-                className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+        {itens.map((item) => (
+          <div key={item.id} className="bg-[#232323] border border-[#2A2A2A] rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+              <button onClick={() => reimprimir(item)}
+                className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
                 <Icon name="Printer" size={11} /> Reimpressão
               </button>
             </div>
-            {g.cliente && <p className="text-xs text-[#71717A] mb-2">{g.cliente}</p>}
-            <div className="space-y-2 mt-2">
-              {g.itens.map((item) => (
-                <div key={item.id} className="flex items-center justify-between bg-[#1A1A1A] rounded-xl px-3 py-2">
-                  <span className="text-sm text-white">{item.quantity}x {item.product_name}</span>
-                  <button onClick={() => marcarPronto(item.id)}
-                    className="text-xs font-bold text-emerald-400 border border-emerald-500/40 rounded-lg px-2 py-1 hover:bg-emerald-500/10">
-                    Pronto
-                  </button>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
+              <Icon name="MapPin" size={12} />
+              <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+              {item.garcom && (
+                <>
+                  <span className="text-[#3A3A3A]">•</span>
+                  <Icon name="User" size={12} />
+                  <span>{item.garcom}</span>
+                </>
+              )}
             </div>
+            {item.status === 'enviado' ? (
+              <button onClick={() => iniciarPreparo(item)}
+                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+                <Icon name="ChefHat" size={13} /> Iniciar Preparo
+              </button>
+            ) : (
+              <button onClick={() => marcarPronto(item.id)}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+                <Icon name="Check" size={13} /> Pronto
+              </button>
+            )}
           </div>
         ))}
-        {grupos.length === 0 && <p className="text-sm text-[#71717A]">Nenhum item pendente nesse setor.</p>}
+        {itens.length === 0 && <p className="text-sm text-[#71717A]">Nenhum item pendente nesse setor.</p>}
       </div>
     </div>
   );

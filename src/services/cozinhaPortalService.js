@@ -61,7 +61,7 @@ async function kdsFetch(path, options = {}) {
 export const getKdsImpressoras = () => kdsFetch('/impressoras');
 export const getKdsItens = (impressoraId) => kdsFetch(`/itens?impressora_id=${impressoraId}`);
 export const marcarItemPronto = (itemId) => kdsFetch(`/itens/${itemId}/pronto`, { method: 'PATCH' });
-export const reimprimirGrupo = (orderId, impressoraId) =>
-  kdsFetch(`/comandas/${orderId}/reimprimir?impressora_id=${impressoraId}`, { method: 'POST' });
-export const iniciarPreparoGrupo = (orderId, impressoraId) =>
-  kdsFetch(`/comandas/${orderId}/iniciar-preparo?impressora_id=${impressoraId}`, { method: 'PATCH' });
+export const reimprimirItem = (itemId) =>
+  kdsFetch(`/itens/${itemId}/reimprimir`, { method: 'POST' });
+export const iniciarPreparoItem = (itemId) =>
+  kdsFetch(`/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
