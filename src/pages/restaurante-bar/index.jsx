@@ -26,7 +26,7 @@ const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPront
     {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
       <Icon name="MapPin" size={12} />
-      <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+      <span>{item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
       {item.garcom && (
         <>
           <span className="text-[#3A3A3A]">•</span>
@@ -34,6 +34,9 @@ const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPront
           <span>{item.garcom}</span>
         </>
       )}
+      <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${item.tipo === 'delivery' ? 'bg-sky-500/20 text-sky-400' : 'bg-purple-500/20 text-purple-300'}`}>
+        {item.tipo === 'delivery' ? 'Delivery' : 'Salão'}
+      </span>
     </div>
     {item.status === 'enviado' ? (
       <button onClick={() => onIniciarPreparo(item)}
@@ -61,6 +64,7 @@ const RestauranteBar = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
@@ -133,8 +137,11 @@ const RestauranteBar = () => {
     </div>
   );
 
-  const aguardando = itens.filter((i) => i.status === 'enviado');
-  const preparando = itens.filter((i) => i.status === 'preparando');
+  const itensFiltrados = itens.filter((i) => filtroCanal === 'todos' || i.tipo === filtroCanal);
+  const aguardando = itensFiltrados.filter((i) => i.status === 'enviado');
+  const preparando = itensFiltrados.filter((i) => i.status === 'preparando');
+  const totalDelivery = itens.filter((i) => i.tipo === 'delivery').length;
+  const totalSalao = itens.filter((i) => i.tipo === 'salao').length;
 
   return (
     <div className="min-h-screen bg-[#111111]">
@@ -161,6 +168,28 @@ const RestauranteBar = () => {
               <Icon name="RefreshCw" size={16} />
             </button>
           </div>
+        </div>
+
+        {/* Filtro de canal — Todos/Delivery/Salão */}
+        <div className="flex items-center gap-2 mt-3">
+          {[
+            { key: 'todos', label: 'Todos', count: totalDelivery + totalSalao },
+            { key: 'delivery', label: 'Delivery', count: totalDelivery },
+            { key: 'salao', label: 'Salão', count: totalSalao },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFiltroCanal(f.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                filtroCanal === f.key
+                  ? 'bg-[#FF441F] text-white'
+                  : 'bg-[#111111] text-[#71717A] border border-[#2A2A2A] hover:text-white'
+              }`}
+            >
+              {f.label}
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${filtroCanal === f.key ? 'bg-white/20' : 'bg-[#2A2A2A]'}`}>{f.count}</span>
+            </button>
+          ))}
         </div>
       </header>
 
