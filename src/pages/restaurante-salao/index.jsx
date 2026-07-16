@@ -679,8 +679,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 // Itens continuam indo pra fila de preparo normal (cozinha/bar).
 const VendaDiretaModal = ({ onFechar, onVendida }) => {
   const [produtos, setProdutos] = useState([]);
-  const [produtoSelecionado, setProdutoSelecionado] = useState('');
-  const [quantidadeItem, setQuantidadeItem] = useState(1);
+  const [mostrarPicker, setMostrarPicker] = useState(false);
   const [carrinho, setCarrinho] = useState([]);
   const [forma, setForma] = useState('pix');
   const [valorRecebido, setValorRecebido] = useState('');
@@ -692,22 +691,21 @@ const VendaDiretaModal = ({ onFechar, onVendida }) => {
   const total = carrinho.reduce((acc, i) => acc + i.quantity * i.price, 0);
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - total : null;
 
-  const adicionar = () => {
-    if (!produtoSelecionado) return;
-    const p = produtos.find((x) => String(x.id) === produtoSelecionado);
+  const adicionar = (item) => {
+    const p = produtos.find((x) => x.id === item.product_id);
     if (!p) return;
     setCarrinho((c) => {
-      const existente = c.find((i) => i.product_id === p.id);
+      // Só junta com uma linha já existente do mesmo produto se nenhuma das duas
+      // tiver observação — item com observação vira linha própria pra não se perder.
+      const existente = !item.observacao ? c.find((i) => i.product_id === p.id && !i.observacao) : null;
       if (existente) {
-        return c.map((i) => (i.product_id === p.id ? { ...i, quantity: i.quantity + Number(quantidadeItem) } : i));
+        return c.map((i) => (i === existente ? { ...i, quantity: i.quantity + item.quantity } : i));
       }
-      return [...c, { product_id: p.id, name: p.name, price: p.price, quantity: Number(quantidadeItem) }];
+      return [...c, { linhaId: `${p.id}-${Date.now()}-${Math.random()}`, product_id: p.id, name: p.name, price: p.price, quantity: item.quantity, observacao: item.observacao }];
     });
-    setProdutoSelecionado('');
-    setQuantidadeItem(1);
   };
 
-  const removerDoCarrinho = (productId) => setCarrinho((c) => c.filter((i) => i.product_id !== productId));
+  const removerDoCarrinho = (linhaId) => setCarrinho((c) => c.filter((i) => i.linhaId !== linhaId));
 
   const confirmar = async () => {
     if (!carrinho.length) return;
@@ -719,7 +717,7 @@ const VendaDiretaModal = ({ onFechar, onVendida }) => {
     setSalvando(true);
     try {
       const res = await venderDireto(
-        carrinho.map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+        carrinho.map((i) => ({ product_id: i.product_id, quantity: i.quantity, observacao: i.observacao })),
         forma,
         forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined,
       );
@@ -742,29 +740,29 @@ const VendaDiretaModal = ({ onFechar, onVendida }) => {
       <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-base font-bold text-[#18181B] mb-3">Venda direta (balcão)</h2>
 
-        <div className="flex items-center gap-2 mb-3 bg-[#F4F4F5] rounded-xl p-2">
-          <select value={produtoSelecionado} onChange={(e) => setProdutoSelecionado(e.target.value)}
-            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
-            <option value="">Escolher produto...</option>
-            {produtos.map((p) => (
-              <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)}</option>
-            ))}
-          </select>
-          <input type="number" min={1} value={quantidadeItem} onChange={(e) => setQuantidadeItem(e.target.value)}
-            className="w-14 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs text-center" />
-          <button onClick={adicionar} disabled={!produtoSelecionado}
-            className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
-            <Icon name="Plus" size={14} />
-          </button>
-        </div>
+        <button onClick={() => setMostrarPicker(true)}
+          className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+          <Icon name="Plus" size={16} /> Adicionar produto
+        </button>
+
+        {mostrarPicker && (
+          <ProdutoPickerModal
+            produtos={produtos}
+            onFechar={() => setMostrarPicker(false)}
+            onAdicionado={async (item) => { adicionar(item); setMostrarPicker(false); }}
+          />
+        )}
 
         <div className="space-y-1 mb-3">
           {carrinho.map((i) => (
-            <div key={i.product_id} className="flex justify-between items-center text-sm gap-2">
-              <span className="truncate">{i.quantity}x {i.name}</span>
+            <div key={i.linhaId} className="flex justify-between items-center text-sm gap-2">
+              <div className="min-w-0">
+                <span className="truncate block">{i.quantity}x {i.name}</span>
+                {i.observacao && <span className="text-[10px] text-amber-600 block truncate">Obs: {i.observacao}</span>}
+              </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span>{fmt(i.quantity * i.price)}</span>
-                <button onClick={() => removerDoCarrinho(i.product_id)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                <button onClick={() => removerDoCarrinho(i.linhaId)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
                   <Icon name="X" size={11} />
                 </button>
               </div>
