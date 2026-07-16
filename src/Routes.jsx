@@ -32,6 +32,7 @@ import RestauranteCozinha from './pages/restaurante-cozinha';
 import RestauranteProducao from './pages/restaurante-producao';
 import RestauranteBar from './pages/restaurante-bar';
 import RestauranteSessao from './pages/restaurante-sessao';
+import RestauranteDelivery from './pages/restaurante-delivery';
 import RestauranteCaixa from './pages/restaurante-caixa';
 import RestauranteFinanceiro from './pages/restaurante-financeiro';
 import RestauranteCombos from './pages/restaurante-combos';
@@ -85,6 +86,7 @@ const Routes = () => {
         <Route path="/restaurante/producao" element={<RestauranteGuard><RestauranteProducao /></RestauranteGuard>} />
         <Route path="/restaurante/bar" element={<RestauranteGuard><RestauranteBar /></RestauranteGuard>} />
         <Route path="/restaurante/sessao" element={<RestauranteGuard><RestauranteSessao /></RestauranteGuard>} />
+        <Route path="/restaurante/delivery" element={<RestauranteGuard><RestauranteDelivery /></RestauranteGuard>} />
         <Route path="/restaurante/caixa" element={<RestauranteGuard><RestauranteCaixa /></RestauranteGuard>} />
         <Route path="/restaurante/financeiro" element={<RestauranteGuard><RestauranteFinanceiro /></RestauranteGuard>} />
         <Route path="/restaurante/combos" element={<RestauranteGuard><RestauranteCombos /></RestauranteGuard>} />

@@ -3,20 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa, fecharETransferir,
-  adicionarSaida, buscarPedidoDetalhe, atualizarStatusPedido, toggleStatusRestaurante,
-  listarMotoboys, atribuirMotoboy, entregarPedidoProprio, getRelatorioFretes,
+  adicionarSaida, toggleStatusRestaurante, getRelatorioFretes,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
-import PedidoDetalhe from './PedidoDetalhe';
 import RelatorioPanel from './RelatorioPanel';
-import { printComanda } from '../../utils/printComanda';
 import SaidaModal from './SaidaModal';
 import FecharCaixaModal from './FecharCaixaModal';
 import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
-import PedidoTimeline from './PedidoTimeline';
 import MobileMenu from './MobileMenu';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
@@ -26,30 +22,9 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 const PAGAMENTO_LABEL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito' };
 const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_card: '💳' };
 
-const STATUS_LABELS = {
-  pending:          { label: 'Recebido',   color: 'bg-yellow-100 text-yellow-800' },
-  confirmed:        { label: 'Aguardando Preparo', color: 'bg-blue-100 text-blue-800' },
-  preparing:        { label: 'Em Preparo', color: 'bg-orange-100 text-orange-800' },
-  ready:            { label: 'Pronto',     color: 'bg-purple-100 text-purple-800' },
-  out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 text-indigo-800' },
-  delivered:        { label: 'Entregue',   color: 'bg-green-100 text-green-800' },
-  canceled:         { label: 'Cancelado',  color: 'bg-red-100 text-red-800' },
-};
-
-const FILTER_TABS = [
-  { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
-  { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 bg-yellow-100 text-yellow-800' },
-  { value: 'confirmed',        label: 'Ag. Preparo', activeColor: 'border-blue-400 bg-blue-100 text-blue-800' },
-  { value: 'preparing',        label: 'Cozinha',    activeColor: 'border-orange-400 bg-orange-100 text-orange-800' },
-  { value: 'ready',            label: 'Pronto',     activeColor: 'border-purple-400 bg-purple-100 text-purple-800' },
-  { value: 'out_for_delivery', label: 'Em Entrega', activeColor: 'border-indigo-400 bg-indigo-100 text-indigo-800' },
-  { value: 'delivered',        label: 'Entregue',   activeColor: 'border-green-400 bg-green-100 text-green-800' },
-  { value: 'canceled',        label: 'Cancelado',  activeColor: 'border-red-400 bg-red-100 text-red-800' },
-];
-
-
 const LINKS = [
   { label: 'Dashboard', path: '/restaurante' },
+  { label: 'Delivery', path: '/restaurante/delivery' },
   { label: 'Cozinha', path: '/restaurante/cozinha' },
   { label: 'Produtos', path: '/restaurante/produtos' },
   { label: 'Pedidos', path: '/restaurante/pedidos' },
@@ -92,18 +67,11 @@ const RestauranteDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
 
-  const [pedidoSelecionadoId, setPedidoSelecionadoId] = useState(null);
-  const [pedidoDetalhe, setPedidoDetalhe] = useState(null);
-  const [loadingDetalhe, setLoadingDetalhe] = useState(false);
-  const [atualizando, setAtualizando] = useState(null);
-
   const [showSaida, setShowSaida] = useState(false);
   const [salvandoSaida, setSalvandoSaida] = useState(false);
   const [showFechar, setShowFechar] = useState(false);
   const [fechando, setFechando] = useState(false);
   const [fechamento, setFechamento] = useState(null);
-  const [motoboys, setMotoboys] = useState([]);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
   const [relFretes, setRelFretes] = useState(null);
   const [periodoFretes, setPeriodoFretes] = useState('hoje');
   const [showDetalheFretes, setShowDetalheFretes] = useState(false);
@@ -180,9 +148,7 @@ const RestauranteDashboard = () => {
 
   const carregar = async () => {
     try {
-      const [emp, caixaData, mbData] = await Promise.all([
-        getMinhaEmpresa(), getCaixa(), listarMotoboys().catch(() => ({ motoboys: [] })),
-      ]);
+      const [emp, caixaData] = await Promise.all([getMinhaEmpresa(), getCaixa()]);
       setEmpresa(emp.empresa);
       setRestauranteId(emp.empresa?.id ?? null);
       const deveEstarAberto = caixaData.status_restaurante === true && !!caixaData.aberto;
@@ -192,7 +158,6 @@ const RestauranteDashboard = () => {
         toggleStatusRestaurante(false).catch(() => {});
       }
       setCaixa(caixaData);
-      setMotoboys(mbData.motoboys ?? []);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -314,52 +279,6 @@ const RestauranteDashboard = () => {
     } catch (e) { alert(e.message); }
   };
 
-  const handleSelecionarPedido = async (id) => {
-    if (pedidoSelecionadoId === id) { setPedidoSelecionadoId(null); setPedidoDetalhe(null); return; }
-    setPedidoSelecionadoId(id);
-    setPedidoDetalhe(null);
-    setLoadingDetalhe(true);
-    try {
-      const d = await buscarPedidoDetalhe(id);
-      setPedidoDetalhe(d);
-    } catch (e) { alert(e.message); } finally { setLoadingDetalhe(false); }
-  };
-
-  const handleAvancarStatus = async (pedido, novoStatus) => {
-    setAtualizando(pedido.id);
-    try {
-      await atualizarStatusPedido(pedido.id, novoStatus);
-      const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedido.id)]);
-      setCaixa(novoCaixa);
-      setPedidoDetalhe(novoDetalhe);
-      if (novoStatus === 'preparing' || novoStatus === 'confirmed') {
-        const pedidoParaImprimir = { ...novoDetalhe.pedido, customers: novoDetalhe.cliente };
-        printComanda(pedidoParaImprimir, novoDetalhe.itens ?? [], empresa?.name);
-      }
-    } catch (e) { alert(e.message); } finally { setAtualizando(null); }
-  };
-
-  const handleReimprimir = () => {
-    if (!pedidoDetalhe) return;
-    const p = { ...pedidoDetalhe.pedido, customers: pedidoDetalhe.cliente };
-    printComanda(p, pedidoDetalhe.itens ?? [], empresa?.name);
-  };
-
-  const handleAtribuirMotoboy = async (pedidoId, motoboyId) => {
-    try {
-      await atribuirMotoboy(pedidoId, motoboyId);
-      const [novoCaixa, novoDetalhe] = await Promise.all([getCaixa(), buscarPedidoDetalhe(pedidoId)]);
-      setCaixa(novoCaixa);
-      setPedidoDetalhe(novoDetalhe);
-    } catch (e) { alert(e.message); }
-  };
-
-  const handleEntregarProprio = async (pedido) => {
-    await entregarPedidoProprio(pedido.id);
-    const [novoDetalhe] = await Promise.all([buscarPedidoDetalhe(pedido.id)]);
-    setPedidoDetalhe(novoDetalhe);
-  };
-
   const handleAdicionarSaida = async (dados) => {
     setSalvandoSaida(true);
     try {
@@ -377,7 +296,6 @@ const RestauranteDashboard = () => {
       setFechamento(res.fechamento ?? res);
       await recarregarCaixa();
       setShowFechar(false);
-      setPedidoSelecionadoId(null); setPedidoDetalhe(null);
       setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]);
     } catch (e) {
       if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) {
@@ -397,7 +315,6 @@ const RestauranteDashboard = () => {
       setFechamento(res.fechamento);
       await recarregarCaixa();
       setShowFechar(false);
-      setPedidoSelecionadoId(null); setPedidoDetalhe(null);
       setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]);
     } catch (e) { alert(e.message); } finally { setFechando(false); }
   };
@@ -734,156 +651,22 @@ const RestauranteDashboard = () => {
               </div>
             </div>
 
-            {/* Pedidos do caixa: sidebar filtros + lista + detalhe */}
-            {(() => {
-              const todosPedidos = caixa.pedidos ?? [];
-              const contagem = todosPedidos.reduce((acc, p) => { acc[p.status] = (acc[p.status] ?? 0) + 1; return acc; }, {});
-              const pedidosFiltrados = filtroStatus === 'todos' ? todosPedidos : todosPedidos.filter((p) => p.status === filtroStatus);
-              const colHeight = 'max-h-[calc(100vh-340px)]';
-              return (
-            <>
-            {/* Mobile: filtros horizontal scroll */}
-            <div className="flex md:hidden gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-              {FILTER_TABS.map((tab) => {
-                const cnt = tab.value === 'todos' ? todosPedidos.length : (contagem[tab.value] ?? 0);
-                const isActive = filtroStatus === tab.value;
-                return (
-                  <button key={tab.value} onClick={() => setFiltroStatus(tab.value)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                      isActive ? tab.activeColor : 'border-[#E4E4E7] bg-white text-[#71717A]'
-                    }`}>
-                    {tab.label}
-                    {cnt > 0 && <span className="text-[10px] font-black px-1 py-0.5 rounded-full bg-black/10">{cnt}</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex gap-4 items-start">
-
-              {/* Sidebar de filtros — desktop */}
-              <div className="hidden md:block w-44 flex-shrink-0 sticky top-4">
-                <div className="bg-white rounded-2xl border border-[#E4E4E7] p-3 space-y-1">
-                  <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest px-2 pb-1">Filtros</p>
-                  {FILTER_TABS.map((tab) => {
-                    const cnt = tab.value === 'todos' ? todosPedidos.length : (contagem[tab.value] ?? 0);
-                    const isActive = filtroStatus === tab.value;
-                    return (
-                      <button key={tab.value} onClick={() => setFiltroStatus(tab.value)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          isActive ? tab.activeColor : 'border-transparent bg-transparent text-[#71717A] hover:bg-[#F4F4F5]'
-                        }`}>
-                        <span>{tab.label}</span>
-                        {cnt > 0 && (
-                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-black/10' : 'bg-[#F4F4F5] text-[#27272A]'}`}>
-                            {cnt}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+            {/* Pedidos de delivery agora têm painel próprio — ver /restaurante/delivery */}
+            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#FF441F]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Icon name="Bike" size={18} className="text-[#FF441F]" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-[#18181B]">Pedidos de delivery</p>
+                  <p className="text-xs text-[#71717A]">Acompanhe, avance status e atribua motoboy no painel dedicado</p>
                 </div>
               </div>
-
-              {/* Lista + detalhe: 1 col mobile, 50/50 desktop quando detalhe aberto */}
-              <div className={`flex-1 grid gap-4 ${pedidoDetalhe || loadingDetalhe ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
-
-                {/* Lista de pedidos */}
-                <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 flex flex-col">
-                  <h2 className="font-bold text-[#18181B] flex items-center gap-2 mb-4 flex-shrink-0">
-                    <Icon name="ShoppingBag" size={16} className="text-[#FF441F]" />
-                    Pedidos da sessão
-                    <span className="text-xs font-normal text-[#71717A]">({todosPedidos.length})</span>
-                  </h2>
-
-                  <div className={`overflow-y-auto ${colHeight} pr-1`}>
-                    {todosPedidos.length === 0 ? (
-                      <p className="text-sm text-[#71717A] text-center py-8">Nenhum pedido nesta sessão ainda.</p>
-                    ) : pedidosFiltrados.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-sm text-[#71717A]">Nenhum pedido com status <strong>{FILTER_TABS.find(t => t.value === filtroStatus)?.label}</strong>.</p>
-                        <button onClick={() => setFiltroStatus('todos')} className="mt-2 text-xs text-[#FF441F] font-semibold hover:underline">Ver todos</button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {pedidosFiltrados.map((p) => {
-                          const sl = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 text-gray-700' };
-                          const selected = pedidoSelecionadoId === p.id;
-                          const clienteNome = p.customers?.name ?? null;
-                          const isAtivo = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(p.status);
-                          return (
-                            <button key={p.id} onClick={() => handleSelecionarPedido(p.id)}
-                              className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl border transition-all text-left ${selected ? 'border-[#FF441F] bg-[#FFF4F1]' : 'border-[#F4F4F5] hover:border-[#E4E4E7] hover:bg-[#FAFAFA]'}`}>
-                              <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 mt-0.5 ${
-                                p.status === 'pending' ? 'bg-yellow-400' :
-                                p.status === 'confirmed' ? 'bg-blue-400' :
-                                p.status === 'preparing' ? 'bg-orange-400' :
-                                p.status === 'ready' ? 'bg-purple-400' :
-                                p.status === 'out_for_delivery' ? 'bg-indigo-400' :
-                                p.status === 'delivered' ? 'bg-green-400' : 'bg-red-300'
-                              }`} />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-0.5">
-                                      <p className="text-sm font-bold text-[#18181B]">#{p.id}</p>
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sl.color}`}>{sl.label}</span>
-                                      {isAtivo && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-auto flex-shrink-0" />}
-                                    </div>
-                                    {clienteNome && (
-                                      <p className="text-xs font-semibold text-[#27272A] truncate">{clienteNome}</p>
-                                    )}
-                                    <p className="text-xs text-[#71717A]">{fmt(p.total)} · {p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method === 'pix' ? 'PIX' : 'Cartão'}</p>
-                                  </div>
-                                  <p className="text-xs text-[#71717A] flex-shrink-0 tabular-nums">
-                                    {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                  </p>
-                                </div>
-                                <PedidoTimeline status={p.status} />
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Detalhe do pedido */}
-                <AnimatePresence>
-                  {loadingDetalhe && (
-                    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 flex items-center justify-center">
-                      <div className="w-6 h-6 border-[3px] border-[#FF441F] border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  )}
-                  {pedidoDetalhe && !loadingDetalhe && (
-                    <div className={`bg-white rounded-2xl border border-[#E4E4E7] p-5 overflow-y-auto ${colHeight}`}>
-                      <PedidoDetalhe
-                        detalhe={pedidoDetalhe}
-                        onAvancar={handleAvancarStatus}
-                        onReimprimir={handleReimprimir}
-                        atualizando={atualizando}
-                        onClose={() => { setPedidoSelecionadoId(null); setPedidoDetalhe(null); }}
-                        motoboys={motoboys}
-                        onAtribuir={handleAtribuirMotoboy}
-                        onEntregarProprio={handleEntregarProprio}
-                        saldoCaixa={caixa?.resumo?.especie_calculada ?? caixa?.valor_inicial ?? 0}
-                        onDetalheMudou={async () => {
-                          if (!pedidoSelecionadoId) return;
-                          try {
-                            const d = await buscarPedidoDetalhe(pedidoSelecionadoId);
-                            setPedidoDetalhe(d);
-                          } catch {}
-                        }}
-                      />
-                    </div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <button onClick={() => navigate('/restaurante/delivery')}
+                className="px-4 py-2 text-sm font-bold bg-[#FF441F] text-white rounded-xl hover:bg-[#E63A19] flex items-center gap-1.5 flex-shrink-0">
+                Abrir painel Delivery <Icon name="ArrowRight" size={14} />
+              </button>
             </div>
-            </>
-              );
-            })()}
 
             {/* Saídas */}
             {(caixa.saidas?.length ?? 0) > 0 && (

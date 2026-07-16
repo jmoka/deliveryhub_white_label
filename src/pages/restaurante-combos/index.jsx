@@ -140,6 +140,7 @@ const RestauranteCombos = () => {
   const tipoRestaurante = useTipoRestaurante();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
+    { label: 'Delivery', path: '/restaurante/delivery' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Combos', path: '/restaurante/combos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },
