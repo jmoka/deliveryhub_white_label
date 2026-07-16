@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
+import { formatDuracao } from '../../utils/formatDuracao';
+import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import OrderActions from './components/OrderActions';
 
@@ -31,6 +33,7 @@ const OrderTrackingStatus = () => {
   const [erro, setErro] = useState(null);
   const [cancelando, setCancelando] = useState(false);
   const [cancelSucesso, setCancelSucesso] = useState(null);
+  const now = useNowTick();
 
   const buscarPedido = useCallback(async () => {
     if (!orderId) return;
@@ -207,12 +210,23 @@ const OrderTrackingStatus = () => {
           <div className="bg-white rounded-xl border p-4">
             <h2 className="font-semibold text-gray-900 mb-3">Itens do pedido</h2>
             <div className="space-y-2">
-              {pedido.itens.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm text-gray-600">
-                  <span>{item.nome ?? item.product_name ?? `Produto #${item.product_id}`} × {item.quantity}</span>
-                  <span>{fmt(item.unit_price * item.quantity)}</span>
-                </div>
-              ))}
+              {pedido.itens.map((item) => {
+                const enviadoEm = item.enviado_em ? new Date(item.enviado_em).getTime() : null;
+                const emPreparo = enviadoEm && item.status !== 'pronto';
+                return (
+                  <div key={item.id}>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{item.nome ?? item.product_name ?? `Produto #${item.product_id}`} × {item.quantity}</span>
+                      <span>{fmt(item.unit_price * item.quantity)}</span>
+                    </div>
+                    {emPreparo && (
+                      <p className="text-xs text-orange-500 font-mono flex items-center gap-1 mt-0.5">
+                        <Icon name="Clock" size={11} /> preparando há {formatDuracao(now - enviadoEm)}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="border-t pt-2 mt-2 space-y-1.5">
               {(() => {

@@ -2,13 +2,23 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
+import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
+import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 
 // Card por item (não por mesa/comanda) — pedido explícito: cada prato tem sua própria
 // ação de Iniciar Preparo/Reimpressão/Pronto, ordenados por ordem de chegada. `posicao`
-// numera a fila (1º = próximo a sair) pra equipe saber quem vem primeiro.
-const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+// numera a fila (1º = próximo a sair) pra equipe saber quem vem primeiro. Cronômetro ao
+// vivo (espera/preparo) igual ao painel de Produção.
+const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+  const enviadoEm = new Date(item.enviado_em).getTime();
+  const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
+  const tempoEspera = (preparandoEm ?? now) - enviadoEm;
+  const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
+  const tempoTotal = now - enviadoEm;
+
+  return (
   <div className={`bg-[#1A1A1A] border rounded-2xl p-4 relative ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-2">
@@ -24,7 +34,7 @@ const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPront
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
-    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
+    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
       <Icon name="MapPin" size={12} />
       <span>{item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
       {item.garcom && (
@@ -38,6 +48,17 @@ const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPront
         {item.tipo === 'delivery' ? 'Delivery' : 'Salão'}
       </span>
     </div>
+    <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
+      <span className="flex items-center gap-1 text-blue-400">
+        <Icon name="Clock" size={11} /> espera {formatDuracao(tempoEspera)}
+      </span>
+      {item.status === 'preparando' && (
+        <span className="flex items-center gap-1 text-orange-400">
+          <Icon name="Flame" size={11} /> preparo {formatDuracao(tempoPreparo)}
+        </span>
+      )}
+      <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
+    </div>
     {item.status === 'enviado' ? (
       <button onClick={() => onIniciarPreparo(item)}
         className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
@@ -50,7 +71,8 @@ const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPront
       </button>
     )}
   </div>
-);
+  );
+};
 
 // Painel de pedidos do Bar/Copa — mesmo padrão de acesso da tela de Cozinha (dono já
 // logado, sem link/token separado), lista PLANA de itens por setor de impressora (não

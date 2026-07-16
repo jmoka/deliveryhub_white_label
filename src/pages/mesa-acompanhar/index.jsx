@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { getAcompanhamento } from '../../services/mesaAcompanharService';
+import { formatDuracao } from '../../utils/formatDuracao';
+import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 
 const STATUS_ITEM_LABEL = { pendente: 'Anotado', enviado: 'Em preparo', pronto: 'Pronto' };
@@ -15,6 +17,7 @@ const MesaAcompanhar = () => {
   const { token } = useParams();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
+  const now = useNowTick();
 
   const carregar = useCallback(async () => {
     try {
@@ -52,16 +55,27 @@ const MesaAcompanhar = () => {
         </div>
 
         <div className="space-y-2">
-          {dados.itens.map((item, i) => (
-            <div key={i} className="bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center">
-              <span className="text-sm text-[#18181B]">{item.quantity}x {item.product_name}</span>
-              <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                item.status === 'pronto' ? 'bg-emerald-100 text-emerald-700' : item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-zinc-100 text-zinc-600'
-              }`}>
-                {STATUS_ITEM_LABEL[item.status] ?? item.status}
-              </span>
-            </div>
-          ))}
+          {dados.itens.map((item, i) => {
+            const enviadoEm = item.enviado_em ? new Date(item.enviado_em).getTime() : null;
+            const tempoPreparo = enviadoEm ? now - enviadoEm : null;
+            return (
+              <div key={i} className="bg-white rounded-xl border border-[#E4E4E7] p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-[#18181B]">{item.quantity}x {item.product_name}</span>
+                  <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                    item.status === 'pronto' ? 'bg-emerald-100 text-emerald-700' : item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-zinc-100 text-zinc-600'
+                  }`}>
+                    {STATUS_ITEM_LABEL[item.status] ?? item.status}
+                  </span>
+                </div>
+                {enviadoEm && item.status !== 'pronto' && (
+                  <p className="text-[11px] text-[#71717A] font-mono mt-1 flex items-center gap-1">
+                    <Icon name="Clock" size={11} /> preparando há {formatDuracao(tempoPreparo)}
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -12,7 +12,9 @@ import {
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import { barcodeValue, getPrinterName, setPrinterName, printTicketSetor } from '../../utils/printComanda';
+import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
+import { useNowTick } from '../../hooks/useNowTick';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
@@ -22,10 +24,11 @@ const STATUS_INFO = {
   preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Ag. Preparo', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
 };
 
-const OrderCard = ({ pedido, posicao, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
+const OrderCard = ({ pedido, posicao, now, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
   const si = STATUS_INFO[pedido.status];
   const isAtualizando = atualizando === pedido.id;
-  const minutos = Math.floor((Date.now() - new Date(pedido.created_at)) / 60000);
+  const tempoDecorrido = now - new Date(pedido.created_at).getTime();
+  const minutos = Math.floor(tempoDecorrido / 60000);
   const isHighlighted = highlighted === pedido.id;
 
   return (
@@ -66,8 +69,8 @@ const OrderCard = ({ pedido, posicao, onAvancar, onVoltar, atualizando, restaura
           <p className="text-xs text-[#71717A] mt-0.5 flex items-center gap-1">
             <Icon name="Clock" size={11} />
             {new Date(pedido.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            <span className={`ml-1 font-semibold ${minutos > 15 ? 'text-red-500' : minutos > 8 ? 'text-orange-500' : 'text-green-600'}`}>
-              · {minutos}min
+            <span className={`ml-1 font-semibold font-mono ${minutos > 15 ? 'text-red-500' : minutos > 8 ? 'text-orange-500' : 'text-green-600'}`}>
+              · {formatDuracao(tempoDecorrido)}
             </span>
           </p>
         </div>
@@ -125,8 +128,16 @@ const OrderCard = ({ pedido, posicao, onAvancar, onVoltar, atualizando, restaura
 };
 
 // Card de item do salão (não agrupa por mesa/comanda) — mostra mesa e garçom inline,
-// ordenado junto com os pedidos de delivery pela ordem de chegada.
-const SalaoItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+// ordenado junto com os pedidos de delivery pela ordem de chegada. Cronômetro ao vivo
+// (espera/preparo) igual ao painel de Produção.
+const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+  const enviadoEm = new Date(item.enviado_em).getTime();
+  const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
+  const tempoEspera = (preparandoEm ?? now) - enviadoEm;
+  const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
+  const tempoTotal = now - enviadoEm;
+
+  return (
   <div className={`rounded-2xl border-2 p-4 ${posicao === 1 ? 'border-yellow-400/70 bg-purple-950/20 ring-1 ring-yellow-400/30' : 'border-purple-300 bg-purple-950/20'}`}>
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-2">
@@ -142,7 +153,7 @@ const SalaoItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcar
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
-    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
+    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
       <Icon name="MapPin" size={12} />
       <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
       {item.garcom && (
@@ -152,6 +163,17 @@ const SalaoItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcar
           <span>{item.garcom}</span>
         </>
       )}
+    </div>
+    <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
+      <span className="flex items-center gap-1 text-blue-400">
+        <Icon name="Clock" size={11} /> espera {formatDuracao(tempoEspera)}
+      </span>
+      {item.status === 'preparando' && (
+        <span className="flex items-center gap-1 text-orange-400">
+          <Icon name="Flame" size={11} /> preparo {formatDuracao(tempoPreparo)}
+        </span>
+      )}
+      <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
     </div>
     {item.status === 'enviado' ? (
       <button onClick={() => onIniciarPreparo(item)}
@@ -165,7 +187,8 @@ const SalaoItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcar
       </button>
     )}
   </div>
-);
+  );
+};
 
 // Login screen para acesso via token (sem conta de dono)
 const CozinhaLogin = ({ onLogin }) => {
@@ -250,6 +273,7 @@ const RestauranteCozinha = () => {
   const [impressorasCozinha, setImpressorasCozinha] = useState(null);
   const [itensSalao, setItensSalao] = useState([]);
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
+  const now = useNowTick();
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -643,10 +667,10 @@ const RestauranteCozinha = () => {
             <div className="space-y-3">
               {aguardandoPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} now={now} onAvancar={handleAvancar} onVoltar={handleAvancar}
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
                     onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
                 )
               ))}
@@ -671,10 +695,10 @@ const RestauranteCozinha = () => {
             <div className="space-y-3">
               {emPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} now={now} onAvancar={handleAvancar} onVoltar={handleAvancar}
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
                     onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
                 )
               ))}

@@ -2,16 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
+import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
+import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
-
-const formatDuracao = (ms) => {
-  if (ms < 0) ms = 0;
-  const totalSeg = Math.floor(ms / 1000);
-  const min = Math.floor(totalSeg / 60);
-  const seg = totalSeg % 60;
-  return `${String(min).padStart(2, '0')}:${String(seg).padStart(2, '0')}`;
-};
 
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
@@ -92,7 +86,7 @@ const RestauranteProducao = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
-  const [now, setNow] = useState(Date.now());
+  const now = useNowTick();
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -101,11 +95,6 @@ const RestauranteProducao = () => {
   useEffect(() => {
     getMinhaEmpresa().then((d) => setRestauranteNome(d.empresa?.name ?? '')).catch(() => {});
     listarImpressoras().then(setImpressoras).catch((e) => setErro(e.message));
-  }, []);
-
-  useEffect(() => {
-    const tick = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(tick);
   }, []);
 
   const carregar = useCallback(async (lista) => {
