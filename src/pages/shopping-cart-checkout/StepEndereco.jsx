@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { updatePerfil } from '../../services/perfilService';
+import { buscarCep } from '../../utils/viaCep';
 import Icon from '../../components/AppIcon';
+
+const formatCEP = (v) => {
+  const n = (v ?? '').replace(/\D/g, '');
+  return n.length <= 8 ? n.replace(/(\d{5})(\d{0,3})/, (_, a, b) => (b ? `${a}-${b}` : a)) : v;
+};
 
 const Campo = ({ label, value, onChange, placeholder, required, half }) => (
   <div className={half ? 'w-1/2' : 'w-full'}>
@@ -23,6 +29,7 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
   });
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
+  const [buscandoCep, setBuscandoCep] = useState(false);
 
   useEffect(() => {
     if (!perfil) return;
@@ -42,6 +49,25 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
   }, [perfil]);
 
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleCepChange = async (v) => {
+    const formatted = formatCEP(v);
+    setForm((f) => ({ ...f, cep: formatted }));
+
+    const digitos = formatted.replace(/\D/g, '');
+    if (digitos.length !== 8) return;
+    setBuscandoCep(true);
+    const endereco = await buscarCep(digitos);
+    setBuscandoCep(false);
+    if (!endereco) return;
+    setForm((f) => ({
+      ...f,
+      logradouro: endereco.logradouro || f.logradouro,
+      bairro: endereco.bairro || f.bairro,
+      cidade: endereco.cidade || f.cidade,
+      estado: endereco.estado || f.estado,
+    }));
+  };
 
   const handleNext = async () => {
     if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim()) {
@@ -97,7 +123,8 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
           <Campo label="Cidade" value={form.cidade} onChange={set('cidade')} placeholder="São Paulo" half />
           <Campo label="Estado" value={form.estado} onChange={set('estado')} placeholder="SP" half />
         </div>
-        <Campo label="CEP" value={form.cep} onChange={set('cep')} placeholder="00000-000" />
+        <Campo label="CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
+        {buscandoCep && <p className="text-[11px] text-[#71717A] -mt-2">Buscando endereço...</p>}
         <Campo label="Ponto de referência" value={form.referencia} onChange={set('referencia')} placeholder="Próximo ao mercado..." />
       </div>
 

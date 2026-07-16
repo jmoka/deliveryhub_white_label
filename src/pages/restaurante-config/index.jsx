@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
+import { buscarCep } from '../../utils/viaCep';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
@@ -163,6 +164,31 @@ const EnderecoCard = ({ geocodeFalhou }) => {
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   const [erro, setErro] = useState(null);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  const formatCEP = (v) => {
+    const n = v.replace(/\D/g, '');
+    return n.length <= 8 ? n.replace(/(\d{5})(\d{0,3})/, (_, a, b) => (b ? `${a}-${b}` : a)) : v;
+  };
+
+  const handleCepChange = async (e) => {
+    const formatted = formatCEP(e.target.value);
+    setForm((f) => ({ ...f, cep: formatted }));
+
+    const digitos = formatted.replace(/\D/g, '');
+    if (digitos.length !== 8) return;
+    setBuscandoCep(true);
+    const endereco = await buscarCep(digitos);
+    setBuscandoCep(false);
+    if (!endereco) return;
+    setForm((f) => ({
+      ...f,
+      address: endereco.logradouro || f.address,
+      neighborhood: endereco.bairro || f.neighborhood,
+      city: endereco.cidade || f.city,
+      state: endereco.estado || f.state,
+    }));
+  };
 
   useEffect(() => {
     getMinhaEmpresa()
@@ -228,9 +254,10 @@ const EnderecoCard = ({ geocodeFalhou }) => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className="text-xs font-medium text-[#71717A]">CEP</label>
-              <input value={form.cep} onChange={(e) => setForm((f) => ({ ...f, cep: e.target.value }))}
-                placeholder="00000-000"
+              <input value={form.cep} onChange={handleCepChange}
+                placeholder="00000-000" maxLength={9}
                 className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+              {buscandoCep && <p className="text-[10px] text-[#71717A] mt-1">Buscando endereço...</p>}
             </div>
             <div>
               <label className="text-xs font-medium text-[#71717A]">Bairro</label>

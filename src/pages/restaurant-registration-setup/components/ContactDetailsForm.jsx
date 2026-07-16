@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Input from '../../../components/ui/Input';
+import { buscarCep } from '../../../utils/viaCep';
 
-const ContactDetailsForm = ({ 
-  formData, 
-  onInputChange, 
+const ContactDetailsForm = ({
+  formData,
+  onInputChange,
   errors = {},
-  className = '' 
+  className = ''
 }) => {
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const formatPhone = (value) => {
     const numbers = value?.replace(/\D/g, '');
     if (numbers?.length <= 11) {
@@ -28,9 +30,20 @@ const ContactDetailsForm = ({
     onInputChange({ target: { name: e?.target?.name, value: formatted } });
   };
 
-  const handleCEPChange = (e) => {
+  const handleCEPChange = async (e) => {
     const formatted = formatCEP(e?.target?.value);
     onInputChange({ target: { name: e?.target?.name, value: formatted } });
+
+    const digitos = formatted?.replace(/\D/g, '') ?? '';
+    if (digitos.length !== 8) return;
+    setBuscandoCep(true);
+    const endereco = await buscarCep(digitos);
+    setBuscandoCep(false);
+    if (!endereco) return;
+    onInputChange({ target: { name: 'address', value: endereco.logradouro } });
+    onInputChange({ target: { name: 'neighborhood', value: endereco.bairro } });
+    onInputChange({ target: { name: 'city', value: endereco.cidade } });
+    onInputChange({ target: { name: 'state', value: endereco.estado } });
   };
 
   return (
@@ -79,6 +92,7 @@ const ContactDetailsForm = ({
           error={errors?.cep}
           required
           maxLength={9}
+          description={buscandoCep ? 'Buscando endereço...' : 'Preenche endereço, bairro, cidade e estado automaticamente'}
         />
 
         <div className="md:col-span-2">
