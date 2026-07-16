@@ -138,6 +138,9 @@ export const setFreteGratis = (pedidoId) =>
 export const cancelarPedidoAdmin = (pedidoId, motivo) =>
   apiFetch(`/pedidos/${pedidoId}/cancelar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
 
+export const revisarOcorrenciaPedido = (pedidoId) =>
+  apiFetch(`/pedidos/${pedidoId}/revisar-ocorrencia`, { method: 'PATCH' });
+
 export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const renovarTokenCozinha = () => apiFetch('/renovar-token-cozinha', { method: 'PATCH' });

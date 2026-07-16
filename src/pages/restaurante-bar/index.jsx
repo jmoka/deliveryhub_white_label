@@ -8,9 +8,38 @@ import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 
 // Card por item (não por mesa/comanda) — pedido explícito: cada prato tem sua própria
-// ação de Iniciar Preparo/Reimpressão/Pronto, ordenados por ordem de chegada. `posicao`
-// numera a fila (1º = próximo a sair) pra equipe saber quem vem primeiro. Cronômetro ao
-// vivo (espera/preparo) igual ao painel de Produção.
+// ação de Liberado pra Motoboy/Reimpressão/Entregue, ordenados por ordem de chegada.
+// `posicao` numera a fila (1º = próximo a sair) pra equipe saber quem vem primeiro.
+// Cronômetro ao vivo (espera/preparo) igual ao painel de Produção.
+//
+// Alerta de motoboy (só item de delivery, com pedido já despachado): pisca amarelo em
+// trânsito, verde quando entregou, vermelho se o motoboy registrou ocorrência — dados
+// vêm do pedido (orders.status/motoboy_lat/lng/delivery_occurrence) via getKdsSetor.
+const AlertaMotoboy = ({ item }) => {
+  if (item.tipo !== 'delivery') return null;
+  const temOcorrencia = item.delivery_occurrence === 'pendente';
+  const entregue = item.pedido_status === 'delivered';
+  const emTransito = item.pedido_status === 'out_for_delivery' || item.pedido_status === 'motoboy_collecting';
+  const temMapa = item.motoboy_lat != null && item.motoboy_lng != null;
+
+  if (!temOcorrencia && !entregue && !emTransito && !temMapa) return null;
+
+  const cor = temOcorrencia ? 'bg-red-500' : entregue ? 'bg-emerald-500' : emTransito ? 'bg-yellow-400' : null;
+  const label = temOcorrencia ? 'Ocorrência do motoboy' : entregue ? 'Entregue' : emTransito ? 'Motoboy em trânsito' : '';
+
+  return (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      {cor && <span className={`w-2.5 h-2.5 rounded-full ${cor} animate-pulse`} title={label} />}
+      {temMapa && (
+        <a href={`https://www.google.com/maps?q=${item.motoboy_lat},${item.motoboy_lng}`} target="_blank" rel="noopener noreferrer"
+          className="p-1 text-[#71717A] hover:text-white rounded-md hover:bg-[#2A2A2A]" title="Localizar motoboy no mapa">
+          <Icon name="MapPin" size={13} />
+        </a>
+      )}
+    </div>
+  );
+};
+
 const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
@@ -27,10 +56,13 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
         </span>
         <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
       </div>
-      <button onClick={() => onReimprimir(item)}
-        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
-        <Icon name="Printer" size={11} /> Reimpressão
-      </button>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <AlertaMotoboy item={item} />
+        <button onClick={() => onReimprimir(item)}
+          className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1">
+          <Icon name="Printer" size={11} /> Reimpressão
+        </button>
+      </div>
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
@@ -62,12 +94,12 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
     {item.status === 'enviado' ? (
       <button onClick={() => onIniciarPreparo(item)}
         className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="ChefHat" size={13} /> Iniciar Preparo
+        <Icon name="ChefHat" size={13} /> Liberado pra Motoboy
       </button>
     ) : (
       <button onClick={() => onMarcarPronto(item.id)}
         className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="Check" size={13} /> Pronto
+        <Icon name="Check" size={13} /> Entregue
       </button>
     )}
   </div>
@@ -87,6 +119,7 @@ const RestauranteBar = () => {
   const [erro, setErro] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
+  const now = useNowTick();
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
@@ -234,7 +267,7 @@ const RestauranteBar = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-3 h-3 rounded-full bg-blue-400" />
-              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Preparo</h2>
+              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Motoboy</h2>
               {aguardando.length > 0 && (
                 <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{aguardando.length}</span>
               )}
@@ -247,7 +280,7 @@ const RestauranteBar = () => {
             ) : (
               <div className="space-y-3">
                 {aguardando.map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                 ))}
               </div>
             )}
@@ -256,7 +289,7 @@ const RestauranteBar = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
-              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Em Preparo</h2>
+              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregue pra Motoboy</h2>
               {preparando.length > 0 && (
                 <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{preparando.length}</span>
               )}
@@ -269,7 +302,7 @@ const RestauranteBar = () => {
             ) : (
               <div className="space-y-3">
                 {preparando.map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                 ))}
               </div>
             )}
