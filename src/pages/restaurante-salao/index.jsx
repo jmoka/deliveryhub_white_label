@@ -269,6 +269,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
   const [mesaDestino, setMesaDestino] = useState('');
   const [mostrarQr, setMostrarQr] = useState(false);
+  const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
   const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
@@ -435,24 +436,28 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             </button>
             {mostrarQr && (() => {
               const urls = getAcompanharUrls(comanda.tracking_token);
+              const urlAtiva = qrModo === 'local' && urls.lan ? urls.lan : urls.principal;
               return (
-                <div className="mt-2 flex flex-wrap gap-3">
+                <div className="mt-2">
+                  {urls.lan && (
+                    <div className="flex gap-2 mb-2">
+                      <button onClick={() => setQrModo('online')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                        ONLINE
+                      </button>
+                      <button onClick={() => setQrModo('local')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                        LOCAL
+                      </button>
+                    </div>
+                  )}
                   <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urls.principal)}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlAtiva)}`}
                       alt="QR de acompanhamento" width={150} height={150}
                     />
                     <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
                   </div>
-                  {urls.lan && (
-                    <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urls.lan)}`}
-                        alt="QR de acompanhamento (rede local)" width={150} height={150}
-                      />
-                      <p className="text-[10px] text-[#71717A]">Rede local — use se o celular não abrir o de cima</p>
-                    </div>
-                  )}
                 </div>
               );
             })()}
