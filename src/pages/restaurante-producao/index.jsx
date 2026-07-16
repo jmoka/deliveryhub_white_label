@@ -16,7 +16,7 @@ const formatDuracao = (ms) => {
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
 // pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -24,14 +24,20 @@ const ItemCard = ({ item, now, onReimprimir, onIniciarPreparo, onMarcarPronto })
   const tempoTotal = now - enviadoEm;
 
   return (
-    <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+    <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+        <div className="flex items-center gap-2">
+          <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
+            {posicao}
+          </span>
+          <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+        </div>
         <button onClick={() => onReimprimir(item)}
           className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
           <Icon name="Printer" size={11} /> Reimpressão
         </button>
       </div>
+      {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
       {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
       <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
         <Icon name="MapPin" size={12} />
@@ -236,8 +242,8 @@ const RestauranteProducao = () => {
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {aguardando.map((item) => (
-                            <ItemCard key={item.id} item={item} now={now}
+                          {aguardando.map((item, idx) => (
+                            <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                           ))}
                         </div>
@@ -249,8 +255,8 @@ const RestauranteProducao = () => {
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {preparando.map((item) => (
-                            <ItemCard key={item.id} item={item} now={now}
+                          {preparando.map((item, idx) => (
+                            <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                           ))}
                         </div>

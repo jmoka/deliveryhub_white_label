@@ -22,7 +22,7 @@ const STATUS_INFO = {
   preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Ag. Preparo', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
 };
 
-const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
+const OrderCard = ({ pedido, posicao, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
   const si = STATUS_INFO[pedido.status];
   const isAtualizando = atualizando === pedido.id;
   const minutos = Math.floor((Date.now() - new Date(pedido.created_at)) / 60000);
@@ -34,6 +34,8 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
       className={`rounded-2xl border-2 overflow-hidden flex flex-col transition-all duration-300 ${
         isHighlighted
           ? 'border-yellow-400 bg-yellow-50 shadow-xl shadow-yellow-300/40 scale-[1.02]'
+          : posicao === 1
+          ? 'border-yellow-400 bg-white'
           : si?.color ?? 'border-gray-200 bg-white'
       }`}
     >
@@ -43,10 +45,18 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
           <p className="text-xs font-black text-yellow-900 uppercase tracking-wide">Pedido encontrado via leitura</p>
         </div>
       )}
+      {!isHighlighted && posicao === 1 && (
+        <div className="bg-yellow-400 px-4 py-1 flex items-center gap-1.5">
+          <p className="text-[10px] font-black text-yellow-900 uppercase tracking-wide">Próximo da fila</p>
+        </div>
+      )}
 
       <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
+            <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#E4E4E7] text-[#27272A]'}`}>
+              {posicao}
+            </span>
             <p className="text-2xl font-black text-[#18181B]">#{pedido.id}</p>
             <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${si?.badge}`}>{si?.label}</span>
           </div>
@@ -116,15 +126,21 @@ const OrderCard = ({ pedido, onAvancar, onVoltar, atualizando, restauranteNome, 
 
 // Card de item do salão (não agrupa por mesa/comanda) — mostra mesa e garçom inline,
 // ordenado junto com os pedidos de delivery pela ordem de chegada.
-const SalaoItemCard = ({ item, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
-  <div className="rounded-2xl border-2 border-purple-300 bg-purple-950/20 p-4">
+const SalaoItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+  <div className={`rounded-2xl border-2 p-4 ${posicao === 1 ? 'border-yellow-400/70 bg-purple-950/20 ring-1 ring-yellow-400/30' : 'border-purple-300 bg-purple-950/20'}`}>
     <div className="flex items-center justify-between mb-1">
-      <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name} <span className="text-purple-300 font-normal text-xs">· Salão</span></span>
+      <div className="flex items-center gap-2">
+        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-purple-900/50 text-white'}`}>
+          {posicao}
+        </span>
+        <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name} <span className="text-purple-300 font-normal text-xs">· Salão</span></span>
+      </div>
       <button onClick={() => onReimprimir(item)}
         className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
         <Icon name="Printer" size={11} /> Reimpressão
       </button>
     </div>
+    {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
       <Icon name="MapPin" size={12} />
@@ -594,12 +610,12 @@ const RestauranteCozinha = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {aguardandoPreparo.map((entry) => (
+              {aguardandoPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} onAvancar={handleAvancar} onVoltar={handleAvancar}
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1}
                     onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
                 )
               ))}
@@ -622,12 +638,12 @@ const RestauranteCozinha = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {emPreparo.map((entry) => (
+              {emPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} onAvancar={handleAvancar} onVoltar={handleAvancar}
+                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} onAvancar={handleAvancar} onVoltar={handleAvancar}
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1}
                     onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
                 )
               ))}

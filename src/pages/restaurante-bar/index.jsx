@@ -6,16 +6,23 @@ import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import Icon from '../../components/AppIcon';
 
 // Card por item (não por mesa/comanda) — pedido explícito: cada prato tem sua própria
-// ação de Iniciar Preparo/Reimpressão/Pronto, ordenados por ordem de chegada.
-const ItemCard = ({ item, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
-  <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+// ação de Iniciar Preparo/Reimpressão/Pronto, ordenados por ordem de chegada. `posicao`
+// numera a fila (1º = próximo a sair) pra equipe saber quem vem primeiro.
+const ItemCard = ({ item, posicao, onReimprimir, onIniciarPreparo, onMarcarPronto }) => (
+  <div className={`bg-[#1A1A1A] border rounded-2xl p-4 relative ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
     <div className="flex items-center justify-between mb-1">
-      <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+      <div className="flex items-center gap-2">
+        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
+          {posicao}
+        </span>
+        <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+      </div>
       <button onClick={() => onReimprimir(item)}
         className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
         <Icon name="Printer" size={11} /> Reimpressão
       </button>
     </div>
+    {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
       <Icon name="MapPin" size={12} />
@@ -188,8 +195,8 @@ const RestauranteBar = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {aguardando.map((item) => (
-                  <ItemCard key={item.id} item={item} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                {aguardando.map((item, idx) => (
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                 ))}
               </div>
             )}
@@ -210,8 +217,8 @@ const RestauranteBar = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {preparando.map((item) => (
-                  <ItemCard key={item.id} item={item} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                {preparando.map((item, idx) => (
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                 ))}
               </div>
             )}
