@@ -9,6 +9,7 @@ import { apiPath } from '../../lib/apiUrl';
 import { getMotoboyToken } from '../../services/motoboyAuthService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+const RAIO_OPCOES = [5, 10, 15, 25, 50, 0]; // 0 = sem limite (só ordena por distância)
 
 /* ── Fallback local (usado até a API responder) ─────────────────── */
 const CATEGORIAS_FALLBACK = [
@@ -68,7 +69,14 @@ const RestCardGrid = ({ r, i }) => {
         </div>
       </div>
       <div className="p-4">
-        <p className="font-bold text-[#18181B] text-sm leading-tight">{r.name}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-bold text-[#18181B] text-sm leading-tight">{r.name}</p>
+          {r.distancia_km != null && (
+            <span className="flex-shrink-0 text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-1.5 py-0.5 rounded-full">
+              {r.distancia_km} km
+            </span>
+          )}
+        </div>
         {r.address && <p className="text-xs text-[#71717A] mt-0.5 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
         <div className="flex items-center gap-3 mt-2.5">
           <span className="flex items-center gap-1 text-xs text-[#71717A]"><Icon name="Clock" size={11}/> {tempo}</span>
@@ -125,6 +133,9 @@ const RestCardList = ({ r, i }) => {
             <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$${r.frete?.toFixed(2)}`}
           </span>
           {gratis && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Frete grátis</span>}
+          {r.distancia_km != null && (
+            <span className="text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-2 py-0.5 rounded-full">{r.distancia_km} km</span>
+          )}
         </div>
       </div>
       <Icon name="ChevronRight" size={18} className="text-[#E4E4E7] self-center flex-shrink-0" />
@@ -514,6 +525,43 @@ const MenuCatalogProductBrowse = () => {
   const [badgeCount, setBadgeCount]     = useState(() => cartCount());
   const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
 
+  // Filtro geográfico — localização automática (GPS do navegador) + filtros manuais
+  // de Estado/Cidade/Bairro/CEP. Sem filtro manual ativo, a localização já limita a
+  // lista ao raio escolhido automaticamente (cliente não precisa mexer em nada).
+  const [localizacao, setLocalizacao]     = useState(null); // { lat, lng } | null
+  const [statusLocalizacao, setStatusLocalizacao] = useState('pedindo'); // pedindo|ok|negado|indisponivel
+  const [raioKm, setRaioKm]               = useState(15);
+  const [locaisFiltro, setLocaisFiltro]   = useState([]);
+  const [filtroEstado, setFiltroEstado]   = useState('');
+  const [filtroCidade, setFiltroCidade]   = useState('');
+  const [filtroBairro, setFiltroBairro]   = useState('');
+  const [filtroCep, setFiltroCep]         = useState('');
+
+  const pedirLocalizacao = () => {
+    if (!navigator.geolocation) { setStatusLocalizacao('indisponivel'); return; }
+    setStatusLocalizacao('pedindo');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setLocalizacao({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setStatusLocalizacao('ok'); },
+      () => setStatusLocalizacao('negado'),
+      { timeout: 8000 },
+    );
+  };
+
+  const limparFiltrosGeo = () => {
+    setFiltroEstado(''); setFiltroCidade(''); setFiltroBairro(''); setFiltroCep('');
+  };
+
+  const temFiltroManual = !!(filtroEstado || filtroCidade || filtroBairro || filtroCep);
+  const estadosDisponiveis = [...new Set(locaisFiltro.map((l) => l.state).filter(Boolean))].sort();
+  const cidadesDisponiveis = [...new Set(
+    locaisFiltro.filter((l) => !filtroEstado || l.state === filtroEstado).map((l) => l.city).filter(Boolean),
+  )].sort();
+  const bairrosDisponiveis = [...new Set(
+    locaisFiltro
+      .filter((l) => (!filtroEstado || l.state === filtroEstado) && (!filtroCidade || l.city === filtroCidade))
+      .map((l) => l.neighborhood).filter(Boolean),
+  )].sort();
+
   const handleAddToCart = (produto, restaurante) => {
     cartAdd(produto, restaurante);
     setBadgeCount(cartCount());
@@ -534,11 +582,10 @@ const MenuCatalogProductBrowse = () => {
     : 0;
 
   useEffect(() => {
-    fetch(apiPath('/api/r'))
-      .then((r) => r.json())
-      .then((d) => setRestaurantes(d.restaurantes ?? []))
-      .catch((e) => setErro(e.message))
-      .finally(() => setLoading(false));
+    pedirLocalizacao();
+    // Rede de segurança: se o navegador nunca resolver o pedido de permissão (usuário
+    // deixa o diálogo aberto), não trava a home esperando pra sempre.
+    const fallback = setTimeout(() => setStatusLocalizacao((s) => (s === 'pedindo' ? 'negado' : s)), 10000);
 
     fetch(apiPath('/api/r/produtos'))
       .then((r) => r.json())
@@ -555,7 +602,40 @@ const MenuCatalogProductBrowse = () => {
       .then((r) => r.json())
       .then((d) => setTagsCatalogo(d.tags ?? []))
       .catch(() => {});
+
+    fetch(apiPath('/api/r/filtros'))
+      .then((r) => r.json())
+      .then((d) => setLocaisFiltro(d.locais ?? []))
+      .catch(() => {});
+
+    return () => clearTimeout(fallback);
   }, []);
+
+  // Busca restaurantes toda vez que localização/raio/filtros geográficos mudam — o
+  // servidor já filtra/ordena por distância, sem filtro manual ativo o raio entra
+  // sozinho assim que o GPS responde (automático, sem o cliente mexer em nada).
+  useEffect(() => {
+    if (statusLocalizacao === 'pedindo' && !temFiltroManual) return; // espera o GPS antes do 1º fetch
+
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filtroEstado) params.set('state', filtroEstado);
+    if (filtroCidade) params.set('city', filtroCidade);
+    if (filtroBairro) params.set('neighborhood', filtroBairro);
+    if (filtroCep) params.set('cep', filtroCep);
+    if (localizacao) {
+      params.set('lat', String(localizacao.lat));
+      params.set('lng', String(localizacao.lng));
+      if (raioKm && !temFiltroManual) params.set('raio_km', String(raioKm));
+    }
+    const qs = params.toString();
+
+    fetch(apiPath(`/api/r${qs ? `?${qs}` : ''}`))
+      .then((r) => r.json())
+      .then((d) => setRestaurantes(d.restaurantes ?? []))
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, [statusLocalizacao, localizacao, raioKm, filtroEstado, filtroCidade, filtroBairro, filtroCep, temFiltroManual]);
 
   // catAtiva === null: sem filtro de categoria (mostra tudo)
   const produtosPorCategoria = catAtiva === null
@@ -677,6 +757,73 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Hero ────────────────────────────────────────────────── */}
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} />
+
+      {/* ── Filtro geográfico — Estado/Cidade/Bairro/CEP + raio KM ── */}
+      <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-3 flex flex-wrap items-center gap-2">
+          <button
+            onClick={pedirLocalizacao}
+            disabled={statusLocalizacao === 'pedindo'}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors flex-shrink-0 ${
+              statusLocalizacao === 'ok'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-[#F4F4F5] text-[#71717A] hover:bg-[#E4E4E7]'
+            }`}
+          >
+            <Icon name={statusLocalizacao === 'pedindo' ? 'Loader2' : 'LocateFixed'} size={14}
+              className={statusLocalizacao === 'pedindo' ? 'animate-spin' : ''} />
+            {statusLocalizacao === 'ok' ? 'Perto de você' : statusLocalizacao === 'pedindo' ? 'Localizando...' : 'Ativar localização'}
+          </button>
+
+          {localizacao && !temFiltroManual && (
+            <select value={raioKm} onChange={(e) => setRaioKm(Number(e.target.value))}
+              className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0">
+              {RAIO_OPCOES.map((km) => (
+                <option key={km} value={km}>{km === 0 ? 'Sem limite' : `Até ${km} km`}</option>
+              ))}
+            </select>
+          )}
+
+          <select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setFiltroCidade(''); setFiltroBairro(''); }}
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0">
+            <option value="">Estado</option>
+            {estadosDisponiveis.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+
+          <select value={filtroCidade} onChange={(e) => { setFiltroCidade(e.target.value); setFiltroBairro(''); }}
+            disabled={cidadesDisponiveis.length === 0}
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0 disabled:opacity-40">
+            <option value="">Cidade</option>
+            {cidadesDisponiveis.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          <select value={filtroBairro} onChange={(e) => setFiltroBairro(e.target.value)}
+            disabled={bairrosDisponiveis.length === 0}
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0 disabled:opacity-40">
+            <option value="">Bairro</option>
+            {bairrosDisponiveis.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+
+          <input value={filtroCep} onChange={(e) => setFiltroCep(e.target.value)} placeholder="CEP"
+            className="w-24 text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0 outline-none focus:border-[#FF441F]" />
+
+          {temFiltroManual && (
+            <button onClick={limparFiltrosGeo}
+              className="flex items-center gap-1 text-xs font-semibold text-[#FF441F] bg-[#FF441F]/10 hover:bg-[#FF441F]/20 rounded-full px-2.5 py-1.5 flex-shrink-0">
+              <Icon name="X" size={12} /> Limpar filtros
+            </button>
+          )}
+        </div>
+
+        {statusLocalizacao === 'negado' && (
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 pb-3">
+            <p className="text-xs text-[#71717A] flex items-center gap-1.5">
+              <Icon name="Info" size={13} className="flex-shrink-0" />
+              Ative a localização pra ver automaticamente os restaurantes mais próximos, ou use os filtros acima.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
       <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
@@ -852,8 +999,29 @@ const MenuCatalogProductBrowse = () => {
                 <motion.div key="vazio" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="text-center py-14 bg-white rounded-2xl border border-[#E4E4E7]">
                   <Icon name="Store" size={44} className="text-[#E4E4E7] mx-auto mb-3" />
-                  <p className="text-[#27272A] font-bold">{busca ? `Sem resultados para "${busca}"` : 'Nenhum restaurante ainda'}</p>
-                  {!busca && (
+                  <p className="text-[#27272A] font-bold">
+                    {busca
+                      ? `Sem resultados para "${busca}"`
+                      : temFiltroManual || (localizacao && raioKm > 0)
+                      ? 'Nenhum restaurante encontrado nessa região'
+                      : 'Nenhum restaurante ainda'}
+                  </p>
+                  {!busca && (temFiltroManual || (localizacao && raioKm > 0)) ? (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      {temFiltroManual && (
+                        <button onClick={limparFiltrosGeo}
+                          className="px-4 py-2.5 bg-[#F4F4F5] text-[#27272A] text-sm font-bold rounded-xl hover:bg-[#E4E4E7]">
+                          Limpar filtros
+                        </button>
+                      )}
+                      {!temFiltroManual && localizacao && raioKm > 0 && (
+                        <button onClick={() => setRaioKm(0)}
+                          className="px-4 py-2.5 bg-[#F4F4F5] text-[#27272A] text-sm font-bold rounded-xl hover:bg-[#E4E4E7]">
+                          Ver sem limite de distância
+                        </button>
+                      )}
+                    </div>
+                  ) : !busca && (
                     <button onClick={() => navigate('/restaurant-registration-setup')}
                       className="mt-4 px-5 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
                       Cadastrar estabelecimento

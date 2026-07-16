@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getConfig, updateConfig, listarImpressoras } from '../../services/restauranteService';
+import { getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
@@ -154,6 +154,117 @@ const Guia = () => {
   );
 };
 
+// Endereço estruturado (Estado/Cidade/Bairro/CEP) do estabelecimento — alimenta o
+// filtro geográfico da home pública. Separado do resto da tela (que é config de
+// pagamento/motoboy) porque usa outro endpoint (minha-empresa, não config).
+const EnderecoCard = ({ geocodeFalhou }) => {
+  const [form, setForm] = useState({ address: '', cep: '', neighborhood: '', city: '', state: '' });
+  const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [sucesso, setSucesso] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  useEffect(() => {
+    getMinhaEmpresa()
+      .then((d) => {
+        const e = d.empresa ?? {};
+        setForm({
+          address: e.address ?? '',
+          cep: e.cep ?? '',
+          neighborhood: e.neighborhood ?? '',
+          city: e.city ?? '',
+          state: e.state ?? '',
+        });
+      })
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const salvar = async (e) => {
+    e.preventDefault();
+    setSalvando(true);
+    setErro(null);
+    setSucesso(false);
+    try {
+      await updateEmpresa({
+        address: form.address.trim(),
+        cep: form.cep.trim(),
+        neighborhood: form.neighborhood.trim(),
+        city: form.city.trim(),
+        state: form.state.trim(),
+      });
+      setSucesso(true);
+      setTimeout(() => setSucesso(false), 2500);
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border p-6">
+      <h2 className="font-semibold text-[#18181B] mb-1">Endereço do estabelecimento</h2>
+      <p className="text-xs text-[#71717A] mb-4">Usado pro filtro de Estado/Cidade/Bairro/CEP e "restaurantes perto de mim" na home.</p>
+
+      {geocodeFalhou && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+          ⚠️ Não conseguimos localizar esse endereço no mapa — confira se está completo e correto.
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-6">
+          <div className="w-6 h-6 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <form onSubmit={salvar} className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-[#71717A]">Endereço (rua, número)</label>
+            <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+              placeholder="Rua Exemplo, 123"
+              className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs font-medium text-[#71717A]">CEP</label>
+              <input value={form.cep} onChange={(e) => setForm((f) => ({ ...f, cep: e.target.value }))}
+                placeholder="00000-000"
+                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#71717A]">Bairro</label>
+              <input value={form.neighborhood} onChange={(e) => setForm((f) => ({ ...f, neighborhood: e.target.value }))}
+                placeholder="Centro"
+                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#71717A]">Cidade</label>
+              <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                placeholder="São Paulo"
+                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#71717A]">Estado (UF)</label>
+              <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value.toUpperCase() }))}
+                placeholder="SP" maxLength={2}
+                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+            </div>
+          </div>
+          {erro && <p className="text-xs text-red-600">{erro}</p>}
+          <div className="flex items-center gap-3 pt-1">
+            <button type="submit" disabled={salvando}
+              className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar endereço'}
+            </button>
+            {sucesso && <span className="text-xs font-semibold text-green-600 flex items-center gap-1"><Icon name="Check" size={14} /> Salvo</span>}
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
 const RestauranteConfig = () => {
   const tipoRestaurante = useTipoRestaurante();
   const [config, setConfig] = useState(null);
@@ -285,6 +396,9 @@ const RestauranteConfig = () => {
                 </p>
               </div>
             </div>
+
+            {/* Endereço estruturado — filtro geográfico da home pública */}
+            <EnderecoCard geocodeFalhou={config?.geocode_falhou} />
 
             {/* Guia passo a passo */}
             <Guia />
@@ -444,7 +558,7 @@ const RestauranteConfig = () => {
                       <p className="text-xs text-gray-400">
                         O valor de segurança é usado quando não conseguimos calcular a distância (endereço não localizado).
                         {config?.geocode_falhou && (
-                          <span className="text-amber-600 font-medium"> ⚠️ O endereço do seu estabelecimento não foi localizado — edite-o em "Meu Estabelecimento" pra habilitar o cálculo por km.</span>
+                          <span className="text-amber-600 font-medium"> ⚠️ O endereço do seu estabelecimento não foi localizado — confira o endereço no topo desta página pra habilitar o cálculo por km.</span>
                         )}
                       </p>
                     </div>

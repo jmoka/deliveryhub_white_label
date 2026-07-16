@@ -242,6 +242,10 @@ const RestaurantRegistrationSetup = () => {
       await registrarRestaurante({
         name: formData.restaurantName,
         address: address || undefined,
+        state: formData.state || undefined,
+        city: formData.city || undefined,
+        neighborhood: formData.neighborhood || undefined,
+        cep: formData.cep || undefined,
         business_hours: formData.operatingHours,
         type_id: formData.establishmentTypeId ? Number(formData.establishmentTypeId) : undefined,
       });
