@@ -249,6 +249,7 @@ const RestauranteCozinha = () => {
   const [gerandoLink, setGerandoLink] = useState(false);
   const [impressorasCozinha, setImpressorasCozinha] = useState(null);
   const [itensSalao, setItensSalao] = useState([]);
+  const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -455,15 +456,23 @@ const RestauranteCozinha = () => {
   const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando');
 
   // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.
-  const aguardandoPreparo = [
+  const filaAguardando = [
     ...confirmados.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
     ...itensSalaoAguardando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
   ].sort((a, b) => a.ts - b.ts);
 
-  const emPreparo = [
+  const filaEmPreparo = [
     ...preparando.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
     ...itensSalaoPreparando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
   ].sort((a, b) => a.ts - b.ts);
+
+  // Filtro por canal (Todos/Delivery/Salão) aplicado só na exibição — posição na fila
+  // é recalculada sobre a lista já filtrada.
+  const passaFiltro = (e) => filtroCanal === 'todos' || e.tipo === filtroCanal;
+  const aguardandoPreparo = filaAguardando.filter(passaFiltro);
+  const emPreparo = filaEmPreparo.filter(passaFiltro);
+  const totalDelivery = filaAguardando.filter((e) => e.tipo === 'delivery').length + filaEmPreparo.filter((e) => e.tipo === 'delivery').length;
+  const totalSalao = filaAguardando.filter((e) => e.tipo === 'salao').length + filaEmPreparo.filter((e) => e.tipo === 'salao').length;
 
   // Modo token: mostrar login se não autenticado
   if (modoToken && !authed) {
@@ -587,6 +596,28 @@ const RestauranteCozinha = () => {
               {scanMsg.texto}
             </p>
           )}
+        </div>
+
+        {/* Filtro de canal — Todos/Delivery/Salão */}
+        <div className="flex items-center gap-2 mt-3">
+          {[
+            { key: 'todos', label: 'Todos', count: totalDelivery + totalSalao },
+            { key: 'delivery', label: 'Delivery', count: totalDelivery },
+            { key: 'salao', label: 'Salão', count: totalSalao },
+          ].map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFiltroCanal(f.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                filtroCanal === f.key
+                  ? 'bg-[#FF441F] text-white'
+                  : 'bg-[#111111] text-[#71717A] border border-[#2A2A2A] hover:text-white'
+              }`}
+            >
+              {f.label}
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${filtroCanal === f.key ? 'bg-white/20' : 'bg-[#2A2A2A]'}`}>{f.count}</span>
+            </button>
+          ))}
         </div>
       </header>
 
