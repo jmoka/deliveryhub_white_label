@@ -78,7 +78,7 @@ const ArquivoPreview = ({ url, alt, className }) => {
   );
 };
 
-const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando }) => {
+const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando, somenteLeitura = false }) => {
   const [motivo, setMotivo] = useState('');
   const [mostrarRecusa, setMostrarRecusa] = useState(false);
   const mb = solicitacao.motoboy;
@@ -119,7 +119,11 @@ const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando }
           )}
         </div>
 
-        {mostrarRecusa ? (
+        {somenteLeitura ? (
+          <button onClick={onFechar} className="w-full mt-5 py-2.5 border rounded-xl text-sm text-gray-700 hover:bg-gray-50">
+            Fechar
+          </button>
+        ) : mostrarRecusa ? (
           <div className="mt-5 space-y-2">
             <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3}
               placeholder="Motivo da recusa (opcional)"
@@ -159,6 +163,7 @@ const RestauranteMotoboys = () => {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [ficha, setFicha] = useState(null); // solicitacao selecionada
+  const [fichaSomenteLeitura, setFichaSomenteLeitura] = useState(false);
   const [processando, setProcessando] = useState(false);
   const [removendo, setRemovendo] = useState(null);
   const [revisando, setRevisando] = useState(null);
@@ -347,6 +352,12 @@ const RestauranteMotoboys = () => {
                       {s.respondido_em && new Date(s.respondido_em).toLocaleDateString('pt-BR')}
                     </p>
                     <button
+                      onClick={() => { setFicha(s); setFichaSomenteLeitura(true); }}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#F4F4F5] text-[#27272A] hover:bg-[#E4E4E7]"
+                    >
+                      Ver ficha
+                    </button>
+                    <button
                       onClick={() => handleRevisar(s.id)}
                       disabled={revisando === s.id}
                       className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50"
@@ -367,10 +378,11 @@ const RestauranteMotoboys = () => {
       {ficha && (
         <FichaModal
           solicitacao={ficha}
-          onFechar={() => setFicha(null)}
+          onFechar={() => { setFicha(null); setFichaSomenteLeitura(false); }}
           onAceitar={handleAceitar}
           onRecusar={handleRecusar}
           processando={processando}
+          somenteLeitura={fichaSomenteLeitura}
         />
       )}
     </div>
