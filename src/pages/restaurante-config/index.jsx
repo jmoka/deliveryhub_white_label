@@ -159,8 +159,18 @@ const Guia = () => {
 // Endereço estruturado (Estado/Cidade/Bairro/CEP) do estabelecimento — alimenta o
 // filtro geográfico da home pública. Separado do resto da tela (que é config de
 // pagamento/motoboy) porque usa outro endpoint (minha-empresa, não config).
+// Endereço fica guardado como uma string só (address) — não é uma coluna separada de
+// número. Pra evitar dono esquecer o número (some casos geocodificavam impreciso por
+// causa disso), o form aqui separa Logradouro/Número visualmente e concatena os dois
+// antes de salvar; ao carregar, tenta separar de volta um "..., 123" no fim da string
+// já salva (melhor esforço — endereço antigo sem número cai tudo em Logradouro mesmo).
+const separarNumero = (address) => {
+  const m = (address ?? '').match(/^(.*?),?\s*(\d+[a-zA-Z]?)\s*$/);
+  return m ? { logradouro: m[1].trim(), numero: m[2] } : { logradouro: address ?? '', numero: '' };
+};
+
 const EnderecoCard = ({ geocodeFalhou }) => {
-  const [form, setForm] = useState({ address: '', cep: '', neighborhood: '', city: '', state: '' });
+  const [form, setForm] = useState({ logradouro: '', numero: '', cep: '', neighborhood: '', city: '', state: '' });
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
@@ -184,7 +194,7 @@ const EnderecoCard = ({ geocodeFalhou }) => {
     if (!endereco) return;
     setForm((f) => ({
       ...f,
-      address: endereco.logradouro || f.address,
+      logradouro: endereco.logradouro || f.logradouro,
       neighborhood: endereco.bairro || f.neighborhood,
       city: endereco.cidade || f.city,
       state: endereco.estado || f.state,
@@ -195,8 +205,10 @@ const EnderecoCard = ({ geocodeFalhou }) => {
     getMinhaEmpresa()
       .then((d) => {
         const e = d.empresa ?? {};
+        const { logradouro, numero } = separarNumero(e.address);
         setForm({
-          address: e.address ?? '',
+          logradouro,
+          numero,
           cep: e.cep ?? '',
           neighborhood: e.neighborhood ?? '',
           city: e.city ?? '',
@@ -209,12 +221,16 @@ const EnderecoCard = ({ geocodeFalhou }) => {
 
   const salvar = async (e) => {
     e.preventDefault();
+    if (!form.logradouro.trim() || !form.numero.trim()) {
+      setErro('Informe logradouro e número.');
+      return;
+    }
     setSalvando(true);
     setErro(null);
     setSucesso(false);
     try {
       await updateEmpresa({
-        address: form.address.trim(),
+        address: `${form.logradouro.trim()}, ${form.numero.trim()}`,
         cep: form.cep.trim(),
         neighborhood: form.neighborhood.trim(),
         city: form.city.trim(),
@@ -246,11 +262,19 @@ const EnderecoCard = ({ geocodeFalhou }) => {
         </div>
       ) : (
         <form onSubmit={salvar} className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-[#71717A]">Endereço (rua, número)</label>
-            <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-              placeholder="Rua Exemplo, 123"
-              className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-[#71717A]">Logradouro (rua/av.)</label>
+              <input value={form.logradouro} onChange={(e) => setForm((f) => ({ ...f, logradouro: e.target.value }))}
+                placeholder="Rua Exemplo"
+                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[#71717A]">Número</label>
+              <input value={form.numero} onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+                placeholder="123"
+                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+            </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
