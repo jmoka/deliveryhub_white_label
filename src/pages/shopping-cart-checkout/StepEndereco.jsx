@@ -70,8 +70,8 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
   };
 
   const handleNext = async () => {
-    if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim()) {
-      setErro('Preencha nome, telefone e endereço obrigatórios.');
+    if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim() || !form.numero.trim()) {
+      setErro('Preencha nome, telefone, endereço e número.');
       return;
     }
     setSalvando(true);
@@ -115,7 +115,7 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
         </p>
         <Campo label="Logradouro (Rua / Av.)" value={form.logradouro} onChange={set('logradouro')} placeholder="Rua das Flores" required />
         <div className="flex gap-2">
-          <Campo label="Número" value={form.numero} onChange={set('numero')} placeholder="123" half />
+          <Campo label="Número" value={form.numero} onChange={set('numero')} placeholder="123" half required />
           <Campo label="Complemento" value={form.complemento} onChange={set('complemento')} placeholder="Apto 4" half />
         </div>
         <Campo label="Bairro" value={form.bairro} onChange={set('bairro')} placeholder="Centro" />

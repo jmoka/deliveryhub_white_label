@@ -7,6 +7,8 @@ import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart'
 import { imgUrl } from '../../lib/imgUrl';
 import { apiPath } from '../../lib/apiUrl';
 import { getMotoboyToken } from '../../services/motoboyAuthService';
+import { getPerfil } from '../../services/perfilService';
+import { supabase } from '../../lib/supabase';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const RAIO_OPCOES = [5, 10, 15, 25, 50, 0]; // 0 = sem limite (só ordena por distância)
@@ -510,7 +512,7 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota }) => (
 /* ── Componente principal ────────────────────────────────────────── */
 const MenuCatalogProductBrowse = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, isRestaurantOwner, signOut } = useAuth();
+  const { isAuthenticated, isAdmin, isRestaurantOwner, signOut, userProfile } = useAuth();
 
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
@@ -524,6 +526,7 @@ const MenuCatalogProductBrowse = () => {
   const [viewMode, setViewMode]         = useState('grid');
   const [badgeCount, setBadgeCount]     = useState(() => cartCount());
   const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
+  const [perfilCliente, setPerfilCliente] = useState(null);
 
   // Filtro geográfico — localização automática (GPS do navegador) + filtros manuais
   // de Estado/Cidade/Bairro/CEP. Sem filtro manual ativo, a localização já limita a
@@ -611,6 +614,13 @@ const MenuCatalogProductBrowse = () => {
     return () => clearTimeout(fallback);
   }, []);
 
+  // Foto/nome do cliente pro avatar do cabeçalho — só cliente comum, dono de
+  // restaurante/admin já têm seus próprios botões de painel.
+  useEffect(() => {
+    if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) { setPerfilCliente(null); return; }
+    getPerfil().then(setPerfilCliente).catch(() => {});
+  }, [userProfile?.id, userProfile?.role]);
+
   // Busca restaurantes toda vez que localização/raio/filtros geográficos mudam — o
   // servidor já filtra/ordena por distância, sem filtro manual ativo o raio entra
   // sozinho assim que o GPS responde (automático, sem o cliente mexer em nada).
@@ -630,11 +640,24 @@ const MenuCatalogProductBrowse = () => {
     }
     const qs = params.toString();
 
-    fetch(apiPath(`/api/r${qs ? `?${qs}` : ''}`))
-      .then((r) => r.json())
-      .then((d) => setRestaurantes(d.restaurantes ?? []))
-      .catch((e) => setErro(e.message))
-      .finally(() => setLoading(false));
+    // Sem GPS ao vivo (negado/indisponível) e logado: manda o token pro backend usar o
+    // endereço salvo/geocodificado do perfil como fallback (ver catalogo.controller.ts).
+    (async () => {
+      const headers = {};
+      if (isAuthenticated()) {
+        const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      }
+      try {
+        const r = await fetch(apiPath(`/api/r${qs ? `?${qs}` : ''}`), { headers });
+        const d = await r.json();
+        setRestaurantes(d.restaurantes ?? []);
+      } catch (e) {
+        setErro(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [statusLocalizacao, localizacao, raioKm, filtroEstado, filtroCidade, filtroBairro, filtroCep, temFiltroManual]);
 
   // catAtiva === null: sem filtro de categoria (mostra tudo)
@@ -734,6 +757,15 @@ const MenuCatalogProductBrowse = () => {
                     className="p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg" title="Meu Painel">
                     <span className="hidden sm:inline text-xs font-semibold">Meu Rest.</span>
                     <Icon name="Store" size={18} className="sm:hidden" />
+                  </button>
+                )}
+                {!isAdmin() && !isRestaurantOwner() && (
+                  <button onClick={() => navigate('/customer-profile')}
+                    className="w-8 h-8 rounded-full overflow-hidden bg-[#F4F4F5] flex-shrink-0 border border-[#E4E4E7] flex items-center justify-center"
+                    title="Meu perfil">
+                    {perfilCliente?.foto_perfil_url
+                      ? <img src={perfilCliente.foto_perfil_url} alt="Meu perfil" className="w-full h-full object-cover" />
+                      : <Icon name="User" size={16} className="text-[#71717A]" />}
                   </button>
                 )}
                 <button onClick={() => navigate('/customer-account-order-history')}

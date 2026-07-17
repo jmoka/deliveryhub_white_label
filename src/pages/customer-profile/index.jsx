@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPerfil, updatePerfil } from '../../services/perfilService';
+import { getPerfil, updatePerfil, uploadFoto } from '../../services/perfilService';
+import { buscarCep } from '../../utils/viaCep';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+
+const formatCEP = (v) => {
+  const n = (v ?? '').replace(/\D/g, '');
+  return n.length <= 8 ? n.replace(/(\d{5})(\d{0,3})/, (_, a, b) => (b ? `${a}-${b}` : a)) : v;
+};
 
 const Campo = ({ label, value, onChange, placeholder, required, type = 'text', readOnly }) => (
   <div>
@@ -31,9 +37,13 @@ const CustomerProfile = () => {
     logradouro: '', numero: '', complemento: '',
     bairro: '', cidade: '', estado: '', cep: '', referencia: '',
   });
+  const [fotoUrl, setFotoUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [buscandoCep, setBuscandoCep] = useState(false);
   const [msg, setMsg] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -55,6 +65,7 @@ const CustomerProfile = () => {
           cep: a.cep ?? '',
           referencia: a.referencia ?? '',
         });
+        setFotoUrl(p.foto_perfil_url ?? null);
       })
       .catch((e) => setMsg({ tipo: 'erro', texto: e.message }))
       .finally(() => setLoading(false));
@@ -62,10 +73,48 @@ const CustomerProfile = () => {
 
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
+  const handleCepChange = async (v) => {
+    const formatted = formatCEP(v);
+    setForm((f) => ({ ...f, cep: formatted }));
+
+    const digitos = formatted.replace(/\D/g, '');
+    if (digitos.length !== 8) return;
+    setBuscandoCep(true);
+    const endereco = await buscarCep(digitos);
+    setBuscandoCep(false);
+    if (!endereco) return;
+    setForm((f) => ({
+      ...f,
+      logradouro: endereco.logradouro || f.logradouro,
+      bairro: endereco.bairro || f.bairro,
+      cidade: endereco.cidade || f.cidade,
+      estado: endereco.estado || f.estado,
+    }));
+  };
+
+  const handleFotoSelecionada = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEnviandoFoto(true);
+    try {
+      const { foto_perfil_url } = await uploadFoto(file);
+      setFotoUrl(foto_perfil_url);
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setEnviandoFoto(false);
+      e.target.value = '';
+    }
+  };
+
   const handleSalvar = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.phone_e164.trim()) {
       setMsg({ tipo: 'erro', texto: 'Nome e telefone são obrigatórios.' });
+      return;
+    }
+    if (form.logradouro.trim() && !form.numero.trim()) {
+      setMsg({ tipo: 'erro', texto: 'Informe o número do endereço.' });
       return;
     }
     setSalvando(true);
@@ -114,6 +163,27 @@ const CustomerProfile = () => {
 
       <main className="max-w-lg mx-auto p-4">
         <form onSubmit={handleSalvar} className="space-y-4">
+          {/* Foto de perfil */}
+          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 flex items-center gap-4">
+            <button type="button" onClick={() => fileInputRef.current?.click()} disabled={enviandoFoto}
+              className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-[#E4E4E7]">
+              {fotoUrl
+                ? <img src={fotoUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><Icon name="User" size={24} className="text-gray-400" /></div>}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <Icon name="Camera" size={16} className="text-white" />
+              </div>
+            </button>
+            <div>
+              <p className="text-sm font-semibold text-[#18181B]">Foto de perfil</p>
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={enviandoFoto}
+                className="text-xs text-[#FF441F] font-semibold hover:underline disabled:opacity-50">
+                {enviandoFoto ? 'Enviando...' : 'Trocar foto'}
+              </button>
+            </div>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelecionada} />
+          </div>
+
           {/* Conta */}
           <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
             <p className="text-sm font-semibold text-[#18181B] flex items-center gap-2">
@@ -132,7 +202,7 @@ const CustomerProfile = () => {
             <Campo label="Logradouro (Rua / Av.)" value={form.logradouro} onChange={set('logradouro')} placeholder="Rua das Flores" />
             <div className="flex gap-2">
               <div className="w-1/2">
-                <Campo label="Número" value={form.numero} onChange={set('numero')} placeholder="123" />
+                <Campo label="Número" value={form.numero} onChange={set('numero')} placeholder="123" required={!!form.logradouro.trim()} />
               </div>
               <div className="w-1/2">
                 <Campo label="Complemento" value={form.complemento} onChange={set('complemento')} placeholder="Apto 4" />
@@ -147,7 +217,8 @@ const CustomerProfile = () => {
                 <Campo label="UF" value={form.estado} onChange={set('estado')} placeholder="SP" />
               </div>
             </div>
-            <Campo label="CEP" value={form.cep} onChange={set('cep')} placeholder="00000-000" />
+            <Campo label="CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
+            {buscandoCep && <p className="text-[11px] text-[#71717A] -mt-2">Buscando endereço...</p>}
             <Campo label="Ponto de referência" value={form.referencia} onChange={set('referencia')} placeholder="Próximo ao mercado..." />
           </div>
 
