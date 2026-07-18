@@ -7,6 +7,7 @@ import HistoricoCaixasPanel from './HistoricoCaixasPanel';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -95,6 +96,7 @@ const RestauranteFinanceiro = () => {
   const [historico, setHistorico] = useState([]);
   const [aprovando, setAprovando] = useState(null);
   const [taxaPagbank, setTaxaPagbank] = useState(0);
+  const [sidebarAberto, setSidebarAberto] = useState(false);
 
   const conferenciasPendentes = historico.filter(
     (cx) => cx.status === 'fechado' && cx.destinacao_fechamento?.conferencia_aprovada === false,
@@ -140,35 +142,29 @@ const RestauranteFinanceiro = () => {
           <h1 className="text-xl font-bold text-[#18181B]">Financeiro</h1>
           <p className="text-sm text-[#71717A]">Gestão financeira gerencial</p>
         </div>
-        <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
-          {[
-            ...LINKS.slice(0, 2),
-            ...(tipoRestaurante ? COPA_LINK : []),
-            ...LINKS.slice(2, 6),
-            ...(tipoRestaurante ? SALAO_LINKS : []),
-            ...LINKS.slice(6),
-          ].map((l) => (
-            <button key={l.path} onClick={() => navigate(l.path)}
-              className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante/financeiro' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
-              {l.label}
-              {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white">
-                  {pendentesMotoboy}
-                </span>
-              )}
-            </button>
-          ))}
-          {slugLoja && (
-            <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-              className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
-              <Icon name="ExternalLink" size={14} /> Loja
-            </button>
-          )}
-        </nav>
+        <button onClick={() => setSidebarAberto(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
+        </button>
         <button onClick={() => navigate('/restaurante')} className="md:hidden flex items-center gap-1.5 text-sm text-[#71717A]">
           <Icon name="ChevronLeft" size={16} /> Voltar
         </button>
       </header>
+
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={[
+          ...LINKS.slice(0, 2),
+          ...(tipoRestaurante ? COPA_LINK : []),
+          ...LINKS.slice(2, 6),
+          ...(tipoRestaurante ? SALAO_LINKS : []),
+          ...LINKS.slice(6),
+        ]}
+        activePath="/restaurante/financeiro"
+        pendentesMotoboy={pendentesMotoboy}
+        slugLoja={slugLoja}
+      />
 
       <main className="p-6 w-[95%] mx-auto max-w-5xl space-y-5">
 

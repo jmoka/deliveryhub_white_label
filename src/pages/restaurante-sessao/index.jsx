@@ -5,6 +5,7 @@ import Icon from '../../components/AppIcon';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -24,6 +25,7 @@ const NavRestaurante = ({ active }) => {
   const pendentes = useSolicitacoesMotoboyCount();
   const slugLoja = useMinhaLojaSlug();
   const tipoRestaurante = useTipoRestaurante();
+  const [sidebarAberto, setSidebarAberto] = useState(false);
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Relatórios', path: '/restaurante/relatorios' },
@@ -45,7 +47,8 @@ const NavRestaurante = ({ active }) => {
     { label: 'Config', path: '/restaurante/config' },
   ];
   return (
-    <nav className="flex gap-1.5 flex-wrap">
+    <>
+    <nav className="md:hidden flex gap-1.5 flex-wrap">
       {links.map((l) => (
         <button key={l.path} onClick={() => navigate(l.path)}
           className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
@@ -66,6 +69,19 @@ const NavRestaurante = ({ active }) => {
         </button>
       )}
     </nav>
+    <button onClick={() => setSidebarAberto(true)}
+      className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+      <Icon name="Menu" size={18} /> Menu
+    </button>
+    <RestauranteSidebar
+      open={sidebarAberto}
+      onClose={() => setSidebarAberto(false)}
+      links={links}
+      activePath={active}
+      pendentesMotoboy={pendentes}
+      slugLoja={slugLoja}
+    />
+    </>
   );
 };
 

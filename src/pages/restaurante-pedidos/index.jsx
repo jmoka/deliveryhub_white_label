@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -37,6 +38,7 @@ const RestaurantePedidos = () => {
   const [erro, setErro] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('');
   const [atualizando, setAtualizando] = useState(null);
+  const [sidebarAberto, setSidebarAberto] = useState(false);
   const [restauranteId, setRestauranteId] = useState(null);
 
   const carregar = useCallback(() => {
@@ -108,7 +110,7 @@ const RestaurantePedidos = () => {
     <div className="min-h-screen bg-[#FAFAFA]">
       <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-[#18181B]">Pedidos</h1>
-        <nav className="flex gap-1.5 flex-wrap">
+        <nav className="md:hidden flex gap-1.5 flex-wrap">
           {links.map((l) => (
             <button key={l.path} onClick={() => navigate(l.path)}
               className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
@@ -130,7 +132,20 @@ const RestaurantePedidos = () => {
             Sair
           </button>
         </nav>
+        <button onClick={() => setSidebarAberto(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
+        </button>
       </header>
+
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={links}
+        activePath="/restaurante/pedidos"
+        slugLoja={slugLoja}
+        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+      />
 
       <main className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">

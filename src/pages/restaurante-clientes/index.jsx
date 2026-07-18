@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtData = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
@@ -153,6 +154,7 @@ const RestauranteClientes = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [busca, setBusca] = useState('');
+  const [sidebarAberto, setSidebarAberto] = useState(false);
   const [modal, setModal] = useState(null);
 
   const carregar = useCallback(async () => {
@@ -200,7 +202,7 @@ const RestauranteClientes = () => {
             <h1 className="text-xl font-bold text-[#18181B]">Clientes</h1>
             <p className="text-sm text-[#71717A]">{total} cliente{total !== 1 ? 's' : ''} neste restaurante</p>
           </div>
-          <nav className="flex gap-1.5 flex-wrap">
+          <nav className="md:hidden flex gap-1.5 flex-wrap">
             {links.map((l) => (
               <button key={l.path} onClick={() => navigate(l.path)}
                 className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
@@ -222,8 +224,21 @@ const RestauranteClientes = () => {
               Sair
             </button>
           </nav>
+          <button onClick={() => setSidebarAberto(true)}
+            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+            <Icon name="Menu" size={18} /> Menu
+          </button>
         </div>
       </header>
+
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={links}
+        activePath="/restaurante/clientes"
+        slugLoja={slugLoja}
+        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+      />
 
       <main className="p-4 sm:p-6 max-w-5xl mx-auto">
         {/* Barra de busca + botão */}
