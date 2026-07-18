@@ -191,27 +191,34 @@ const CarrinhoDesktop = ({ carrinho, onAdicionar, onCheckout }) => (
 );
 
 /* ── Componente principal ────────────────────────────────────────── */
-const RestauranteCatalogo = () => {
-  const { slug } = useParams();
+const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
+  const { slug: slugParam } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, isRestaurantOwner, isAdmin } = useAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(dadosPreCarregados ?? null);
+  const [loading, setLoading] = useState(!dadosPreCarregados);
   const [erro, setErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
   const [catAtiva, setCatAtiva] = useState('todos');
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
 
+  // Quando aberto via domínio customizado (dadosPreCarregados vindo do HomeRouter),
+  // não existe :slug na URL — o fetch abaixo é pulado, os dados já chegam prontos.
   useEffect(() => {
+    if (dadosPreCarregados) return;
     setLoading(true);
-    getCardapioPorSlug(slug)
+    getCardapioPorSlug(slugParam)
       .then((d) => {
         setData(d);
         setCatAtiva('todos');
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slugParam, dadosPreCarregados]);
+
+  // Slug efetivo pro checkout: vem da URL em /r/:slug, ou do próprio payload
+  // quando a loja foi aberta pelo domínio customizado (sem slug na URL).
+  const slug = slugParam ?? data?.restaurante?.slug;
 
   const altCarrinho = (produto, preco, delta = 1) => {
     setCarrinho((prev) => {
