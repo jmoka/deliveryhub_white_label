@@ -108,6 +108,7 @@ const RestauranteAparencia = () => {
   const [msg, setMsg] = useState(null); // { tipo: 'ok'|'erro', texto }
   const [dominio, setDominio] = useState('');
   const [statusDominio, setStatusDominio] = useState(null);
+  const [motivoRecusaDominio, setMotivoRecusaDominio] = useState(null);
   const [salvandoDominio, setSalvandoDominio] = useState(false);
   const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false);
   const [msgDominio, setMsgDominio] = useState(null); // { tipo: 'ok'|'erro', texto }
@@ -131,6 +132,7 @@ const RestauranteAparencia = () => {
         setSlug(emp.empresa?.slug ?? '');
         setDominio(emp.empresa?.custom_domain ?? '');
         setStatusDominio(emp.empresa?.custom_domain_status ?? null);
+        setMotivoRecusaDominio(emp.empresa?.custom_domain_motivo_recusa ?? null);
         setForm({
           logo_url: emp.empresa?.logo_url ?? '',
           descricao: ap.descricao ?? '',
@@ -190,6 +192,7 @@ const RestauranteAparencia = () => {
     try {
       await solicitarRevisaoDominio();
       setStatusDominio('pendente');
+      setMotivoRecusaDominio(null);
       setMsgDominio({ tipo: 'ok', texto: 'Solicitação enviada! Aguarde o admin configurar o domínio.' });
       setTimeout(() => setMsgDominio(null), 4000);
     } catch (err) {
@@ -338,7 +341,12 @@ const RestauranteAparencia = () => {
             )}
 
             {dominio.trim() && (
-              <div className="mt-3 pt-3 border-t border-[#F4F4F5]">
+              <div className="mt-3 pt-3 border-t border-[#F4F4F5] space-y-2">
+                {statusDominio === 'recusado' && (
+                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                    <strong>Solicitação recusada:</strong> {motivoRecusaDominio || 'Não especificado'}
+                  </p>
+                )}
                 {statusDominio === 'pendente' ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                     <Icon name="Clock" size={13} /> Solicitação enviada — aguardando o admin configurar
@@ -350,7 +358,7 @@ const RestauranteAparencia = () => {
                     disabled={enviandoSolicitacao}
                     className="px-4 py-2 bg-[#18181B] text-white rounded-lg text-sm font-semibold hover:bg-[#27272A] disabled:opacity-60"
                   >
-                    {enviandoSolicitacao ? 'Enviando...' : 'Enviar solicitação pro admin'}
+                    {enviandoSolicitacao ? 'Enviando...' : statusDominio === 'recusado' ? 'Reenviar solicitação' : 'Enviar solicitação pro admin'}
                   </button>
                 )}
               </div>
