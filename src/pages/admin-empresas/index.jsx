@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio } from '../../services/adminService';
+import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 
@@ -186,7 +186,7 @@ const AdminEmpresas = () => {
   };
 
   const handleAtenderDominio = async (empresa) => {
-    if (!confirm(`Marcar domínio "${empresa.custom_domain}" de "${empresa.name}" como configurado?`)) return;
+    if (!confirm(`Aprovar domínio "${empresa.custom_domain}" de "${empresa.name}"? Só confirme depois de adicionar o domínio no painel do EasyPanel.`)) return;
     try {
       await atenderSolicitacaoDominio(empresa.id);
       carregar();
@@ -194,6 +194,19 @@ const AdminEmpresas = () => {
       alert(e.message);
     }
   };
+
+  const handleRecusarDominio = async (empresa) => {
+    const motivo = prompt(`Motivo da recusa do domínio "${empresa.custom_domain}" (${empresa.name}):`);
+    if (motivo === null) return;
+    try {
+      await recusarSolicitacaoDominio(empresa.id, motivo);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const solicitacoesDominio = empresas.filter((e) => e.custom_domain_status === 'pendente');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -210,9 +223,9 @@ const AdminEmpresas = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
             Empresas <span className="text-gray-400 font-normal text-sm">({empresas.length})</span>
-            {empresas.filter((e) => e.custom_domain_status === 'pendente').length > 0 && (
+            {solicitacoesDominio.length > 0 && (
               <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 align-middle">
-                {empresas.filter((e) => e.custom_domain_status === 'pendente').length} solicitação(ões) de domínio pendente(s)
+                {solicitacoesDominio.length} solicitação(ões) de domínio pendente(s)
               </span>
             )}
           </h2>
@@ -225,6 +238,47 @@ const AdminEmpresas = () => {
             </button>
           )}
         </div>
+
+        {solicitacoesDominio.length > 0 && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-amber-800 mb-3">Solicitações de domínio personalizado</h3>
+            <div className="space-y-2">
+              {solicitacoesDominio.map((e) => (
+                <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white rounded-lg border border-amber-200 px-3 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{e.name}</p>
+                    <p className="text-xs font-mono text-amber-700">{e.custom_domain}</p>
+                    {e.custom_domain_solicitado_em && (
+                      <p className="text-[11px] text-gray-400">
+                        Solicitado em {new Date(e.custom_domain_solicitado_em).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate(`/admin/empresas/${e.id}`)}
+                      className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
+                    >
+                      Ver empresa
+                    </button>
+                    <button
+                      onClick={() => handleAtenderDominio(e)}
+                      className="px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50 rounded-lg border border-green-200"
+                    >
+                      Aprovar
+                    </button>
+                    <button
+                      onClick={() => handleRecusarDominio(e)}
+                      className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+                    >
+                      Recusar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {erro && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -298,17 +352,13 @@ const AdminEmpresas = () => {
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         {e.custom_domain_status === 'pendente' ? (
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 font-mono">
-                              {e.custom_domain}
-                            </span>
-                            <button
-                              onClick={() => handleAtenderDominio(e)}
-                              className="px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg whitespace-nowrap"
-                            >
-                              Marcar configurado
-                            </button>
-                          </div>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 font-mono">
+                            {e.custom_domain} (pendente)
+                          </span>
+                        ) : e.custom_domain_status === 'recusado' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 font-mono">
+                            {e.custom_domain} (recusado)
+                          </span>
                         ) : e.custom_domain ? (
                           <span className="text-xs text-gray-500 font-mono">{e.custom_domain}</span>
                         ) : (

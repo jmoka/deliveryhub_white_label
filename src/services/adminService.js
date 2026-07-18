@@ -56,6 +56,8 @@ export const atualizarEmpresa = (id, data) => apiFetch(`/empresas/${id}`, { meth
 export const bloquearEmpresa = (id, bloqueado) => apiFetch(`/empresas/${id}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
 export const removerEmpresa = (id) => apiFetch(`/empresas/${id}`, { method: 'DELETE' });
 export const atenderSolicitacaoDominio = (id) => apiFetch(`/empresas/${id}/dominio/atender`, { method: 'PATCH' });
+export const recusarSolicitacaoDominio = (id, motivo) =>
+  apiFetch(`/empresas/${id}/dominio/recusar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
 
 // Config pagamentos por empresa
 export const getEmpresaConfig = (id) => apiFetch(`/empresas/${id}/config`);
