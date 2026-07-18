@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa } from '../../services/adminService';
+import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 
@@ -185,6 +185,16 @@ const AdminEmpresas = () => {
     }
   };
 
+  const handleAtenderDominio = async (empresa) => {
+    if (!confirm(`Marcar domínio "${empresa.custom_domain}" de "${empresa.name}" como configurado?`)) return;
+    try {
+      await atenderSolicitacaoDominio(empresa.id);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <LocalModeBanner />
@@ -200,6 +210,11 @@ const AdminEmpresas = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
             Empresas <span className="text-gray-400 font-normal text-sm">({empresas.length})</span>
+            {empresas.filter((e) => e.custom_domain_status === 'pendente').length > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 align-middle">
+                {empresas.filter((e) => e.custom_domain_status === 'pendente').length} solicitação(ões) de domínio pendente(s)
+              </span>
+            )}
           </h2>
           {!isLocalMode && (
             <button
@@ -242,6 +257,7 @@ const AdminEmpresas = () => {
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Slug / Link</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Endereço</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Domínio</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden md:table-cell">Comissão</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden lg:table-cell">Cadastro</th>
                     <th className="px-2 sm:px-4 py-3 w-px whitespace-nowrap"></th>
@@ -278,6 +294,25 @@ const AdminEmpresas = () => {
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
                           </span>
+                        )}
+                      </td>
+                      <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
+                        {e.custom_domain_status === 'pendente' ? (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 font-mono">
+                              {e.custom_domain}
+                            </span>
+                            <button
+                              onClick={() => handleAtenderDominio(e)}
+                              className="px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg whitespace-nowrap"
+                            >
+                              Marcar configurado
+                            </button>
+                          </div>
+                        ) : e.custom_domain ? (
+                          <span className="text-xs text-gray-500 font-mono">{e.custom_domain}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">

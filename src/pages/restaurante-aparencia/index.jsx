@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa, updateDominio } from '../../services/restauranteService';
+import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa, updateDominio, solicitarRevisaoDominio } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
@@ -107,7 +107,9 @@ const RestauranteAparencia = () => {
   const [copiado, setCopiado] = useState(false);
   const [msg, setMsg] = useState(null); // { tipo: 'ok'|'erro', texto }
   const [dominio, setDominio] = useState('');
+  const [statusDominio, setStatusDominio] = useState(null);
   const [salvandoDominio, setSalvandoDominio] = useState(false);
+  const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false);
   const [msgDominio, setMsgDominio] = useState(null); // { tipo: 'ok'|'erro', texto }
   const [ipCopiado, setIpCopiado] = useState(false);
   const [fundoTipo, setFundoTipo] = useState('gradient'); // gradient | cor | imagem
@@ -128,6 +130,7 @@ const RestauranteAparencia = () => {
       .then(([ap, emp]) => {
         setSlug(emp.empresa?.slug ?? '');
         setDominio(emp.empresa?.custom_domain ?? '');
+        setStatusDominio(emp.empresa?.custom_domain_status ?? null);
         setForm({
           logo_url: emp.empresa?.logo_url ?? '',
           descricao: ap.descricao ?? '',
@@ -178,6 +181,21 @@ const RestauranteAparencia = () => {
       setMsgDominio({ tipo: 'erro', texto: err.message });
     } finally {
       setSalvandoDominio(false);
+    }
+  };
+
+  const handleEnviarSolicitacao = async () => {
+    setEnviandoSolicitacao(true);
+    setMsgDominio(null);
+    try {
+      await solicitarRevisaoDominio();
+      setStatusDominio('pendente');
+      setMsgDominio({ tipo: 'ok', texto: 'Solicitação enviada! Aguarde o admin configurar o domínio.' });
+      setTimeout(() => setMsgDominio(null), 4000);
+    } catch (err) {
+      setMsgDominio({ tipo: 'erro', texto: err.message });
+    } finally {
+      setEnviandoSolicitacao(false);
     }
   };
 
@@ -288,11 +306,11 @@ const RestauranteAparencia = () => {
                 </p>
               </li>
               <li>
-                <p className="font-semibold">2. Peça pro suporte adicionar o domínio no painel</p>
-                <p className="text-[#71717A] mt-0.5">Só depois disso o servidor aceita requisições chegando por esse domínio.</p>
+                <p className="font-semibold">2. Cole o domínio abaixo e salve</p>
               </li>
               <li>
-                <p className="font-semibold">3. Cole o domínio abaixo e salve</p>
+                <p className="font-semibold">3. Envie a solicitação pro admin</p>
+                <p className="text-[#71717A] mt-0.5">Só depois que o admin adicionar o domínio no painel é que ele passa a abrir sua página.</p>
               </li>
             </ol>
 
@@ -317,6 +335,25 @@ const RestauranteAparencia = () => {
               <p className={`text-xs mt-2 ${msgDominio.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
                 {msgDominio.texto}
               </p>
+            )}
+
+            {dominio.trim() && (
+              <div className="mt-3 pt-3 border-t border-[#F4F4F5]">
+                {statusDominio === 'pendente' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    <Icon name="Clock" size={13} /> Solicitação enviada — aguardando o admin configurar
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleEnviarSolicitacao}
+                    disabled={enviandoSolicitacao}
+                    className="px-4 py-2 bg-[#18181B] text-white rounded-lg text-sm font-semibold hover:bg-[#27272A] disabled:opacity-60"
+                  >
+                    {enviandoSolicitacao ? 'Enviando...' : 'Enviar solicitação pro admin'}
+                  </button>
+                )}
+              </div>
             )}
           </Section>
 
