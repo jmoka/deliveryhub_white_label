@@ -233,6 +233,9 @@ export const getCardapioPorDominio = async (hostname) => {
 export const updateDominio = (customDomain) =>
   apiFetch('/dominio', { method: 'PATCH', body: JSON.stringify({ custom_domain: customDomain }) });
 
+export const solicitarRevisaoDominio = () =>
+  apiFetch('/dominio/solicitar', { method: 'PATCH' });
+
 // Módulo Salão — garçons (CRUD pelo dono)
 export const listarGarcons = () => apiFetch('/garcons');
 export const getGarconsOnline = () => apiFetch('/garcons/online');

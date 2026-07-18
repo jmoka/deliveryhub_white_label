@@ -55,6 +55,7 @@ export const criarEmpresa = (data) => apiFetch('/empresas', { method: 'POST', bo
 export const atualizarEmpresa = (id, data) => apiFetch(`/empresas/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const bloquearEmpresa = (id, bloqueado) => apiFetch(`/empresas/${id}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
 export const removerEmpresa = (id) => apiFetch(`/empresas/${id}`, { method: 'DELETE' });
+export const atenderSolicitacaoDominio = (id) => apiFetch(`/empresas/${id}/dominio/atender`, { method: 'PATCH' });
 
 // Config pagamentos por empresa
 export const getEmpresaConfig = (id) => apiFetch(`/empresas/${id}/config`);
