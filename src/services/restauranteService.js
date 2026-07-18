@@ -65,6 +65,9 @@ export const deletarProduto = (id) =>
 export const toggleProduto = (id, ativo) =>
   apiFetch(`/produtos/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
 
+export const ajustarEstoqueProduto = (id, quantidade_estoque) =>
+  apiFetch(`/produtos/${id}`, { method: 'PATCH', body: JSON.stringify({ quantidade_estoque }) });
+
 // Categorias globais da plataforma (sem auth — endpoint público)
 export const getCategoriasGlobais = () =>
   fetch(apiPath('/api/categorias/globais')).then((r) => r.json());
@@ -149,6 +152,8 @@ export const iniciarPreparoItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const getRelatorioFretes = (periodo = 'hoje') => apiFetch(`/relatorio/fretes?periodo=${encodeURIComponent(periodo)}`);
+export const getRelatorioGarcom = (de, ate) => apiFetch(`/relatorio/garcom?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
+export const getRelatorioProdutos = (de, ate) => apiFetch(`/relatorio/produtos?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 
 export const uploadImagem = async (file, folder = 'geral') => {
