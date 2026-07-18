@@ -10,6 +10,9 @@ import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar'
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
+// IP do servidor — usado nas instruções de DNS do domínio personalizado.
+const SERVIDOR_IP = '148.230.76.22';
+
 const NavRestaurante = ({ active }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -106,6 +109,7 @@ const RestauranteAparencia = () => {
   const [dominio, setDominio] = useState('');
   const [salvandoDominio, setSalvandoDominio] = useState(false);
   const [msgDominio, setMsgDominio] = useState(null); // { tipo: 'ok'|'erro', texto }
+  const [ipCopiado, setIpCopiado] = useState(false);
   const [fundoTipo, setFundoTipo] = useState('gradient'); // gradient | cor | imagem
 
   const [form, setForm] = useState({
@@ -177,6 +181,13 @@ const RestauranteAparencia = () => {
     }
   };
 
+  const copiarIp = () => {
+    navigator.clipboard.writeText(SERVIDOR_IP).then(() => {
+      setIpCopiado(true);
+      setTimeout(() => setIpCopiado(false), 2000);
+    });
+  };
+
   const copiarLink = () => {
     const url = `${window.location.origin}/r/${slug}`;
     navigator.clipboard.writeText(url).then(() => {
@@ -235,10 +246,56 @@ const RestauranteAparencia = () => {
           {/* ── Domínio personalizado ──────────────────────────────── */}
           <Section icon="Globe" title="Domínio personalizado">
             <p className="text-xs text-[#71717A] mb-3">
-              Tem um domínio próprio (ex.: <span className="font-mono">seusite.com</span>)? Aponte o DNS dele
-              pro servidor, peça pro suporte adicionar o domínio no painel, e cole aqui — sua página passa a
-              abrir direto por ele, sem precisar do link acima.
+              Tem um domínio próprio (ex.: <span className="font-mono">seusite.com</span>)? Sua página passa a
+              abrir direto por ele, sem precisar do link acima. Siga os passos:
             </p>
+
+            <ol className="text-xs text-[#27272A] space-y-3 mb-4">
+              <li>
+                <p className="font-semibold mb-1.5">1. Crie um registro A no DNS do seu domínio, apontando pro servidor:</p>
+                <div className="overflow-x-auto rounded-xl border border-[#E4E4E7]">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-[#FAFAFA] text-[#71717A] uppercase tracking-wide">
+                        <th className="text-left px-3 py-2 font-bold">Tipo</th>
+                        <th className="text-left px-3 py-2 font-bold">Nome</th>
+                        <th className="text-left px-3 py-2 font-bold">Valor</th>
+                        <th className="text-left px-3 py-2 font-bold">TTL</th>
+                        <th className="px-3 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-t border-[#F4F4F5]">
+                        <td className="px-3 py-2 font-mono">A</td>
+                        <td className="px-3 py-2 font-mono">@ (ou www)</td>
+                        <td className="px-3 py-2 font-mono">{SERVIDOR_IP}</td>
+                        <td className="px-3 py-2 font-mono">14400</td>
+                        <td className="px-3 py-2">
+                          <button type="button" onClick={copiarIp}
+                            className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg transition-colors ${
+                              ipCopiado ? 'bg-green-500 text-white' : 'bg-[#F4F4F5] text-[#27272A] hover:bg-[#E4E4E7]'
+                            }`}>
+                            <Icon name={ipCopiado ? 'Check' : 'Copy'} size={11} />
+                            {ipCopiado ? 'Copiado!' : 'Copiar IP'}
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-[#A1A1AA] mt-1">
+                  No painel do seu provedor de domínio, use "@" pro domínio raiz (ex.: seusite.com) ou "www" pro subdomínio www.
+                </p>
+              </li>
+              <li>
+                <p className="font-semibold">2. Peça pro suporte adicionar o domínio no painel</p>
+                <p className="text-[#71717A] mt-0.5">Só depois disso o servidor aceita requisições chegando por esse domínio.</p>
+              </li>
+              <li>
+                <p className="font-semibold">3. Cole o domínio abaixo e salve</p>
+              </li>
+            </ol>
+
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
