@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 
 const LINKS = [
   { label: 'Dashboard', path: '/restaurante' },
@@ -56,33 +57,28 @@ const RestauranteRelatorios = () => {
   const tipoRestaurante = useTipoRestaurante();
   const slugLoja = useMinhaLojaSlug();
   const links = [...LINKS, ...(tipoRestaurante ? SALAO_LINKS : [])];
+  const [sidebarAberto, setSidebarAberto] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold text-[#18181B]">Relatórios</h1>
-        <nav className="hidden md:flex gap-1.5 flex-wrap">
-          {links.map((l) => (
-            <button key={l.path} onClick={() => navigate(l.path)}
-              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-                l.path === '/restaurante/relatorios'
-                  ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
-                  : 'text-[#27272A] hover:bg-[#F4F4F5]'
-              }`}>
-              {l.label}
-            </button>
-          ))}
-          {slugLoja && (
-            <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-              className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
-              <Icon name="ExternalLink" size={14} /> Loja
-            </button>
-          )}
-        </nav>
+        <button onClick={() => setSidebarAberto(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
+        </button>
         <button onClick={() => navigate('/restaurante')} className="md:hidden flex items-center gap-1.5 text-sm text-[#71717A]">
           <Icon name="ChevronLeft" size={16} /> Voltar
         </button>
       </header>
+
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={links}
+        activePath="/restaurante/relatorios"
+        slugLoja={slugLoja}
+      />
 
       <main className="p-6 max-w-4xl mx-auto">
         <p className="text-sm text-[#71717A] mb-5">Escolha um relatório — cada um tem filtro por período e opção de impressão.</p>

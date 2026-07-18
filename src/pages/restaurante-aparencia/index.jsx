@@ -6,6 +6,7 @@ import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -14,6 +15,7 @@ const NavRestaurante = ({ active }) => {
   const { signOut } = useAuth();
   const slugLoja = useMinhaLojaSlug();
   const tipoRestaurante = useTipoRestaurante();
+  const [sidebarAberto, setSidebarAberto] = useState(false);
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Relatórios', path: '/restaurante/relatorios' },
@@ -31,28 +33,42 @@ const NavRestaurante = ({ active }) => {
     { label: 'Config', path: '/restaurante/config' },
   ];
   return (
-    <nav className="flex gap-1.5 flex-wrap">
-      {links.map((l) => (
-        <button key={l.path} onClick={() => navigate(l.path)}
-          className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            active === l.path
-              ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
-              : 'text-[#27272A] hover:bg-[#F4F4F5]'
-          }`}>
-          {l.label}
+    <>
+      <nav className="md:hidden flex gap-1.5 flex-wrap">
+        {links.map((l) => (
+          <button key={l.path} onClick={() => navigate(l.path)}
+            className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
+              active === l.path
+                ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
+                : 'text-[#27272A] hover:bg-[#F4F4F5]'
+            }`}>
+            {l.label}
+          </button>
+        ))}
+        {slugLoja && (
+          <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
+            className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+            <Icon name="ExternalLink" size={14} /> Loja
+          </button>
+        )}
+        <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
+          className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
+          Sair
         </button>
-      ))}
-      {slugLoja && (
-        <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-          className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
-          <Icon name="ExternalLink" size={14} /> Loja
-        </button>
-      )}
-      <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
-        Sair
+      </nav>
+      <button onClick={() => setSidebarAberto(true)}
+        className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+        <Icon name="Menu" size={18} /> Menu
       </button>
-    </nav>
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={links}
+        activePath={active}
+        slugLoja={slugLoja}
+        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+      />
+    </>
   );
 };
 

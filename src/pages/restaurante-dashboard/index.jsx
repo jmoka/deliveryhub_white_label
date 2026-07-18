@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
 import MobileMenu from './MobileMenu';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
@@ -77,6 +78,7 @@ const RestauranteDashboard = () => {
   const [periodoFretes, setPeriodoFretes] = useState('hoje');
   const [showDetalheFretes, setShowDetalheFretes] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
+  const [sidebarAberto, setSidebarAberto] = useState(false);
   const [nomeOperador, setNomeOperador] = useState('');
   const [pedidosAbertos, setPedidosAbertos] = useState([]);
   const [comandasAbertas, setComandasAbertas] = useState([]);
@@ -345,34 +347,27 @@ const RestauranteDashboard = () => {
           <h1 className="text-xl font-bold text-[#18181B]">{empresa?.name ?? 'Meu Restaurante'}</h1>
           <p className="text-sm text-[#71717A]">Painel Operacional</p>
         </div>
-        {/* Desktop nav */}
-        <nav className="hidden md:flex gap-1.5 flex-wrap items-center">
-          {navLinks.map((l) => (
-            <button key={l.path} onClick={() => navigate(l.path)}
-              className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${l.path === '/restaurante' ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'}`}>
-              {l.label}
-              {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white">
-                  {pendentesMotoboy}
-                </span>
-              )}
-            </button>
-          ))}
-          {empresa?.slug && (
-            <button onClick={() => window.open(`/r/${empresa.slug}`, '_blank')}
-              className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
-              <Icon name="ExternalLink" size={14} /> Loja
-            </button>
-          )}
-          <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-            className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">Sair</button>
-        </nav>
+        {/* Desktop: hamburger abre menu lateral */}
+        <button onClick={() => setSidebarAberto(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
+        </button>
         {/* Mobile hamburger */}
         <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]"
           onClick={() => setMenuAberto((v) => !v)}>
           <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
         </button>
       </header>
+
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={navLinks}
+        activePath="/restaurante"
+        pendentesMotoboy={pendentesMotoboy}
+        slugLoja={empresa?.slug}
+        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+      />
 
       <AnimatePresence>
         {menuAberto && (
