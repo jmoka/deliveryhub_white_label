@@ -13,7 +13,7 @@ import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false, impressora_id: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '' };
 
 const TagBadge = ({ slug, tagsMap }) => {
   const t = tagsMap[slug];
@@ -77,6 +77,7 @@ const RestauranteProdutos = () => {
       tags: Array.isArray(p.tags) ? p.tags : [],
       destaque: p.destaque ?? false,
       impressora_id: p.impressora_id != null ? String(p.impressora_id) : '',
+      quantidade_estoque: p.quantidade_estoque != null ? String(p.quantidade_estoque) : '0',
     });
     setShowModal(true);
   };
@@ -148,6 +149,7 @@ const RestauranteProdutos = () => {
       tags: form.tags,
       destaque: form.destaque,
       impressora_id: form.impressora_id ? parseInt(form.impressora_id) : null,
+      quantidade_estoque: form.quantidade_estoque !== '' ? parseInt(form.quantidade_estoque) : 0,
     };
     try {
       if (editando) {
@@ -187,6 +189,7 @@ const RestauranteProdutos = () => {
 
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
+    { label: 'Relatórios', path: '/restaurante/relatorios' },
     { label: 'Delivery', path: '/restaurante/delivery' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Combos', path: '/restaurante/combos' },
@@ -351,6 +354,9 @@ const RestauranteProdutos = () => {
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mt-0.5">{catMap[p.category_id] ?? 'Sem categoria'}</p>
+                  <p className={`text-xs mt-0.5 ${(p.quantidade_estoque ?? 0) <= 0 ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                    Estoque: {p.quantidade_estoque ?? 0}
+                  </p>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => abrirEditar(p)}
@@ -401,7 +407,7 @@ const RestauranteProdutos = () => {
                   placeholder="Descrição opcional"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
                   <input
@@ -411,6 +417,16 @@ const RestauranteProdutos = () => {
                     className="w-full border rounded-lg px-3 py-2 text-sm"
                     placeholder="0,00"
                     required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estoque</label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={form.quantidade_estoque}
+                    onChange={(e) => setForm((f) => ({ ...f, quantidade_estoque: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="0"
                   />
                 </div>
                 <div>

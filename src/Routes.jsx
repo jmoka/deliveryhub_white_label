@@ -36,6 +36,10 @@ import RestauranteDelivery from './pages/restaurante-delivery';
 import RestauranteCaixa from './pages/restaurante-caixa';
 import RestauranteFinanceiro from './pages/restaurante-financeiro';
 import RestauranteCombos from './pages/restaurante-combos';
+import RestauranteRelatorios from './pages/restaurante-relatorios';
+import RestauranteRelatorioGarcom from './pages/restaurante-relatorios/Garcom';
+import RestauranteRelatorioFinanceiro from './pages/restaurante-relatorios/Financeiro';
+import RestauranteRelatorioProdutos from './pages/restaurante-relatorios/Produtos';
 import MotoboyPortal from './pages/motoboy-portal';
 import MotoboyCadastro from './pages/motoboy-cadastro';
 import CustomerProfile from './pages/customer-profile';
@@ -90,6 +94,10 @@ const Routes = () => {
         <Route path="/restaurante/caixa" element={<RestauranteGuard><RestauranteCaixa /></RestauranteGuard>} />
         <Route path="/restaurante/financeiro" element={<RestauranteGuard><RestauranteFinanceiro /></RestauranteGuard>} />
         <Route path="/restaurante/combos" element={<RestauranteGuard><RestauranteCombos /></RestauranteGuard>} />
+        <Route path="/restaurante/relatorios" element={<RestauranteGuard><RestauranteRelatorios /></RestauranteGuard>} />
+        <Route path="/restaurante/relatorios/garcom" element={<RestauranteGuard><RestauranteRelatorioGarcom /></RestauranteGuard>} />
+        <Route path="/restaurante/relatorios/financeiro" element={<RestauranteGuard><RestauranteRelatorioFinanceiro /></RestauranteGuard>} />
+        <Route path="/restaurante/relatorios/produtos" element={<RestauranteGuard><RestauranteRelatorioProdutos /></RestauranteGuard>} />
 
         {/* Módulo Salão — só estabelecimentos tipo Restaurante */}
         <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />

@@ -19,6 +19,7 @@ const NavRestaurante = () => {
   const tipoRestaurante = useTipoRestaurante();
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
+    { label: 'Relatórios', path: '/restaurante/relatorios' },
     { label: 'Delivery', path: '/restaurante/delivery' },
     { label: 'Produtos', path: '/restaurante/produtos' },
     { label: 'Pedidos', path: '/restaurante/pedidos' },

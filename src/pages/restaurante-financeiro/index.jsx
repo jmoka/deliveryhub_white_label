@@ -41,6 +41,7 @@ const printIframe = (html) => {
 
 const LINKS = [
   { label: 'Dashboard', path: '/restaurante' },
+  { label: 'Relatórios', path: '/restaurante/relatorios' },
   { label: 'Delivery', path: '/restaurante/delivery' },
   { label: 'Cozinha', path: '/restaurante/cozinha' },
   { label: 'Produtos', path: '/restaurante/produtos' },
