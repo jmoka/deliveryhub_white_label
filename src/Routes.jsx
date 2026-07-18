@@ -49,6 +49,7 @@ import RestauranteImpressoras from './pages/restaurante-impressoras';
 import RestauranteSalao from './pages/restaurante-salao';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
 import MesaAcompanhar from './pages/mesa-acompanhar';
+import HomeRouter from './pages/home-router';
 
 const Routes = () => {
   return (
@@ -56,7 +57,7 @@ const Routes = () => {
       <ErrorBoundary>
       <ScrollToTop />
       <RouterRoutes>
-        <Route path="/" element={<MenuCatalogProductBrowse />} />
+        <Route path="/" element={<HomeRouter />} />
         <Route path="/shopping-cart-checkout" element={<ShoppingCartCheckout />} />
         <Route path="/menu-catalog-product-browse" element={<MenuCatalogProductBrowse />} />
         <Route path="/customer-account-order-history" element={<CustomerAccountOrderHistory />} />

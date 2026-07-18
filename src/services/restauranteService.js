@@ -221,6 +221,18 @@ export const getCardapioPorSlug = async (slug) => {
   return res.json();
 };
 
+// Resolve domínio customizado (ex: restordemo.com) pro cardápio do estabelecimento
+// — sem auth. Retorna null (em vez de lançar) se o host não é domínio de ninguém,
+// pra quem chama só precisar decidir "é loja" vs "é o marketplace".
+export const getCardapioPorDominio = async (hostname) => {
+  const res = await fetch(`${apiPath('/api/r/by-domain')}/${hostname}`);
+  if (!res.ok) return null;
+  return res.json();
+};
+
+export const updateDominio = (customDomain) =>
+  apiFetch('/dominio', { method: 'PATCH', body: JSON.stringify({ custom_domain: customDomain }) });
+
 // Módulo Salão — garçons (CRUD pelo dono)
 export const listarGarcons = () => apiFetch('/garcons');
 export const getGarconsOnline = () => apiFetch('/garcons/online');

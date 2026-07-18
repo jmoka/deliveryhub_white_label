@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
+import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa, updateDominio } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
@@ -103,6 +103,9 @@ const RestauranteAparencia = () => {
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [msg, setMsg] = useState(null); // { tipo: 'ok'|'erro', texto }
+  const [dominio, setDominio] = useState('');
+  const [salvandoDominio, setSalvandoDominio] = useState(false);
+  const [msgDominio, setMsgDominio] = useState(null); // { tipo: 'ok'|'erro', texto }
   const [fundoTipo, setFundoTipo] = useState('gradient'); // gradient | cor | imagem
 
   const [form, setForm] = useState({
@@ -120,6 +123,7 @@ const RestauranteAparencia = () => {
     Promise.all([getAparencia(), getMinhaEmpresa()])
       .then(([ap, emp]) => {
         setSlug(emp.empresa?.slug ?? '');
+        setDominio(emp.empresa?.custom_domain ?? '');
         setForm({
           logo_url: emp.empresa?.logo_url ?? '',
           descricao: ap.descricao ?? '',
@@ -156,6 +160,20 @@ const RestauranteAparencia = () => {
       setMsg({ tipo: 'erro', texto: err.message });
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleSalvarDominio = async () => {
+    setSalvandoDominio(true);
+    setMsgDominio(null);
+    try {
+      await updateDominio(dominio.trim() || null);
+      setMsgDominio({ tipo: 'ok', texto: 'Domínio salvo!' });
+      setTimeout(() => setMsgDominio(null), 3000);
+    } catch (err) {
+      setMsgDominio({ tipo: 'erro', texto: err.message });
+    } finally {
+      setSalvandoDominio(false);
     }
   };
 
@@ -213,6 +231,37 @@ const RestauranteAparencia = () => {
               </div>
             </Section>
           )}
+
+          {/* ── Domínio personalizado ──────────────────────────────── */}
+          <Section icon="Globe" title="Domínio personalizado">
+            <p className="text-xs text-[#71717A] mb-3">
+              Tem um domínio próprio (ex.: <span className="font-mono">seusite.com</span>)? Aponte o DNS dele
+              pro servidor, peça pro suporte adicionar o domínio no painel, e cole aqui — sua página passa a
+              abrir direto por ele, sem precisar do link acima.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={dominio}
+                onChange={(e) => setDominio(e.target.value)}
+                placeholder="seusite.com"
+                className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono"
+              />
+              <button
+                type="button"
+                onClick={handleSalvarDominio}
+                disabled={salvandoDominio}
+                className="px-4 py-2 bg-[#FF441F] text-white rounded-lg text-sm font-semibold hover:bg-[#E63A19] disabled:opacity-60"
+              >
+                {salvandoDominio ? 'Salvando...' : 'Salvar domínio'}
+              </button>
+            </div>
+            {msgDominio && (
+              <p className={`text-xs mt-2 ${msgDominio.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                {msgDominio.texto}
+              </p>
+            )}
+          </Section>
 
           {/* ── Logo ──────────────────────────────────────────────── */}
           <Section icon="Store" title="Logo do restaurante (aparece nos cards)">
