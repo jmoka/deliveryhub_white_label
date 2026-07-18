@@ -14,7 +14,7 @@ import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar'
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '' };
 
 const TagBadge = ({ slug, tagsMap }) => {
   const t = tagsMap[slug];
@@ -80,6 +80,8 @@ const RestauranteProdutos = () => {
       destaque: p.destaque ?? false,
       impressora_id: p.impressora_id != null ? String(p.impressora_id) : '',
       quantidade_estoque: p.quantidade_estoque != null ? String(p.quantidade_estoque) : '0',
+      preco_custo: p.preco_custo != null ? String(p.preco_custo) : '',
+      quantidade_minima: p.quantidade_minima != null ? String(p.quantidade_minima) : '0',
     });
     setShowModal(true);
   };
@@ -152,6 +154,8 @@ const RestauranteProdutos = () => {
       destaque: form.destaque,
       impressora_id: form.impressora_id ? parseInt(form.impressora_id) : null,
       quantidade_estoque: form.quantidade_estoque !== '' ? parseInt(form.quantidade_estoque) : 0,
+      preco_custo: form.preco_custo !== '' ? parseFloat(form.preco_custo) : 0,
+      quantidade_minima: form.quantidade_minima !== '' ? parseInt(form.quantidade_minima) : 0,
     };
     try {
       if (editando) {
@@ -468,6 +472,28 @@ const RestauranteProdutos = () => {
                       </optgroup>
                     )}
                   </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço de custo (R$)</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={form.preco_custo}
+                    onChange={(e) => setForm((f) => ({ ...f, preco_custo: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="0,00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Estoque mínimo</label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={form.quantidade_minima}
+                    onChange={(e) => setForm((f) => ({ ...f, quantidade_minima: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    placeholder="0"
+                  />
                 </div>
               </div>
               {tipoRestaurante && (
