@@ -331,9 +331,10 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
           )}
           {!isAuthenticated() && (
             <button onClick={() => navigate('/customer-registration-login')}
-              className="p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-sm font-semibold text-[#FF441F] border border-[#FF441F]/30 hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
               title="Entrar">
-              <Icon name="User" size={18} />
+              <Icon name="LogIn" size={16} />
+              <span className="hidden sm:inline">Entrar</span>
             </button>
           )}
           {/* Carrinho icon mobile */}
