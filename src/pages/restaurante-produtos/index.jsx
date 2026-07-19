@@ -43,6 +43,10 @@ const RestauranteProdutos = () => {
   const [salvando, setSalvando] = useState(false);
   const [deletando, setDeletando] = useState(null);
   const [sidebarAberto, setSidebarAberto] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [filtroEstoque, setFiltroEstoque] = useState('todos');
 
   const carregar = () => {
     setLoading(true);
@@ -193,6 +197,15 @@ const RestauranteProdutos = () => {
   // Identifica se alguma tag de promoção está ativa (slug contém 'promo')
   const temPromo = form.tags.some((s) => s.includes('promo'));
 
+  const produtosFiltrados = produtos.filter((p) => {
+    if (busca.trim() && !p.name.toLowerCase().includes(busca.trim().toLowerCase())) return false;
+    if (filtroCategoria && String(p.category_id) !== filtroCategoria) return false;
+    if (filtroStatus === 'ativos' && !p.is_active) return false;
+    if (filtroStatus === 'inativos' && p.is_active) return false;
+    if (filtroEstoque === 'sem_estoque' && (p.quantidade_estoque ?? 0) > 0) return false;
+    return true;
+  });
+
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Relatórios', path: '/restaurante/relatorios' },
@@ -317,7 +330,7 @@ const RestauranteProdutos = () => {
 
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-[#18181B]">
-            Produtos <span className="text-gray-400 font-normal">({produtos.length})</span>
+            Produtos <span className="text-gray-400 font-normal">({produtosFiltrados.length}{produtosFiltrados.length !== produtos.length ? ` de ${produtos.length}` : ''})</span>
           </h2>
           <button
             onClick={abrirNovo}
@@ -326,6 +339,65 @@ const RestauranteProdutos = () => {
             + Novo produto
           </button>
         </div>
+
+        {/* Filtros de consulta */}
+        {produtos.length > 0 && (
+          <div className="bg-white rounded-xl border border-[#E4E4E7] p-3 mb-4 flex flex-col sm:flex-row gap-2">
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome..."
+              className="flex-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+            />
+            <select
+              value={filtroCategoria}
+              onChange={(e) => setFiltroCategoria(e.target.value)}
+              className="border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Todas categorias</option>
+              {categorias.length > 0 && (
+                <optgroup label="Minhas categorias">
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {categoriasGlobais.length > 0 && (
+                <optgroup label="Categorias da plataforma">
+                  {categoriasGlobais.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+              className="border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="todos">Todos status</option>
+              <option value="ativos">Ativos</option>
+              <option value="inativos">Inativos</option>
+            </select>
+            <select
+              value={filtroEstoque}
+              onChange={(e) => setFiltroEstoque(e.target.value)}
+              className="border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="todos">Todo estoque</option>
+              <option value="sem_estoque">Sem estoque</option>
+            </select>
+            {(busca || filtroCategoria || filtroStatus !== 'todos' || filtroEstoque !== 'todos') && (
+              <button
+                type="button"
+                onClick={() => { setBusca(''); setFiltroCategoria(''); setFiltroStatus('todos'); setFiltroEstoque('todos'); }}
+                className="px-3 py-2 text-sm text-[#71717A] hover:text-[#27272A] whitespace-nowrap"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -338,9 +410,13 @@ const RestauranteProdutos = () => {
               Criar primeiro produto →
             </button>
           </div>
+        ) : produtosFiltrados.length === 0 ? (
+          <div className="bg-white rounded-xl border p-12 text-center">
+            <p className="text-gray-400">Nenhum produto encontrado com esse filtro</p>
+          </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
-            {produtos.map((p) => (
+            {produtosFiltrados.map((p) => (
               <div key={p.id} className="bg-white rounded-xl border p-4 flex gap-3">
                 {p.image_url && (
                   <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
