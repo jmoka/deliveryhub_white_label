@@ -439,7 +439,9 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               Comanda #{comanda.numero_comanda ?? comanda.id}{comanda.mesas ? ` — Mesa ${comanda.mesas.numero}` : ''}
             </h2>
             <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
-            <p className="text-xs text-[#71717A]">Garçom: {comanda.garcons?.nome ?? '—'}</p>
+            <p className="text-xs text-[#71717A]">
+              {comanda.garcons?.nome ? `Garçom: ${comanda.garcons.nome}` : comanda.aberto_por_nome ? `Caixa: ${comanda.aberto_por_nome}` : 'Garçom: —'}
+            </p>
           </div>
           <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
             {comanda.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
@@ -930,7 +932,9 @@ const RestauranteSalao = () => {
                       <>
                         <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>
                         <p className="text-[10px] truncate">{m.comanda.cliente_mesa_nome}</p>
-                        <p className="text-[10px] text-[#71717A] truncate">{m.comanda.garcons?.nome ?? '—'}</p>
+                        <p className="text-[10px] text-[#71717A] truncate">
+                          {m.comanda.garcons?.nome ?? (m.comanda.aberto_por_nome ? `Caixa: ${m.comanda.aberto_por_nome}` : '—')}
+                        </p>
                       </>
                     )}
                   </button>
@@ -955,7 +959,10 @@ const RestauranteSalao = () => {
                     <p className="text-sm font-medium text-[#18181B]">
                       #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
                     </p>
-                    <p className="text-xs text-[#71717A]">Garçom: {c.garcons?.nome ?? '—'} · {c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
+                    <p className="text-xs text-[#71717A]">
+                      {c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —'}
+                      {' · '}{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
+                    </p>
                   </div>
                   <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
                 </button>
