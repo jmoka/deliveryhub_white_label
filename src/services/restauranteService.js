@@ -267,6 +267,7 @@ export const getSalaoMesas = () => apiFetch('/salao/mesas');
 export const bloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/bloquear`, { method: 'PATCH' });
 export const desbloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/desbloquear`, { method: 'PATCH' });
 export const getSalaoComandas = () => apiFetch('/salao/comandas');
+export const getSalaoComandasFechadasHoje = () => apiFetch('/salao/comandas/fechadas-hoje');
 export const abrirComandaSalao = ({ mesa_id, cliente_nome, cliente_telefone }) =>
   apiFetch('/salao/comandas/abrir', { method: 'POST', body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone }) });
 export const venderDireto = (itens, forma_pagamento, valor_recebido) =>
@@ -280,6 +281,10 @@ export const cancelarComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/cancelar`, { method: 'POST' });
 export const reabrirComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reabrir`, { method: 'POST' });
+export const imprimirConferenciaSalao = (id) =>
+  apiFetch(`/salao/comandas/${id}/imprimir-conferencia`, { method: 'POST' });
+export const reimprimirReciboSalao = (id) =>
+  apiFetch(`/salao/comandas/${id}/reimprimir-recibo`, { method: 'POST' });
 export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido) =>
   apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido }) });
 export const adicionarItensComandaSalao = (id, itens) =>

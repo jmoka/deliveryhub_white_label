@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe,
+  getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe, getSalaoComandasFechadasHoje,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto, reabrirComandaSalao,
-  abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao,
+  abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
+  reimprimirReciboSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
-import { printReciboCliente } from '../../utils/printComanda';
+import { printReciboCliente, printConferenciaComanda } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
@@ -292,6 +293,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
+  const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
 
   const carregar = useCallback(async () => {
     const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
@@ -311,7 +313,10 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   useEffect(() => {
     listarGarcons().then(setGarcons).catch(() => {});
     getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {});
+    getConfig().then((c) => setTaxaCartaoPercentual(c.taxa_cartao_percentual ?? 0)).catch(() => {});
   }, []);
+
+  const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 
   const acao = async (fn) => {
     setErro(null);
@@ -337,6 +342,32 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
     acao(() => reabrirComandaSalao(comandaId));
   };
 
+  const imprimirConferencia = () => {
+    acao(async () => {
+      const res = await imprimirConferenciaSalao(comandaId);
+      if (res?.via !== 'agente') printConferenciaComanda(comanda, comanda.itens ?? []);
+    });
+  };
+
+  const reimprimirRecibo = () => {
+    acao(async () => {
+      const res = await reimprimirReciboSalao(comandaId);
+      if (res?.recibo?.via !== 'agente') {
+        printReciboCliente(comanda, comanda.itens ?? [], {
+          subtotal: res?.subtotal ?? subtotal,
+          desconto: Number(comanda.desconto_valor || 0),
+          acrescimo: Number(comanda.acrescimo_valor || 0),
+          gorjeta: Number(comanda.gorjeta_valor || 0),
+          taxaCartao: res?.taxa_cartao_valor ?? 0,
+          total: comanda.total,
+          formaPagamento: comanda.payment_method,
+          trocoDado: 0,
+          pagamentos: res?.pagamentos ?? comanda.pagamentos ?? [],
+        });
+      }
+    });
+  };
+
   const pagar = () => {
     if (forma === 'cash' && valorRecebidoFinal && Number(valorRecebidoFinal) < valorACobrarFinal) {
       setErro('Valor recebido não pode ser menor que o valor a pagar.');
@@ -353,7 +384,8 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           desconto: Number(descontoInput || 0),
           acrescimo: Number(acrescimoInput || 0),
           gorjeta: Number(gorjeta || 0),
-          total: res?.total ?? valorACobrarFinal,
+          taxaCartao: res?.taxa_cartao_valor ?? 0,
+          total: res?.valor_cobrado ?? res?.total ?? valorACobrarFinal,
           formaPagamento: forma,
           trocoDado: res?.troco ?? 0,
           pagamentos: res?.pagamentos ?? [],
@@ -430,10 +462,14 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
   if (!comanda) return null;
 
+  const podeEditar = comanda.status === 'aberta' || comanda.status === 'fechada_garcom';
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
-  const valorACobrarFinal = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + Number(gorjeta || 0)).toFixed(2));
+  const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + Number(gorjeta || 0)).toFixed(2));
+  const taxaCartaoValorFinal = isCartao(forma) ? parseFloat((valorACobrarFinalBase * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
+  const valorACobrarFinal = parseFloat((valorACobrarFinalBase + taxaCartaoValorFinal).toFixed(2));
   const trocoFinal = forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) - valorACobrarFinal : null;
+  const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
 
   return (
@@ -450,14 +486,24 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             </p>
           </div>
           <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
-            {comanda.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
+            {comanda.status === 'aberta' ? 'Em aberto'
+              : comanda.status === 'fechada_garcom' ? 'Aguardando pagamento'
+              : comanda.status === 'paga' ? 'Paga'
+              : comanda.status === 'canceled' ? 'Cancelada' : comanda.status}
           </span>
         </div>
 
-        {comanda.status !== 'aberta' && (
+        {comanda.status === 'fechada_garcom' && (
           <button onClick={reabrir} disabled={salvando}
             className="w-full mb-3 py-2 text-xs font-bold rounded-xl border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-50">
             Reabrir comanda (cliente vai continuar consumindo)
+          </button>
+        )}
+
+        {comanda.status === 'paga' && (
+          <button onClick={reimprimirRecibo} disabled={salvando}
+            className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+            <Icon name="Printer" size={16} /> Reimprimir recibo (comanda já paga)
           </button>
         )}
 
@@ -497,6 +543,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           </div>
         )}
 
+        {podeEditar && (
         <div className="flex items-center gap-2 mb-3">
           <select value={garcomSelecionado} onChange={(e) => setGarcomSelecionado(e.target.value)}
             className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
@@ -508,7 +555,9 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           <button onClick={transferir} disabled={!garcomSelecionado || salvando}
             className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
         </div>
+        )}
 
+        {podeEditar && (
         <div className="flex items-center gap-2 mb-3">
           <select value={mesaDestino} onChange={(e) => setMesaDestino(e.target.value)}
             className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
@@ -522,6 +571,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           <button onClick={transferirMesaOuComanda} disabled={!mesaDestino || salvando}
             className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
         </div>
+        )}
 
         <div className="space-y-1 mb-3">
           {(comanda.itens ?? []).map((item) => (
@@ -557,6 +607,11 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           </button>
         )}
 
+        <button onClick={imprimirConferencia} disabled={salvando}
+          className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+          <Icon name="Printer" size={16} /> Imprimir comanda (conferência)
+        </button>
+
         {mostrarPicker && (
           <ProdutoPickerModal
             produtos={produtos}
@@ -567,6 +622,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
         <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
           <div className="flex justify-between text-sm"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+          {podeEditar && (
           <div className="flex justify-between items-center text-sm gap-2">
             <span>Desconto</span>
             <input type="number" value={descontoInput} onChange={(e) => setDescontoInput(e.target.value)}
@@ -574,6 +630,8 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             <button onClick={() => acao(() => aplicarDescontoComanda(comandaId, Number(descontoInput || 0)))}
               className="text-xs text-[#FF441F] font-bold">Aplicar</button>
           </div>
+          )}
+          {podeEditar && (
           <div className="flex justify-between items-center text-sm gap-2">
             <span>Acréscimo</span>
             <input type="number" value={acrescimoInput} onChange={(e) => setAcrescimoInput(e.target.value)}
@@ -581,6 +639,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             <button onClick={() => acao(() => aplicarAcrescimoComanda(comandaId, Number(acrescimoInput || 0)))}
               className="text-xs text-[#FF441F] font-bold">Aplicar</button>
           </div>
+          )}
           <div className="flex justify-between text-base font-bold text-[#18181B]">
             <span>Total</span><span>{fmt(totalFinal)}</span>
           </div>
@@ -614,21 +673,29 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                   </div>
                 ) : (
                   <div key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
-                    <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
+                    <span>
+                      {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
+                      {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
+                    </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span>{fmt(p.valor)}</span>
-                      <button onClick={() => iniciarEdicaoPagamento(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
-                        <Icon name="Pencil" size={13} strokeWidth={2.5} />
-                      </button>
-                      <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
-                        <Icon name="X" size={14} strokeWidth={2.5} />
-                      </button>
+                      <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
+                      {podeEditar && (
+                        <>
+                          <button onClick={() => iniciarEdicaoPagamento(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                            <Icon name="Pencil" size={13} strokeWidth={2.5} />
+                          </button>
+                          <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
+                            <Icon name="X" size={14} strokeWidth={2.5} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )
               ))}
             </div>
           )}
+          {podeEditar && (
           <div className="flex items-center gap-1.5">
             <input type="number" value={valorPagamento} onChange={(e) => setValorPagamento(e.target.value)} placeholder="Valor"
               className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
@@ -644,7 +711,13 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               Pagar parcial
             </button>
           </div>
-          {formaPagamentoParcial === 'cash' && (
+          )}
+          {podeEditar && taxaCartaoValorParcial > 0 && (
+            <p className="text-[11px] text-[#FF441F] font-medium">
+              + taxa cartão ({taxaCartaoPercentual}%): {fmt(taxaCartaoValorParcial)} — cobrar {fmt(Number(valorPagamento || 0) + taxaCartaoValorParcial)}
+            </p>
+          )}
+          {podeEditar && formaPagamentoParcial === 'cash' && (
             <div className="flex items-center gap-1.5">
               <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
                 placeholder="Valor recebido do cliente"
@@ -658,6 +731,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           )}
         </div>
 
+        {podeEditar && (
         <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
           <label className="text-xs text-[#71717A]">Forma de pagamento</label>
           <select value={forma} onChange={(e) => { formaTocada.current = true; setForma(e.target.value); }} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
@@ -680,9 +754,15 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               <span className="text-[#71717A]">Gorjeta</span>
               <span className="text-[#18181B]">{fmt(Number(gorjeta || 0))}</span>
             </div>
+            {taxaCartaoValorFinal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A]">Taxa cartão ({taxaCartaoPercentual}%)</span>
+                <span className="text-[#FF441F]">+ {fmt(taxaCartaoValorFinal)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
-              <span>Total (comanda + gorjeta)</span>
-              <span>{fmt(totalFinal + Number(gorjeta || 0))}</span>
+              <span>Total (comanda + gorjeta{taxaCartaoValorFinal > 0 ? ' + taxa' : ''})</span>
+              <span>{fmt(totalFinal + Number(gorjeta || 0) + taxaCartaoValorFinal)}</span>
             </div>
             {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
               <>
@@ -691,7 +771,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                   <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
-                  <span>Falta pagar (com gorjeta)</span>
+                  <span>Falta pagar (com gorjeta{taxaCartaoValorFinal > 0 ? ' + taxa' : ''})</span>
                   <span>{fmt(valorACobrarFinal)}</span>
                 </div>
               </>
@@ -710,9 +790,11 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             </div>
           )}
         </div>
+        )}
 
         {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
 
+        {podeEditar && (
         <div className="flex gap-2 mt-4">
           <button onClick={cancelar} disabled={salvando}
             className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
@@ -723,6 +805,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             {salvando ? 'Processando...' : 'Confirmar pagamento'}
           </button>
         </div>
+        )}
       </div>
     </div>
   );
@@ -870,6 +953,7 @@ const RestauranteSalao = () => {
   const [garconsOnline, setGarconsOnline] = useState([]);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
+  const [comandasFechadas, setComandasFechadas] = useState([]);
   const [comandaAtiva, setComandaAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mostrarVendaDireta, setMostrarVendaDireta] = useState(false);
@@ -877,10 +961,13 @@ const RestauranteSalao = () => {
   const [erro, setErro] = useState(null);
 
   const carregar = useCallback(async () => {
-    const [g, m, c] = await Promise.all([getGarconsOnline(), getSalaoMesas(), getSalaoComandas()]);
+    const [g, m, c, cf] = await Promise.all([
+      getGarconsOnline(), getSalaoMesas(), getSalaoComandas(), getSalaoComandasFechadasHoje(),
+    ]);
     setGarconsOnline(g);
     setMesas(m);
     setComandas(c);
+    setComandasFechadas(cf);
     setLoading(false);
   }, []);
 
@@ -982,6 +1069,29 @@ const RestauranteSalao = () => {
               ))}
               {comandas.length === 0 && <p className="text-sm text-[#A1A1AA]">Nenhuma comanda em aberto.</p>}
             </div>
+
+            {comandasFechadas.length > 0 && (
+              <>
+                <p className="text-sm font-bold text-[#18181B] mb-2 mt-6">Comandas fechadas hoje</p>
+                <div className="space-y-2">
+                  {comandasFechadas.map((c) => (
+                    <button key={c.id} onClick={() => setComandaAtiva(c.id)}
+                      className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left opacity-80">
+                      <div>
+                        <p className="text-sm font-medium text-[#18181B]">
+                          #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
+                        </p>
+                        <p className="text-xs text-[#71717A]">
+                          {c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —'}
+                          {' · '}Paga
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
         {erro && <p className="text-xs text-red-600 mt-3">{erro}</p>}

@@ -157,7 +157,7 @@ document.head.appendChild(s);
 // módulo Salão: garçom só coleta a forma, quem emite o recibo de fato é o caixa).
 export const printReciboCliente = (comanda, itens, valores, restauranteNome) => {
   const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-  const { subtotal, desconto = 0, acrescimo = 0, gorjeta = 0, total, formaPagamento, trocoDado, pagamentos = [] } = valores;
+  const { subtotal, desconto = 0, acrescimo = 0, gorjeta = 0, taxaCartao = 0, total, formaPagamento, trocoDado, pagamentos = [] } = valores;
   const PAGAMENTO_ORIGEM = { garcom: 'garçom', estabelecimento: 'caixa' };
   const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
   const hora = new Date().toLocaleString('pt-BR');
@@ -188,6 +188,7 @@ ${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i
 ${desconto > 0 ? `<div class="linha"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
 ${acrescimo > 0 ? `<div class="linha"><span>Acréscimo</span><span>+ ${fmt(acrescimo)}</span></div>` : ''}
 ${gorjeta > 0 ? `<div class="linha"><span>Gorjeta</span><span>${fmt(gorjeta)}</span></div>` : ''}
+${taxaCartao > 0 ? `<div class="linha"><span>Taxa cartão</span><span>+ ${fmt(taxaCartao)}</span></div>` : ''}
 <hr/>
 <div class="total"><span>TOTAL</span><span>${fmt(total)}</span></div>
 ${pagamentos.length > 0 ? `
@@ -207,6 +208,61 @@ try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
 </body></html>`;
 
   const frameId = `recibo-frame-${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.id = frameId;
+  iframe.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe);
+
+  try {
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+  } catch {
+    iframe.remove();
+    const w = window.open('', '_blank', 'width=440,height=680');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+};
+
+// Conferência pedida pelo caixa antes de fechar a conta — só a lista de itens e o
+// subtotal até agora, sem dado de pagamento (isso só sai no recibo final via printReciboCliente).
+export const printConferenciaComanda = (comanda, itens, restauranteNome) => {
+  const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+  const subtotal = itens.reduce((acc, i) => acc + i.quantity * (i.unit_price ?? i.products?.price ?? 0), 0);
+  const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
+  const hora = new Date().toLocaleString('pt-BR');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Conferência</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
+.center{text-align:center;display:block}
+.rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
+hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.item{display:flex;gap:8px;padding:3px 0;font-size:14px;justify-content:space-between}
+.total{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding:4px 0}
+.foot{font-size:11px;text-align:center;margin-top:8px}
+@media print{button{display:none!important}}
+</style></head><body>
+<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
+<div class="center" style="font-size:11px;letter-spacing:1px">COMANDA — CONFERÊNCIA</div>
+<hr/>
+<div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
+<div class="center" style="font-size:11px">${hora}</div>
+<hr/>
+${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i.products?.name}</span><span>${fmt(i.quantity * (i.unit_price ?? i.products?.price ?? 0))}</span></div>`).join('')}
+<hr/>
+<div class="total"><span>TOTAL</span><span>${fmt(subtotal)}</span></div>
+<hr/>
+<div class="foot">Confira os itens antes de fechar a conta</div>
+<script>
+window.print();
+try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
+</script>
+</body></html>`;
+
+  const frameId = `conferencia-frame-${Date.now()}`;
   const iframe = document.createElement('iframe');
   iframe.id = frameId;
   iframe.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';

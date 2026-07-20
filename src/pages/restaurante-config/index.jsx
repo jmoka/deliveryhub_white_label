@@ -357,6 +357,7 @@ const RestauranteConfig = () => {
     motoboy_comissao_valor_km: '',
     motoboy_comissao_km_fallback: '',
     gorjeta_percentual: '',
+    taxa_cartao_percentual: '',
     salao_modo: 'ambos',
     recibo_impressora_id: '',
   });
@@ -384,6 +385,7 @@ const RestauranteConfig = () => {
           motoboy_comissao_valor_km: d.motoboy_comissao_valor_km != null ? String(d.motoboy_comissao_valor_km) : '',
           motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
           gorjeta_percentual: d.gorjeta_percentual != null ? String(d.gorjeta_percentual) : '',
+          taxa_cartao_percentual: d.taxa_cartao_percentual != null ? String(d.taxa_cartao_percentual) : '',
           salao_modo: d.salao_modo ?? 'ambos',
           recibo_impressora_id: d.recibo_impressora_id != null ? String(d.recibo_impressora_id) : '',
         }));
@@ -412,6 +414,7 @@ const RestauranteConfig = () => {
         motoboy_comissao_valor_km: form.motoboy_comissao_valor_km !== '' ? parseFloat(form.motoboy_comissao_valor_km) : 0,
         motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
         gorjeta_percentual: form.gorjeta_percentual !== '' ? parseFloat(form.gorjeta_percentual) : 0,
+        taxa_cartao_percentual: form.taxa_cartao_percentual !== '' ? parseFloat(form.taxa_cartao_percentual) : 0,
         salao_modo: form.salao_modo,
         recibo_impressora_id: form.recibo_impressora_id !== '' ? Number(form.recibo_impressora_id) : null,
       };
@@ -661,6 +664,28 @@ const RestauranteConfig = () => {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       O caixa vê esse valor sugerido ao fechar a conta (PDV do Salão) — ainda pode ajustar na hora.
+                    </p>
+                  </div>
+                )}
+
+                {tipoRestaurante && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Taxa do cartão (% sobre débito e crédito)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number" min="0" max="20" step="0.1"
+                        value={form.taxa_cartao_percentual}
+                        onChange={(e) => setForm((f) => ({ ...f, taxa_cartao_percentual: e.target.value }))}
+                        placeholder="Ex: 3"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Acrescentada ao valor cobrado do cliente quando a comanda/mesa é fechada (ou paga
+                      parcialmente) com débito ou crédito no PDV do Salão.
                     </p>
                   </div>
                 )}
