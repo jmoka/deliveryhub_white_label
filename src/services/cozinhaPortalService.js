@@ -65,3 +65,5 @@ export const reimprimirItem = (itemId) =>
   kdsFetch(`/itens/${itemId}/reimprimir`, { method: 'POST' });
 export const iniciarPreparoItem = (itemId) =>
   kdsFetch(`/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
+export const voltarStatusItem = (itemId) =>
+  kdsFetch(`/itens/${itemId}/voltar`, { method: 'PATCH' });

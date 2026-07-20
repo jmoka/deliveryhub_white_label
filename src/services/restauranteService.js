@@ -150,6 +150,8 @@ export const reimprimirItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/reimprimir`, { method: 'POST' });
 export const iniciarPreparoItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
+export const voltarStatusItemRestaurante = (itemId) =>
+  apiFetch(`/kds/itens/${itemId}/voltar`, { method: 'PATCH' });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const getRelatorioFretes = (periodo = 'hoje') => apiFetch(`/relatorio/fretes?periodo=${encodeURIComponent(periodo)}`);
 export const getRelatorioGarcom = (de, ate) => apiFetch(`/relatorio/garcom?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);

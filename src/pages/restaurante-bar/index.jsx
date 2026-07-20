@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
@@ -40,7 +40,7 @@ const AlertaMotoboy = ({ item }) => {
   );
 };
 
-const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -91,17 +91,31 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
       )}
       <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
     </div>
-    {item.status === 'enviado' ? (
-      <button onClick={() => onIniciarPreparo(item)}
-        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="ChefHat" size={13} /> Liberado pra Motoboy
-      </button>
-    ) : (
-      <button onClick={() => onMarcarPronto(item.id)}
-        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="Check" size={13} /> Entregue
-      </button>
-    )}
+    <div className="flex gap-2">
+      {item.status !== 'enviado' && (
+        <button onClick={() => onVoltar(item)} title="Desfazer — clicou errado"
+          className="flex-shrink-0 px-3 py-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Undo2" size={13} /> Voltar
+        </button>
+      )}
+      {item.status === 'enviado' && (
+        <button onClick={() => onIniciarPreparo(item)}
+          className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="ChefHat" size={13} /> Liberado pra Motoboy
+        </button>
+      )}
+      {item.status === 'preparando' && (
+        <button onClick={() => onMarcarPronto(item.id)}
+          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Check" size={13} /> Entregue
+        </button>
+      )}
+      {item.status === 'pronto' && (
+        <div className="flex-1 py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Check" size={13} /> Entregue
+        </div>
+      )}
+    </div>
   </div>
   );
 };
@@ -175,6 +189,15 @@ const RestauranteBar = () => {
     carregar(impressorasBar);
   };
 
+  const voltar = async (item) => {
+    try {
+      await voltarStatusItemRestaurante(item.id);
+      carregar(impressorasBar);
+    } catch (e) {
+      setErro(e.message);
+    }
+  };
+
   const reimprimir = async (item) => {
     try {
       const res = await reimprimirItemRestaurante(item.id);
@@ -195,6 +218,7 @@ const RestauranteBar = () => {
   const itensFiltrados = itens.filter((i) => filtroCanal === 'todos' || i.tipo === filtroCanal);
   const aguardando = itensFiltrados.filter((i) => i.status === 'enviado');
   const preparando = itensFiltrados.filter((i) => i.status === 'preparando');
+  const prontosRecentes = itensFiltrados.filter((i) => i.status === 'pronto');
   const totalDelivery = itens.filter((i) => i.tipo === 'delivery').length;
   const totalSalao = itens.filter((i) => i.tipo === 'salao').length;
 
@@ -280,7 +304,7 @@ const RestauranteBar = () => {
             ) : (
               <div className="space-y-3">
                 {aguardando.map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
                 ))}
               </div>
             )}
@@ -302,11 +326,26 @@ const RestauranteBar = () => {
             ) : (
               <div className="space-y-3">
                 {preparando.map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
                 ))}
               </div>
             )}
           </div>
+
+          {prontosRecentes.length > 0 && (
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregues recentemente (clicou errado? desfaz aqui)</h2>
+                <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontosRecentes.length}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {prontosRecentes.map((item, idx) => (
+                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
+                ))}
+              </div>
+            </div>
+          )}
         </main>
       )}
 

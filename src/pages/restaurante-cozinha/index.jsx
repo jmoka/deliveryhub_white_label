@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha,
-  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante,
+  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
 } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
-  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem,
+  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
@@ -130,7 +130,7 @@ const OrderCard = ({ pedido, posicao, now, onAvancar, onVoltar, atualizando, res
 // Card de item do salão (não agrupa por mesa/comanda) — mostra mesa e garçom inline,
 // ordenado junto com os pedidos de delivery pela ordem de chegada. Cronômetro ao vivo
 // (espera/preparo) igual ao painel de Produção.
-const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -175,17 +175,31 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
       )}
       <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
     </div>
-    {item.status === 'enviado' ? (
-      <button onClick={() => onIniciarPreparo(item)}
-        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="ChefHat" size={13} /> Iniciar Preparo
-      </button>
-    ) : (
-      <button onClick={() => onMarcarPronto(item.id)}
-        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-        <Icon name="Check" size={13} /> Pronto
-      </button>
-    )}
+    <div className="flex gap-2">
+      {item.status !== 'enviado' && (
+        <button onClick={() => onVoltar(item)} title="Desfazer — clicou errado"
+          className="flex-shrink-0 px-3 py-2 bg-purple-900/40 hover:bg-purple-900/60 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Undo2" size={13} /> Voltar
+        </button>
+      )}
+      {item.status === 'enviado' && (
+        <button onClick={() => onIniciarPreparo(item)}
+          className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="ChefHat" size={13} /> Iniciar Preparo
+        </button>
+      )}
+      {item.status === 'preparando' && (
+        <button onClick={() => onMarcarPronto(item.id)}
+          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Check" size={13} /> Pronto
+        </button>
+      )}
+      {item.status === 'pronto' && (
+        <div className="flex-1 py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Check" size={13} /> Pronto
+        </div>
+      )}
+    </div>
   </div>
   );
 };
@@ -474,6 +488,16 @@ const RestauranteCozinha = () => {
     }
   };
 
+  const voltarSalao = async (item) => {
+    try {
+      if (modoToken) await voltarStatusItem(item.id);
+      else await voltarStatusItemRestaurante(item.id);
+      carregarSalao(impressorasCozinha, modoToken);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   // Só mostra pedido delivery aqui se ele tiver item roteado pra impressora de setor
   // "Cozinha" — antes mostrava TODO pedido delivery independente do produto, por isso
   // Bar/Cozinha ficavam misturados. Roteamento vem do produto (config em /produtos).
@@ -484,6 +508,7 @@ const RestauranteCozinha = () => {
   const preparando = pedidos.filter((p) => p.status === 'preparing' && idsDeliveryRoteadosParaCozinha.has(p.id));
   const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado');
   const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando');
+  const itensSalaoProntos = itensSalao.filter((i) => i.status === 'pronto');
 
   // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.
   const filaAguardando = [
@@ -501,6 +526,7 @@ const RestauranteCozinha = () => {
   const passaFiltro = (e) => filtroCanal === 'todos' || e.tipo === filtroCanal;
   const aguardandoPreparo = filaAguardando.filter(passaFiltro);
   const emPreparo = filaEmPreparo.filter(passaFiltro);
+  const prontosSalao = filtroCanal === 'delivery' ? [] : itensSalaoProntos;
   const totalDelivery = filaAguardando.filter((e) => e.tipo === 'delivery').length + filaEmPreparo.filter((e) => e.tipo === 'delivery').length;
   const totalSalao = filaAguardando.filter((e) => e.tipo === 'salao').length + filaEmPreparo.filter((e) => e.tipo === 'salao').length;
 
@@ -677,7 +703,7 @@ const RestauranteCozinha = () => {
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
                   <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
-                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
+                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
                 )
               ))}
             </div>
@@ -705,13 +731,29 @@ const RestauranteCozinha = () => {
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
                   <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
-                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} />
+                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
                 )
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {prontosSalao.length > 0 && (
+        <div className="px-5 pb-5 max-w-5xl mx-auto">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Prontos recentemente (clicou errado? desfaz aqui)</h2>
+            <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontosSalao.length}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {prontosSalao.map((item, idx) => (
+              <SalaoItemCard key={`p-${item.id}`} item={item} posicao={idx + 1} now={now}
+                onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {pedidos.length === 0 && itensSalao.length === 0 && !loading && (
         <div className="text-center py-20">
