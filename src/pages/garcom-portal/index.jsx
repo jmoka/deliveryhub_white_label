@@ -4,7 +4,7 @@ import {
   login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
-  registrarPagamento,
+  registrarPagamento, editarClienteComanda, excluirComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
@@ -118,6 +118,54 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
             <button type="submit" disabled={salvando}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
               {salvando ? 'Abrindo...' : 'Abrir'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const EditarClienteModal = ({ comanda, onFechar, onEditado }) => {
+  const [nome, setNome] = useState(comanda.cliente_mesa_nome ?? '');
+  const [telefone, setTelefone] = useState(comanda.cliente_mesa_telefone ?? '');
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setSalvando(true);
+    try {
+      await editarClienteComanda(comanda.id, nome.trim(), telefone.trim());
+      await onEditado();
+      onFechar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível salvar.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] mb-1">Editar dados do cliente</h2>
+        <p className="text-xs text-[#71717A] mb-4">Corrige nome ou telefone digitados errado na abertura.</p>
+        <form onSubmit={submit} className="space-y-3">
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600">{erro}</p>}
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onFechar}
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>
@@ -392,6 +440,8 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [erro, setErro] = useState(null);
   const [mostrarQr, setMostrarQr] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
+  const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
 
   const carregar = useCallback(async () => {
     const [c, p] = await Promise.all([getComanda(comandaId), getProdutos()]);
@@ -400,6 +450,19 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   }, [comandaId]);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  const excluir = async () => {
+    if (!window.confirm('Excluir esta comanda? Essa ação não pode ser desfeita.')) return;
+    setErro(null);
+    setExcluindo(true);
+    try {
+      await excluirComanda(comandaId);
+      onVoltar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível excluir a comanda.');
+      setExcluindo(false);
+    }
+  };
 
   const adicionarProduto = async (item) => {
     setErro(null);
@@ -453,6 +516,9 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const total = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
   const fechada = comanda.status === 'fechada_garcom';
+  // Só dá pra excluir enquanto nada foi mandado pra cozinha ainda — depois disso quem
+  // decide é o estabelecimento (cancelar via PDV), pra não sumir pedido em preparo.
+  const podeExcluir = (comanda.itens ?? []).every((i) => i.status === 'pendente');
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] pb-24">
@@ -463,7 +529,12 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         <h1 className="text-base font-bold text-[#18181B]">
           #{comanda.numero_comanda ?? comanda.id}{comanda.mesa_id ? ` — Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : ''}
         </h1>
-        <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+          <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
+            <Icon name="Pencil" size={12} />
+          </button>
+        </div>
         {fechada && (
           <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-2 py-1 mt-2 inline-block">
             Fechada — aguardando pagamento no caixa
@@ -590,7 +661,17 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
               </>
             )}
           </div>
+          {podeExcluir && (
+            <button onClick={excluir} disabled={excluindo}
+              className="w-full mt-2 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl disabled:opacity-50">
+              {excluindo ? 'Excluindo...' : 'Excluir comanda'}
+            </button>
+          )}
         </div>
+      )}
+
+      {mostrarEditarCliente && (
+        <EditarClienteModal comanda={comanda} onFechar={() => setMostrarEditarCliente(false)} onEditado={carregar} />
       )}
 
       {mostrarFechar && (
