@@ -227,11 +227,14 @@ try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
   }
 };
 
-// Conferência pedida pelo caixa antes de fechar a conta — só a lista de itens e o
-// subtotal até agora, sem dado de pagamento (isso só sai no recibo final via printReciboCliente).
-export const printConferenciaComanda = (comanda, itens, restauranteNome) => {
+// Conferência pedida pelo caixa antes de fechar a conta — itens + subtotal e também
+// a prévia de acréscimo/gorjeta/taxa/forma de pagamento já escolhidos na tela (ainda
+// não é o recibo final, que só sai depois de pago via printReciboCliente).
+export const printConferenciaComanda = (comanda, itens, valores = {}, restauranteNome) => {
   const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
   const subtotal = itens.reduce((acc, i) => acc + i.quantity * (i.unit_price ?? i.products?.price ?? 0), 0);
+  const { desconto = 0, acrescimo = 0, gorjeta = 0, taxaCartao = 0, formaPagamento } = valores;
+  const total = subtotal - desconto + acrescimo + gorjeta + taxaCartao;
   const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
   const hora = new Date().toLocaleString('pt-BR');
 
@@ -256,7 +259,14 @@ ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${com
 <hr/>
 ${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i.products?.name}</span><span>${fmt(i.quantity * (i.unit_price ?? i.products?.price ?? 0))}</span></div>`).join('')}
 <hr/>
-<div class="total"><span>TOTAL</span><span>${fmt(subtotal)}</span></div>
+<div class="item"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+${desconto > 0 ? `<div class="item"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
+${acrescimo > 0 ? `<div class="item"><span>Acréscimo</span><span>+ ${fmt(acrescimo)}</span></div>` : ''}
+${gorjeta > 0 ? `<div class="item"><span>Gorjeta</span><span>+ ${fmt(gorjeta)}</span></div>` : ''}
+${taxaCartao > 0 ? `<div class="item"><span>Taxa cartão</span><span>+ ${fmt(taxaCartao)}</span></div>` : ''}
+<hr/>
+<div class="total"><span>TOTAL</span><span>${fmt(total)}</span></div>
+${formaPagamento ? `<div class="item"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>` : ''}
 <hr/>
 <div class="foot">Confira os itens antes de fechar a conta</div>
 <script>
