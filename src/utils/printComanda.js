@@ -169,7 +169,10 @@ body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;
 .center{text-align:center;display:block}
 .rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
 hr{border:none;border-top:1px dashed #000;margin:8px 0}
-.item{display:flex;gap:8px;padding:3px 0;font-size:14px;justify-content:space-between}
+.item{display:flex;gap:6px;padding:3px 0;font-size:14px}
+.item .col-qtd{flex-shrink:0;width:26px;font-weight:700}
+.item .col-desc{flex:1;min-width:0;word-wrap:break-word}
+.item .col-valor{flex-shrink:0;min-width:58px;text-align:right}
 .linha{display:flex;justify-content:space-between;font-size:13px;padding:1px 0}
 .total{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding:4px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
@@ -182,7 +185,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
 <div class="center" style="font-size:11px">${hora}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i.products?.name}</span><span>${fmt(i.quantity * (i.unit_price ?? 0))}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="col-qtd">${i.quantity}x</span><span class="col-desc">${i.product_name ?? i.products?.name}</span><span class="col-valor">${fmt(i.quantity * (i.unit_price ?? 0))}</span></div>`).join('')}
 <hr/>
 <div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
 ${desconto > 0 ? `<div class="linha"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
