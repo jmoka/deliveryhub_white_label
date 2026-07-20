@@ -345,7 +345,15 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const imprimirConferencia = () => {
     acao(async () => {
       const res = await imprimirConferenciaSalao(comandaId);
-      if (res?.via !== 'agente') printConferenciaComanda(comanda, comanda.itens ?? []);
+      if (res?.via !== 'agente') {
+        printConferenciaComanda(comanda, comanda.itens ?? [], {
+          desconto: Number(descontoInput || 0),
+          acrescimo: Number(acrescimoInput || 0),
+          gorjeta: Number(gorjeta || 0),
+          taxaCartao: taxaCartaoValorFinal,
+          formaPagamento: forma,
+        });
+      }
     });
   };
 
