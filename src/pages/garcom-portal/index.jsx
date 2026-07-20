@@ -21,6 +21,10 @@ const MESA_STATUS_COR = {
   bloqueada: 'bg-zinc-200 text-zinc-500 border-zinc-300',
 };
 const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento', bloqueada: 'Bloqueada' };
+const MESA_OCUPADA_OUTRO_COR = 'bg-purple-100 text-purple-700 border-purple-200';
+
+const responsavelMesa = (comanda) =>
+  comanda?.garcons?.nome ?? (comanda?.aberto_por_nome ? `Caixa: ${comanda.aberto_por_nome}` : null);
 
 const GarcomLogin = ({ loginKey, onLogin }) => {
   const [password, setPassword] = useState('');
@@ -749,16 +753,24 @@ const GarcomHome = () => {
           {mesas.map((mesa) => {
             const minhaComanda = mesa.status !== 'livre' && mesa.comanda && mesa.comanda.garcom_id === meuId;
             const clicavel = (mesa.status === 'livre' && salaoModo !== 'comandas') || minhaComanda;
+            const cor = mesa.status === 'ocupada' && mesa.comanda && !minhaComanda
+              ? MESA_OCUPADA_OUTRO_COR
+              : (MESA_STATUS_COR[mesa.status] ?? '');
             return (
               <button
                 key={mesa.id}
                 onClick={() => clicarMesa(mesa)}
                 disabled={!clicavel}
-                className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[mesa.status] ?? ''} disabled:opacity-70`}
+                className={`rounded-xl border p-3 text-center ${cor} disabled:opacity-70`}
               >
                 <p className="text-lg font-black">{mesa.numero}</p>
                 <p className="text-[10px] font-medium">{MESA_STATUS_LABEL[mesa.status] ?? mesa.status}</p>
-                {minhaComanda && <p className="text-[10px] truncate">{mesa.comanda.cliente_mesa_nome}</p>}
+                {mesa.comanda && (
+                  <>
+                    <p className="text-[10px] truncate">{responsavelMesa(mesa.comanda) ?? '—'}</p>
+                    <p className="text-[10px] truncate">{mesa.comanda.cliente_mesa_nome}</p>
+                  </>
+                )}
               </button>
             );
           })}
