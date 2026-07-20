@@ -278,6 +278,8 @@ export const aplicarAcrescimoComanda = (id, valor) =>
   apiFetch(`/salao/comandas/${id}/acrescimo`, { method: 'PATCH', body: JSON.stringify({ valor }) });
 export const cancelarComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/cancelar`, { method: 'POST' });
+export const reabrirComandaSalao = (id) =>
+  apiFetch(`/salao/comandas/${id}/reabrir`, { method: 'POST' });
 export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido) =>
   apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido }) });
 export const adicionarItensComandaSalao = (id, itens) =>

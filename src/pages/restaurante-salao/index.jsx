@@ -5,7 +5,7 @@ import {
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
-  editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto,
+  editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
@@ -332,6 +332,11 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
     acao(async () => { await cancelarComandaSalao(comandaId); onFechar(); });
   };
 
+  const reabrir = () => {
+    if (!window.confirm('Reabrir esta comanda? O cliente volta a consumir e a mesa fica ocupada de novo.')) return;
+    acao(() => reabrirComandaSalao(comandaId));
+  };
+
   const pagar = () => {
     if (forma === 'cash' && valorRecebidoFinal && Number(valorRecebidoFinal) < valorACobrarFinal) {
       setErro('Valor recebido não pode ser menor que o valor a pagar.');
@@ -448,6 +453,13 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             {comanda.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
           </span>
         </div>
+
+        {comanda.status !== 'aberta' && (
+          <button onClick={reabrir} disabled={salvando}
+            className="w-full mb-3 py-2 text-xs font-bold rounded-xl border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-50">
+            Reabrir comanda (cliente vai continuar consumindo)
+          </button>
+        )}
 
         {comanda.tracking_token && (
           <div className="mb-3">
