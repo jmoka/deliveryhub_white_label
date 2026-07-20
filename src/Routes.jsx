@@ -47,6 +47,8 @@ import GarcomPortal from './pages/garcom-portal';
 import RestauranteGarcons from './pages/restaurante-garcons';
 import RestauranteImpressoras from './pages/restaurante-impressoras';
 import RestauranteSalao from './pages/restaurante-salao';
+import RestauranteCardapioDigital from './pages/restaurante-cardapio-digital';
+import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
 import MesaAcompanhar from './pages/mesa-acompanhar';
 import HomeRouter from './pages/home-router';
@@ -78,6 +80,9 @@ const Routes = () => {
         {/* Cardápio público por slug — sem auth */}
         <Route path="/r/:slug" element={<RestauranteCatalogo />} />
 
+        {/* Cardápio digital só-leitura (QR de mesa) — sem auth, sem carrinho */}
+        <Route path="/cardapio/:slug" element={<CardapioDigital />} />
+
         {/* Restaurante — requer role=restaurant_owner */}
         <Route path="/restaurante" element={<RestauranteGuard><RestauranteDashboard /></RestauranteGuard>} />
         <Route path="/restaurante/produtos" element={<RestauranteGuard><RestauranteProdutos /></RestauranteGuard>} />
@@ -99,6 +104,7 @@ const Routes = () => {
         <Route path="/restaurante/relatorios/garcom" element={<RestauranteGuard><RestauranteRelatorioGarcom /></RestauranteGuard>} />
         <Route path="/restaurante/relatorios/financeiro" element={<RestauranteGuard><RestauranteRelatorioFinanceiro /></RestauranteGuard>} />
         <Route path="/restaurante/relatorios/produtos" element={<RestauranteGuard><RestauranteRelatorioProdutos /></RestauranteGuard>} />
+        <Route path="/restaurante/cardapio-digital" element={<RestauranteGuard><RestauranteCardapioDigital /></RestauranteGuard>} />
 
         {/* Módulo Salão — só estabelecimentos tipo Restaurante */}
         <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />

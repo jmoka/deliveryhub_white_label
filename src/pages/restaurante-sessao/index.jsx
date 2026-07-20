@@ -44,6 +44,7 @@ const NavRestaurante = ({ active }) => {
     ] : []),
     { label: 'Clientes', path: '/restaurante/clientes' },
     { label: 'Financeiro', path: '/restaurante/financeiro' },
+    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
     { label: 'Config', path: '/restaurante/config' },
   ];
   return (

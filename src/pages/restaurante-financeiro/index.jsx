@@ -52,6 +52,7 @@ const LINKS = [
   { label: 'Clientes', path: '/restaurante/clientes' },
   { label: 'Financeiro', path: '/restaurante/financeiro' },
   { label: 'Designer', path: '/restaurante/aparencia' },
+  { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
   { label: 'Config', path: '/restaurante/config' },
   { label: 'Sessão', path: '/restaurante/sessao' },
 ];
