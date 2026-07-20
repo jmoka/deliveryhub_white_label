@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
+import {
+  getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa,
+  listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
+} from '../../services/restauranteService';
 import { buscarCep } from '../../utils/viaCep';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
@@ -331,6 +334,133 @@ const EnderecoCard = ({ geocodeFalhou }) => {
           </div>
         </form>
       )}
+    </div>
+  );
+};
+
+// Regras de comissão são do estabelecimento (não por garçom individual) — toda comanda
+// fechada lança a comissão de cada regra ativa (ver lancarComissoes no backend). CRUD
+// próprio, salva na hora (não depende do botão "Salvar" do form geral da página).
+const ComissoesConfig = () => {
+  const [comissoes, setComissoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [novoNome, setNovoNome] = useState('');
+  const [novoTipo, setNovoTipo] = useState('percentual');
+  const [novoValor, setNovoValor] = useState('');
+  const [novoBase, setNovoBase] = useState('total_vendido');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const carregar = () =>
+    listarComissoesGarcom().then(setComissoes).catch((e) => setErro(e.message)).finally(() => setLoading(false));
+
+  useEffect(() => { carregar(); }, []);
+
+  const adicionar = async () => {
+    if (!novoNome.trim() || !novoValor) return;
+    setSalvando(true);
+    setErro(null);
+    try {
+      await criarComissaoGarcom({ nome: novoNome.trim(), tipo: novoTipo, valor: parseFloat(novoValor), base_calculo: novoBase });
+      setNovoNome('');
+      setNovoValor('');
+      await carregar();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const toggleAtivo = async (c) => {
+    setErro(null);
+    try {
+      await atualizarComissaoGarcom(c.id, { ativo: !c.ativo });
+      await carregar();
+    } catch (e) {
+      setErro(e.message);
+    }
+  };
+
+  const remover = async (c) => {
+    if (!window.confirm(`Remover a regra "${c.nome}"?`)) return;
+    setErro(null);
+    try {
+      await removerComissaoGarcom(c.id);
+      await carregar();
+    } catch (e) {
+      setErro(e.message);
+    }
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Comissão do garçom</label>
+      <p className="text-xs text-gray-500 mb-2">
+        Regra vale pro estabelecimento inteiro (todo garçom recebe igual). Sem regra ativa, a comissão fica em R$ 0,00.
+      </p>
+
+      {loading ? (
+        <p className="text-xs text-gray-400">Carregando...</p>
+      ) : (
+        <div className="space-y-1.5 mb-2">
+          {comissoes.map((c) => (
+            <div key={c.id} className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 text-sm">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-800 truncate">{c.nome}</p>
+                <p className="text-xs text-gray-500">
+                  {c.tipo === 'percentual' ? `${c.valor}%` : `R$ ${Number(c.valor).toFixed(2)}`}
+                  {' '}sobre {c.base_calculo === 'total_recebido' ? 'total recebido' : 'total vendido'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button type="button" onClick={() => toggleAtivo(c)}
+                  className={`text-xs font-bold px-2 py-1 rounded-full ${c.ativo ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {c.ativo ? 'Ativa' : 'Inativa'}
+                </button>
+                <button type="button" onClick={() => remover(c)} className="text-red-500 hover:text-red-700 flex-shrink-0">
+                  <Icon name="Trash2" size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {comissoes.length === 0 && (
+            <p className="text-xs text-gray-400">Nenhuma regra cadastrada.</p>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 items-end border-t pt-2">
+        <div className="flex-1 min-w-[140px]">
+          <label className="block text-xs text-gray-500 mb-0.5">Nome</label>
+          <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ex: Comissão padrão"
+            className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-0.5">Tipo</label>
+          <select value={novoTipo} onChange={(e) => setNovoTipo(e.target.value)} className="border rounded-lg px-2 py-1.5 text-sm">
+            <option value="percentual">%</option>
+            <option value="fixo">R$ fixo</option>
+          </select>
+        </div>
+        <div className="w-24">
+          <label className="block text-xs text-gray-500 mb-0.5">Valor</label>
+          <input type="number" min="0" step="0.01" value={novoValor} onChange={(e) => setNovoValor(e.target.value)}
+            className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-0.5">Base de cálculo</label>
+          <select value={novoBase} onChange={(e) => setNovoBase(e.target.value)} className="border rounded-lg px-2 py-1.5 text-sm">
+            <option value="total_vendido">Total vendido</option>
+            <option value="total_recebido">Total recebido</option>
+          </select>
+        </div>
+        <button type="button" onClick={adicionar} disabled={salvando || !novoNome.trim() || !novoValor}
+          className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-bold disabled:opacity-40">
+          Adicionar
+        </button>
+      </div>
+      {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
     </div>
   );
 };
@@ -689,6 +819,8 @@ const RestauranteConfig = () => {
                     </p>
                   </div>
                 )}
+
+                {tipoRestaurante && <ComissoesConfig />}
 
                 {tipoRestaurante && (
                   <div>

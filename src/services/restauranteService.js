@@ -246,6 +246,15 @@ export const atualizarGarcom = (id, data) =>
 export const removerGarcom = (id) =>
   apiFetch(`/garcons/${id}`, { method: 'DELETE' });
 
+// Módulo Salão — regras de comissão do garçom (do estabelecimento, valem pra todos)
+export const listarComissoesGarcom = () => apiFetch('/garcons/comissoes');
+export const criarComissaoGarcom = (data) =>
+  apiFetch('/garcons/comissoes', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarComissaoGarcom = (id, data) =>
+  apiFetch(`/garcons/comissoes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerComissaoGarcom = (id) =>
+  apiFetch(`/garcons/comissoes/${id}`, { method: 'DELETE' });
+
 // Módulo Salão — impressoras por setor
 export const listarImpressoras = () => apiFetch('/impressoras');
 export const criarImpressora = (data) =>
