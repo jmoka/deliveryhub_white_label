@@ -16,6 +16,7 @@ const LINKS = [
   { label: 'Financeiro', path: '/restaurante/financeiro' },
   { label: 'Relatórios', path: '/restaurante/relatorios' },
   { label: 'Designer', path: '/restaurante/aparencia' },
+  { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
   { label: 'Config', path: '/restaurante/config' },
 ];
 

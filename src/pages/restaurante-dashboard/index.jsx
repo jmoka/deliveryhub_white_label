@@ -36,6 +36,7 @@ const LINKS = [
   { label: 'Financeiro', path: '/restaurante/financeiro' },
   { label: 'Caixa', path: '/restaurante/caixa' },
   { label: 'Designer', path: '/restaurante/aparencia' },
+  { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
   { label: 'Config', path: '/restaurante/config' },
   { label: 'Sessão', path: '/restaurante/sessao' },
 ];
