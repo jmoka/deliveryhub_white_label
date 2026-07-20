@@ -10,6 +10,7 @@ const buildPrintHtml = (garcons, restauranteNome, label) => {
     <td class="right bold green">${fmt(g.total_vendido)}</td>
     <td class="right">${fmt(g.total_comissao)}</td>
     <td class="right">${fmt(g.total_gorjeta)}</td>
+    <td class="right bold">${fmt(g.total_comissao + g.total_gorjeta)}</td>
     <td class="right">${g.comandas_abertas}</td>
     <td class="right">${g.comandas_pendentes}</td>
   </tr>`).join('');
@@ -19,8 +20,8 @@ const buildPrintHtml = (garcons, restauranteNome, label) => {
 <h1>${restauranteNome ?? 'RESTAURANTE'}</h1>
 <div class="sub">Relatório por Garçom — ${label}</div>
 <table>
-  <tr><th>Garçom</th><th class="right">Total Vendido</th><th class="right">Comissão</th><th class="right">Gorjeta</th><th class="right">Comandas Abertas</th><th class="right">Pendentes</th></tr>
-  ${rows || '<tr><td colspan="6">Nenhum garçom com movimento no período.</td></tr>'}
+  <tr><th>Garçom</th><th class="right">Total Vendido</th><th class="right">Comissão</th><th class="right">Gorjeta</th><th class="right">Total a Receber</th><th class="right">Comandas Abertas</th><th class="right">Pendentes</th></tr>
+  ${rows || '<tr><td colspan="7">Nenhum garçom com movimento no período.</td></tr>'}
 </table>
 <footer>Emitido em: ${new Date().toLocaleString('pt-BR')}</footer>
 ${printFooterScript}
@@ -56,6 +57,7 @@ const RelatorioGarcom = () => {
   const totalVendido = (garcons ?? []).reduce((s, g) => s + g.total_vendido, 0);
   const totalComissao = (garcons ?? []).reduce((s, g) => s + g.total_comissao, 0);
   const totalGorjeta = (garcons ?? []).reduce((s, g) => s + g.total_gorjeta, 0);
+  const totalAReceber = totalComissao + totalGorjeta;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
@@ -70,7 +72,7 @@ const RelatorioGarcom = () => {
 
         {garcons && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="bg-white border border-green-200 rounded-2xl p-4 text-center">
                 <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Total Vendido</p>
                 <p className="text-2xl font-black text-green-700">{fmt(totalVendido)}</p>
@@ -82,6 +84,10 @@ const RelatorioGarcom = () => {
               <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
                 <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Gorjeta Total</p>
                 <p className="text-2xl font-black text-[#18181B]">{fmt(totalGorjeta)}</p>
+              </div>
+              <div className="bg-white border border-[#FF441F]/30 rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1">Total a Receber</p>
+                <p className="text-2xl font-black text-[#FF441F]">{fmt(totalAReceber)}</p>
               </div>
             </div>
 
@@ -97,6 +103,7 @@ const RelatorioGarcom = () => {
                         <th className="text-right px-5 py-3">Total Vendido</th>
                         <th className="text-right px-5 py-3">Comissão</th>
                         <th className="text-right px-5 py-3">Gorjeta</th>
+                        <th className="text-right px-5 py-3">Total a Receber</th>
                         <th className="text-right px-5 py-3">Comandas Abertas</th>
                         <th className="text-right px-5 py-3">Pendentes</th>
                       </tr>
@@ -108,6 +115,7 @@ const RelatorioGarcom = () => {
                           <td className="px-5 py-3 text-right font-bold text-green-700">{fmt(g.total_vendido)}</td>
                           <td className="px-5 py-3 text-right">{fmt(g.total_comissao)}</td>
                           <td className="px-5 py-3 text-right">{fmt(g.total_gorjeta)}</td>
+                          <td className="px-5 py-3 text-right font-bold text-[#FF441F]">{fmt(g.total_comissao + g.total_gorjeta)}</td>
                           <td className="px-5 py-3 text-right">
                             {g.comandas_abertas > 0
                               ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">{g.comandas_abertas}</span>
