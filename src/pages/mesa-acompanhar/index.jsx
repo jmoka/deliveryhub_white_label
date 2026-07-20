@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getAcompanhamento } from '../../services/mesaAcompanharService';
+import { getAcompanhamento, imprimirConferencia } from '../../services/mesaAcompanharService';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
@@ -17,6 +17,8 @@ const MesaAcompanhar = () => {
   const { token } = useParams();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
+  const [imprimindo, setImprimindo] = useState(false);
+  const [msgImpressao, setMsgImpressao] = useState(null);
   const now = useNowTick();
 
   const carregar = useCallback(async () => {
@@ -34,6 +36,23 @@ const MesaAcompanhar = () => {
     const interval = setInterval(carregar, 15000);
     return () => clearInterval(interval);
   }, [carregar]);
+
+  const handleImprimir = async () => {
+    setImprimindo(true);
+    setMsgImpressao(null);
+    try {
+      const res = await imprimirConferencia(token);
+      setMsgImpressao(
+        res?.ok
+          ? { tipo: 'ok', texto: 'Enviado pra impressão! Confira no caixa.' }
+          : { tipo: 'erro', texto: 'Impressão indisponível no momento, peça ao garçom.' },
+      );
+    } catch {
+      setMsgImpressao({ tipo: 'erro', texto: 'Impressão indisponível no momento, peça ao garçom.' });
+    } finally {
+      setImprimindo(false);
+    }
+  };
 
   if (erro) return <div className="min-h-screen flex items-center justify-center p-6 text-sm text-red-600">{erro}</div>;
   if (!dados) return <div className="min-h-screen flex items-center justify-center text-sm text-[#71717A]">Carregando...</div>;
@@ -77,6 +96,20 @@ const MesaAcompanhar = () => {
             );
           })}
         </div>
+
+        <button
+          onClick={handleImprimir}
+          disabled={imprimindo}
+          className="w-full mt-3 bg-white border border-[#E4E4E7] rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-medium text-[#18181B] disabled:opacity-60"
+        >
+          <Icon name="Printer" size={16} />
+          {imprimindo ? 'Enviando...' : 'Imprimir comanda (conferência)'}
+        </button>
+        {msgImpressao && (
+          <p className={`text-xs text-center mt-2 ${msgImpressao.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+            {msgImpressao.texto}
+          </p>
+        )}
       </div>
     </div>
   );
