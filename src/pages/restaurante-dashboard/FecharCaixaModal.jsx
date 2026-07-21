@@ -13,7 +13,7 @@ const Row = ({ label, value, bold, accent, muted }) => (
 );
 
 // ── Tela 1: pedidos/comandas/mesas em aberto ──────────────────────────────────
-const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onTransferir, onCancelar, fechando }) => {
+const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onTransferir, onFecharComPendencia, onCancelar, fechando }) => {
   const [novoOperador, setNovoOperador] = useState('');
   const [novoValor, setNovoValor] = useState('');
   const [modoTransf, setModoTransf] = useState(false);
@@ -95,23 +95,33 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
           </div>
         </div>
       )}
-      <p className="text-xs text-[#71717A] mb-4 text-center">
+      <p className="text-xs text-[#71717A] mb-3 text-center">
         {mesasAbertas.length > 0 && totalPendencias === 0
           ? 'Libere a(s) mesa(s) manualmente antes de fechar o caixa.'
-          : 'Resolva os pedidos/comandas ou transfira para um novo operador.'}
+          : 'Resolva os pedidos/comandas, transfira para um novo operador, ou feche deixando essas comandas pendentes (fiado).'}
       </p>
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-2">
         <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">Cancelar</button>
         {totalPendencias > 0 && (
           <button onClick={() => setModoTransf(true)} className="flex-1 py-2.5 text-sm bg-[#FF441F] text-white rounded-xl font-bold hover:bg-[#E63A19]">Transferir</button>
         )}
       </div>
+      {totalPendencias > 0 && (
+        <>
+          <button onClick={onFecharComPendencia} className="w-full py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+            Fechar mesmo assim (deixar pendente)
+          </button>
+          <p className="text-[10px] text-[#A1A1AA] mt-1.5 text-center">
+            As comandas/mesas em aberto continuam ativas e serão cobradas no próximo caixa que estiver aberto quando o cliente pagar.
+          </p>
+        </>
+      )}
     </>
   );
 };
 
 // ── Tela 2: conferência de fechamento ────────────────────────────────────────
-const DestinacaoView = ({ resumo, aberto_em, valorInicial, onFechar, onCancelar, fechando }) => {
+const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFechar, onCancelar, fechando }) => {
   const r = resumo ?? {};
   const [dinheiroContado, setDinheiroContado] = useState('');
 
@@ -197,13 +207,23 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, onFechar, onCancelar,
         </div>
       )}
 
+      {comPendencias && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-3">
+          <p className="text-xs text-amber-700 text-center">
+            Fechando com comandas/mesas pendentes — elas continuam ativas e serão cobradas no próximo caixa aberto.
+          </p>
+        </div>
+      )}
+
       <p className="text-[10px] text-[#71717A] mb-3 text-center">
         Enviado ao financeiro para conferência e aprovação do gerente.
       </p>
 
       <div className="flex gap-2">
         <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">Cancelar</button>
-        <button onClick={() => onFechar({ dinheiro_contado: contadoVal })} disabled={fechando || !temContagem}
+        <button
+          onClick={() => onFechar({ dinheiro_contado: contadoVal, ...(comPendencias ? { permitir_pendencias: true } : {}) })}
+          disabled={fechando || !temContagem}
           className="flex-1 py-2.5 text-sm bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 disabled:opacity-50">
           {fechando ? 'Fechando...' : 'Fechar caixa'}
         </button>
@@ -219,21 +239,28 @@ const FecharCaixaModal = ({
   onConfirmar, onFecharETransferir, onCancelar,
   fechando,
 }) => {
+  const [forcarFechamento, setForcarFechamento] = useState(false);
   const temPendencias = (pedidosAbertos ?? []).length > 0 || (comandasAbertas ?? []).length > 0 || (mesasAbertas ?? []).length > 0;
+  const mostrarPendencias = temPendencias && !forcarFechamento;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
-        {temPendencias
+        {mostrarPendencias
           ? <PedidosAbertosView
               pedidosAbertos={pedidosAbertos ?? []}
               comandasAbertas={comandasAbertas ?? []}
               mesasAbertas={mesasAbertas ?? []}
               onTransferir={onFecharETransferir}
+              onFecharComPendencia={() => setForcarFechamento(true)}
               onCancelar={onCancelar}
               fechando={fechando}
             />
-          : <DestinacaoView resumo={resumo} aberto_em={aberto_em} valorInicial={valorInicial} onFechar={onConfirmar} onCancelar={onCancelar} fechando={fechando} />
+          : <DestinacaoView
+              resumo={resumo} aberto_em={aberto_em} valorInicial={valorInicial}
+              comPendencias={temPendencias}
+              onFechar={onConfirmar} onCancelar={onCancelar} fechando={fechando}
+            />
         }
       </div>
     </div>
