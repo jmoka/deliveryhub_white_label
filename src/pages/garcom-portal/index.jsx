@@ -726,6 +726,8 @@ const GarcomHome = () => {
 
   const tocarAlarmePronto = useNotificacaoSonora('motoboy');
   const idsProntosVistos = useRef(new Set());
+  const tocarAlarmeConferencia = useNotificacaoSonora('pedido');
+  const idsConferenciaVistos = useRef(new Set());
 
   useEffect(() => {
     getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); }).catch((err) => {
@@ -738,19 +740,32 @@ const GarcomHome = () => {
       const [m, c] = await Promise.all([getMesas(), getMinhasComandas()]);
       setMesas(m);
       setComandas(c);
+
+      // Cliente pediu conferência via QR — avisa aqui uma vez, até o caixa atender
+      // (o campo só é limpo quando o caixa imprime a conferência de verdade).
+      const solicitadas = c.filter((comanda) => comanda.conferencia_solicitada_em);
+      const novas = solicitadas.filter((comanda) => !idsConferenciaVistos.current.has(comanda.id));
+      idsConferenciaVistos.current = new Set(solicitadas.map((comanda) => comanda.id));
+      if (novas.length > 0) {
+        tocarAlarmeConferencia();
+        const nc = novas[0];
+        setAvisoPronto(`${nc.cliente_mesa_nome} pediu conferência — #${nc.numero_comanda ?? nc.id}`);
+        setTimeout(() => setAvisoPronto(null), 8000);
+      }
     } catch (err) {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
       else if (!getGarcomToken()) window.location.reload();
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tocarAlarmeConferencia]);
 
   useEffect(() => { carregar(); }, [carregar]);
   useEffect(() => { if (salaoModo === 'comandas') setAba('comandas'); }, [salaoModo]);
 
   // Sem push real — polling comparando quais itens "prontos" já vimos, igual à tela da
-  // cozinha. Só alerta enquanto essa aba estiver aberta.
+  // cozinha, e recarrega mesas/comandas junto (pega pedido de conferência do cliente).
+  // Só alerta enquanto essa aba estiver aberta.
   useEffect(() => {
     if (bloqueado) return;
     const checar = async () => {
@@ -765,11 +780,12 @@ const GarcomHome = () => {
           setTimeout(() => setAvisoPronto(null), 8000);
         }
       } catch {}
+      carregar();
     };
     checar();
     const interval = setInterval(checar, 15000);
     return () => clearInterval(interval);
-  }, [bloqueado, tocarAlarmePronto]);
+  }, [bloqueado, tocarAlarmePronto, carregar]);
 
   const clicarMesa = (mesa) => {
     if (mesa.status === 'livre') {
@@ -850,6 +866,11 @@ const GarcomHome = () => {
                   <>
                     <p className="text-[10px] truncate">{responsavelMesa(mesa.comanda) ?? '—'}</p>
                     <p className="text-[10px] truncate">{mesa.comanda.cliente_mesa_nome}</p>
+                    {mesa.comanda.conferencia_solicitada_em && (
+                      <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
+                        <Icon name="BellRing" size={9} /> Conferência
+                      </p>
+                    )}
                   </>
                 )}
               </button>
@@ -867,6 +888,11 @@ const GarcomHome = () => {
                   #{c.numero_comanda ?? c.id}{c.mesa_id ? ` — Mesa ${c.mesa_id}` : ''} — {c.cliente_mesa_nome}
                 </p>
                 <p className="text-xs text-[#71717A]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
+                {c.conferencia_solicitada_em && (
+                  <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
+                    <Icon name="BellRing" size={9} /> Pediu conferência
+                  </p>
+                )}
               </div>
               <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
             </button>
