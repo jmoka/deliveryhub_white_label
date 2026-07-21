@@ -7,11 +7,12 @@ import {
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
-  reimprimirReciboSalao,
+  reimprimirReciboSalao, getCaixasAbertos,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
+import { resolverCaixaAtivo, setCaixaAtivoId } from '../../utils/caixaSessao';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
@@ -93,7 +94,7 @@ const MESA_STATUS_COR = {
 const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento', bloqueada: 'Bloqueada' };
 
 // Estabelecimento abre mesa/comanda direto, sem precisar de garçom.
-const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
+const AbrirComandaModal = ({ mesa, caixaId, onFechar, onAberta }) => {
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [erro, setErro] = useState(null);
@@ -104,7 +105,7 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
     setErro(null);
     setSalvando(true);
     try {
-      const comanda = await abrirComandaSalao({ mesa_id: mesa?.id ?? null, cliente_nome: nome.trim(), cliente_telefone: telefone.trim() });
+      const comanda = await abrirComandaSalao({ mesa_id: mesa?.id ?? null, cliente_nome: nome.trim(), cliente_telefone: telefone.trim(), caixa_id: caixaId });
       onAberta(comanda);
     } catch (err) {
       setErro(err.message ?? 'Não foi possível abrir a comanda.');
@@ -821,7 +822,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
 // Venda direta no balcão — operador escolhe produtos e paga na hora, sem mesa/garçom.
 // Itens continuam indo pra fila de preparo normal (cozinha/bar).
-const VendaDiretaModal = ({ onFechar, onVendida }) => {
+const VendaDiretaModal = ({ caixaId, onFechar, onVendida }) => {
   const [produtos, setProdutos] = useState([]);
   const [mostrarPicker, setMostrarPicker] = useState(false);
   const [carrinho, setCarrinho] = useState([]);
@@ -864,6 +865,7 @@ const VendaDiretaModal = ({ onFechar, onVendida }) => {
         carrinho.map((i) => ({ product_id: i.product_id, quantity: i.quantity, observacao: i.observacao })),
         forma,
         forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined,
+        caixaId,
       );
       if (res?.recibo?.via !== 'agente') {
         printReciboCliente(
@@ -968,9 +970,13 @@ const RestauranteSalao = () => {
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [erro, setErro] = useState(null);
   const [avisoConferencia, setAvisoConferencia] = useState(null);
+  const [caixasAbertos, setCaixasAbertos] = useState([]);
+  const [caixaId, setCaixaId] = useState(null);
 
   const tocarAlarmeConferencia = useNotificacaoSonora('pedido');
   const idsConferenciaVistos = useRef(new Set());
+
+  const escolherCaixa = (id) => { setCaixaAtivoId(id); setCaixaId(id); };
 
   const carregar = useCallback(async () => {
     const [g, m, c, cf] = await Promise.all([
@@ -1010,6 +1016,15 @@ const RestauranteSalao = () => {
     return () => clearInterval(interval);
   }, [carregar]);
 
+  useEffect(() => {
+    getCaixasAbertos().then((lista) => {
+      setCaixasAbertos(lista);
+      setCaixaId(resolverCaixaAtivo(lista));
+    }).catch(() => {});
+  }, []);
+
+  const precisaEscolherCaixa = caixasAbertos.length > 1 && !caixaId;
+
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
       {avisoConferencia && (
@@ -1021,10 +1036,24 @@ const RestauranteSalao = () => {
         <NavRestaurante active="/restaurante/salao" />
       </div>
 
+      {precisaEscolherCaixa && (
+        <div className="p-4 bg-amber-50 border-b border-amber-200">
+          <p className="text-xs font-semibold text-amber-800 mb-2">Qual caixa você está operando agora?</p>
+          <div className="flex gap-2 flex-wrap">
+            {caixasAbertos.map((c) => (
+              <button key={c.id} onClick={() => escolherCaixa(c.id)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-amber-300 text-amber-800 hover:bg-amber-100">
+                {c.nome}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex justify-end mb-4">
-          <button onClick={() => setMostrarVendaDireta(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
+          <button onClick={() => setMostrarVendaDireta(true)} disabled={precisaEscolherCaixa}
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50">
             <Icon name="ShoppingCart" size={15} /> Venda direta (balcão)
           </button>
         </div>
@@ -1050,8 +1079,8 @@ const RestauranteSalao = () => {
               {mesas.map((m) => (
                 <div key={m.id} className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[m.status] ?? ''}`}>
                   <button
-                    onClick={() => { if (m.comanda) setComandaAtiva(m.comanda.id); else if (m.status === 'livre') setMesaParaAbrir(m); }}
-                    disabled={!m.comanda && m.status !== 'livre'}
+                    onClick={() => { if (m.comanda) setComandaAtiva(m.comanda.id); else if (m.status === 'livre' && !precisaEscolherCaixa) setMesaParaAbrir(m); }}
+                    disabled={!m.comanda && (m.status !== 'livre' || precisaEscolherCaixa)}
                     className="w-full disabled:opacity-70"
                   >
                     <p className="text-lg font-black">{m.numero}</p>
@@ -1131,8 +1160,9 @@ const RestauranteSalao = () => {
       </div>
 
       <button
-        onClick={() => setMesaParaAbrir(null)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-zinc-800 text-white shadow-lg flex items-center justify-center"
+        onClick={() => !precisaEscolherCaixa && setMesaParaAbrir(null)}
+        disabled={precisaEscolherCaixa}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-zinc-800 text-white shadow-lg flex items-center justify-center disabled:opacity-50"
         title="Abrir comanda avulsa"
       >
         <Icon name="Plus" size={24} />
@@ -1144,6 +1174,7 @@ const RestauranteSalao = () => {
 
       {mostrarVendaDireta && (
         <VendaDiretaModal
+          caixaId={caixaId}
           onFechar={() => setMostrarVendaDireta(false)}
           onVendida={() => { setMostrarVendaDireta(false); carregar(); }}
         />
@@ -1152,6 +1183,7 @@ const RestauranteSalao = () => {
       {mesaParaAbrir !== undefined && (
         <AbrirComandaModal
           mesa={mesaParaAbrir}
+          caixaId={caixaId}
           onFechar={() => setMesaParaAbrir(undefined)}
           onAberta={(comanda) => { setMesaParaAbrir(undefined); setComandaAtiva(comanda.id); carregar(); }}
         />

@@ -170,6 +170,8 @@ const HistoricoCaixasPanel = ({ historico = [] }) => {
                       {d?.conferencia_aprovada === true  && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-green-100 text-green-700 border border-green-200">✓ Aprovado</span>}
                       {d?.conferencia_aprovada === false && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700 border border-amber-200">⏳ Conf. Pendente</span>}
                       {temPerda && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-100 text-red-700 border border-red-200"><Icon name="TrendingDown" size={10} className="inline mr-0.5" />{fmt(d.diferenca)} perda</span>}
+                      {c.fechado_com_pendencias && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700 border border-amber-200">Fechado com pendências</span>}
+                      {c.nome && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-[#F4F4F5] text-[#71717A]">{c.nome}</span>}
                       <p className="text-sm font-bold text-[#18181B] truncate">{c.nome_operador}</p>
                       <p className="text-xs text-[#A1A1AA]">#{c.id}</p>
                     </div>
@@ -205,6 +207,14 @@ const HistoricoCaixasPanel = ({ historico = [] }) => {
                               <Row label="Saídas"        value={`- ${fmt(r.total_saidas)}`} />
                               <Row label="Saldo"         value={fmt(r.saldo)} bold accent />
                             </div>
+                            {det.caixa.fechado_com_pendencias && (
+                              <div className="rounded-xl p-3 mt-2 border bg-amber-50 border-amber-200">
+                                <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-amber-700">Pendências no fechamento</p>
+                                <Row label="Pedidos"  value={det.caixa.pendencias_fechamento?.pedidos?.length ?? 0} />
+                                <Row label="Comandas" value={det.caixa.pendencias_fechamento?.comandas?.length ?? 0} />
+                                <Row label="Mesas"     value={det.caixa.pendencias_fechamento?.mesas?.length ?? 0} />
+                              </div>
+                            )}
                             {dc?.dinheiro_contado !== undefined && (
                               <div className={`rounded-xl p-3 mt-2 border ${dif < 0 ? 'bg-red-50 border-red-200' : dif > 0 ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'}`}>
                                 <p className="text-[10px] font-black uppercase tracking-widest mb-1.5 text-[#71717A]">Conferência</p>

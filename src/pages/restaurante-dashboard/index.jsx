@@ -10,6 +10,7 @@ import Icon from '../../components/AppIcon';
 import RelatorioPanel from './RelatorioPanel';
 import SaidaModal from './SaidaModal';
 import FecharCaixaModal from './FecharCaixaModal';
+import OutrosCaixasPanel from './OutrosCaixasPanel';
 import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
@@ -464,6 +465,8 @@ const RestauranteDashboard = () => {
             </div>
           </div>
         )}
+
+        <OutrosCaixasPanel />
 
         {/* Caixa — aberto */}
         {caixa?.aberto && (

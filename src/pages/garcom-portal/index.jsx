@@ -2,13 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
-  getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos,
+  getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getCaixasAbertos,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarClienteComanda, excluirComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
+import { resolverCaixaAtivo, setCaixaAtivoId } from '../../utils/caixaSessao';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -77,7 +78,7 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
   );
 };
 
-const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
+const AbrirComandaModal = ({ mesa, caixaId, onFechar, onAberta }) => {
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [erro, setErro] = useState(null);
@@ -88,7 +89,7 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
     setErro(null);
     setSalvando(true);
     try {
-      const comanda = await abrirComanda({ mesa_id: mesa?.id ?? null, cliente_nome: nome.trim(), cliente_telefone: telefone.trim() });
+      const comanda = await abrirComanda({ mesa_id: mesa?.id ?? null, cliente_nome: nome.trim(), cliente_telefone: telefone.trim(), caixa_id: caixaId });
       onAberta(comanda);
     } catch (err) {
       setErro(err.message ?? 'Não foi possível abrir a comanda.');
@@ -723,6 +724,8 @@ const GarcomHome = () => {
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [avisoPronto, setAvisoPronto] = useState(null);
+  const [caixasAbertos, setCaixasAbertos] = useState([]);
+  const [caixaId, setCaixaId] = useState(null);
 
   const tocarAlarmePronto = useNotificacaoSonora('motoboy');
   const idsProntosVistos = useRef(new Set());
@@ -733,7 +736,13 @@ const GarcomHome = () => {
     getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); }).catch((err) => {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
     });
+    getCaixasAbertos().then((lista) => {
+      setCaixasAbertos(lista);
+      setCaixaId(resolverCaixaAtivo(lista));
+    }).catch(() => {});
   }, []);
+
+  const escolherCaixa = (id) => { setCaixaAtivoId(id); setCaixaId(id); };
 
   const carregar = useCallback(async () => {
     try {
@@ -787,9 +796,11 @@ const GarcomHome = () => {
     return () => clearInterval(interval);
   }, [bloqueado, tocarAlarmePronto, carregar]);
 
+  const precisaEscolherCaixa = caixasAbertos.length > 1 && !caixaId;
+
   const clicarMesa = (mesa) => {
     if (mesa.status === 'livre') {
-      if (salaoModo === 'comandas') return;
+      if (salaoModo === 'comandas' || precisaEscolherCaixa) return;
       setMesaParaAbrir(mesa);
       return;
     }
@@ -842,6 +853,20 @@ const GarcomHome = () => {
           </button>
         </div>
       </div>
+
+      {caixasAbertos.length > 1 && !caixaId && (
+        <div className="p-4 bg-amber-50 border-b border-amber-200">
+          <p className="text-xs font-semibold text-amber-800 mb-2">Qual caixa você está operando agora?</p>
+          <div className="flex gap-2 flex-wrap">
+            {caixasAbertos.map((c) => (
+              <button key={c.id} onClick={() => escolherCaixa(c.id)}
+                className="px-3 py-1.5 rounded-full text-xs font-medium bg-white border border-amber-300 text-amber-800 hover:bg-amber-100">
+                {c.nome}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="p-6 text-sm text-[#71717A]">Carregando...</div>
@@ -903,8 +928,9 @@ const GarcomHome = () => {
 
       {salaoModo !== 'mesas' && (
         <button
-          onClick={() => setMesaParaAbrir(null)}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#FF441F] text-white shadow-lg flex items-center justify-center"
+          onClick={() => !precisaEscolherCaixa && setMesaParaAbrir(null)}
+          disabled={precisaEscolherCaixa}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[#FF441F] text-white shadow-lg flex items-center justify-center disabled:opacity-50"
         >
           <Icon name="Plus" size={24} />
         </button>
@@ -913,6 +939,7 @@ const GarcomHome = () => {
       {mesaParaAbrir !== undefined && (
         <AbrirComandaModal
           mesa={mesaParaAbrir}
+          caixaId={caixaId}
           onFechar={() => setMesaParaAbrir(undefined)}
           onAberta={(comanda) => { setMesaParaAbrir(undefined); setComandaAtivaId(comanda.id); }}
         />

@@ -112,14 +112,18 @@ export const toggleStatusRestaurante = (aberto) =>
 
 export const getCaixa = () => apiFetch('/caixa');
 
-export const abrirCaixa = ({ nome_operador, valor_inicial }) =>
-  apiFetch('/caixa/abrir', { method: 'POST', body: JSON.stringify({ nome_operador, valor_inicial: valor_inicial ?? 0 }) });
+// Todos os caixas abertos no momento (Principal, Bar, Salão...) — usado quando o
+// restaurante trabalha com mais de um ponto de venda simultâneo.
+export const getCaixasAbertos = () => apiFetch('/caixa/abertos');
+
+export const abrirCaixa = ({ nome_operador, valor_inicial, nome, is_principal }) =>
+  apiFetch('/caixa/abrir', { method: 'POST', body: JSON.stringify({ nome_operador, valor_inicial: valor_inicial ?? 0, nome, is_principal }) });
 
 export const fecharCaixa = (destinacao = {}) =>
   apiFetch('/caixa/fechar', { method: 'POST', body: JSON.stringify(destinacao) });
 
-export const fecharETransferir = ({ nome_operador, valor_inicial }) =>
-  apiFetch('/caixa/fechar-e-transferir', { method: 'POST', body: JSON.stringify({ nome_operador, valor_inicial: valor_inicial ?? 0 }) });
+export const fecharETransferir = ({ nome_operador, valor_inicial, caixa_id }) =>
+  apiFetch('/caixa/fechar-e-transferir', { method: 'POST', body: JSON.stringify({ nome_operador, valor_inicial: valor_inicial ?? 0, caixa_id }) });
 
 export const adicionarSaida = (data) =>
   apiFetch('/caixa/saida', { method: 'POST', body: JSON.stringify(data) });
@@ -279,10 +283,10 @@ export const bloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/bloquear`,
 export const desbloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/desbloquear`, { method: 'PATCH' });
 export const getSalaoComandas = () => apiFetch('/salao/comandas');
 export const getSalaoComandasFechadasHoje = () => apiFetch('/salao/comandas/fechadas-hoje');
-export const abrirComandaSalao = ({ mesa_id, cliente_nome, cliente_telefone }) =>
-  apiFetch('/salao/comandas/abrir', { method: 'POST', body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone }) });
-export const venderDireto = (itens, forma_pagamento, valor_recebido) =>
-  apiFetch('/salao/venda-direta', { method: 'POST', body: JSON.stringify({ itens, forma_pagamento, valor_recebido }) });
+export const abrirComandaSalao = ({ mesa_id, cliente_nome, cliente_telefone, caixa_id }) =>
+  apiFetch('/salao/comandas/abrir', { method: 'POST', body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone, caixa_id }) });
+export const venderDireto = (itens, forma_pagamento, valor_recebido, caixa_id) =>
+  apiFetch('/salao/venda-direta', { method: 'POST', body: JSON.stringify({ itens, forma_pagamento, valor_recebido, caixa_id }) });
 export const getSalaoComandaDetalhe = (id) => apiFetch(`/salao/comandas/${id}`);
 export const aplicarDescontoComanda = (id, valor) =>
   apiFetch(`/salao/comandas/${id}/desconto`, { method: 'PATCH', body: JSON.stringify({ valor }) });

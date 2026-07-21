@@ -47,15 +47,16 @@ export const login = async (loginKey, password) => {
 
 export const getMe = () => garcomFetch('/me');
 export const getMesas = () => garcomFetch('/mesas');
+export const getCaixasAbertos = () => garcomFetch('/caixas-abertos');
 export const getProdutos = () => garcomFetch('/produtos');
 export const getMinhasComandas = () => garcomFetch('/comandas');
 export const getItensProntos = () => garcomFetch('/itens-prontos');
 export const getComanda = (id) => garcomFetch(`/comandas/${id}`);
 
-export const abrirComanda = ({ mesa_id, cliente_nome, cliente_telefone }) =>
+export const abrirComanda = ({ mesa_id, cliente_nome, cliente_telefone, caixa_id }) =>
   garcomFetch('/comandas/abrir', {
     method: 'POST',
-    body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone }),
+    body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone, caixa_id }),
   });
 
 export const adicionarItens = (comandaId, itens) =>
