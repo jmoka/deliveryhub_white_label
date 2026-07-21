@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getAcompanhamento, imprimirConferencia } from '../../services/mesaAcompanharService';
+import { getAcompanhamento, solicitarConferencia } from '../../services/mesaAcompanharService';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
@@ -17,8 +17,8 @@ const MesaAcompanhar = () => {
   const { token } = useParams();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
-  const [imprimindo, setImprimindo] = useState(false);
-  const [msgImpressao, setMsgImpressao] = useState(null);
+  const [solicitando, setSolicitando] = useState(false);
+  const [msgSolicitacao, setMsgSolicitacao] = useState(null);
   const now = useNowTick();
 
   const carregar = useCallback(async () => {
@@ -37,20 +37,23 @@ const MesaAcompanhar = () => {
     return () => clearInterval(interval);
   }, [carregar]);
 
-  const handleImprimir = async () => {
-    setImprimindo(true);
-    setMsgImpressao(null);
+  const conferenciaSolicitada = !!dados?.conferencia_solicitada_em;
+
+  const handleSolicitar = async () => {
+    setSolicitando(true);
+    setMsgSolicitacao(null);
     try {
-      const res = await imprimirConferencia(token);
-      setMsgImpressao(
-        res?.ok
-          ? { tipo: 'ok', texto: 'Enviado pra impressão! Confira no caixa.' }
-          : { tipo: 'erro', texto: 'Impressão indisponível no momento, peça ao garçom.' },
-      );
+      const res = await solicitarConferencia(token);
+      if (res?.ok) {
+        setMsgSolicitacao({ tipo: 'ok', texto: 'Solicitação enviada! O garçom já foi avisado.' });
+        await carregar();
+      } else {
+        setMsgSolicitacao({ tipo: 'erro', texto: 'Não foi possível solicitar agora, chame o garçom.' });
+      }
     } catch {
-      setMsgImpressao({ tipo: 'erro', texto: 'Impressão indisponível no momento, peça ao garçom.' });
+      setMsgSolicitacao({ tipo: 'erro', texto: 'Não foi possível solicitar agora, chame o garçom.' });
     } finally {
-      setImprimindo(false);
+      setSolicitando(false);
     }
   };
 
@@ -98,16 +101,18 @@ const MesaAcompanhar = () => {
         </div>
 
         <button
-          onClick={handleImprimir}
-          disabled={imprimindo}
+          onClick={handleSolicitar}
+          disabled={solicitando || conferenciaSolicitada}
           className="w-full mt-3 bg-white border border-[#E4E4E7] rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-medium text-[#18181B] disabled:opacity-60"
         >
-          <Icon name="Printer" size={16} />
-          {imprimindo ? 'Enviando...' : 'Imprimir comanda (conferência)'}
+          <Icon name={conferenciaSolicitada ? 'BellRing' : 'Bell'} size={16} />
+          {conferenciaSolicitada
+            ? 'Conferência solicitada — aguarde o garçom'
+            : (solicitando ? 'Enviando...' : 'Solicitar conferência')}
         </button>
-        {msgImpressao && (
-          <p className={`text-xs text-center mt-2 ${msgImpressao.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
-            {msgImpressao.texto}
+        {msgSolicitacao && (
+          <p className={`text-xs text-center mt-2 ${msgSolicitacao.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+            {msgSolicitacao.texto}
           </p>
         )}
       </div>

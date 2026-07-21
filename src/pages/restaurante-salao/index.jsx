@@ -13,6 +13,7 @@ import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
+import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
@@ -966,6 +967,10 @@ const RestauranteSalao = () => {
   const [mostrarVendaDireta, setMostrarVendaDireta] = useState(false);
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [erro, setErro] = useState(null);
+  const [avisoConferencia, setAvisoConferencia] = useState(null);
+
+  const tocarAlarmeConferencia = useNotificacaoSonora('pedido');
+  const idsConferenciaVistos = useRef(new Set());
 
   const carregar = useCallback(async () => {
     const [g, m, c, cf] = await Promise.all([
@@ -976,7 +981,18 @@ const RestauranteSalao = () => {
     setComandas(c);
     setComandasFechadas(cf);
     setLoading(false);
-  }, []);
+
+    // Cliente solicitou conferência via QR (mesa-acompanhar) — avisa o caixa aqui,
+    // uma vez por comanda, até o próprio caixa atender (imprimirConferencia limpa o campo).
+    const solicitadas = m.filter((mesa) => mesa.comanda?.conferencia_solicitada_em);
+    const novas = solicitadas.filter((mesa) => !idsConferenciaVistos.current.has(mesa.comanda.id));
+    idsConferenciaVistos.current = new Set(solicitadas.map((mesa) => mesa.comanda.id));
+    if (novas.length > 0) {
+      tocarAlarmeConferencia();
+      setAvisoConferencia(`Mesa ${novas[0].numero} pediu conferência!`);
+      setTimeout(() => setAvisoConferencia(null), 8000);
+    }
+  }, [tocarAlarmeConferencia]);
 
   const acaoMesa = async (fn) => {
     setErro(null);
@@ -996,6 +1012,11 @@ const RestauranteSalao = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
+      {avisoConferencia && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] bg-white border border-[#FF441F]/30 text-[#FF441F] text-sm font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5">
+          <Icon name="BellRing" size={14} /> {avisoConferencia}
+        </div>
+      )}
       <div className="bg-white border-b border-[#E4E4E7] p-4">
         <NavRestaurante active="/restaurante/salao" />
       </div>
@@ -1042,6 +1063,11 @@ const RestauranteSalao = () => {
                         <p className="text-[10px] text-[#71717A] truncate">
                           {m.comanda.garcons?.nome ?? (m.comanda.aberto_por_nome ? `Caixa: ${m.comanda.aberto_por_nome}` : '—')}
                         </p>
+                        {m.comanda.conferencia_solicitada_em && (
+                          <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
+                            <Icon name="BellRing" size={9} /> Pediu conferência
+                          </p>
+                        )}
                       </>
                     )}
                   </button>

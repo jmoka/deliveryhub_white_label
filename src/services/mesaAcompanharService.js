@@ -9,8 +9,8 @@ export const getAcompanhamento = async (token) => {
   return data;
 };
 
-export const imprimirConferencia = async (token) => {
-  const res = await fetch(`${apiPath('/api/mesa-acompanhar')}/${token}/imprimir-conferencia`, { method: 'POST' });
+export const solicitarConferencia = async (token) => {
+  const res = await fetch(`${apiPath('/api/mesa-acompanhar')}/${token}/solicitar-conferencia`, { method: 'POST' });
   const contentType = res.headers.get('content-type') ?? '';
   const isJson = contentType.includes('application/json');
   const data = isJson ? await res.json().catch(() => ({})) : {};
