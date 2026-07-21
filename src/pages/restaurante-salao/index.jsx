@@ -344,16 +344,15 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
 
   const imprimirConferencia = () => {
     acao(async () => {
-      const res = await imprimirConferenciaSalao(comandaId);
-      if (res?.via !== 'agente') {
-        printConferenciaComanda(comanda, comanda.itens ?? [], {
-          desconto: Number(descontoInput || 0),
-          acrescimo: Number(acrescimoInput || 0),
-          gorjeta: Number(gorjeta || 0),
-          taxaCartao: taxaCartaoValorFinal,
-          formaPagamento: forma,
-        });
-      }
+      const valores = {
+        desconto: Number(descontoInput || 0),
+        acrescimo: Number(acrescimoInput || 0),
+        gorjeta: Number(gorjeta || 0),
+        taxaCartao: taxaCartaoValorFinal,
+        formaPagamento: forma,
+      };
+      const res = await imprimirConferenciaSalao(comandaId, valores);
+      if (res?.via !== 'agente') printConferenciaComanda(comanda, comanda.itens ?? [], valores);
     });
   };
 
