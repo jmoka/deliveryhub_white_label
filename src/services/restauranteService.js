@@ -292,8 +292,8 @@ export const cancelarComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/cancelar`, { method: 'POST' });
 export const reabrirComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reabrir`, { method: 'POST' });
-export const imprimirConferenciaSalao = (id) =>
-  apiFetch(`/salao/comandas/${id}/imprimir-conferencia`, { method: 'POST' });
+export const imprimirConferenciaSalao = (id, valores) =>
+  apiFetch(`/salao/comandas/${id}/imprimir-conferencia`, { method: 'POST', body: JSON.stringify(valores ?? {}) });
 export const reimprimirReciboSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reimprimir-recibo`, { method: 'POST' });
 export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido) =>
