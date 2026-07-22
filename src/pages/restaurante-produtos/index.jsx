@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
   getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria,
-  getTagsPublicas, listarImpressoras,
+  getTagsPublicas, listarImpressoras, getAparencia, updateAparencia,
 } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import { AnimatePresence } from 'framer-motion';
@@ -45,6 +45,7 @@ const RestauranteProdutos = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
   const [deletando, setDeletando] = useState(null);
+  const [adicionandoCarrossel, setAdicionandoCarrossel] = useState(null);
   const [sidebarAberto, setSidebarAberto] = useState(false);
   const [busca, setBusca] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('');
@@ -140,6 +141,25 @@ const RestauranteProdutos = () => {
       setProdutos((prev) => prev.map((p) => (p.id === produto.id ? { ...p, is_active: atualizado.is_active } : p)));
     } catch (e) {
       alert(e.message);
+    }
+  };
+
+  const handleAdicionarAoCarrossel = async (produto) => {
+    if (!produto.image_url) return;
+    setAdicionandoCarrossel(produto.id);
+    try {
+      const aparencia = await getAparencia();
+      const atual = aparencia?.carousel_images ?? [];
+      if (atual.includes(produto.image_url)) {
+        alert('Essa imagem já está no carrossel.');
+        return;
+      }
+      await updateAparencia({ carousel_images: [...atual, produto.image_url] });
+      alert('Imagem adicionada ao carrossel!');
+    } catch (e) {
+      alert(e.message ?? 'Não foi possível adicionar ao carrossel.');
+    } finally {
+      setAdicionandoCarrossel(null);
     }
   };
 
@@ -460,6 +480,14 @@ const RestauranteProdutos = () => {
                       className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]"
                     >
                       Editar
+                    </button>
+                    <button
+                      onClick={() => handleAdicionarAoCarrossel(p)}
+                      disabled={!p.image_url || adicionandoCarrossel === p.id}
+                      title={!p.image_url ? 'Produto sem imagem cadastrada' : 'Adicionar imagem ao carrossel da vitrine'}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5] disabled:opacity-40"
+                    >
+                      {adicionandoCarrossel === p.id ? '...' : 'Carrossel'}
                     </button>
                     <button
                       onClick={() => handleDeletar(p)}
