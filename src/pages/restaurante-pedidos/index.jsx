@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMeusPedidos, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
-import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-import MobileMenu from '../../components/restaurante/MobileMenu';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -35,13 +29,11 @@ const FILTROS = ['', 'pending', 'confirmed', 'preparing', 'ready', 'motoboy_coll
 
 const RestaurantePedidos = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState('');
   const [atualizando, setAtualizando] = useState(null);
-  const [sidebarAberto, setSidebarAberto] = useState(false);
   const [restauranteId, setRestauranteId] = useState(null);
 
   const carregar = useCallback(() => {
@@ -90,64 +82,9 @@ const RestaurantePedidos = () => {
     }
   };
 
-  const tipoRestaurante = useTipoRestaurante();
-  const links = [
-    { label: 'Dashboard', path: '/restaurante' },
-    { label: 'Relatórios', path: '/restaurante/relatorios' },
-    { label: 'Delivery', path: '/restaurante/delivery' },
-    { label: 'Produtos', path: '/restaurante/produtos' },
-    { label: 'Pedidos', path: '/restaurante/pedidos' },
-    { label: 'Entregas', path: '/restaurante/entregas' },
-    ...(tipoRestaurante ? [
-      { label: 'Salão', path: '/restaurante/salao' },
-      { label: 'Garçons', path: '/restaurante/garcons' },
-      { label: 'Impressoras', path: '/restaurante/impressoras' },
-    ] : []),
-    { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Designer', path: '/restaurante/aparencia' },
-    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-    { label: 'Config', path: '/restaurante/config' },
-  ];
-  const slugLoja = useMinhaLojaSlug();
-  const logoUrl = useMinhaLojaLogo();
-  const [menuAberto, setMenuAberto] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {logoUrl && <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover md:hidden" />}
-          <h1 className="text-xl font-bold text-[#18181B]">Pedidos</h1>
-        </div>
-        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
-          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
-        </button>
-        <button onClick={() => setSidebarAberto(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-      </header>
-
-      <AnimatePresence>
-        {menuAberto && (
-          <MobileMenu
-            links={links}
-            currentPath="/restaurante/pedidos"
-            slugLoja={slugLoja}
-            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
-            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          />
-        )}
-      </AnimatePresence>
-
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={links}
-        activePath="/restaurante/pedidos"
-        slugLoja={slugLoja}
-        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-      />
+      <RestauranteHeader active="/restaurante/pedidos" title="Pedidos" />
 
       <main className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">

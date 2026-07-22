@@ -6,7 +6,7 @@ import Icon from '../AppIcon';
 // Menu lateral só pra desktop/telas grandes (md+) — substitui a barra horizontal de
 // botões que ficava poluída com muitos links. Mobile continua com o próprio menu de cada
 // página (hamburger + lista já existente), este componente nunca renderiza abaixo de md.
-const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy = 0, slugLoja, onSair }) => {
+const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy = 0, slugLoja, onSair, isFavorito, onToggleFavorito }) => {
   const navigate = useNavigate();
   const ir = (path) => { navigate(path); onClose(); };
 
@@ -32,17 +32,26 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
             </div>
             <nav className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-1">
               {links.map((l) => (
-                <button key={l.path} onClick={() => ir(l.path)}
-                  className={`relative flex items-center justify-between text-left px-4 py-2.5 text-sm font-semibold rounded-xl transition-colors ${
+                <div key={l.path} className={`relative flex items-center rounded-xl transition-colors ${
                     l.path === activePath ? 'text-white bg-[#FF441F]' : 'text-[#27272A] hover:bg-[#F4F4F5]'
                   }`}>
-                  {l.label}
-                  {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
-                      {pendentesMotoboy}
-                    </span>
+                  <button onClick={() => ir(l.path)}
+                    className="flex-1 flex items-center justify-between text-left pl-4 pr-2 py-2.5 text-sm font-semibold min-w-0">
+                    {l.label}
+                    {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full ml-2">
+                        {pendentesMotoboy}
+                      </span>
+                    )}
+                  </button>
+                  {onToggleFavorito && (
+                    <button onClick={() => onToggleFavorito(l.path)}
+                      className={`p-2 mr-1 rounded-lg flex-shrink-0 ${l.path === activePath ? 'hover:bg-white/20' : 'hover:bg-[#E4E4E7]'}`}
+                      title={isFavorito?.(l.path) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}>
+                      <Icon name="Star" size={15} className={isFavorito?.(l.path) ? 'fill-current' : ''} />
+                    </button>
                   )}
-                </button>
+                </div>
               ))}
             </nav>
             {(slugLoja || onSair) && (

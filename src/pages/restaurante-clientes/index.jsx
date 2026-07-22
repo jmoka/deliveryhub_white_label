@@ -1,14 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getClientes, criarCliente, atualizarCliente } from '../../services/restauranteService';
-import { useAuth } from '../../contexts/AuthContext';
-import { AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-import MobileMenu from '../../components/restaurante/MobileMenu';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtData = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : '—';
@@ -151,13 +145,11 @@ const ClienteCard = ({ c, onEditar }) => (
 /* ── Página principal ───────────────────────────────────────────── */
 const RestauranteClientes = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [busca, setBusca] = useState('');
-  const [sidebarAberto, setSidebarAberto] = useState(false);
   const [modal, setModal] = useState(null);
 
   const carregar = useCallback(async () => {
@@ -178,69 +170,9 @@ const RestauranteClientes = () => {
     return () => clearTimeout(t);
   }, [carregar]);
 
-  const tipoRestaurante = useTipoRestaurante();
-  const links = [
-    { label: 'Dashboard', path: '/restaurante' },
-    { label: 'Relatórios', path: '/restaurante/relatorios' },
-    { label: 'Delivery', path: '/restaurante/delivery' },
-    { label: 'Produtos', path: '/restaurante/produtos' },
-    { label: 'Pedidos', path: '/restaurante/pedidos' },
-    { label: 'Entregas', path: '/restaurante/entregas' },
-    ...(tipoRestaurante ? [
-      { label: 'Salão', path: '/restaurante/salao' },
-      { label: 'Garçons', path: '/restaurante/garcons' },
-      { label: 'Impressoras', path: '/restaurante/impressoras' },
-    ] : []),
-    { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Designer', path: '/restaurante/aparencia' },
-    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-    { label: 'Config', path: '/restaurante/config' },
-  ];
-  const slugLoja = useMinhaLojaSlug();
-  const logoUrl = useMinhaLojaLogo();
-  const [menuAberto, setMenuAberto] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-4 sm:px-6 py-4">
-        <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            {logoUrl && <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover md:hidden" />}
-            <div>
-              <h1 className="text-xl font-bold text-[#18181B]">Clientes</h1>
-              <p className="text-sm text-[#71717A]">{total} cliente{total !== 1 ? 's' : ''} neste restaurante</p>
-            </div>
-          </div>
-          <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
-            <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
-          </button>
-          <button onClick={() => setSidebarAberto(true)}
-            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-            <Icon name="Menu" size={18} /> Menu
-          </button>
-        </div>
-      </header>
-
-      <AnimatePresence>
-        {menuAberto && (
-          <MobileMenu
-            links={links}
-            currentPath="/restaurante/clientes"
-            slugLoja={slugLoja}
-            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
-            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          />
-        )}
-      </AnimatePresence>
-
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={links}
-        activePath="/restaurante/clientes"
-        slugLoja={slugLoja}
-        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-      />
+      <RestauranteHeader active="/restaurante/clientes" title="Clientes" subtitle={`${total} cliente${total !== 1 ? 's' : ''} neste restaurante`} />
 
       <main className="p-4 sm:p-6 max-w-5xl mx-auto">
         {/* Barra de busca + botão */}

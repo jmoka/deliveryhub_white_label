@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getCaixa } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
-import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -18,72 +14,6 @@ const STATUS_COLOR = {
   delivered: 'bg-green-100 text-green-800', paga: 'bg-green-100 text-green-800',
   canceled: 'bg-red-100 text-red-800',
   aberta: 'bg-blue-100 text-blue-800', fechada_garcom: 'bg-blue-100 text-blue-800',
-};
-
-const NavRestaurante = ({ active }) => {
-  const navigate = useNavigate();
-  const pendentes = useSolicitacoesMotoboyCount();
-  const slugLoja = useMinhaLojaSlug();
-  const tipoRestaurante = useTipoRestaurante();
-  const [sidebarAberto, setSidebarAberto] = useState(false);
-  const links = [
-    { label: 'Dashboard', path: '/restaurante' },
-    { label: 'Relatórios', path: '/restaurante/relatorios' },
-    { label: 'Delivery', path: '/restaurante/delivery' },
-    { label: 'Cozinha', path: '/restaurante/cozinha' },
-    ...(tipoRestaurante ? [{ label: 'Produção', path: '/restaurante/producao' }, { label: 'Bar', path: '/restaurante/bar' }] : []),
-    { label: 'Produtos', path: '/restaurante/produtos' },
-    { label: 'Pedidos', path: '/restaurante/pedidos' },
-    { label: 'Sessão', path: '/restaurante/sessao' },
-    { label: 'Entregas', path: '/restaurante/entregas' },
-    { label: 'Motoboys', path: '/restaurante/motoboys' },
-    ...(tipoRestaurante ? [
-      { label: 'Salão', path: '/restaurante/salao' },
-      { label: 'Garçons', path: '/restaurante/garcons' },
-      { label: 'Impressoras', path: '/restaurante/impressoras' },
-    ] : []),
-    { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Financeiro', path: '/restaurante/financeiro' },
-    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-    { label: 'Config', path: '/restaurante/config' },
-  ];
-  return (
-    <>
-    <nav className="md:hidden flex gap-1.5 flex-wrap">
-      {links.map((l) => (
-        <button key={l.path} onClick={() => navigate(l.path)}
-          className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            active === l.path ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30' : 'text-[#27272A] hover:bg-[#F4F4F5]'
-          }`}>
-          {l.label}
-          {l.path === '/restaurante/motoboys' && pendentes > 0 && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white">
-              {pendentes}
-            </span>
-          )}
-        </button>
-      ))}
-      {slugLoja && (
-        <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-          className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
-          <Icon name="ExternalLink" size={14} /> Loja
-        </button>
-      )}
-    </nav>
-    <button onClick={() => setSidebarAberto(true)}
-      className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-      <Icon name="Menu" size={18} /> Menu
-    </button>
-    <RestauranteSidebar
-      open={sidebarAberto}
-      onClose={() => setSidebarAberto(false)}
-      links={links}
-      activePath={active}
-      pendentesMotoboy={pendentes}
-      slugLoja={slugLoja}
-    />
-    </>
-  );
 };
 
 // Lista todos os pedidos/vendas (delivery + salão) desde que o caixa atual foi aberto —
@@ -116,10 +46,7 @@ const RestauranteSessao = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4">
-        <h1 className="text-xl font-bold text-[#18181B] mb-3">Pedidos da Sessão</h1>
-        <NavRestaurante active="/restaurante/sessao" />
-      </header>
+      <RestauranteHeader active="/restaurante/sessao" title="Pedidos da Sessão" />
 
       <div className="max-w-5xl mx-auto p-4">
         {loading ? (

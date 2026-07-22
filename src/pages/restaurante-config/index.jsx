@@ -5,85 +5,14 @@ import {
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
 } from '../../services/restauranteService';
 import { buscarCep } from '../../utils/viaCep';
-import { useAuth } from '../../contexts/AuthContext';
-import { AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-import MobileMenu from '../../components/restaurante/MobileMenu';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 // URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento
 const WEBHOOK_URL = `${window.location.origin}/api/pagamentos/webhook`;
 
 const PAGBANK_URL = 'https://pagseguro.uol.com.br';
-
-const NavRestaurante = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const slugLoja = useMinhaLojaSlug();
-  const logoUrl = useMinhaLojaLogo();
-  const tipoRestaurante = useTipoRestaurante();
-  const [sidebarAberto, setSidebarAberto] = useState(false);
-  const [menuAberto, setMenuAberto] = useState(false);
-  const links = [
-    { label: 'Dashboard', path: '/restaurante' },
-    { label: 'Relatórios', path: '/restaurante/relatorios' },
-    { label: 'Delivery', path: '/restaurante/delivery' },
-    { label: 'Produtos', path: '/restaurante/produtos' },
-    { label: 'Pedidos', path: '/restaurante/pedidos' },
-    { label: 'Entregas', path: '/restaurante/entregas' },
-    ...(tipoRestaurante ? [
-      { label: 'Salão', path: '/restaurante/salao' },
-      { label: 'Garçons', path: '/restaurante/garcons' },
-      { label: 'Impressoras', path: '/restaurante/impressoras' },
-    ] : []),
-    { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Designer', path: '/restaurante/aparencia' },
-    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-    { label: 'Config', path: '/restaurante/config' },
-  ];
-  return (
-    <>
-      <div className="md:hidden flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {logoUrl
-            ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
-            : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
-        </div>
-        <button className="p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
-          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
-        </button>
-      </div>
-      <AnimatePresence>
-        {menuAberto && (
-          <MobileMenu
-            links={links}
-            currentPath="/restaurante/config"
-            slugLoja={slugLoja}
-            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
-            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          />
-        )}
-      </AnimatePresence>
-      <div className="hidden md:flex md:flex-1 justify-end">
-        <button onClick={() => setSidebarAberto(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-      </div>
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={links}
-        activePath="/restaurante/config"
-        slugLoja={slugLoja}
-        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-      />
-    </>
-  );
-};
 
 /* Guia passo a passo colapsável */
 const Guia = () => {
@@ -571,13 +500,7 @@ const RestauranteConfig = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4">
-        <div className="mb-3">
-          <h1 className="text-xl font-bold text-[#18181B]">Configurações de Pagamento</h1>
-          <p className="text-sm text-[#71717A]">Integração PagBank</p>
-        </div>
-        <NavRestaurante />
-      </header>
+      <RestauranteHeader active="/restaurante/config" title="Configurações de Pagamento" subtitle="Integração PagBank" />
 
       <main className="p-6 max-w-2xl mx-auto">
         {loading ? (

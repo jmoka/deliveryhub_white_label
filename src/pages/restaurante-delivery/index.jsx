@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, buscarPedidoDetalhe, atualizarStatusPedido,
@@ -9,13 +8,7 @@ import Icon from '../../components/AppIcon';
 import PedidoDetalhe from '../restaurante-dashboard/PedidoDetalhe';
 import PedidoTimeline from '../restaurante-dashboard/PedidoTimeline';
 import { printComanda } from '../../utils/printComanda';
-import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import { useAuth } from '../../contexts/AuthContext';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-import MobileMenu from '../../components/restaurante/MobileMenu';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -40,75 +33,6 @@ const FILTER_TABS = [
   { value: 'canceled',         label: 'Cancelado',  activeColor: 'border-red-400 bg-red-100 text-red-800' },
 ];
 
-const NavRestaurante = ({ active, title = 'Delivery' }) => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const pendentes = useSolicitacoesMotoboyCount();
-  const slugLoja = useMinhaLojaSlug();
-  const logoUrl = useMinhaLojaLogo();
-  const tipoRestaurante = useTipoRestaurante();
-  const [sidebarAberto, setSidebarAberto] = useState(false);
-  const [menuAberto, setMenuAberto] = useState(false);
-  const links = [
-    { label: 'Dashboard', path: '/restaurante' },
-    { label: 'Relatórios', path: '/restaurante/relatorios' },
-    { label: 'Delivery', path: '/restaurante/delivery' },
-    { label: 'Cozinha', path: '/restaurante/cozinha' },
-    ...(tipoRestaurante ? [{ label: 'Produção', path: '/restaurante/producao' }, { label: 'Bar', path: '/restaurante/bar' }] : []),
-    { label: 'Produtos', path: '/restaurante/produtos' },
-    { label: 'Sessão', path: '/restaurante/sessao' },
-    { label: 'Entregas', path: '/restaurante/entregas' },
-    { label: 'Motoboys', path: '/restaurante/motoboys' },
-    ...(tipoRestaurante ? [
-      { label: 'Salão', path: '/restaurante/salao' },
-      { label: 'Garçons', path: '/restaurante/garcons' },
-      { label: 'Impressoras', path: '/restaurante/impressoras' },
-    ] : []),
-    { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Financeiro', path: '/restaurante/financeiro' },
-    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-    { label: 'Config', path: '/restaurante/config' },
-  ];
-  return (
-    <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {logoUrl
-            ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
-            : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
-          <span className="font-bold text-[#18181B] text-base md:text-lg">{title}</span>
-        </div>
-        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
-          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
-        </button>
-        <button onClick={() => setSidebarAberto(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-      </div>
-      <AnimatePresence>
-        {menuAberto && (
-          <MobileMenu
-            links={links}
-            currentPath={active}
-            pendentesMotoboy={pendentes}
-            slugLoja={slugLoja}
-            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
-            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          />
-        )}
-      </AnimatePresence>
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={links}
-        activePath={active}
-        pendentesMotoboy={pendentes}
-        slugLoja={slugLoja}
-      />
-    </>
-  );
-};
 
 // Painel dedicado só ao delivery — extraído da seção "Pedidos da sessão" do Dashboard
 // principal, que misturava pedidos de delivery com comandas do salão (status "aberta"
@@ -210,9 +134,7 @@ const RestauranteDelivery = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4">
-        <NavRestaurante active="/restaurante/delivery" />
-      </header>
+      <RestauranteHeader active="/restaurante/delivery" title="Delivery" />
 
       <main className="p-4 max-w-6xl mx-auto">
         {erro && <p className="text-sm text-red-600 mb-4">{erro}</p>}
