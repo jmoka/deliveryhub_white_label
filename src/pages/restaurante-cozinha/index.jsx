@@ -293,6 +293,17 @@ const RestauranteCozinha = () => {
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
 
+  const anunciarNovoPedido = useCallback((qtd) => {
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      const texto = qtd > 1 ? `${qtd} novos pedidos aguardando preparo` : 'Novo pedido aguardando preparo';
+      const utter = new SpeechSynthesisUtterance(texto);
+      utter.lang = 'pt-BR';
+      synth.speak(utter);
+    } catch {}
+  }, []);
+
   const copiarLinkCozinha = async () => {
     setGerandoLink(true);
     try {
@@ -329,7 +340,7 @@ const RestauranteCozinha = () => {
 
       if (!firstLoad.current) {
         const novos = newPedidos.filter((p) => !prevOrderIds.current.has(p.id));
-        if (novos.length > 0) tocarSom();
+        if (novos.length > 0) { tocarSom(); anunciarNovoPedido(novos.length); }
       }
 
       prevOrderIds.current = new Set(newPedidos.map((p) => p.id));
