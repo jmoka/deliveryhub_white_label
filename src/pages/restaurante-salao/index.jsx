@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe, getSalaoComandasFechadasHoje,
@@ -962,6 +962,9 @@ const RestauranteSalao = () => {
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [comandasFechadas, setComandasFechadas] = useState([]);
+  const [filtroNome, setFiltroNome] = useState('');
+  const [filtroData, setFiltroData] = useState('');
+  const [filtroValorMin, setFiltroValorMin] = useState('');
   const [comandaAtiva, setComandaAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mostrarVendaDireta, setMostrarVendaDireta] = useState(false);
@@ -1009,6 +1012,20 @@ const RestauranteSalao = () => {
     const interval = setInterval(carregar, 20000);
     return () => clearInterval(interval);
   }, [carregar]);
+
+  const passaNoFiltro = (c) => {
+    if (filtroNome && !c.cliente_mesa_nome?.toLowerCase().includes(filtroNome.toLowerCase())) return false;
+    if (filtroValorMin && (c.total ?? 0) < parseFloat(filtroValorMin)) return false;
+    if (filtroData) {
+      const dataRef = c.pago_em ?? c.created_at;
+      if (new Date(dataRef).toISOString().slice(0, 10) !== filtroData) return false;
+    }
+    return true;
+  };
+
+  const comandasFiltradas = useMemo(() => comandas.filter(passaNoFiltro), [comandas, filtroNome, filtroData, filtroValorMin]);
+  const comandasFechadasFiltradas = useMemo(() => comandasFechadas.filter(passaNoFiltro), [comandasFechadas, filtroNome, filtroData, filtroValorMin]);
+  const filtroAtivo = !!(filtroNome || filtroData || filtroValorMin);
 
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
@@ -1083,9 +1100,23 @@ const RestauranteSalao = () => {
               {mesas.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">Nenhuma mesa cadastrada.</p>}
             </div>
 
-            <p className="text-sm font-bold text-[#18181B] mb-2">Comandas em aberto</p>
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+              <p className="text-sm font-bold text-[#18181B]">Comandas em aberto</p>
+              <div className="flex gap-2 flex-wrap">
+                <input value={filtroNome} onChange={(e) => setFiltroNome(e.target.value)} placeholder="Nome do cliente"
+                  className="w-32 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)}
+                  className="border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                <input type="number" min="0" value={filtroValorMin} onChange={(e) => setFiltroValorMin(e.target.value)} placeholder="Valor mín."
+                  className="w-24 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                {filtroAtivo && (
+                  <button onClick={() => { setFiltroNome(''); setFiltroData(''); setFiltroValorMin(''); }}
+                    className="text-xs text-[#FF441F] font-semibold px-1">Limpar</button>
+                )}
+              </div>
+            </div>
             <div className="space-y-2">
-              {comandas.map((c) => (
+              {comandasFiltradas.map((c) => (
                 <button key={c.id} onClick={() => setComandaAtiva(c.id)}
                   className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
                   <div>
@@ -1100,14 +1131,16 @@ const RestauranteSalao = () => {
                   <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
                 </button>
               ))}
-              {comandas.length === 0 && <p className="text-sm text-[#A1A1AA]">Nenhuma comanda em aberto.</p>}
+              {comandasFiltradas.length === 0 && (
+                <p className="text-sm text-[#A1A1AA]">{filtroAtivo ? 'Nenhuma comanda encontrada com esse filtro.' : 'Nenhuma comanda em aberto.'}</p>
+              )}
             </div>
 
             {comandasFechadas.length > 0 && (
               <>
                 <p className="text-sm font-bold text-[#18181B] mb-2 mt-6">Comandas fechadas hoje</p>
                 <div className="space-y-2">
-                  {comandasFechadas.map((c) => (
+                  {comandasFechadasFiltradas.map((c) => (
                     <button key={c.id} onClick={() => setComandaAtiva(c.id)}
                       className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left opacity-80">
                       <div>
