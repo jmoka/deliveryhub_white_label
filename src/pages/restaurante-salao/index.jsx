@@ -25,7 +25,7 @@ import MobileMenu from '../../components/restaurante/MobileMenu';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 
-const NavRestaurante = ({ active }) => {
+const NavRestaurante = ({ active, title = 'Salão' }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const pendentes = useSolicitacoesMotoboyCount();
@@ -54,14 +54,19 @@ const NavRestaurante = ({ active }) => {
   ];
   return (
     <>
-      <div className="md:hidden flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {logoUrl
             ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
             : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
+          <span className="font-bold text-[#18181B] text-base md:text-lg">{title}</span>
         </div>
-        <button className="p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
+        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
           <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
+        </button>
+        <button onClick={() => setSidebarAberto(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
         </button>
       </div>
       <AnimatePresence>
@@ -76,12 +81,6 @@ const NavRestaurante = ({ active }) => {
           />
         )}
       </AnimatePresence>
-      <div className="hidden md:flex md:flex-1 justify-end">
-        <button onClick={() => setSidebarAberto(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-      </div>
       <RestauranteSidebar
         open={sidebarAberto}
         onClose={() => setSidebarAberto(false)}
@@ -481,6 +480,10 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   if (!comanda) return null;
 
   const podeEditar = comanda.status === 'aberta' || comanda.status === 'fechada_garcom';
+  // Comanda já paga: só dá pra corrigir a forma de pagamento (ex: confirmou PIX por
+  // engano, era dinheiro) — não reabre valor nem permite remover. Backend também bloqueia
+  // se o caixa dessa comanda já tiver sido fechado (resumo já foi gravado e congelado).
+  const podeCorrigirFormaPagamento = podeEditar || comanda.status === 'paga';
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
   const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + Number(gorjeta || 0)).toFixed(2));
@@ -676,7 +679,8 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                 pagamentoEditandoId === p.id ? (
                   <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-lg p-1.5">
                     <input type="number" value={valorEdicao} onChange={(e) => setValorEdicao(e.target.value)}
-                      className="w-16 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs" />
+                      disabled={comanda.status === 'paga'} title={comanda.status === 'paga' ? 'Comanda paga: só a forma de pagamento pode ser corrigida' : undefined}
+                      className="w-16 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs disabled:opacity-50 disabled:bg-[#F4F4F5]" />
                     <select value={formaEdicao} onChange={(e) => setFormaEdicao(e.target.value)}
                       className="flex-1 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs">
                       <option value="pix">PIX</option>
@@ -697,15 +701,16 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
+                      {podeCorrigirFormaPagamento && (
+                        <button onClick={() => iniciarEdicaoPagamento(p)} title="Corrigir forma de pagamento"
+                          className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                          <Icon name="Pencil" size={13} strokeWidth={2.5} />
+                        </button>
+                      )}
                       {podeEditar && (
-                        <>
-                          <button onClick={() => iniciarEdicaoPagamento(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
-                            <Icon name="Pencil" size={13} strokeWidth={2.5} />
-                          </button>
-                          <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
-                            <Icon name="X" size={14} strokeWidth={2.5} />
-                          </button>
-                        </>
+                        <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
+                          <Icon name="X" size={14} strokeWidth={2.5} />
+                        </button>
                       )}
                     </div>
                   </div>

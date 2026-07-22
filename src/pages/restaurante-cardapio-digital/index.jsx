@@ -10,7 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 import MobileMenu from '../../components/restaurante/MobileMenu';
 
-const NavRestaurante = ({ active }) => {
+const NavRestaurante = ({ active, title = 'Cardápio Digital' }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const pendentes = useSolicitacoesMotoboyCount();
@@ -39,14 +39,19 @@ const NavRestaurante = ({ active }) => {
   ];
   return (
     <>
-      <div className="md:hidden flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {logoUrl
             ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
             : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
+          <span className="font-bold text-[#18181B] text-base md:text-lg">{title}</span>
         </div>
-        <button className="p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
+        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
           <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
+        </button>
+        <button onClick={() => setSidebarAberto(true)}
+          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
         </button>
       </div>
       <AnimatePresence>
@@ -61,12 +66,6 @@ const NavRestaurante = ({ active }) => {
           />
         )}
       </AnimatePresence>
-      <div className="hidden md:flex md:flex-1 justify-end">
-        <button onClick={() => setSidebarAberto(true)}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-      </div>
       <RestauranteSidebar
         open={sidebarAberto}
         onClose={() => setSidebarAberto(false)}
