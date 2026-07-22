@@ -386,7 +386,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
         <div className="space-y-0.5">
           {comanda.pagamentos.map((p) => (
             <p key={p.id} className="text-xs text-[#71717A] flex justify-between">
-              <span>{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})</span>
+              <span>
+                {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
+                {p.taxa_cartao_valor > 0 && ` + taxa ${fmt(p.taxa_cartao_valor)}`}
+              </span>
               <span>{fmt(p.valor)}</span>
             </p>
           ))}
@@ -618,57 +621,89 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         <PagamentoParcial comanda={comanda} onRegistrado={carregar} podePagamentoParcial={podePagamentoParcial} />
       </div>
 
-      {!fechada && (
-        <div className="p-4 bg-white border-t border-[#E4E4E7] fixed bottom-0 left-0 right-0">
-          <button onClick={() => setMostrarPicker(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
-            <Icon name="Plus" size={18} /> Adicionar produto
-          </button>
-          {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
-          <div className="flex gap-2">
-            <button onClick={enviar} disabled={!temPendente || enviando}
-              className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
-              {enviando ? 'Enviando...' : 'Enviar novos itens'}
+      <div className={`p-4 bg-white border-t border-[#E4E4E7] ${!fechada ? 'fixed bottom-0 left-0 right-0' : ''}`}>
+        {!fechada && (
+          <>
+            <button onClick={() => setMostrarPicker(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
+              <Icon name="Plus" size={18} /> Adicionar produto
             </button>
-            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0}
-              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
-              Fechar comanda
-            </button>
-          </div>
-          <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-[#71717A]">Valor da comanda</span>
-              <span className="text-[#18181B]">{fmt(total)}</span>
+            {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
+            <div className="flex gap-2">
+              <button onClick={enviar} disabled={!temPendente || enviando}
+                className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
+                {enviando ? 'Enviando...' : 'Enviar novos itens'}
+              </button>
+              <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0}
+                className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
+                Fechar comanda
+              </button>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-[#71717A]">Gorjeta</span>
-              <span className="text-[#18181B]">{fmt(comanda.gorjeta_sugestao?.valor_sugerido ?? 0)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
-              <span>Total (comanda + gorjeta)</span>
-              <span>{fmt(total + (comanda.gorjeta_sugestao?.valor_sugerido ?? 0))}</span>
-            </div>
-            {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
-              <>
+          </>
+        )}
+        {(() => {
+          // Gorjeta só vira valor definitivo quando o caixa fecha a conta (orders.gorjeta_valor).
+          // Antes disso é só estimativa (gorjeta_sugestao) — não soma junto do saldo real do
+          // backend (que já inclui a gorjeta confirmada + taxa de cartão), senão duplica.
+          const gorjetaConfirmada = comanda.gorjeta_valor != null;
+          const gorjetaExibida = gorjetaConfirmada ? comanda.gorjeta_valor : (comanda.gorjeta_sugestao?.valor_sugerido ?? 0);
+          const totalComGorjeta = (comanda.saldo?.total ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
+          const faltaPagar = (comanda.saldo?.saldo ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
+          const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
+          return (
+            <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A]">Valor da comanda</span>
+                <span className="text-[#18181B]">{fmt(total)}</span>
+              </div>
+              {comanda.desconto_valor > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#71717A]">Já pago</span>
-                  <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
+                  <span className="text-[#71717A]">Desconto</span>
+                  <span className="text-emerald-700">- {fmt(comanda.desconto_valor)}</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
-                  <span>Falta pagar (com gorjeta)</span>
-                  <span>{fmt((comanda.saldo?.saldo ?? total) + (comanda.gorjeta_sugestao?.valor_sugerido ?? 0))}</span>
+              )}
+              {comanda.acrescimo_valor > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A]">Acréscimo</span>
+                  <span className="text-[#18181B]">+ {fmt(comanda.acrescimo_valor)}</span>
                 </div>
-              </>
-            )}
-          </div>
-          {podeExcluir && (
-            <button onClick={excluir} disabled={excluindo}
-              className="w-full mt-2 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl disabled:opacity-50">
-              {excluindo ? 'Excluindo...' : 'Excluir comanda'}
-            </button>
-          )}
-        </div>
-      )}
+              )}
+              {totalTaxaCartao > 0.001 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A]">Taxa cartão</span>
+                  <span className="text-[#18181B]">+ {fmt(totalTaxaCartao)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A]">Gorjeta{gorjetaConfirmada ? '' : ' (estimada)'}</span>
+                <span className="text-[#18181B]">{fmt(gorjetaExibida)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+                <span>Total (comanda + gorjeta)</span>
+                <span>{fmt(totalComGorjeta)}</span>
+              </div>
+              {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[#71717A]">Já pago</span>
+                    <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
+                    <span>Falta pagar (com gorjeta)</span>
+                    <span>{fmt(faltaPagar)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+        {!fechada && podeExcluir && (
+          <button onClick={excluir} disabled={excluindo}
+            className="w-full mt-2 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl disabled:opacity-50">
+            {excluindo ? 'Excluindo...' : 'Excluir comanda'}
+          </button>
+        )}
+      </div>
 
       {mostrarEditarCliente && (
         <EditarClienteModal comanda={comanda} onFechar={() => setMostrarEditarCliente(false)} onEditado={carregar} />
@@ -923,7 +958,18 @@ const GarcomHome = () => {
 
 const GarcomPortal = () => {
   const { loginKey } = useParams();
-  const [authed, setAuthed] = useState(!!getGarcomToken());
+  const [authed, setAuthed] = useState(null);
+
+  useEffect(() => {
+    if (!getGarcomToken()) { setAuthed(false); return; }
+    // Token salvo pode ser de outro garçom/restaurante (localStorage não é escopado por
+    // loginKey) — valida antes de confiar, senão a tela trava vazia num token velho.
+    getMe().then(() => setAuthed(true)).catch(() => { clearGarcomToken(); setAuthed(false); });
+  }, []);
+
+  if (authed === null) {
+    return <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center text-sm text-[#71717A]">Carregando...</div>;
+  }
 
   if (!authed) {
     return <GarcomLogin loginKey={loginKey} onLogin={() => setAuthed(true)} />;
