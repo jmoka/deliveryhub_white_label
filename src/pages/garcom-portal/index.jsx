@@ -4,7 +4,7 @@ import {
   login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
-  registrarPagamento, editarClienteComanda, excluirComanda,
+  registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
@@ -351,9 +351,14 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
   const [valorRecebido, setValorRecebido] = useState('');
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
+  const [valorEdicao, setValorEdicao] = useState('');
+  const [formaEdicao, setFormaEdicao] = useState('pix');
 
   const saldo = comanda.saldo?.saldo ?? 0;
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
+  // Comanda paga/cancelada não deixa mais mexer nos pagamentos, mesma regra de editar itens.
+  const podeMexer = ['aberta', 'fechada_garcom'].includes(comanda.status);
 
   const registrar = async () => {
     const v = Number(valor);
@@ -376,6 +381,39 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
     }
   };
 
+  const iniciarEdicao = (p) => {
+    setEditandoId(p.id);
+    setValorEdicao(String(p.valor));
+    setFormaEdicao(p.forma_pagamento);
+  };
+
+  const salvarEdicao = async () => {
+    const v = Number(valorEdicao);
+    if (!v || v <= 0) return;
+    setErro(null);
+    setSalvando(true);
+    try {
+      await editarPagamento(comanda.id, editandoId, v, formaEdicao);
+      setEditandoId(null);
+      await onRegistrado();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível editar o pagamento.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const remover = async (p) => {
+    if (!window.confirm('Remover este pagamento?')) return;
+    setErro(null);
+    try {
+      await removerPagamento(comanda.id, p.id);
+      await onRegistrado();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível remover o pagamento.');
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-[#E4E4E7] p-3 space-y-2">
       <div className="flex justify-between text-sm">
@@ -383,15 +421,44 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
         <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>{fmt(saldo)}</strong>
       </div>
       {(comanda.pagamentos ?? []).length > 0 && (
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {comanda.pagamentos.map((p) => (
-            <p key={p.id} className="text-xs text-[#71717A] flex justify-between">
-              <span>
-                {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
-                {p.taxa_cartao_valor > 0 && ` + taxa ${fmt(p.taxa_cartao_valor)}`}
-              </span>
-              <span>{fmt(p.valor)}</span>
-            </p>
+            editandoId === p.id ? (
+              <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-lg p-1.5">
+                <input type="number" value={valorEdicao} onChange={(e) => setValorEdicao(e.target.value)}
+                  className="w-16 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs" />
+                <select value={formaEdicao} onChange={(e) => setFormaEdicao(e.target.value)}
+                  className="flex-1 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs">
+                  <option value="pix">PIX</option>
+                  <option value="credit_card">Cartão de crédito</option>
+                  <option value="debit_card">Cartão de débito</option>
+                  <option value="cash">Dinheiro</option>
+                </select>
+                <button onClick={salvarEdicao} disabled={!valorEdicao || salvando}
+                  className="text-xs font-bold text-emerald-700 disabled:opacity-40 flex-shrink-0">Salvar</button>
+                <button onClick={() => setEditandoId(null)} className="text-xs text-[#71717A] flex-shrink-0">Cancelar</button>
+              </div>
+            ) : (
+              <p key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
+                <span>
+                  {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
+                  {p.taxa_cartao_valor > 0 && ` + taxa ${fmt(p.taxa_cartao_valor)}`}
+                </span>
+                <span className="flex items-center gap-1.5 flex-shrink-0">
+                  {fmt(p.valor)}
+                  {podeMexer && podePagamentoParcial && p.origem === 'garcom' && (
+                    <>
+                      <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                        <Icon name="Pencil" size={13} strokeWidth={2.5} />
+                      </button>
+                      <button onClick={() => remover(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
+                        <Icon name="X" size={14} strokeWidth={2.5} />
+                      </button>
+                    </>
+                  )}
+                </span>
+              </p>
+            )
           ))}
         </div>
       )}
@@ -524,7 +591,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const podeExcluir = (comanda.itens ?? []).every((i) => i.status === 'pendente');
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] pb-24">
+    <div className={`min-h-screen bg-[#F4F4F5] ${!fechada ? 'pb-44' : 'pb-6'}`}>
       <div className="bg-white border-b border-[#E4E4E7] p-4 sticky top-0 z-10">
         <button onClick={onVoltar} className="flex items-center gap-1 text-sm text-[#71717A] mb-2">
           <Icon name="ArrowLeft" size={16} /> Voltar

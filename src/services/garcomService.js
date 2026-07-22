@@ -76,6 +76,12 @@ export const excluirComanda = (comandaId) =>
 export const registrarPagamento = (comandaId, valor, forma_pagamento, valor_recebido) =>
   garcomFetch(`/comandas/${comandaId}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento, valor_recebido }) });
 
+export const editarPagamento = (comandaId, pagamentoId, valor, forma_pagamento) =>
+  garcomFetch(`/comandas/${comandaId}/pagamentos/${pagamentoId}`, { method: 'PATCH', body: JSON.stringify({ valor, forma_pagamento }) });
+
+export const removerPagamento = (comandaId, pagamentoId) =>
+  garcomFetch(`/comandas/${comandaId}/pagamentos/${pagamentoId}`, { method: 'DELETE' });
+
 export const enviarItens = (comandaId) =>
   garcomFetch(`/comandas/${comandaId}/enviar`, { method: 'POST' });
 

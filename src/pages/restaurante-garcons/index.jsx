@@ -5,6 +5,7 @@ import {
   listarMesas, criarMesa, removerMesa, criarMesasEmLote,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
+import { getLocalUrls } from '../../utils/mesaAcompanharUrl';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
@@ -123,7 +124,9 @@ const NovoGarcomForm = ({ onCriado }) => {
 
 const GarcomCard = ({ garcom, onMudou }) => {
   const [copiado, setCopiado] = useState(false);
-  const link = `${window.location.origin}/garcom/${garcom.login_key}`;
+  const [modo, setModo] = useState('online'); // 'online' | 'local'
+  const urls = getLocalUrls(`/garcom/${garcom.login_key}`);
+  const link = modo === 'local' && urls.lan ? urls.lan : urls.principal;
 
   const copiarLink = () => {
     navigator.clipboard?.writeText(link);
@@ -161,7 +164,19 @@ const GarcomCard = ({ garcom, onMudou }) => {
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] rounded-xl px-3 py-2">
+      {urls.lan && (
+        <div className="flex gap-2 mt-3">
+          <button onClick={() => setModo('online')}
+            className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            ONLINE
+          </button>
+          <button onClick={() => setModo('local')}
+            className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            LOCAL
+          </button>
+        </div>
+      )}
+      <div className="flex items-center gap-2 mt-2 bg-[#F4F4F5] rounded-xl px-3 py-2">
         <span className="text-xs font-mono text-[#71717A] truncate flex-1">{link}</span>
         <button onClick={copiarLink} className="text-xs font-bold text-[#FF441F]">{copiado ? 'Copiado!' : 'Copiar'}</button>
       </div>
