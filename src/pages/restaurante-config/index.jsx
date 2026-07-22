@@ -67,10 +67,12 @@ const NavRestaurante = () => {
           />
         )}
       </AnimatePresence>
-      <button onClick={() => setSidebarAberto(true)}
-        className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-        <Icon name="Menu" size={18} /> Menu
-      </button>
+      <div className="hidden md:flex md:flex-1 justify-end">
+        <button onClick={() => setSidebarAberto(true)}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+          <Icon name="Menu" size={18} /> Menu
+        </button>
+      </div>
       <RestauranteSidebar
         open={sidebarAberto}
         onClose={() => setSidebarAberto(false)}
@@ -569,8 +571,8 @@ const RestauranteConfig = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
-        <div>
+      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4">
+        <div className="mb-3">
           <h1 className="text-xl font-bold text-[#18181B]">Configurações de Pagamento</h1>
           <p className="text-sm text-[#71717A]">Integração PagBank</p>
         </div>
