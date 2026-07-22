@@ -13,7 +13,7 @@ import FecharCaixaModal from './FecharCaixaModal';
 import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
-import MobileMenu from './MobileMenu';
+import MobileMenu from '../../components/restaurante/MobileMenu';
 import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';

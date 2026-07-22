@@ -4,9 +4,12 @@ import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa, updateDo
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
+import { AnimatePresence } from 'framer-motion';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
+import MobileMenu from '../../components/restaurante/MobileMenu';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -17,8 +20,10 @@ const NavRestaurante = ({ active }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const slugLoja = useMinhaLojaSlug();
+  const logoUrl = useMinhaLojaLogo();
   const tipoRestaurante = useTipoRestaurante();
   const [sidebarAberto, setSidebarAberto] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
   const links = [
     { label: 'Dashboard', path: '/restaurante' },
     { label: 'Relatórios', path: '/restaurante/relatorios' },
@@ -38,28 +43,27 @@ const NavRestaurante = ({ active }) => {
   ];
   return (
     <>
-      <nav className="md:hidden flex gap-1.5 flex-wrap">
-        {links.map((l) => (
-          <button key={l.path} onClick={() => navigate(l.path)}
-            className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-              active === l.path
-                ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
-                : 'text-[#27272A] hover:bg-[#F4F4F5]'
-            }`}>
-            {l.label}
-          </button>
-        ))}
-        {slugLoja && (
-          <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-            className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
-            <Icon name="ExternalLink" size={14} /> Loja
-          </button>
-        )}
-        <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          className="px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg border border-red-200">
-          Sair
+      <div className="md:hidden flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {logoUrl
+            ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
+            : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
+        </div>
+        <button className="p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
+          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
         </button>
-      </nav>
+      </div>
+      <AnimatePresence>
+        {menuAberto && (
+          <MobileMenu
+            links={links}
+            currentPath={active}
+            slugLoja={slugLoja}
+            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
+            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+          />
+        )}
+      </AnimatePresence>
       <button onClick={() => setSidebarAberto(true)}
         className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
         <Icon name="Menu" size={18} /> Menu
