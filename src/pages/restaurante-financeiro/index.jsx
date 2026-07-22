@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getRelatorio, getMinhaEmpresa, getCaixa, getCaixaHistorico, aprovarConferencia, getConfig } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
-import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -40,34 +36,6 @@ const printIframe = (html) => {
   catch { f.remove(); const w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); } }
 };
 
-const LINKS = [
-  { label: 'Dashboard', path: '/restaurante' },
-  { label: 'Relatórios', path: '/restaurante/relatorios' },
-  { label: 'Delivery', path: '/restaurante/delivery' },
-  { label: 'Cozinha', path: '/restaurante/cozinha' },
-  { label: 'Produtos', path: '/restaurante/produtos' },
-  { label: 'Pedidos', path: '/restaurante/pedidos' },
-  { label: 'Entregas', path: '/restaurante/entregas' },
-  { label: 'Motoboys', path: '/restaurante/motoboys' },
-  { label: 'Clientes', path: '/restaurante/clientes' },
-  { label: 'Financeiro', path: '/restaurante/financeiro' },
-  { label: 'Designer', path: '/restaurante/aparencia' },
-  { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-  { label: 'Config', path: '/restaurante/config' },
-  { label: 'Sessão', path: '/restaurante/sessao' },
-];
-
-const COPA_LINK = [
-  { label: 'Produção', path: '/restaurante/producao' },
-  { label: 'Bar', path: '/restaurante/bar' },
-];
-
-const SALAO_LINKS = [
-  { label: 'Salão', path: '/restaurante/salao' },
-  { label: 'Garçons', path: '/restaurante/garcons' },
-  { label: 'Impressoras', path: '/restaurante/impressoras' },
-];
-
 const buildRange = (modo, dia, mes, ano, ini, fim) => {
   if (modo === 'dia')     return { de: startOf(dia), ate: endOf(dia), label: new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR') };
   if (modo === 'mes') { const [y, m] = mes.split('-'); return { de: startOf(`${y}-${m}-01`), ate: endOf(`${y}-${m}-${String(lastDay(mes)).padStart(2, '0')}`), label: new Date(mes + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) }; }
@@ -77,10 +45,6 @@ const buildRange = (modo, dia, mes, ano, ini, fim) => {
 };
 
 const RestauranteFinanceiro = () => {
-  const navigate = useNavigate();
-  const pendentesMotoboy = useSolicitacoesMotoboyCount();
-  const slugLoja = useMinhaLojaSlug();
-  const tipoRestaurante = useTipoRestaurante();
   const [restauranteNome, setRestauranteNome] = useState('');
   const [modo, setModo] = useState('dia');
   const [dia, setDia]   = useState(today());
@@ -97,7 +61,6 @@ const RestauranteFinanceiro = () => {
   const [historico, setHistorico] = useState([]);
   const [aprovando, setAprovando] = useState(null);
   const [taxaPagbank, setTaxaPagbank] = useState(0);
-  const [sidebarAberto, setSidebarAberto] = useState(false);
 
   const conferenciasPendentes = historico.filter(
     (cx) => cx.status === 'fechado' && cx.destinacao_fechamento?.conferencia_aprovada === false,
@@ -138,34 +101,7 @@ const RestauranteFinanceiro = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#18181B]">Financeiro</h1>
-          <p className="text-sm text-[#71717A]">Gestão financeira gerencial</p>
-        </div>
-        <button onClick={() => setSidebarAberto(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-        <button onClick={() => navigate('/restaurante')} className="md:hidden flex items-center gap-1.5 text-sm text-[#71717A]">
-          <Icon name="ChevronLeft" size={16} /> Voltar
-        </button>
-      </header>
-
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={[
-          ...LINKS.slice(0, 2),
-          ...(tipoRestaurante ? COPA_LINK : []),
-          ...LINKS.slice(2, 6),
-          ...(tipoRestaurante ? SALAO_LINKS : []),
-          ...LINKS.slice(6),
-        ]}
-        activePath="/restaurante/financeiro"
-        pendentesMotoboy={pendentesMotoboy}
-        slugLoja={slugLoja}
-      />
+      <RestauranteHeader active="/restaurante/financeiro" title="Financeiro" subtitle="Gestão financeira gerencial" />
 
       <main className="p-6 w-[95%] mx-auto max-w-5xl space-y-5">
 

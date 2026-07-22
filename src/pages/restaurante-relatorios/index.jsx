@@ -1,30 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-
-const LINKS = [
-  { label: 'Dashboard', path: '/restaurante' },
-  { label: 'Delivery', path: '/restaurante/delivery' },
-  { label: 'Produtos', path: '/restaurante/produtos' },
-  { label: 'Pedidos', path: '/restaurante/pedidos' },
-  { label: 'Entregas', path: '/restaurante/entregas' },
-  { label: 'Motoboys', path: '/restaurante/motoboys' },
-  { label: 'Clientes', path: '/restaurante/clientes' },
-  { label: 'Financeiro', path: '/restaurante/financeiro' },
-  { label: 'Relatórios', path: '/restaurante/relatorios' },
-  { label: 'Designer', path: '/restaurante/aparencia' },
-  { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-  { label: 'Config', path: '/restaurante/config' },
-];
-
-const SALAO_LINKS = [
-  { label: 'Salão', path: '/restaurante/salao' },
-  { label: 'Garçons', path: '/restaurante/garcons' },
-  { label: 'Impressoras', path: '/restaurante/impressoras' },
-];
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const RELATORIOS = [
   {
@@ -55,31 +32,10 @@ const RELATORIOS = [
 
 const RestauranteRelatorios = () => {
   const navigate = useNavigate();
-  const tipoRestaurante = useTipoRestaurante();
-  const slugLoja = useMinhaLojaSlug();
-  const links = [...LINKS, ...(tipoRestaurante ? SALAO_LINKS : [])];
-  const [sidebarAberto, setSidebarAberto] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-[#18181B]">Relatórios</h1>
-        <button onClick={() => setSidebarAberto(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-        <button onClick={() => navigate('/restaurante')} className="md:hidden flex items-center gap-1.5 text-sm text-[#71717A]">
-          <Icon name="ChevronLeft" size={16} /> Voltar
-        </button>
-      </header>
-
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={links}
-        activePath="/restaurante/relatorios"
-        slugLoja={slugLoja}
-      />
+      <RestauranteHeader active="/restaurante/relatorios" title="Relatórios" />
 
       <main className="p-6 max-w-4xl mx-auto">
         <p className="text-sm text-[#71717A] mb-5">Escolha um relatório — cada um tem filtro por período e opção de impressão.</p>

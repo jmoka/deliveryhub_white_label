@@ -1,87 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   listarGarcons, criarGarcom, atualizarGarcom, removerGarcom,
   listarMesas, criarMesa, removerMesa, criarMesasEmLote,
 } from '../../services/restauranteService';
-import { AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { getLocalUrls } from '../../utils/mesaAcompanharUrl';
-import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
-import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
-import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
-import { useAuth } from '../../contexts/AuthContext';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-import MobileMenu from '../../components/restaurante/MobileMenu';
-
-const NavRestaurante = ({ active, title = 'Garçons' }) => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const pendentes = useSolicitacoesMotoboyCount();
-  const slugLoja = useMinhaLojaSlug();
-  const logoUrl = useMinhaLojaLogo();
-  const tipoRestaurante = useTipoRestaurante();
-  const [sidebarAberto, setSidebarAberto] = useState(false);
-  const [menuAberto, setMenuAberto] = useState(false);
-  const links = [
-    { label: 'Dashboard', path: '/restaurante' },
-    { label: 'Relatórios', path: '/restaurante/relatorios' },
-    { label: 'Delivery', path: '/restaurante/delivery' },
-    { label: 'Produtos', path: '/restaurante/produtos' },
-    { label: 'Pedidos', path: '/restaurante/pedidos' },
-    { label: 'Entregas', path: '/restaurante/entregas' },
-    { label: 'Motoboys', path: '/restaurante/motoboys' },
-    ...(tipoRestaurante ? [
-      { label: 'Salão', path: '/restaurante/salao' },
-      { label: 'Garçons', path: '/restaurante/garcons' },
-      { label: 'Impressoras', path: '/restaurante/impressoras' },
-    ] : []),
-    { label: 'Clientes', path: '/restaurante/clientes' },
-    { label: 'Designer', path: '/restaurante/aparencia' },
-    { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-    { label: 'Config', path: '/restaurante/config' },
-  ];
-  return (
-    <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {logoUrl
-            ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
-            : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
-          <span className="font-bold text-[#18181B] text-base md:text-lg">{title}</span>
-        </div>
-        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
-          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
-        </button>
-        <button onClick={() => setSidebarAberto(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-      </div>
-      <AnimatePresence>
-        {menuAberto && (
-          <MobileMenu
-            links={links}
-            currentPath={active}
-            pendentesMotoboy={pendentes}
-            slugLoja={slugLoja}
-            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
-            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          />
-        )}
-      </AnimatePresence>
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={links}
-        activePath={active}
-        pendentesMotoboy={pendentes}
-        slugLoja={slugLoja}
-      />
-    </>
-  );
-};
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const NovoGarcomForm = ({ onCriado }) => {
   const [nome, setNome] = useState('');
@@ -337,9 +261,7 @@ const RestauranteGarcons = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
-      <div className="bg-white border-b border-[#E4E4E7] p-4">
-        <NavRestaurante active="/restaurante/garcons" />
-      </div>
+      <RestauranteHeader active="/restaurante/garcons" title="Garçons" />
       <div className="max-w-5xl mx-auto p-4">
         <div className="flex gap-2 mb-4">
           <button onClick={() => setAba('garcons')}

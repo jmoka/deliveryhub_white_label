@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa, fecharETransferir,
   adicionarSaida, toggleStatusRestaurante, getRelatorioFretes,
 } from '../../services/restauranteService';
-import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import RelatorioPanel from './RelatorioPanel';
 import SaidaModal from './SaidaModal';
@@ -13,55 +12,15 @@ import FecharCaixaModal from './FecharCaixaModal';
 import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
-import MobileMenu from '../../components/restaurante/MobileMenu';
-import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
-import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const PAGAMENTO_LABEL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito' };
 const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_card: '💳' };
 
-const LINKS = [
-  { label: 'Dashboard', path: '/restaurante' },
-  { label: 'Relatórios', path: '/restaurante/relatorios' },
-  { label: 'Delivery', path: '/restaurante/delivery' },
-  { label: 'Cozinha', path: '/restaurante/cozinha' },
-  { label: 'Produtos', path: '/restaurante/produtos' },
-  { label: 'Pedidos', path: '/restaurante/pedidos' },
-  { label: 'Entregas', path: '/restaurante/entregas' },
-  { label: 'Motoboys', path: '/restaurante/motoboys' },
-  { label: 'Clientes', path: '/restaurante/clientes' },
-  { label: 'Financeiro', path: '/restaurante/financeiro' },
-  { label: 'Caixa', path: '/restaurante/caixa' },
-  { label: 'Designer', path: '/restaurante/aparencia' },
-  { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital' },
-  { label: 'Config', path: '/restaurante/config' },
-  { label: 'Sessão', path: '/restaurante/sessao' },
-];
-
-const COPA_LINK = [
-  { label: 'Produção', path: '/restaurante/producao' },
-  { label: 'Bar', path: '/restaurante/bar' },
-];
-
-const SALAO_LINKS = [
-  { label: 'Salão', path: '/restaurante/salao' },
-  { label: 'Garçons', path: '/restaurante/garcons' },
-  { label: 'Impressoras', path: '/restaurante/impressoras' },
-];
-
 const RestauranteDashboard = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const pendentesMotoboy = useSolicitacoesMotoboyCount();
-  const tipoRestaurante = useTipoRestaurante();
-  const navLinks = [
-    ...LINKS.slice(0, 2), ...(tipoRestaurante ? COPA_LINK : []),
-    ...LINKS.slice(2, 6), ...(tipoRestaurante ? SALAO_LINKS : []),
-    ...LINKS.slice(6),
-  ];
 
   const [empresa, setEmpresa] = useState(null);
   const [statusAberto, setStatusAberto] = useState(false);
@@ -78,8 +37,6 @@ const RestauranteDashboard = () => {
   const [relFretes, setRelFretes] = useState(null);
   const [periodoFretes, setPeriodoFretes] = useState('hoje');
   const [showDetalheFretes, setShowDetalheFretes] = useState(false);
-  const [menuAberto, setMenuAberto] = useState(false);
-  const [sidebarAberto, setSidebarAberto] = useState(false);
   const [nomeOperador, setNomeOperador] = useState('');
   const [pedidosAbertos, setPedidosAbertos] = useState([]);
   const [comandasAbertas, setComandasAbertas] = useState([]);
@@ -343,45 +300,7 @@ const RestauranteDashboard = () => {
 
       <AlertasToast alertas={alertas} onDismiss={(id) => setAlertas((prev) => prev.filter((a) => a.id !== id))} />
 
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#18181B]">{empresa?.name ?? 'Meu Restaurante'}</h1>
-          <p className="text-sm text-[#71717A]">Painel Operacional</p>
-        </div>
-        {/* Desktop: hamburger abre menu lateral */}
-        <button onClick={() => setSidebarAberto(true)}
-          className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
-          <Icon name="Menu" size={18} /> Menu
-        </button>
-        {/* Mobile hamburger */}
-        <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]"
-          onClick={() => setMenuAberto((v) => !v)}>
-          <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
-        </button>
-      </header>
-
-      <RestauranteSidebar
-        open={sidebarAberto}
-        onClose={() => setSidebarAberto(false)}
-        links={navLinks}
-        activePath="/restaurante"
-        pendentesMotoboy={pendentesMotoboy}
-        slugLoja={empresa?.slug}
-        onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-      />
-
-      <AnimatePresence>
-        {menuAberto && (
-          <MobileMenu
-            links={navLinks}
-            currentPath="/restaurante"
-            pendentesMotoboy={pendentesMotoboy}
-            slugLoja={empresa?.slug}
-            onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
-            onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
-          />
-        )}
-      </AnimatePresence>
+      <RestauranteHeader active="/restaurante" title={empresa?.name ?? 'Meu Restaurante'} subtitle="Painel Operacional" />
 
       <main className="p-6 w-[95%] mx-auto space-y-5">
 
