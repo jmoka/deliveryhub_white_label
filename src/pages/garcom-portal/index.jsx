@@ -621,26 +621,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         <PagamentoParcial comanda={comanda} onRegistrado={carregar} podePagamentoParcial={podePagamentoParcial} />
       </div>
 
-      <div className={`p-4 bg-white border-t border-[#E4E4E7] ${!fechada ? 'fixed bottom-0 left-0 right-0' : ''}`}>
-        {!fechada && (
-          <>
-            <button onClick={() => setMostrarPicker(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
-              <Icon name="Plus" size={18} /> Adicionar produto
-            </button>
-            {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
-            <div className="flex gap-2">
-              <button onClick={enviar} disabled={!temPendente || enviando}
-                className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
-                {enviando ? 'Enviando...' : 'Enviar novos itens'}
-              </button>
-              <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0}
-                className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
-                Fechar comanda
-              </button>
-            </div>
-          </>
-        )}
+      {/* Resumo financeiro fica no fluxo normal da página (não fixo) — com desconto/acréscimo/
+          taxa de cartão/gorjeta ficou grande demais pra caber num rodapé fixo sem cobrir os
+          lançamentos e travar o scroll (o pb-24 do container não acompanhava a altura real). */}
+      <div className="px-4 pb-4">
         {(() => {
           // Gorjeta só vira valor definitivo quando o caixa fecha a conta (orders.gorjeta_valor).
           // Antes disso é só estimativa (gorjeta_sugestao) — não soma junto do saldo real do
@@ -704,6 +688,26 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           </button>
         )}
       </div>
+
+      {!fechada && (
+        <div className="p-4 bg-white border-t border-[#E4E4E7] fixed bottom-0 left-0 right-0">
+          <button onClick={() => setMostrarPicker(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
+            <Icon name="Plus" size={18} /> Adicionar produto
+          </button>
+          {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
+          <div className="flex gap-2">
+            <button onClick={enviar} disabled={!temPendente || enviando}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
+              {enviando ? 'Enviando...' : 'Enviar novos itens'}
+            </button>
+            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
+              Fechar comanda
+            </button>
+          </div>
+        </div>
+      )}
 
       {mostrarEditarCliente && (
         <EditarClienteModal comanda={comanda} onFechar={() => setMostrarEditarCliente(false)} onEditado={carregar} />
