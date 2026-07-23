@@ -3,7 +3,7 @@ import { getRelatorio } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro' };
+const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
 const STATUS_LABELS = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
 const STATUS_COLORS = { pending: 'bg-yellow-100 text-yellow-800', confirmed: 'bg-blue-100 text-blue-800', preparing: 'bg-orange-100 text-orange-800', ready: 'bg-purple-100 text-purple-800', out_for_delivery: 'bg-indigo-100 text-indigo-800', delivered: 'bg-green-100 text-green-800', canceled: 'bg-red-100 text-red-800' };
 

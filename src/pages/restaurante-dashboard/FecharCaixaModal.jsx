@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate = (d) => d ? new Date(d).toLocaleString('pt-BR') : '-';
 
-const PL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito' };
+const PL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', taxa_cartao: '+ Taxa cartão' };
 
 const Row = ({ label, value, bold, accent, muted }) => (
   <div className={`flex justify-between text-sm py-1.5 border-b border-[#F4F4F5] last:border-0 ${bold ? 'font-bold' : ''}`}>
@@ -164,7 +164,7 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
       {digitais.length > 0 && (
         <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-3">
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas digitais</p>
-          {digitais.map(([k, v]) => <Row key={k} label={PL[k] ?? k} value={fmt(v)} />)}
+          {digitais.map(([k, v]) => <Row key={k} label={PL[k] ?? k} value={fmt(v)} accent={k === 'taxa_cartao'} />)}
           <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
             <Row label="Total faturamento" value={fmt(r.total_vendas ?? 0)} bold />
           </div>

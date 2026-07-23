@@ -15,7 +15,7 @@ const endOf     = (d) => new Date(d + 'T23:59:59-03:00').toISOString();
 const lastDay   = (ym) => { const [y, m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
 const ANOS      = Array.from({ length: 4 }, (_, i) => String(new Date().getFullYear() - i));
 const MODOS     = [{ value: 'dia', label: 'Dia' }, { value: 'mes', label: 'Mês' }, { value: 'ano', label: 'Ano' }, { value: 'periodo', label: 'Período' }];
-const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro' };
+const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
 const PAYMENT_ICONS  = { pix: 'QrCode', credit_card: 'CreditCard', debit_card: 'CreditCard', cash: 'Banknote' };
 const PAYMENT_COLORS = { pix: 'border-blue-200 bg-blue-50 text-blue-800', credit_card: 'border-purple-200 bg-purple-50 text-purple-800', debit_card: 'border-indigo-200 bg-indigo-50 text-indigo-800', cash: 'border-green-200 bg-green-50 text-green-800' };
 const STATUS_LABELS  = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', motoboy_collecting: 'Motoboy', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };

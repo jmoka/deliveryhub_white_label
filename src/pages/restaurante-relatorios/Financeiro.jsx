@@ -4,7 +4,7 @@ import RelatorioNav from './RelatorioNav';
 import FiltroPeriodo from './FiltroPeriodo';
 import { fmt, buildRange, printIframe, reportBaseStyle, printFooterScript, defaultFiltroState } from '../../utils/relatorioPrint';
 
-const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro' };
+const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
 const ORIGEM_LABELS = { garcom: 'Garçom', estabelecimento: 'Caixa', delivery: 'Delivery' };
 
 const buildPrintHtml = (dados, restauranteNome, label) => {

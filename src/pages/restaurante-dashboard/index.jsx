@@ -16,8 +16,8 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const PAGAMENTO_LABEL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito' };
-const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_card: '💳' };
+const PAGAMENTO_LABEL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', taxa_cartao: '+ Taxa cartão' };
+const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_card: '💳', taxa_cartao: '➕' };
 
 const RestauranteDashboard = () => {
   const navigate = useNavigate();
