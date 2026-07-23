@@ -281,8 +281,7 @@ export const getSalaoComandas = () => apiFetch('/salao/comandas');
 export const getSalaoComandasFechadasHoje = () => apiFetch('/salao/comandas/fechadas-hoje');
 export const abrirComandaSalao = ({ mesa_id, cliente_nome, cliente_telefone }) =>
   apiFetch('/salao/comandas/abrir', { method: 'POST', body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone }) });
-export const venderDireto = (itens, forma_pagamento, valor_recebido) =>
-  apiFetch('/salao/venda-direta', { method: 'POST', body: JSON.stringify({ itens, forma_pagamento, valor_recebido }) });
+export const abrirVendaBalcao = () => apiFetch('/salao/venda-balcao/abrir', { method: 'POST' });
 export const getSalaoComandaDetalhe = (id) => apiFetch(`/salao/comandas/${id}`);
 export const aplicarDescontoComanda = (id, valor) =>
   apiFetch(`/salao/comandas/${id}/desconto`, { method: 'PATCH', body: JSON.stringify({ valor }) });

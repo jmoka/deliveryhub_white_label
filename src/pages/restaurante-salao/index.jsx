@@ -5,7 +5,7 @@ import {
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
-  editarPagamentoParcialSalao, removerPagamentoParcialSalao, venderDireto, reabrirComandaSalao,
+  editarPagamentoParcialSalao, removerPagamentoParcialSalao, abrirVendaBalcao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
   reimprimirReciboSalao,
 } from '../../services/restauranteService';
@@ -759,140 +759,341 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   );
 };
 
-// Venda direta no balcão — operador escolhe produtos e paga na hora, sem mesa/garçom.
-// Itens continuam indo pra fila de preparo normal (cozinha/bar).
-const VendaDiretaModal = ({ onFechar, onVendida }) => {
+// Venda balcão — comanda avulsa (sem mesa/cliente) com layout tipo PDV de mercado:
+// catálogo de produtos de um lado, carrinho + pagamento do outro. Reaproveita os
+// mesmos endpoints de comanda (itens, desconto/acréscimo, pagamento parcial,
+// pagar) — o cliente pode dividir o pagamento em pix + dinheiro + cartão na mesma
+// venda, cada parcela com sua própria taxa de cartão quando for o caso.
+const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
+  const [comanda, setComanda] = useState(null);
   const [produtos, setProdutos] = useState([]);
-  const [mostrarPicker, setMostrarPicker] = useState(false);
-  const [carrinho, setCarrinho] = useState([]);
+  const [busca, setBusca] = useState('');
+  const [categoria, setCategoria] = useState('todas');
+  const [produtoAtivo, setProdutoAtivo] = useState(null);
+
+  const [descontoInput, setDescontoInput] = useState('');
+  const [acrescimoInput, setAcrescimoInput] = useState('');
+  const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
+
+  const [valorPagamento, setValorPagamento] = useState('');
+  const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
+  const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
+
   const [forma, setForma] = useState('pix');
-  const [valorRecebido, setValorRecebido] = useState('');
+  const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
+
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
-  useEffect(() => { getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {}); }, []);
+  const carregar = useCallback(async () => {
+    const c = await getSalaoComandaDetalhe(comandaId);
+    setComanda(c);
+    setDescontoInput(String(c.desconto_valor ?? 0));
+    setAcrescimoInput(String(c.acrescimo_valor ?? 0));
+  }, [comandaId]);
 
-  const total = carrinho.reduce((acc, i) => acc + i.quantity * i.price, 0);
-  const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - total : null;
+  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {});
+    getConfig().then((c) => setTaxaCartaoPercentual(c.taxa_cartao_percentual ?? 0)).catch(() => {});
+  }, []);
 
-  const adicionar = (item) => {
-    const p = produtos.find((x) => x.id === item.product_id);
-    if (!p) return;
-    setCarrinho((c) => {
-      // Só junta com uma linha já existente do mesmo produto se nenhuma das duas
-      // tiver observação — item com observação vira linha própria pra não se perder.
-      const existente = !item.observacao ? c.find((i) => i.product_id === p.id && !i.observacao) : null;
-      if (existente) {
-        return c.map((i) => (i === existente ? { ...i, quantity: i.quantity + item.quantity } : i));
-      }
-      return [...c, { linhaId: `${p.id}-${Date.now()}-${Math.random()}`, product_id: p.id, name: p.name, price: p.price, quantity: item.quantity, observacao: item.observacao }];
-    });
-  };
+  const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 
-  const removerDoCarrinho = (linhaId) => setCarrinho((c) => c.filter((i) => i.linhaId !== linhaId));
-
-  const confirmar = async () => {
-    if (!carrinho.length) return;
-    if (forma === 'cash' && valorRecebido && Number(valorRecebido) < total) {
-      setErro('Valor recebido não pode ser menor que o total.');
-      return;
-    }
+  const acao = async (fn) => {
     setErro(null);
     setSalvando(true);
     try {
-      const res = await venderDireto(
-        carrinho.map((i) => ({ product_id: i.product_id, quantity: i.quantity, observacao: i.observacao })),
-        forma,
-        forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined,
-      );
-      if (res?.recibo?.via !== 'agente') {
-        printReciboCliente(
-          res, carrinho.map((i) => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price })),
-          { subtotal: total, total, formaPagamento: forma, trocoDado: Math.max(troco ?? 0, 0) },
-        );
-      }
-      onVendida();
+      await fn();
+      await carregar();
+      onMudou();
     } catch (err) {
-      setErro(err.message ?? 'Não foi possível concluir a venda.');
+      setErro(err.message);
     } finally {
       setSalvando(false);
     }
   };
 
+  const adicionar = (item) => acao(() => adicionarItensComandaSalao(comandaId, [item]));
+
+  const alterarQuantidade = (item, delta) => {
+    const novaQtd = item.quantity + delta;
+    if (novaQtd < 1) {
+      acao(() => removerItemComandaSalao(comandaId, item.id));
+      return;
+    }
+    acao(() => editarItemComandaSalao(comandaId, item.id, { quantity: novaQtd }));
+  };
+
+  const removerItem = (item) => acao(() => removerItemComandaSalao(comandaId, item.id));
+
+  const aplicarDesconto = () => acao(() => aplicarDescontoComanda(comandaId, Number(descontoInput || 0)));
+  const aplicarAcrescimo = () => acao(() => aplicarAcrescimoComanda(comandaId, Number(acrescimoInput || 0)));
+
+  const registrarPagamento = () => {
+    const v = Number(valorPagamento);
+    if (!v || v <= 0) return;
+    if (formaPagamentoParcial === 'cash' && valorRecebidoParcial && Number(valorRecebidoParcial) < v) {
+      setErro('Valor recebido não pode ser menor que o valor a pagar.');
+      return;
+    }
+    acao(async () => {
+      await registrarPagamentoParcialSalao(
+        comandaId, v, formaPagamentoParcial,
+        formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) : undefined,
+      );
+      setValorPagamento('');
+      setValorRecebidoParcial('');
+    });
+  };
+
+  const removerPagamento = (p) => {
+    if (!window.confirm('Remover este pagamento?')) return;
+    acao(() => removerPagamentoParcialSalao(comandaId, p.id));
+  };
+
+  const cancelar = () => {
+    if (!window.confirm('Cancelar esta venda?')) return;
+    acao(async () => { await cancelarComandaSalao(comandaId); onFechar(); });
+  };
+
+  const finalizar = () => {
+    if (forma === 'cash' && valorRecebidoFinal && Number(valorRecebidoFinal) < valorACobrarFinal) {
+      setErro('Valor recebido não pode ser menor que o valor a pagar.');
+      return;
+    }
+    acao(async () => {
+      const res = await pagarComandaSalao(
+        comandaId, forma, undefined,
+        forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
+      );
+      if (res?.recibo?.via !== 'agente') {
+        printReciboCliente(comanda, comanda.itens ?? [], {
+          subtotal,
+          desconto: Number(descontoInput || 0),
+          acrescimo: Number(acrescimoInput || 0),
+          taxaCartao: res?.taxa_cartao_valor ?? 0,
+          total: res?.valor_cobrado ?? res?.total ?? valorACobrarFinal,
+          formaPagamento: forma,
+          trocoDado: res?.troco ?? 0,
+          pagamentos: res?.pagamentos ?? [],
+        });
+      }
+      onFechar();
+    });
+  };
+
+  if (!comanda) return null;
+
+  const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
+  const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
+  const saldo = comanda.saldo?.saldo ?? totalFinal;
+  const taxaCartaoValorFinal = isCartao(forma) ? parseFloat((saldo * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
+  const valorACobrarFinal = parseFloat((saldo + taxaCartaoValorFinal).toFixed(2));
+  const trocoFinal = forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) - valorACobrarFinal : null;
+  const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
+  const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
+
+  const categorias = ['todas', ...new Set(produtos.map((p) => p.category_name ?? 'Outros'))];
+  const produtosFiltrados = produtos.filter((p) => {
+    const bateBusca = p.name.toLowerCase().includes(busca.toLowerCase());
+    const bateCategoria = categoria === 'todas' || (p.category_name ?? 'Outros') === categoria;
+    return bateBusca && bateCategoria;
+  });
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4" onClick={onFechar}>
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-base font-bold text-[#18181B] mb-3">Venda direta (balcão)</h2>
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7] flex-shrink-0">
+        <h2 className="text-base font-bold text-[#18181B]">Venda balcão</h2>
+        <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="X" size={22} /></button>
+      </div>
 
-        <button onClick={() => setMostrarPicker(true)}
-          className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2">
-          <Icon name="Plus" size={16} /> Adicionar produto
-        </button>
-
-        {mostrarPicker && (
-          <ProdutoPickerModal
-            produtos={produtos}
-            onFechar={() => setMostrarPicker(false)}
-            onAdicionado={async (item) => { adicionar(item); setMostrarPicker(false); }}
-          />
-        )}
-
-        <div className="space-y-1 mb-3">
-          {carrinho.map((i) => (
-            <div key={i.linhaId} className="flex justify-between items-center text-sm gap-2">
-              <div className="min-w-0">
-                <span className="truncate block">{i.quantity}x {i.name}</span>
-                {i.observacao && <span className="text-[10px] text-amber-600 block truncate">Obs: {i.observacao}</span>}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span>{fmt(i.quantity * i.price)}</span>
-                <button onClick={() => removerDoCarrinho(i.linhaId)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
-                  <Icon name="X" size={11} />
+      <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">
+        {/* Catálogo — busca + categorias + grade de produtos, igual PDV de mercado */}
+        <div className="flex-1 flex flex-col overflow-hidden border-b sm:border-b-0 sm:border-r border-[#E4E4E7] min-h-[45%] sm:min-h-0">
+          <div className="p-3 border-b border-[#E4E4E7] flex-shrink-0">
+            <div className="relative">
+              <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
+              <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..."
+                className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            </div>
+            <div className="flex gap-1.5 mt-2 overflow-x-auto pb-1">
+              {categorias.map((c) => (
+                <button key={c} onClick={() => setCategoria(c)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                    categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
+                  }`}>
+                  {c === 'todas' ? 'Todas' : c}
                 </button>
-              </div>
+              ))}
             </div>
-          ))}
-          {carrinho.length === 0 && <p className="text-xs text-[#A1A1AA] text-center py-3">Carrinho vazio.</p>}
-        </div>
-
-        <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
-          <div className="flex justify-between text-base font-bold text-[#18181B]">
-            <span>Total</span><span>{fmt(total)}</span>
           </div>
-          <label className="text-xs text-[#71717A]">Forma de pagamento</label>
-          <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
-            <option value="pix">PIX</option>
-            <option value="credit_card">Cartão de crédito</option>
-            <option value="debit_card">Cartão de débito</option>
-            <option value="cash">Dinheiro</option>
-          </select>
-          {forma === 'cash' && (
-            <div className="flex items-center gap-1.5">
-              <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
-                placeholder="Valor recebido do cliente"
-                className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
-              {troco !== null && (
-                <span className={`text-sm font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
-                  Troco: {fmt(Math.max(troco, 0))}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 content-start">
+            {produtosFiltrados.map((p) => (
+              <button key={p.id} onClick={() => setProdutoAtivo(p)} disabled={salvando}
+                className="bg-white border border-[#E4E4E7] rounded-xl p-2 text-left active:scale-[0.98] transition-transform disabled:opacity-50">
+                <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#F4F4F5] mb-1.5">
+                  {p.image_url
+                    ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
+                </div>
+                <p className="text-xs font-semibold text-[#18181B] truncate">{p.name}</p>
+                <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+              </button>
+            ))}
+            {produtosFiltrados.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}
+          </div>
         </div>
 
-        {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
+        {/* Carrinho + pagamento */}
+        <div className="w-full sm:max-w-md lg:max-w-lg flex flex-col overflow-y-auto p-4 flex-shrink-0">
+          <p className="text-xs font-semibold text-[#71717A] mb-2">Itens incluídos</p>
+          <div className="space-y-1 mb-3">
+            {(comanda.itens ?? []).map((item) => (
+              <div key={item.id} className="flex justify-between items-center text-sm gap-2">
+                <span className="truncate min-w-0">{item.quantity}x {item.products?.name}</span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span>{fmt(item.quantity * item.unit_price)}</span>
+                  <button onClick={() => alterarQuantidade(item, -1)} disabled={salvando} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center disabled:opacity-40">−</button>
+                  <button onClick={() => alterarQuantidade(item, 1)} disabled={salvando} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center disabled:opacity-40">+</button>
+                  <button onClick={() => removerItem(item)} disabled={salvando} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center disabled:opacity-40">
+                    <Icon name="X" size={11} />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {(comanda.itens ?? []).length === 0 && <p className="text-xs text-[#A1A1AA] text-center py-3">Carrinho vazio — clique num produto ao lado.</p>}
+          </div>
 
-        <div className="flex gap-2 mt-4">
-          <button onClick={onFechar} disabled={salvando}
-            className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
-            Cancelar
-          </button>
-          <button onClick={confirmar} disabled={salvando || carrinho.length === 0}
-            className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
-            {salvando ? 'Processando...' : 'Confirmar venda'}
-          </button>
+          <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
+            <div className="flex justify-between text-sm"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
+            <div className="flex justify-between items-center text-sm gap-2">
+              <span>Desconto</span>
+              <input type="number" value={descontoInput} onChange={(e) => setDescontoInput(e.target.value)}
+                className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1 text-right text-sm" />
+              <button onClick={aplicarDesconto} className="text-xs text-[#FF441F] font-bold flex-shrink-0">Aplicar</button>
+            </div>
+            <div className="flex justify-between items-center text-sm gap-2">
+              <span>Acréscimo</span>
+              <input type="number" value={acrescimoInput} onChange={(e) => setAcrescimoInput(e.target.value)}
+                className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1 text-right text-sm" />
+              <button onClick={aplicarAcrescimo} className="text-xs text-[#FF441F] font-bold flex-shrink-0">Aplicar</button>
+            </div>
+            <div className="flex justify-between text-base font-bold text-[#18181B]">
+              <span>Total</span><span>{fmt(totalFinal)}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-[#71717A]">Saldo devedor</span>
+              <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>{fmt(saldo)}</strong>
+            </div>
+            {(comanda.pagamentos ?? []).length > 0 && (
+              <div className="space-y-1">
+                {comanda.pagamentos.map((p) => (
+                  <div key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
+                    <span>
+                      {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}
+                      {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
+                      <button onClick={() => removerPagamento(p)} className="w-5 h-5 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center">
+                        <Icon name="X" size={11} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <input type="number" value={valorPagamento} onChange={(e) => setValorPagamento(e.target.value)} placeholder="Valor"
+                className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+              <select value={formaPagamentoParcial} onChange={(e) => setFormaPagamentoParcial(e.target.value)}
+                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+                <option value="pix">PIX</option>
+                <option value="credit_card">Cartão de crédito</option>
+                <option value="debit_card">Cartão de débito</option>
+                <option value="cash">Dinheiro</option>
+              </select>
+              <button onClick={registrarPagamento} disabled={!valorPagamento || salvando}
+                className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
+                Adicionar pagamento
+              </button>
+            </div>
+            {taxaCartaoValorParcial > 0 && (
+              <p className="text-[11px] text-[#FF441F] font-medium">
+                + taxa cartão ({taxaCartaoPercentual}%): {fmt(taxaCartaoValorParcial)} — cobrar {fmt(Number(valorPagamento || 0) + taxaCartaoValorParcial)}
+              </p>
+            )}
+            {formaPagamentoParcial === 'cash' && (
+              <div className="flex items-center gap-1.5">
+                <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
+                  placeholder="Valor recebido do cliente"
+                  className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+                {trocoParcial !== null && (
+                  <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                    Troco: {fmt(Math.max(trocoParcial, 0))}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+            <label className="text-xs text-[#71717A]">Forma de pagamento (fechamento)</label>
+            <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+              <option value="pix">PIX</option>
+              <option value="credit_card">Cartão de crédito</option>
+              <option value="debit_card">Cartão de débito</option>
+              <option value="cash">Dinheiro</option>
+            </select>
+            {taxaCartaoValorFinal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A]">Taxa cartão ({taxaCartaoPercentual}%)</span>
+                <span className="text-[#FF441F]">+ {fmt(taxaCartaoValorFinal)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-base font-bold text-[#18181B]">
+              <span>Falta pagar</span><span>{fmt(valorACobrarFinal)}</span>
+            </div>
+            {forma === 'cash' && (
+              <div className="flex items-center gap-1.5">
+                <input type="number" value={valorRecebidoFinal} onChange={(e) => setValorRecebidoFinal(e.target.value)}
+                  placeholder="Valor recebido do cliente"
+                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+                {trocoFinal !== null && (
+                  <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                    Troco: {fmt(Math.max(trocoFinal, 0))}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
+
+          <div className="flex gap-2 mt-4">
+            <button onClick={cancelar} disabled={salvando}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
+              Cancelar venda
+            </button>
+            <button onClick={finalizar} disabled={salvando || (comanda.itens ?? []).length === 0}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+              {salvando ? 'Processando...' : 'Finalizar venda'}
+            </button>
+          </div>
         </div>
       </div>
+
+      {produtoAtivo && (
+        <QuickAddProdutoModal
+          produto={produtoAtivo}
+          onFechar={() => setProdutoAtivo(null)}
+          onConfirmar={async (item) => { await adicionar(item); setProdutoAtivo(null); }}
+        />
+      )}
     </div>
   );
 };
@@ -907,7 +1108,7 @@ const RestauranteSalao = () => {
   const [filtroValorMin, setFiltroValorMin] = useState('');
   const [comandaAtiva, setComandaAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mostrarVendaDireta, setMostrarVendaDireta] = useState(false);
+  const [vendaBalcaoId, setVendaBalcaoId] = useState(null);
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [erro, setErro] = useState(null);
   const [avisoConferencia, setAvisoConferencia] = useState(null);
@@ -978,9 +1179,9 @@ const RestauranteSalao = () => {
 
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex justify-end mb-4">
-          <button onClick={() => setMostrarVendaDireta(true)}
+          <button onClick={() => acaoMesa(async () => { const c = await abrirVendaBalcao(); setVendaBalcaoId(c.id); })}
             className="flex items-center gap-1.5 px-3 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
-            <Icon name="ShoppingCart" size={15} /> Venda direta (balcão)
+            <Icon name="ShoppingCart" size={15} /> Venda balcão
           </button>
         </div>
 
@@ -1113,10 +1314,11 @@ const RestauranteSalao = () => {
         <ComandaModal comandaId={comandaAtiva} mesas={mesas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
       )}
 
-      {mostrarVendaDireta && (
-        <VendaDiretaModal
-          onFechar={() => setMostrarVendaDireta(false)}
-          onVendida={() => { setMostrarVendaDireta(false); carregar(); }}
+      {vendaBalcaoId && (
+        <VendaBalcaoModal
+          comandaId={vendaBalcaoId}
+          onFechar={() => { setVendaBalcaoId(null); carregar(); }}
+          onMudou={carregar}
         />
       )}
 
