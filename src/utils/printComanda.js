@@ -57,6 +57,101 @@ document.head.appendChild(s);
   printIframe(html, `motoboy-frame-${pedido.id}-${Date.now()}`);
 };
 
+// Cartaz A4 pra fixar tipo poster no salão — QR grande, logo, nome e frase de chamada.
+export const printCartazCardapioDigital = (qrUrl, nomeRestaurante, logoUrl) => {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio Digital - ${nomeRestaurante ?? ''}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@page{size:A4;margin:0}
+body{font-family:'Segoe UI',Arial,sans-serif;width:210mm;height:297mm;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;color:#18181B;padding:20mm}
+.logo{max-width:120px;max-height:120px;object-fit:contain;margin-bottom:16px;border-radius:16px}
+.nome{font-size:40px;font-weight:900;text-align:center;letter-spacing:-1px;margin-bottom:6px;word-break:break-word}
+.badge{background:#FF441F;color:#fff;font-size:16px;font-weight:800;letter-spacing:3px;padding:8px 24px;border-radius:999px;text-transform:uppercase;margin-bottom:36px}
+.qrbox{border:4px solid #18181B;border-radius:32px;padding:24px;margin-bottom:32px}
+.qrbox img{display:block;width:340px;height:340px}
+.frase{font-size:22px;font-weight:700;text-align:center;max-width:480px;color:#27272A;line-height:1.4}
+.sub{font-size:15px;color:#71717A;margin-top:14px;text-align:center}
+@media print{button{display:none!important}}
+</style></head><body>
+${logoUrl ? `<img class="logo" src="${logoUrl}" />` : ''}
+<div class="nome">${nomeRestaurante ?? 'Nosso Restaurante'}</div>
+<div class="badge">Cardápio Digital</div>
+<div class="qrbox"><img src="${qrUrl}" width="340" height="340" alt="QR code cardápio" /></div>
+<div class="frase">Escaneie e descubra sabores que valem a viagem até a mesa.</div>
+<div class="sub">Aponte a câmera do celular para o QR code acima</div>
+<script>
+window.addEventListener('load', function(){
+  window.print();
+  setTimeout(function(){ try{ window.frameElement.parentNode.removeChild(window.frameElement) }catch(e){} }, 500);
+});
+</script>
+</body></html>`;
+
+  const frameId = `cartaz-cardapio-frame-${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.id = frameId;
+  iframe.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe);
+
+  try {
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+  } catch {
+    iframe.remove();
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+};
+
+// Ticket pra impressora térmica — QR pequeno pra entregar ao cliente na mesa/balcão.
+export const printTicketCardapioDigital = (qrUrl, nomeRestaurante, logoUrl) => {
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio Digital</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:13px;padding:12px;color:#000;max-width:300px;margin:0 auto}
+.center{text-align:center;display:block}
+.logo{max-width:70px;max-height:70px;object-fit:contain;display:block;margin:0 auto 6px}
+.rest{font-size:16px;font-weight:900;text-align:center;margin-bottom:2px}
+.badge{font-size:11px;letter-spacing:2px;text-align:center;font-weight:700;margin-bottom:8px}
+hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.qr{display:block;margin:6px auto}
+.frase{font-size:12px;text-align:center;margin-top:8px;font-weight:600;line-height:1.4}
+@media print{button{display:none!important}}
+</style></head><body>
+${logoUrl ? `<img class="logo" src="${logoUrl}" />` : ''}
+<div class="rest">${nomeRestaurante ?? 'RESTAURANTE'}</div>
+<div class="badge">CARDÁPIO DIGITAL</div>
+<hr/>
+<img class="qr" src="${qrUrl}" width="180" height="180" alt="QR code cardápio" />
+<div class="frase">Escaneie e confira nosso cardápio completo!</div>
+<hr/>
+<div class="center" style="font-size:10px;margin-top:4px">Obrigado pela visita</div>
+<script>
+window.addEventListener('load', function(){
+  window.print();
+  setTimeout(function(){ try{ window.frameElement.parentNode.removeChild(window.frameElement) }catch(e){} }, 500);
+});
+</script>
+</body></html>`;
+
+  const frameId = `ticket-cardapio-frame-${Date.now()}`;
+  const iframe = document.createElement('iframe');
+  iframe.id = frameId;
+  iframe.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe);
+
+  try {
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+  } catch {
+    iframe.remove();
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+};
+
 export const barcodeValue = (id) => String(id).padStart(8, '0');
 
 export const getPrinterName = () => localStorage.getItem('kitchen_printer_name') ?? '';
