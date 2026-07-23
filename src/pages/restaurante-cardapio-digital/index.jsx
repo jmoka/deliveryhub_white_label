@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { getMinhaEmpresa } from '../../services/restauranteService';
+import { printCartazCardapioDigital, printTicketCardapioDigital } from '../../utils/printComanda';
 
 // Roda em localhost só o próprio PC alcança — celular do cliente escaneando o QR na
 // mesa precisa do IP de rede (VITE_LAN_URL), mesmo esquema do QR de acompanhamento
@@ -20,6 +22,13 @@ const RestauranteCardapioDigital = () => {
   const slugLoja = useMinhaLojaSlug();
   const [copiado, setCopiado] = useState(false);
   const [modo, setModo] = useState('online'); // 'online' | 'local'
+
+  // Busca a empresa na hora do clique (não guarda em state) — evita imprimir sem
+  // logo quando o botão é clicado antes do fetch inicial da tela terminar.
+  const imprimirComLogo = async (imprimirFn, qrUrl) => {
+    const d = await getMinhaEmpresa().catch(() => null);
+    imprimirFn(qrUrl, d?.empresa?.name, d?.empresa?.logo_url);
+  };
 
   const copiarLink = async (url) => {
     try {
@@ -79,6 +88,25 @@ const RestauranteCardapioDigital = () => {
                 className="mt-2 text-xs font-semibold text-[#FF441F] hover:underline">
                 Baixar QR code (PNG)
               </a>
+
+              <div className="flex gap-2 mt-4 w-full border-t border-[#E4E4E7] pt-4">
+                <button
+                  onClick={() => imprimirComLogo(
+                    printCartazCardapioDigital,
+                    `https://api.qrserver.com/v1/create-qr-code/?size=340x340&data=${encodeURIComponent(urlAtiva)}`,
+                  )}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]">
+                  <Icon name="Printer" size={15} /> Cartaz A4
+                </button>
+                <button
+                  onClick={() => imprimirComLogo(
+                    printTicketCardapioDigital,
+                    `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(urlAtiva)}`,
+                  )}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]">
+                  <Icon name="Printer" size={15} /> Ticket térmico
+                </button>
+              </div>
             </div>
           );
         })()}
