@@ -291,6 +291,8 @@ const RestauranteCozinha = () => {
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
   const firstLoad = useRef(true);
+  const prevSalaoItemIds = useRef(new Set());
+  const firstLoadSalao = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
 
   const anunciarNovoPedido = useCallback((qtd) => {
@@ -364,7 +366,16 @@ const RestauranteCozinha = () => {
       const listas = await Promise.all(
         impressoras.map((imp) => getItens(imp.id).then((r) => r.itens ?? [])),
       );
-      setItensSalao(listas.flat());
+      const itens = listas.flat();
+
+      if (!firstLoadSalao.current) {
+        const novos = itens.filter((i) => !prevSalaoItemIds.current.has(i.id));
+        if (novos.length > 0) { tocarSom(); anunciarNovoPedido(novos.length); }
+      }
+      prevSalaoItemIds.current = new Set(itens.map((i) => i.id));
+      firstLoadSalao.current = false;
+
+      setItensSalao(itens);
     } catch {
       // silencioso — não quebra a tela principal de delivery por causa do salão
     }
