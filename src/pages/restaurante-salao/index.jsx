@@ -283,7 +283,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
         desconto: Number(descontoInput || 0),
         acrescimo: Number(acrescimoInput || 0),
         gorjeta: Number(gorjeta || 0),
-        taxaCartao: taxaCartaoValorFinal,
+        taxaCartao: taxaCartaoTotalExibida,
         formaPagamento: forma,
       };
       const res = await imprimirConferenciaSalao(comandaId, valores);
@@ -414,6 +414,11 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + Number(gorjeta || 0)).toFixed(2));
   const taxaCartaoValorFinal = isCartao(forma) ? parseFloat((valorACobrarFinalBase * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const valorACobrarFinal = parseFloat((valorACobrarFinalBase + taxaCartaoValorFinal).toFixed(2));
+  // Taxa de cartão de pagamentos parciais já registrados (ex: garçom cobrou parte no cartão
+  // antes do fechamento) — soma no "Total (comanda + gorjeta)" e na impressão de conferência,
+  // que antes só contavam a taxa da forma de pagamento selecionada agora pro fechamento.
+  const taxaCartaoRegistrada = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor || 0), 0);
+  const taxaCartaoTotalExibida = taxaCartaoValorFinal + taxaCartaoRegistrada;
   const trocoFinal = forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) - valorACobrarFinal : null;
   const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
@@ -702,15 +707,15 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
               <span className="text-[#71717A]">Gorjeta</span>
               <span className="text-[#18181B]">{fmt(Number(gorjeta || 0))}</span>
             </div>
-            {taxaCartaoValorFinal > 0 && (
+            {taxaCartaoTotalExibida > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Taxa cartão ({taxaCartaoPercentual}%)</span>
-                <span className="text-[#FF441F]">+ {fmt(taxaCartaoValorFinal)}</span>
+                <span className="text-[#71717A]">Taxa cartão</span>
+                <span className="text-[#FF441F]">+ {fmt(taxaCartaoTotalExibida)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
-              <span>Total (comanda + gorjeta{taxaCartaoValorFinal > 0 ? ' + taxa' : ''})</span>
-              <span>{fmt(totalFinal + Number(gorjeta || 0) + taxaCartaoValorFinal)}</span>
+              <span>Total (comanda + gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
+              <span>{fmt(totalFinal + Number(gorjeta || 0) + taxaCartaoTotalExibida)}</span>
             </div>
             {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
               <>
@@ -719,7 +724,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
                   <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
-                  <span>Falta pagar (com gorjeta{taxaCartaoValorFinal > 0 ? ' + taxa' : ''})</span>
+                  <span>Falta pagar (com gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
                   <span>{fmt(valorACobrarFinal)}</span>
                 </div>
               </>
