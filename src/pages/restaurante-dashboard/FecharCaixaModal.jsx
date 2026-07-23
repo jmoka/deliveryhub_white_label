@@ -129,6 +129,8 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
   const saidasEspecie   = r.saidas_especie ?? 0;
   const especieCalc     = r.especie_calculada ?? Math.max(0, (valorInicial ?? 0) + vendasDinheiro - saidasEspecie);
   const digitais        = Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash');
+  const totalDigital    = digitais.reduce((s, [, v]) => s + v, 0);
+  const totalFaturamento = vendasDinheiro + totalDigital;
 
   const contadoVal = parseFloat(dinheiroContado) || 0;
   const diferenca  = contadoVal - especieCalc;
@@ -166,10 +168,15 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas digitais</p>
           {digitais.map(([k, v]) => <Row key={k} label={PL[k] ?? k} value={fmt(v)} accent={k === 'taxa_cartao'} />)}
           <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
-            <Row label="Total faturamento" value={fmt(r.total_vendas ?? 0)} bold />
+            <Row label="Total digital" value={fmt(totalDigital)} bold />
           </div>
         </div>
       )}
+
+      {/* Total geral (dinheiro + digital) */}
+      <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-3">
+        <Row label="Total faturamento (dinheiro + digital)" value={fmt(totalFaturamento)} bold accent />
+      </div>
 
       {/* Contagem do operador */}
       <div className="mb-3">
