@@ -295,6 +295,18 @@ const RestauranteCozinha = () => {
   const firstLoadSalao = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
 
+  // Chrome pausa a fila do speechSynthesis sozinho depois de ~15s sem falar nada —
+  // como a tela da cozinha fica ligada horas entre um pedido e outro, sem esse
+  // keep-alive a voz para de sair silenciosamente (só o bipe continua, que é Web Audio).
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    const keepAlive = setInterval(() => {
+      if (synth.paused) synth.resume();
+    }, 10000);
+    return () => clearInterval(keepAlive);
+  }, []);
+
   const anunciarNovoPedido = useCallback((qtd) => {
     try {
       const synth = window.speechSynthesis;
@@ -302,6 +314,7 @@ const RestauranteCozinha = () => {
       const texto = qtd > 1 ? `${qtd} novos pedidos aguardando preparo` : 'Novo pedido aguardando preparo';
       const utter = new SpeechSynthesisUtterance(texto);
       utter.lang = 'pt-BR';
+      synth.cancel(); // limpa fila travada/pausada antes de falar de novo
       synth.speak(utter);
     } catch {}
   }, []);
