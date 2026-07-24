@@ -822,7 +822,16 @@ const RestauranteFechado = () => (
 // Fila de preparo do restaurante inteiro (não só as comandas do garçom logado) — pra
 // ele responder o cliente presencial "quantos faltam antes do meu" e "quanto tempo
 // em média demora", sem precisar ir até a cozinha.
-const FilaCozinha = ({ itens, tempoMedioPreparoSegundos }) => {
+const TempoMedioTile = ({ label, segundos }) => (
+  <div className="bg-white rounded-xl border border-[#E4E4E7] p-2 text-center">
+    <p className="text-[10px] text-[#71717A]">{label}</p>
+    <p className="text-base font-black text-[#18181B]">
+      {segundos != null ? formatDuracao(segundos * 1000) : '—'}
+    </p>
+  </div>
+);
+
+const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundos, tempoMedioGeralSegundos }) => {
   const now = useNowTick();
   const preparando = itens.filter((i) => i.status === 'preparando');
   const aguardando = itens.filter((i) => i.status === 'enviado');
@@ -841,11 +850,10 @@ const FilaCozinha = ({ itens, tempoMedioPreparoSegundos }) => {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="bg-white rounded-xl border border-[#E4E4E7] p-3 text-center">
-        <p className="text-xs text-[#71717A]">Tempo médio de preparo hoje</p>
-        <p className="text-lg font-black text-[#18181B]">
-          {tempoMedioPreparoSegundos != null ? formatDuracao(tempoMedioPreparoSegundos * 1000) : 'Sem dados ainda'}
-        </p>
+      <div className="grid grid-cols-3 gap-2">
+        <TempoMedioTile label="Espera média" segundos={tempoMedioEsperaSegundos} />
+        <TempoMedioTile label="Preparo médio" segundos={tempoMedioPreparoSegundos} />
+        <TempoMedioTile label="Total médio" segundos={tempoMedioGeralSegundos} />
       </div>
 
       <div>
@@ -875,7 +883,9 @@ const GarcomHome = () => {
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [aba, setAba] = useState('mesas');
-  const [filaCozinha, setFilaCozinha] = useState({ itens: [], tempoMedioPreparoSegundos: null });
+  const [filaCozinha, setFilaCozinha] = useState({
+    itens: [], tempoMedioEsperaSegundos: null, tempoMedioPreparoSegundos: null, tempoMedioGeralSegundos: null,
+  });
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1043,7 +1053,12 @@ const GarcomHome = () => {
           {mesas.length === 0 && <p className="col-span-3 text-sm text-[#A1A1AA] text-center py-6">Nenhuma mesa cadastrada.</p>}
         </div>
       ) : aba === 'cozinha' ? (
-        <FilaCozinha itens={filaCozinha.itens} tempoMedioPreparoSegundos={filaCozinha.tempoMedioPreparoSegundos} />
+        <FilaCozinha
+          itens={filaCozinha.itens}
+          tempoMedioEsperaSegundos={filaCozinha.tempoMedioEsperaSegundos}
+          tempoMedioPreparoSegundos={filaCozinha.tempoMedioPreparoSegundos}
+          tempoMedioGeralSegundos={filaCozinha.tempoMedioGeralSegundos}
+        />
       ) : (
         <div className="p-4 space-y-2">
           {comandas.map((c) => (
