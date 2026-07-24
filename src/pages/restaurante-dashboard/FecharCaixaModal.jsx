@@ -126,8 +126,10 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
   const vendasDinheiro  = r.por_pagamento?.cash ?? 0;
   const saidasEspecie   = r.saidas_especie ?? 0;
   const especieCalc     = r.especie_calculada ?? Math.max(0, (valorInicial ?? 0) + vendasDinheiro - saidasEspecie);
-  const digitais        = Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash');
-  const totalDigital    = digitais.reduce((s, [, v]) => s + v, 0);
+  // Taxa de cartão some daqui (mostrada junto de cada forma abaixo, não como linha solta).
+  const digitais        = Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash' && k !== 'taxa_cartao');
+  const taxaPorForma     = r.taxa_por_forma ?? {};
+  const totalDigital    = digitais.reduce((s, [, v]) => s + v, 0) + Object.values(taxaPorForma).reduce((s, v) => s + v, 0);
   const totalFaturamento = vendasDinheiro + totalDigital;
 
   const contadoVal = parseFloat(dinheiroContado) || 0;
@@ -164,7 +166,26 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
       {digitais.length > 0 && (
         <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-3">
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas digitais</p>
-          {digitais.map(([k, v]) => <Row key={k} label={PL[k] ?? k} value={fmt(v)} accent={k === 'taxa_cartao'} />)}
+          {digitais.map(([k, v]) => {
+            const taxa = taxaPorForma[k] ?? 0;
+            if (taxa <= 0) return <Row key={k} label={PL[k] ?? k} value={fmt(v)} />;
+            return (
+              <div key={k} className="py-1.5 border-b border-[#F4F4F5] last:border-0">
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A]">{PL[k] ?? k}</span>
+                  <span className="text-[#18181B]">{fmt(v)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-[#A1A1AA]">+ Taxa cartão</span>
+                  <span className="text-[#A1A1AA]">{fmt(taxa)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold">
+                  <span className="text-[#18181B]">= Total {PL[k] ?? k}</span>
+                  <span className="text-[#18181B]">{fmt(v + taxa)}</span>
+                </div>
+              </div>
+            );
+          })}
           <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
             <Row label="Total digital" value={fmt(totalDigital)} bold />
           </div>
