@@ -17,7 +17,7 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
   const [novoOperador, setNovoOperador] = useState('');
   const [novoValor, setNovoValor] = useState('');
   const [modoTransf, setModoTransf] = useState(false);
-  const totalPendencias = pedidosAbertos.length + comandasAbertas.length;
+  const totalPendencias = pedidosAbertos.length + comandasAbertas.length + mesasAbertas.length;
 
   if (modoTransf) return (
     <>
@@ -96,9 +96,7 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
         </div>
       )}
       <p className="text-xs text-[#71717A] mb-3 text-center">
-        {mesasAbertas.length > 0 && totalPendencias === 0
-          ? 'Libere a(s) mesa(s) manualmente antes de fechar o caixa.'
-          : 'Resolva os pedidos/comandas, transfira para um novo operador, ou feche deixando essas comandas pendentes (fiado).'}
+        Resolva os pedidos/comandas, transfira para um novo operador, ou feche liberando as mesas e deixando as comandas pendentes (fiado).
       </p>
       <div className="flex gap-2 mb-2">
         <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">Cancelar</button>
@@ -109,10 +107,10 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
       {totalPendencias > 0 && (
         <>
           <button onClick={onFecharComPendencia} className="w-full py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
-            Fechar mesmo assim (deixar pendente)
+            Fechar mesmo assim (liberar mesas, deixar pendente)
           </button>
           <p className="text-[10px] text-[#A1A1AA] mt-1.5 text-center">
-            As comandas/mesas em aberto continuam ativas e serão cobradas no próximo caixa que estiver aberto quando o cliente pagar.
+            As mesas ocupadas são liberadas pro próximo cliente. As comandas continuam ativas e serão cobradas no próximo caixa que estiver aberto quando o cliente pagar.
           </p>
         </>
       )}
@@ -217,7 +215,7 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
       {comPendencias && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 mb-3">
           <p className="text-xs text-amber-700 text-center">
-            Fechando com comandas/mesas pendentes — elas continuam ativas e serão cobradas no próximo caixa aberto.
+            Fechando com pendências — mesas ocupadas serão liberadas e as comandas continuam ativas, cobradas no próximo caixa aberto.
           </p>
         </div>
       )}
