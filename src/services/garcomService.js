@@ -50,6 +50,7 @@ export const getMesas = () => garcomFetch('/mesas');
 export const getProdutos = () => garcomFetch('/produtos');
 export const getMinhasComandas = () => garcomFetch('/comandas');
 export const getItensProntos = () => garcomFetch('/itens-prontos');
+export const getFilaCozinha = () => garcomFetch('/fila-cozinha');
 export const getComanda = (id) => garcomFetch(`/comandas/${id}`);
 
 export const abrirComanda = ({ mesa_id, cliente_nome, cliente_telefone }) =>
