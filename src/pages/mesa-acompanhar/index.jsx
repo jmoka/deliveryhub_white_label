@@ -4,8 +4,11 @@ import { getAcompanhamento, solicitarConferencia } from '../../services/mesaAcom
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
+import TempoMedioTile from '../../components/TempoMedioTile';
 
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const STATUS_ITEM_LABEL = { pendente: 'Anotado', enviado: 'Em preparo', pronto: 'Pronto' };
+const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 const STATUS_COMANDA_LABEL = {
   aberta: 'Em andamento',
   fechada_garcom: 'Aguardando pagamento no caixa',
@@ -68,12 +71,20 @@ const MesaAcompanhar = () => {
             <Icon name="UtensilsCrossed" size={26} className="text-[#FF441F]" />
           </div>
           <h1 className="text-lg font-black text-[#18181B]">{dados.restaurante}</h1>
-          {dados.mesa && <p className="text-sm text-[#71717A]">{dados.mesa}</p>}
+          <p className="text-sm text-[#71717A]">
+            {dados.mesa}{dados.mesa && dados.numero_comanda ? ' — ' : ''}{dados.numero_comanda ? `Comanda #${dados.numero_comanda}` : ''}
+          </p>
         </div>
 
         <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3 text-center">
           <p className="text-xs text-[#71717A]">Status</p>
           <p className="text-base font-bold text-[#18181B]">{STATUS_COMANDA_LABEL[dados.status] ?? dados.status}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <TempoMedioTile label="Espera média" segundos={dados.tempoMedioEsperaSegundos} />
+          <TempoMedioTile label="Preparo médio" segundos={dados.tempoMedioPreparoSegundos} />
+          <TempoMedioTile label="Total médio" segundos={dados.tempoMedioGeralSegundos} />
         </div>
 
         <div className="space-y-2">
@@ -90,6 +101,12 @@ const MesaAcompanhar = () => {
                     {STATUS_ITEM_LABEL[item.status] ?? item.status}
                   </span>
                 </div>
+                <p className="text-xs text-[#71717A] mt-0.5">{fmt(item.unit_price)} un. · {fmt(item.subtotal)}</p>
+                {item.posicao_fila && (
+                  <p className="text-[11px] text-[#71717A] mt-1">
+                    {item.posicao_fila}º {item.status === 'preparando' ? 'em preparo' : 'na fila pra entrar em preparo'}
+                  </p>
+                )}
                 {enviadoEm && item.status !== 'pronto' && (
                   <p className="text-[11px] text-[#71717A] font-mono mt-1 flex items-center gap-1">
                     <Icon name="Clock" size={11} /> preparando há {formatDuracao(tempoPreparo)}
@@ -99,6 +116,55 @@ const MesaAcompanhar = () => {
             );
           })}
         </div>
+
+        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mt-3 space-y-1.5">
+          <div className="flex justify-between text-sm text-[#71717A]">
+            <span>Subtotal</span><span>{fmt(dados.subtotal)}</span>
+          </div>
+          {dados.desconto > 0 && (
+            <div className="flex justify-between text-sm text-emerald-600">
+              <span>Desconto</span><span>-{fmt(dados.desconto)}</span>
+            </div>
+          )}
+          {dados.acrescimo > 0 && (
+            <div className="flex justify-between text-sm text-[#71717A]">
+              <span>Acréscimo</span><span>{fmt(dados.acrescimo)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm text-[#71717A]">
+            <span>Gorjeta {dados.gorjeta_percentual ? `(${dados.gorjeta_percentual}%)` : ''}</span>
+            <span>{fmt(dados.gorjeta)}</span>
+          </div>
+          {dados.taxa_cartao_total > 0 && (
+            <div className="flex justify-between text-sm text-[#71717A]">
+              <span>Taxa cartão</span><span>{fmt(dados.taxa_cartao_total)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-base font-bold text-[#18181B] pt-1.5 border-t border-[#E4E4E7]">
+            <span>Total</span><span>{fmt(dados.total)}</span>
+          </div>
+          <div className="flex justify-between text-sm font-semibold text-[#18181B]">
+            <span>Falta pagar</span><span>{fmt(dados.saldo)}</span>
+          </div>
+        </div>
+
+        {dados.pagamentos?.length > 0 && (
+          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mt-3 space-y-1.5">
+            <p className="text-xs text-[#71717A] mb-1">Pagamentos já feitos</p>
+            {dados.pagamentos.map((p, i) => (
+              <div key={i} className="flex justify-between text-sm">
+                <span className="text-[#18181B]">{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}</span>
+                <span className="text-[#18181B]">
+                  {fmt(p.valor)}
+                  {p.taxa_cartao_valor > 0 && <span className="text-[#71717A]"> (+{fmt(p.taxa_cartao_valor)} taxa)</span>}
+                </span>
+              </div>
+            ))}
+            <div className="flex justify-between text-sm font-semibold text-[#18181B] pt-1.5 border-t border-[#E4E4E7]">
+              <span>Total pago</span><span>{fmt(dados.total_pago)}</span>
+            </div>
+          </div>
+        )}
 
         <button
           onClick={handleSolicitar}

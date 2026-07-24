@@ -2,14 +2,17 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
-  getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos,
+  getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
+import { useNowTick } from '../../hooks/useNowTick';
+import { formatDuracao } from '../../utils/formatDuracao';
 import Icon from '../../components/AppIcon';
+import TempoMedioTile from '../../components/TempoMedioTile';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -817,6 +820,53 @@ const RestauranteFechado = () => (
   </div>
 );
 
+// Fila de preparo do restaurante inteiro (não só as comandas do garçom logado) — pra
+// ele responder o cliente presencial "quantos faltam antes do meu" e "quanto tempo
+// em média demora", sem precisar ir até a cozinha.
+const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundos, tempoMedioGeralSegundos }) => {
+  const now = useNowTick();
+  const preparando = itens.filter((i) => i.status === 'preparando');
+  const aguardando = itens.filter((i) => i.status === 'enviado');
+
+  const linha = (item, posicao, desde) => (
+    <div key={item.item_id} className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center">
+      <div>
+        <p className="text-sm font-medium text-[#18181B]">{posicao}º — {item.quantity}x {item.product_name}</p>
+        <p className="text-xs text-[#71717A]">
+          {item.mesa ?? `Comanda #${item.numero_comanda}`}{item.cliente_mesa_nome ? ` — ${item.cliente_mesa_nome}` : ''}
+        </p>
+      </div>
+      {desde && <p className="text-sm font-bold text-[#18181B]">{formatDuracao(now - new Date(desde).getTime())}</p>}
+    </div>
+  );
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="grid grid-cols-3 gap-2">
+        <TempoMedioTile label="Espera média" segundos={tempoMedioEsperaSegundos} />
+        <TempoMedioTile label="Preparo médio" segundos={tempoMedioPreparoSegundos} />
+        <TempoMedioTile label="Total médio" segundos={tempoMedioGeralSegundos} />
+      </div>
+
+      <div>
+        <p className="text-xs font-bold text-[#71717A] mb-2">EM PREPARO ({preparando.length})</p>
+        <div className="space-y-2">
+          {preparando.map((item, idx) => linha(item, idx + 1, item.preparando_em))}
+          {preparando.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-3">Nada em preparo agora.</p>}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-bold text-[#71717A] mb-2">AGUARDANDO ({aguardando.length})</p>
+        <div className="space-y-2">
+          {aguardando.map((item, idx) => linha(item, idx + 1, null))}
+          {aguardando.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-3">Nada aguardando.</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
   const [permissoes, setPermissoes] = useState({});
@@ -825,6 +875,9 @@ const GarcomHome = () => {
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [aba, setAba] = useState('mesas');
+  const [filaCozinha, setFilaCozinha] = useState({
+    itens: [], tempoMedioEsperaSegundos: null, tempoMedioPreparoSegundos: null, tempoMedioGeralSegundos: null,
+  });
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -886,6 +939,9 @@ const GarcomHome = () => {
           setTimeout(() => setAvisoPronto(null), 8000);
         }
       } catch {}
+      try {
+        setFilaCozinha(await getFilaCozinha());
+      } catch {}
       carregar();
     };
     checar();
@@ -946,6 +1002,10 @@ const GarcomHome = () => {
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'comandas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
             Minhas comandas ({comandas.length})
           </button>
+          <button onClick={() => setAba('cozinha')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'cozinha' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            Cozinha
+          </button>
         </div>
       </div>
 
@@ -984,6 +1044,13 @@ const GarcomHome = () => {
           })}
           {mesas.length === 0 && <p className="col-span-3 text-sm text-[#A1A1AA] text-center py-6">Nenhuma mesa cadastrada.</p>}
         </div>
+      ) : aba === 'cozinha' ? (
+        <FilaCozinha
+          itens={filaCozinha.itens}
+          tempoMedioEsperaSegundos={filaCozinha.tempoMedioEsperaSegundos}
+          tempoMedioPreparoSegundos={filaCozinha.tempoMedioPreparoSegundos}
+          tempoMedioGeralSegundos={filaCozinha.tempoMedioGeralSegundos}
+        />
       ) : (
         <div className="p-4 space-y-2">
           {comandas.map((c) => (
