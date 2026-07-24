@@ -4,6 +4,7 @@ import { getAcompanhamento, solicitarConferencia } from '../../services/mesaAcom
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
+import TempoMedioTile from '../../components/TempoMedioTile';
 
 const STATUS_ITEM_LABEL = { pendente: 'Anotado', enviado: 'Em preparo', pronto: 'Pronto' };
 const STATUS_COMANDA_LABEL = {
@@ -76,6 +77,12 @@ const MesaAcompanhar = () => {
           <p className="text-base font-bold text-[#18181B]">{STATUS_COMANDA_LABEL[dados.status] ?? dados.status}</p>
         </div>
 
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <TempoMedioTile label="Espera média" segundos={dados.tempoMedioEsperaSegundos} />
+          <TempoMedioTile label="Preparo médio" segundos={dados.tempoMedioPreparoSegundos} />
+          <TempoMedioTile label="Total médio" segundos={dados.tempoMedioGeralSegundos} />
+        </div>
+
         <div className="space-y-2">
           {dados.itens.map((item, i) => {
             const enviadoEm = item.enviado_em ? new Date(item.enviado_em).getTime() : null;
@@ -90,6 +97,11 @@ const MesaAcompanhar = () => {
                     {STATUS_ITEM_LABEL[item.status] ?? item.status}
                   </span>
                 </div>
+                {item.posicao_fila && (
+                  <p className="text-[11px] text-[#71717A] mt-1">
+                    {item.posicao_fila}º {item.status === 'preparando' ? 'em preparo' : 'na fila pra entrar em preparo'}
+                  </p>
+                )}
                 {enviadoEm && item.status !== 'pronto' && (
                   <p className="text-[11px] text-[#71717A] font-mono mt-1 flex items-center gap-1">
                     <Icon name="Clock" size={11} /> preparando há {formatDuracao(tempoPreparo)}

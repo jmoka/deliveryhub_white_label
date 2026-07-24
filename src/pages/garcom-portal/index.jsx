@@ -12,6 +12,7 @@ import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import { formatDuracao } from '../../utils/formatDuracao';
 import Icon from '../../components/AppIcon';
+import TempoMedioTile from '../../components/TempoMedioTile';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -822,15 +823,6 @@ const RestauranteFechado = () => (
 // Fila de preparo do restaurante inteiro (não só as comandas do garçom logado) — pra
 // ele responder o cliente presencial "quantos faltam antes do meu" e "quanto tempo
 // em média demora", sem precisar ir até a cozinha.
-const TempoMedioTile = ({ label, segundos }) => (
-  <div className="bg-white rounded-xl border border-[#E4E4E7] p-2 text-center">
-    <p className="text-[10px] text-[#71717A]">{label}</p>
-    <p className="text-base font-black text-[#18181B]">
-      {segundos != null ? formatDuracao(segundos * 1000) : '—'}
-    </p>
-  </div>
-);
-
 const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundos, tempoMedioGeralSegundos }) => {
   const now = useNowTick();
   const preparando = itens.filter((i) => i.status === 'preparando');
