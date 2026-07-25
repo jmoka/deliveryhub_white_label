@@ -692,16 +692,16 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                   <Icon name="X" size={12} />
                 </button>
               </div>
-            ) : item.status === 'pronto' && !item.entregue_garcom ? (
+            ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
               <button onClick={() => confirmarEntrega(item)}
                 className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
-                <Icon name="Check" size={12} /> Confirmar entrega
+                <Icon name="Check" size={12} /> Entregar
               </button>
             ) : (
               <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
                 item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
               }`}>
-                {item.status === 'enviado' ? 'Enviado' : item.status === 'pronto' ? 'Entregue' : 'Pronto'}
+                {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
               </span>
             )}
           </div>
