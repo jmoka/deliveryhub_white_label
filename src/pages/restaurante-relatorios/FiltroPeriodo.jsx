@@ -2,7 +2,7 @@ import React from 'react';
 import Icon from '../../components/AppIcon';
 import { ANOS, MODOS } from '../../utils/relatorioPrint';
 
-const FiltroPeriodo = ({ filtro, setFiltro, onBuscar, loading, onImprimir, podeImprimir }) => {
+const FiltroPeriodo = ({ filtro, setFiltro, onBuscar, loading, onImprimir, podeImprimir, onExportarJson, podeExportar }) => {
   const set = (patch) => setFiltro((f) => ({ ...f, ...patch }));
 
   return (
@@ -51,6 +51,13 @@ const FiltroPeriodo = ({ filtro, setFiltro, onBuscar, loading, onImprimir, podeI
           <button onClick={onImprimir}
             className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] hover:bg-[#F4F4F5] transition-colors">
             <Icon name="Printer" size={14} /> Imprimir
+          </button>
+        )}
+
+        {podeExportar && (
+          <button onClick={onExportarJson}
+            className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] hover:bg-[#F4F4F5] transition-colors">
+            <Icon name="Download" size={14} /> Baixar JSON
           </button>
         )}
       </div>
