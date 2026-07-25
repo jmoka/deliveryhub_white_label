@@ -117,6 +117,27 @@ const RelatorioProdutos = () => {
 
   useEffect(() => { buscar(); }, []); // eslint-disable-line
 
+  const exportarJson = () => {
+    if (!dados) return;
+    const lista = dados.produtos.map((p) => ({
+      id: p.id,
+      nome: p.name,
+      categoria: p.category_name,
+      preco: p.price,
+      preco_custo: p.preco_custo,
+      quantidade_estoque: p.quantidade_estoque,
+      quantidade_minima: p.quantidade_minima,
+      ativo: p.is_active,
+    }));
+    const blob = new Blob([JSON.stringify(lista, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `produtos_${(restauranteNome || 'restaurante').toLowerCase().replace(/\s+/g, '-')}_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const listaStatus = dados
     ? statusFiltro === 'ativos' ? dados.ativos
     : statusFiltro === 'bloqueados' ? dados.bloqueados
@@ -140,6 +161,7 @@ const RelatorioProdutos = () => {
       <main className="p-6 max-w-5xl mx-auto space-y-4">
         <FiltroPeriodo
           filtro={filtro} setFiltro={setFiltro} onBuscar={buscar} loading={loading}
+          podeExportar={!!dados} onExportarJson={exportarJson}
           podeImprimir={!!dados} onImprimir={() => printIframe(buildPrintHtml(dados, aba, restauranteNome, label,
             aba === 'todos' ? listaLista
             : aba === 'sem_estoque' ? listaSemEstoque
