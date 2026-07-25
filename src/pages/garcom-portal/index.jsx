@@ -5,6 +5,7 @@ import {
   getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
+  confirmarEntregaItem,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
@@ -578,6 +579,16 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     }
   };
 
+  const confirmarEntrega = async (item) => {
+    setErro(null);
+    try {
+      await confirmarEntregaItem(comandaId, item.id);
+      await carregar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível confirmar a entrega.');
+    }
+  };
+
   const enviar = async () => {
     setEnviando(true);
     setErro(null);
@@ -681,11 +692,16 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                   <Icon name="X" size={12} />
                 </button>
               </div>
+            ) : item.status === 'pronto' && !item.entregue_garcom ? (
+              <button onClick={() => confirmarEntrega(item)}
+                className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
+                <Icon name="Check" size={12} /> Confirmar entrega
+              </button>
             ) : (
               <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
                 item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
               }`}>
-                {item.status === 'enviado' ? 'Enviado' : 'Pronto'}
+                {item.status === 'enviado' ? 'Enviado' : item.status === 'pronto' ? 'Entregue' : 'Pronto'}
               </span>
             )}
           </div>
