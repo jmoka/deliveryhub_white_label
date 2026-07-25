@@ -140,8 +140,11 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
   const [categoria, setCategoria] = useState('todas');
   const [produtoAtivo, setProdutoAtivo] = useState(null);
 
-  const categorias = ['todas', ...new Set(produtos.map((p) => p.category_name ?? 'Outros'))];
-  const filtrados = produtos.filter((p) => {
+  // meusProdutos() traz tudo (até inativo/sem estoque) pra alimentar a tela de admin —
+  // aqui é picker de venda, filtra estoque zerado/nulo antes de oferecer pro dono.
+  const vendaveis = produtos.filter((p) => (p.quantidade_estoque ?? 0) > 0);
+  const categorias = ['todas', ...new Set(vendaveis.map((p) => p.category_name ?? 'Outros'))];
+  const filtrados = vendaveis.filter((p) => {
     const bateBusca = p.name.toLowerCase().includes(busca.toLowerCase());
     const bateCategoria = categoria === 'todas' || (p.category_name ?? 'Outros') === categoria;
     return bateBusca && bateCategoria;
@@ -899,8 +902,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
   const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
 
-  const categorias = ['todas', ...new Set(produtos.map((p) => p.category_name ?? 'Outros'))];
-  const produtosFiltrados = produtos.filter((p) => {
+  const vendaveis = produtos.filter((p) => (p.quantidade_estoque ?? 0) > 0);
+  const categorias = ['todas', ...new Set(vendaveis.map((p) => p.category_name ?? 'Outros'))];
+  const produtosFiltrados = vendaveis.filter((p) => {
     const bateBusca = p.name.toLowerCase().includes(busca.toLowerCase());
     const bateCategoria = categoria === 'todas' || (p.category_name ?? 'Outros') === categoria;
     return bateBusca && bateCategoria;
