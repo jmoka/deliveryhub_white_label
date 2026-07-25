@@ -63,6 +63,10 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
           className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
           <Icon name="ChefHat" size={13} /> Iniciar Preparo
         </button>
+      ) : item.status === 'pronto' ? (
+        <div className="w-full py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+          <Icon name="Check" size={13} /> {item.entregue_garcom ? 'Entregue pelo garçom' : 'Entregue'}
+        </div>
       ) : (
         <button onClick={() => onMarcarPronto(item.id)}
           className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
@@ -238,6 +242,7 @@ const RestauranteProducao = () => {
             const itens = (itensPorImpressora[imp.id] ?? []).filter(passaFiltro);
             const aguardando = itens.filter((i) => i.status === 'enviado');
             const preparando = itens.filter((i) => i.status === 'preparando');
+            const entregues = itens.filter((i) => i.status === 'pronto');
             return (
               <div key={imp.id}>
                 <div className="flex items-center gap-2 mb-3">
@@ -254,13 +259,13 @@ const RestauranteProducao = () => {
                     <p className="text-[#71717A] text-sm">Nenhum item pendente em {imp.setor}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Aguardando Preparo</p>
                       {aguardando.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
@@ -273,8 +278,21 @@ const RestauranteProducao = () => {
                       {preparando.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {preparando.map((item, idx) => (
+                            <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Entregues (últimos 10min)</p>
+                      {entregues.length === 0 ? (
+                        <p className="text-xs text-[#71717A]">Nenhum</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                          {entregues.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
                           ))}
