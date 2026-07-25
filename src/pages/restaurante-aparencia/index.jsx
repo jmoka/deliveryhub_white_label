@@ -37,6 +37,10 @@ const Section = ({ icon, title, children }) => (
 const RestauranteAparencia = () => {
   const navigate = useNavigate();
   const [slug, setSlug] = useState('');
+  const [editandoSlug, setEditandoSlug] = useState(false);
+  const [slugInput, setSlugInput] = useState('');
+  const [salvandoSlug, setSalvandoSlug] = useState(false);
+  const [msgSlug, setMsgSlug] = useState(null); // { tipo: 'ok'|'erro', texto }
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
@@ -144,6 +148,28 @@ const RestauranteAparencia = () => {
     });
   };
 
+  const iniciarEdicaoSlug = () => {
+    setSlugInput(slug);
+    setMsgSlug(null);
+    setEditandoSlug(true);
+  };
+
+  const handleSalvarSlug = async () => {
+    setSalvandoSlug(true);
+    setMsgSlug(null);
+    try {
+      const atualizado = await updateEmpresa({ slug: slugInput });
+      setSlug(atualizado.slug ?? slugInput);
+      setEditandoSlug(false);
+      setMsgSlug({ tipo: 'ok', texto: 'Link atualizado!' });
+      setTimeout(() => setMsgSlug(null), 3000);
+    } catch (err) {
+      setMsgSlug({ tipo: 'erro', texto: err.message });
+    } finally {
+      setSalvandoSlug(false);
+    }
+  };
+
   const copiarLink = () => {
     const url = `${window.location.origin}/r/${slug}`;
     navigator.clipboard.writeText(url).then(() => {
@@ -170,23 +196,61 @@ const RestauranteAparencia = () => {
           {/* ── Link para compartilhar ─────────────────────────────── */}
           {slug && (
             <Section icon="Share2" title="Link da sua página">
-              <div className="flex items-center gap-2 bg-[#F4F4F5] rounded-xl px-3 py-2.5">
-                <Icon name="Link" size={14} className="text-[#71717A] flex-shrink-0" />
-                <p className="flex-1 text-xs text-[#27272A] font-mono truncate">{linkUrl}</p>
-                <button type="button" onClick={copiarLink}
-                  className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                    copiado ? 'bg-green-500 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
-                  }`}>
-                  <Icon name={copiado ? 'Check' : 'Copy'} size={12} />
-                  {copiado ? 'Copiado!' : 'Copiar'}
-                </button>
-              </div>
-              <div className="flex gap-2 mt-3">
-                <a href={`/r/${slug}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs font-semibold text-[#FF441F] hover:underline">
-                  <Icon name="ExternalLink" size={12} /> Abrir página
-                </a>
-              </div>
+              {editandoSlug ? (
+                <>
+                  <div className="flex items-center gap-2 bg-[#F4F4F5] rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-[#FF441F]">
+                    <span className="text-xs text-[#71717A] font-mono flex-shrink-0">{window.location.origin}/r/</span>
+                    <input
+                      type="text"
+                      value={slugInput}
+                      onChange={(e) => setSlugInput(e.target.value)}
+                      placeholder="restaurante-demo"
+                      className="flex-1 min-w-0 bg-transparent text-xs text-[#27272A] font-mono focus:outline-none"
+                    />
+                  </div>
+                  <p className="text-[10px] text-[#A1A1AA] mt-1.5">Só letras minúsculas, números e hífen. Mín. 3 caracteres.</p>
+                  {msgSlug && (
+                    <p className={`text-xs mt-1.5 ${msgSlug.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>{msgSlug.texto}</p>
+                  )}
+                  <div className="flex gap-2 mt-3">
+                    <button type="button" onClick={handleSalvarSlug} disabled={salvandoSlug || !slugInput.trim()}
+                      className="px-4 py-2 bg-[#FF441F] text-white rounded-lg text-sm font-semibold hover:bg-[#E63A19] disabled:opacity-60">
+                      {salvandoSlug ? 'Salvando...' : 'Salvar link'}
+                    </button>
+                    <button type="button" onClick={() => { setEditandoSlug(false); setMsgSlug(null); }} disabled={salvandoSlug}
+                      className="px-4 py-2 bg-[#F4F4F5] text-[#27272A] rounded-lg text-sm font-semibold hover:bg-[#E4E4E7]">
+                      Cancelar
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 bg-[#F4F4F5] rounded-xl px-3 py-2.5">
+                    <Icon name="Link" size={14} className="text-[#71717A] flex-shrink-0" />
+                    <p className="flex-1 text-xs text-[#27272A] font-mono truncate">{linkUrl}</p>
+                    <button type="button" onClick={copiarLink}
+                      className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                        copiado ? 'bg-green-500 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
+                      }`}>
+                      <Icon name={copiado ? 'Check' : 'Copy'} size={12} />
+                      {copiado ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                  {msgSlug && (
+                    <p className={`text-xs mt-1.5 ${msgSlug.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>{msgSlug.texto}</p>
+                  )}
+                  <div className="flex gap-3 mt-3">
+                    <a href={`/r/${slug}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-[#FF441F] hover:underline">
+                      <Icon name="ExternalLink" size={12} /> Abrir página
+                    </a>
+                    <button type="button" onClick={iniciarEdicaoSlug}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-[#71717A] hover:text-[#27272A] hover:underline">
+                      <Icon name="Pencil" size={12} /> Editar link
+                    </button>
+                  </div>
+                </>
+              )}
             </Section>
           )}
 
