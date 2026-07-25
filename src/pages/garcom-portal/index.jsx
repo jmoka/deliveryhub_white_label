@@ -362,6 +362,9 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
   // Comanda paga/cancelada não deixa mais mexer nos pagamentos, mesma regra de editar itens.
   const podeMexer = ['aberta', 'fechada_garcom'].includes(comanda.status);
+  const isCartao = forma === 'credit_card' || forma === 'debit_card';
+  const taxaCartaoPercentual = comanda.taxa_cartao_percentual ?? 0;
+  const taxaCartaoValorParcial = isCartao ? parseFloat((Number(valor || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
 
   const registrar = async () => {
     const v = Number(valor);
@@ -445,10 +448,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
               <p key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
                 <span>
                   {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
-                  {p.taxa_cartao_valor > 0 && ` + taxa ${fmt(p.taxa_cartao_valor)}`}
+                  {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
                 </span>
                 <span className="flex items-center gap-1.5 flex-shrink-0">
-                  {fmt(p.valor)}
+                  {fmt(p.valor + (p.taxa_cartao_valor || 0))}
                   {podeMexer && podePagamentoParcial && p.origem === 'garcom' && (
                     <>
                       <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
@@ -482,6 +485,11 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
               Pagar
             </button>
           </div>
+          {taxaCartaoValorParcial > 0 && (
+            <p className="text-xs text-[#FF441F]">
+              + taxa cartão ({taxaCartaoPercentual}%): {fmt(taxaCartaoValorParcial)} — cobrar {fmt(Number(valor || 0) + taxaCartaoValorParcial)}
+            </p>
+          )}
           {forma === 'cash' && (
             <div className="flex items-center gap-1.5">
               <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
