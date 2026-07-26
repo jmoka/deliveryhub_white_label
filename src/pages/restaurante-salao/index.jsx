@@ -324,7 +324,7 @@ const EditarClienteComandaModal = ({ comanda, onFechar, onEditado }) => {
   );
 };
 
-const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
+const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [comanda, setComanda] = useState(null);
   const [descontoInput, setDescontoInput] = useState('');
   const [acrescimoInput, setAcrescimoInput] = useState('');
@@ -520,8 +520,9 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const transferirMesaOuComanda = () => {
     if (!mesaDestino) return;
     if (!window.confirm('Transferir esta comanda?')) return;
+    const [tipo, idStr] = mesaDestino.split(':');
     acao(async () => {
-      await transferirComandaSalao(comandaId, { mesa_id: Number(mesaDestino) });
+      await transferirComandaSalao(comandaId, tipo === 'comanda' ? { comanda_destino_id: Number(idStr) } : { mesa_id: Number(idStr) });
       setMesaDestino('');
       onFechar();
     });
@@ -652,11 +653,20 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           <select value={mesaDestino} onChange={(e) => setMesaDestino(e.target.value)}
             className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
             <option value="">Transferir mesa/comanda pra...</option>
-            {(mesas ?? []).filter((m) => m.id !== comanda.mesa_id).map((m) => (
-              <option key={m.id} value={m.id}>
-                Mesa {m.numero}{m.comanda ? ` (ocupada — junta comandas)` : ''}
-              </option>
-            ))}
+            <optgroup label="Mesas">
+              {(mesas ?? []).filter((m) => m.id !== comanda.mesa_id).map((m) => (
+                <option key={`m-${m.id}`} value={`mesa:${m.id}`}>
+                  Mesa {m.numero}{m.comanda ? ` (ocupada — junta comandas)` : ''}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Comandas avulsas">
+              {(comandas ?? []).filter((c) => !c.mesa_id && c.id !== comanda.id).map((c) => (
+                <option key={`c-${c.id}`} value={`comanda:${c.id}`}>
+                  #{c.numero_comanda ?? c.id} — {c.cliente_mesa_nome ?? 'Sem nome'} (junta comandas)
+                </option>
+              ))}
+            </optgroup>
           </select>
           <button onClick={transferirMesaOuComanda} disabled={!mesaDestino || salvando}
             className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
@@ -1507,7 +1517,7 @@ const RestauranteSalao = () => {
       </button>
 
       {comandaAtiva && (
-        <ComandaModal comandaId={comandaAtiva} mesas={mesas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
+        <ComandaModal comandaId={comandaAtiva} mesas={mesas} comandas={comandas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
       )}
 
       {vendaBalcaoId && (
