@@ -68,8 +68,8 @@ export const editarItem = (comandaId, itemId, body) =>
 export const removerItem = (comandaId, itemId) =>
   garcomFetch(`/comandas/${comandaId}/itens/${itemId}`, { method: 'DELETE' });
 
-export const dividirComanda = (comandaId, item_ids) =>
-  garcomFetch(`/comandas/${comandaId}/dividir`, { method: 'POST', body: JSON.stringify({ item_ids }) });
+export const dividirComanda = (comandaId, item_ids, cliente_nome, cliente_telefone) =>
+  garcomFetch(`/comandas/${comandaId}/dividir`, { method: 'POST', body: JSON.stringify({ item_ids, cliente_nome, cliente_telefone }) });
 
 export const confirmarEntregaItem = (comandaId, itemId) =>
   garcomFetch(`/comandas/${comandaId}/itens/${itemId}/entregar`, { method: 'PATCH' });

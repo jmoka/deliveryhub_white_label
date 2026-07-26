@@ -517,6 +517,8 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
 // da original — pra quando um componente da mesa quer pagar só o que ele consumiu.
 const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
   const [selecionados, setSelecionados] = useState(new Set());
+  const [clienteNome, setClienteNome] = useState('');
+  const [clienteTelefone, setClienteTelefone] = useState('');
 
   const toggle = (itemId) => {
     setSelecionados((prev) => {
@@ -559,13 +561,21 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
           <p className="text-xs text-[#FF441F] font-medium mt-2">Desmarque ao menos 1 item pra separar só parte da comanda.</p>
         )}
 
+        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+          <label className="text-xs text-[#71717A]">Nome do cliente da nova comanda *</label>
+          <input value={clienteNome} onChange={(e) => setClienteNome(e.target.value)} placeholder="Nome do cliente"
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <input value={clienteTelefone} onChange={(e) => setClienteTelefone(e.target.value)} placeholder="Telefone (opcional)"
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+        </div>
+
         <div className="border-t border-[#E4E4E7] mt-3 pt-3 flex items-center justify-between">
           <span className="text-sm text-[#71717A]">{selecionados.size} item(s) selecionado(s)</span>
           <span className="text-base font-bold text-[#18181B]">{fmt(subtotalSelecionado)}</span>
         </div>
         <button
-          onClick={() => onConfirmar([...selecionados])}
-          disabled={selecionados.size === 0 || todosSelecionados || salvando}
+          onClick={() => onConfirmar([...selecionados], clienteNome, clienteTelefone)}
+          disabled={selecionados.size === 0 || todosSelecionados || !clienteNome.trim() || salvando}
           className="w-full mt-3 py-2.5 bg-[#FF441F] text-white rounded-xl text-sm font-bold hover:bg-[#E63A19] disabled:opacity-40">
           {salvando ? 'Separando...' : 'Criar comanda separada'}
         </button>
@@ -642,11 +652,11 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     }
   };
 
-  const dividirComandaAtual = async (itemIds) => {
+  const dividirComandaAtual = async (itemIds, clienteNome, clienteTelefone) => {
     setDividindo(true);
     setErro(null);
     try {
-      await dividirComanda(comandaId, itemIds);
+      await dividirComanda(comandaId, itemIds, clienteNome, clienteTelefone);
       setMostrarDividir(false);
       await carregar();
     } catch (err) {

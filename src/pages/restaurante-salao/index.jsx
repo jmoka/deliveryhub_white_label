@@ -7,7 +7,7 @@ import {
   listarGarcons, getMeusProdutos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, abrirVendaBalcao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
-  reimprimirReciboSalao, dividirComandaSalao,
+  reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda } from '../../utils/printComanda';
@@ -209,6 +209,8 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
 // ele consumiu, sem misturar com o resto da conta.
 const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
   const [selecionados, setSelecionados] = useState(new Set());
+  const [clienteNome, setClienteNome] = useState('');
+  const [clienteTelefone, setClienteTelefone] = useState('');
 
   const toggle = (itemId) => {
     setSelecionados((prev) => {
@@ -251,16 +253,72 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
           <p className="text-xs text-[#FF441F] font-medium mt-2">Desmarque ao menos 1 item — pra mover a comanda inteira use "Transferir".</p>
         )}
 
+        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+          <label className="text-xs text-[#71717A]">Nome do cliente da nova comanda *</label>
+          <input value={clienteNome} onChange={(e) => setClienteNome(e.target.value)} placeholder="Nome do cliente" autoFocus
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <input value={clienteTelefone} onChange={(e) => setClienteTelefone(e.target.value)} placeholder="Telefone (opcional)"
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+        </div>
+
         <div className="border-t border-[#E4E4E7] mt-3 pt-3 flex items-center justify-between">
           <span className="text-sm text-[#71717A]">{selecionados.size} item(s) selecionado(s)</span>
           <span className="text-base font-bold text-[#18181B]">{fmt(subtotalSelecionado)}</span>
         </div>
         <button
-          onClick={() => onConfirmar([...selecionados])}
-          disabled={selecionados.size === 0 || todosSelecionados || salvando}
+          onClick={() => onConfirmar([...selecionados], clienteNome, clienteTelefone)}
+          disabled={selecionados.size === 0 || todosSelecionados || !clienteNome.trim() || salvando}
           className="w-full mt-3 py-2.5 bg-[#FF441F] text-white rounded-xl text-sm font-bold hover:bg-[#E63A19] disabled:opacity-40">
           {salvando ? 'Separando...' : 'Criar comanda separada'}
         </button>
+      </div>
+    </div>
+  );
+};
+
+const EditarClienteComandaModal = ({ comanda, onFechar, onEditado }) => {
+  const [nome, setNome] = useState(comanda.cliente_mesa_nome ?? '');
+  const [telefone, setTelefone] = useState(comanda.cliente_mesa_telefone ?? '');
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setSalvando(true);
+    try {
+      await editarClienteComandaSalao(comanda.id, nome.trim(), telefone.trim());
+      await onEditado();
+      onFechar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível salvar.');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] mb-1">Editar dados do cliente</h2>
+        <p className="text-xs text-[#71717A] mb-4">Corrige nome ou telefone digitados errado.</p>
+        <form onSubmit={submit} className="space-y-3">
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required autoFocus
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente"
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600">{erro}</p>}
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onFechar}
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -283,6 +341,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
   const [produtos, setProdutos] = useState([]);
   const [mostrarPicker, setMostrarPicker] = useState(false);
   const [mostrarDividir, setMostrarDividir] = useState(false);
+  const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
 
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
@@ -468,9 +527,9 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
     });
   };
 
-  const dividirComanda = (itemIds) => {
+  const dividirComanda = (itemIds, clienteNome, clienteTelefone) => {
     acao(async () => {
-      await dividirComandaSalao(comandaId, itemIds);
+      await dividirComandaSalao(comandaId, itemIds, clienteNome, clienteTelefone);
       setMostrarDividir(false);
     });
   };
@@ -504,7 +563,14 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             <h2 className="text-base font-bold text-[#18181B]">
               Comanda #{comanda.numero_comanda ?? comanda.id}{comanda.mesas ? ` — Mesa ${comanda.mesas.numero}` : ''}
             </h2>
-            <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+              {podeEditar && (
+                <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
+                  <Icon name="Pencil" size={12} />
+                </button>
+              )}
+            </div>
             <p className="text-xs text-[#71717A]">
               {comanda.garcons?.nome ? `Garçom: ${comanda.garcons.nome}` : comanda.aberto_por_nome ? `Caixa: ${comanda.aberto_por_nome}` : 'Garçom: —'}
             </p>
@@ -657,6 +723,14 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             onFechar={() => setMostrarDividir(false)}
             onConfirmar={dividirComanda}
             salvando={salvando}
+          />
+        )}
+
+        {mostrarEditarCliente && (
+          <EditarClienteComandaModal
+            comanda={comanda}
+            onFechar={() => setMostrarEditarCliente(false)}
+            onEditado={carregar}
           />
         )}
 
