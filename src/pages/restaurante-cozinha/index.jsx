@@ -138,7 +138,13 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
   const tempoTotal = now - enviadoEm;
 
   return (
-  <div className={`rounded-2xl border-2 p-4 ${posicao === 1 ? 'border-yellow-400/70 bg-purple-950/20 ring-1 ring-yellow-400/30' : 'border-purple-300 bg-purple-950/20'}`}>
+  <div className={`rounded-2xl border-2 overflow-hidden ${posicao === 1 ? 'border-yellow-400/70 bg-purple-950/20 ring-1 ring-yellow-400/30' : 'border-purple-300 bg-purple-950/20'}`}>
+    {item.garcom && (
+      <div className="bg-white px-4 py-2">
+        <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
+      </div>
+    )}
+    <div className="p-4">
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-2">
         <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-purple-900/50 text-white'}`}>
@@ -153,16 +159,9 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
-    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
-      <Icon name="MapPin" size={12} />
+    <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
+      <Icon name="MapPin" size={14} />
       <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
-      {item.garcom && (
-        <>
-          <span className="text-[#3A3A3A]">•</span>
-          <Icon name="User" size={12} />
-          <span>{item.garcom}</span>
-        </>
-      )}
     </div>
     <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
       <span className="flex items-center gap-1 text-blue-400">
@@ -199,6 +198,7 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
           <Icon name="Check" size={13} /> Pronto
         </div>
       )}
+    </div>
     </div>
   </div>
   );
