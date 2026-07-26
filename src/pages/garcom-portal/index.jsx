@@ -5,7 +5,7 @@ import {
   getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
-  confirmarEntregaItem,
+  confirmarEntregaItem, dividirComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
@@ -513,6 +513,67 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
   );
 };
 
+// Separar comanda: garçom escolhe quais itens viram uma comanda avulsa nova, separada
+// da original — pra quando um componente da mesa quer pagar só o que ele consumiu.
+const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
+  const [selecionados, setSelecionados] = useState(new Set());
+
+  const toggle = (itemId) => {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(itemId)) novo.delete(itemId);
+      else novo.add(itemId);
+      return novo;
+    });
+  };
+
+  const subtotalSelecionado = itens
+    .filter((i) => selecionados.has(i.id))
+    .reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
+  const todosSelecionados = selecionados.size > 0 && selecionados.size === itens.length;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto flex flex-col">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-base font-bold text-[#18181B]">Separar comanda</h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="X" size={20} /></button>
+        </div>
+        <p className="text-xs text-[#71717A] mb-3">Marque os itens que vão pra uma comanda separada nova.</p>
+
+        <div className="space-y-1.5 flex-1 overflow-y-auto">
+          {itens.map((item) => (
+            <label key={item.id}
+              className={`flex items-center gap-2.5 rounded-xl border p-2.5 cursor-pointer transition-colors ${
+                selecionados.has(item.id) ? 'border-[#FF441F] bg-[#FF441F]/5' : 'border-[#E4E4E7]'
+              }`}>
+              <input type="checkbox" checked={selecionados.has(item.id)} onChange={() => toggle(item.id)}
+                className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
+              <span className="flex-1 min-w-0 text-sm text-[#18181B] truncate">{item.quantity}x {item.products?.name}</span>
+              <span className="text-sm font-semibold text-[#18181B] flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
+            </label>
+          ))}
+        </div>
+
+        {todosSelecionados && (
+          <p className="text-xs text-[#FF441F] font-medium mt-2">Desmarque ao menos 1 item pra separar só parte da comanda.</p>
+        )}
+
+        <div className="border-t border-[#E4E4E7] mt-3 pt-3 flex items-center justify-between">
+          <span className="text-sm text-[#71717A]">{selecionados.size} item(s) selecionado(s)</span>
+          <span className="text-base font-bold text-[#18181B]">{fmt(subtotalSelecionado)}</span>
+        </div>
+        <button
+          onClick={() => onConfirmar([...selecionados])}
+          disabled={selecionados.size === 0 || todosSelecionados || salvando}
+          className="w-full mt-3 py-2.5 bg-[#FF441F] text-white rounded-xl text-sm font-bold hover:bg-[#E63A19] disabled:opacity-40">
+          {salvando ? 'Separando...' : 'Criar comanda separada'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [comanda, setComanda] = useState(null);
   const [produtos, setProdutos] = useState([]);
@@ -524,6 +585,8 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
   const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+  const [mostrarDividir, setMostrarDividir] = useState(false);
+  const [dividindo, setDividindo] = useState(false);
 
   const carregar = useCallback(async () => {
     const [c, p] = await Promise.all([getComanda(comandaId), getProdutos()]);
@@ -576,6 +639,20 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
       await carregar();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível remover o item.');
+    }
+  };
+
+  const dividirComandaAtual = async (itemIds) => {
+    setDividindo(true);
+    setErro(null);
+    try {
+      await dividirComanda(comandaId, itemIds);
+      setMostrarDividir(false);
+      await carregar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível separar a comanda.');
+    } finally {
+      setDividindo(false);
     }
   };
 
@@ -709,6 +786,12 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         {(comanda.itens ?? []).length === 0 && (
           <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhum item ainda.</p>
         )}
+        {!fechada && (comanda.itens ?? []).length > 1 && (
+          <button onClick={() => setMostrarDividir(true)}
+            className="w-full py-2.5 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] flex items-center justify-center gap-2">
+            <Icon name="Scissors" size={16} /> Separar comanda
+          </button>
+        )}
       </div>
 
       <div className="px-4 pb-4">
@@ -816,6 +899,15 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           produtos={produtos}
           onFechar={() => setMostrarPicker(false)}
           onAdicionado={adicionarProduto}
+        />
+      )}
+
+      {mostrarDividir && (
+        <DividirComandaModal
+          itens={comanda.itens ?? []}
+          onFechar={() => setMostrarDividir(false)}
+          onConfirmar={dividirComandaAtual}
+          salvando={dividindo}
         />
       )}
     </div>

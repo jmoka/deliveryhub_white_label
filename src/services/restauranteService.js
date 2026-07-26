@@ -316,6 +316,8 @@ export const removerPagamentoParcialSalao = (id, pagamentoId) =>
   apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}`, { method: 'DELETE' });
 export const transferirComandaSalao = (id, { mesa_id, comanda_destino_id }) =>
   apiFetch(`/salao/comandas/${id}/transferir`, { method: 'PATCH', body: JSON.stringify({ mesa_id, comanda_destino_id }) });
+export const dividirComandaSalao = (id, item_ids) =>
+  apiFetch(`/salao/comandas/${id}/dividir`, { method: 'POST', body: JSON.stringify({ item_ids }) });
 export const getSugestaoGorjeta = (id) => apiFetch(`/salao/comandas/${id}/sugestao-gorjeta`);
 
 // Módulo Salão — mesas (CRUD simples pelo dono, cadastro inicial das mesas físicas)
