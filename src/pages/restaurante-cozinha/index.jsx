@@ -152,7 +152,7 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
       </button>
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-    {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
+    {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
       <Icon name="MapPin" size={12} />
       <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
