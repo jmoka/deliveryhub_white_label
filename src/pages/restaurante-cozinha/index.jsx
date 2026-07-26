@@ -145,12 +145,15 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
       </div>
     )}
     <div className="p-4">
-    <div className="flex items-center justify-between mb-1">
-      <div className="flex items-center gap-2">
-        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-purple-900/50 text-white'}`}>
+    <div className="flex items-start justify-between mb-1 gap-2">
+      <div className="flex items-start gap-2">
+        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-purple-900/50 text-white'}`}>
           {posicao}
         </span>
-        <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name} <span className="text-purple-300 font-normal text-xs">· Salão</span></span>
+        <div className="leading-tight">
+          <p className="text-xl font-black text-white">Quantidade: {item.quantity}</p>
+          <p className="text-lg font-bold text-white">Produto: {item.product_name} <span className="text-purple-300 font-normal text-xs">· Salão</span></p>
+        </div>
       </div>
       <button onClick={() => onReimprimir(item)}
         className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
@@ -287,6 +290,7 @@ const RestauranteCozinha = () => {
   const [impressorasCozinha, setImpressorasCozinha] = useState(null);
   const [itensSalao, setItensSalao] = useState([]);
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
+  const [verTodosProntos, setVerTodosProntos] = useState(false);
   const now = useNowTick();
   const scanRef = useRef(null);
   const prevOrderIds = useRef(new Set());
@@ -778,15 +782,21 @@ const RestauranteCozinha = () => {
         <div className="px-5 pb-5 max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-emerald-500" />
-            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Prontos recentemente (clicou errado? desfaz aqui)</h2>
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Prontos hoje (clicou errado? desfaz aqui)</h2>
             <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontosSalao.length}</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {prontosSalao.map((item, idx) => (
+            {(verTodosProntos ? prontosSalao : prontosSalao.slice(0, 5)).map((item, idx) => (
               <SalaoItemCard key={`p-${item.id}`} item={item} posicao={idx + 1} now={now}
                 onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
             ))}
           </div>
+          {prontosSalao.length > 5 && (
+            <button onClick={() => setVerTodosProntos((v) => !v)}
+              className="mt-3 w-full py-2 text-xs font-bold text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10">
+              {verTodosProntos ? 'Mostrar menos' : `Ver todos (${prontosSalao.length})`}
+            </button>
+          )}
         </div>
       )}
 
