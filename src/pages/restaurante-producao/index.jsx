@@ -18,7 +18,13 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
   const tempoTotal = now - enviadoEm;
 
   return (
-    <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+    <div className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+      {item.garcom && (
+        <div className="bg-white px-4 py-2">
+          <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
+        </div>
+      )}
+      <div className="p-4">
       <div className="flex items-start justify-between mb-1 gap-2">
         <div className="flex items-start gap-2">
           <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
@@ -35,21 +41,14 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
         </button>
       </div>
       {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-      {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
-      <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
-        <Icon name="MapPin" size={12} />
+      {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
+      <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
+        <Icon name="MapPin" size={14} />
         <span>{item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
         {item.numero_comanda && (
           <>
-            <span className="text-[#3A3A3A]">•</span>
+            <span className="text-[#71717A]">•</span>
             <span>Comanda #{item.numero_comanda}</span>
-          </>
-        )}
-        {item.garcom && (
-          <>
-            <span className="text-[#3A3A3A]">•</span>
-            <Icon name="User" size={12} />
-            <span>{item.garcom}</span>
           </>
         )}
         <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${item.tipo === 'delivery' ? 'bg-sky-500/20 text-sky-400' : 'bg-purple-500/20 text-purple-300'}`}>
@@ -89,6 +88,7 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
             <Icon name="Check" size={13} /> Pronto
           </button>
         )}
+      </div>
       </div>
     </div>
   );
@@ -345,15 +345,15 @@ const RestauranteProducao = () => {
                       ) : (
                         <>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                            {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 5)).map((item, idx) => (
+                            {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((item, idx) => (
                               <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                                 onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
                             ))}
                           </div>
-                          {entregues.length > 5 && (
+                          {entregues.length > 2 && (
                             <button onClick={() => setVerTodosEntregues((v) => ({ ...v, [imp.id]: !v[imp.id] }))}
                               className="mt-3 w-full py-2 text-xs font-bold text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10">
-                              {verTodosEntregues[imp.id] ? 'Mostrar menos' : `Ver todos (${entregues.length})`}
+                              {verTodosEntregues[imp.id] ? 'Recolher / fechar a lista' : `Ver todos (${entregues.length})`}
                             </button>
                           )}
                         </>
