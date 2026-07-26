@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
@@ -10,7 +10,7 @@ import Icon from '../../components/AppIcon';
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
 // pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto }) => {
+const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -19,12 +19,15 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
 
   return (
     <div className={`bg-[#1A1A1A] border rounded-2xl p-4 ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
+      <div className="flex items-start justify-between mb-1 gap-2">
+        <div className="flex items-start gap-2">
+          <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
             {posicao}
           </span>
-          <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+          <div className="leading-tight">
+            <p className="text-xl font-black text-white">Quantidade: {item.quantity}</p>
+            <p className="text-lg font-bold text-white">Produto: {item.product_name}</p>
+          </div>
         </div>
         <button onClick={() => onReimprimir(item)}
           className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
@@ -58,21 +61,29 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
         )}
         <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
       </div>
-      {item.status === 'enviado' ? (
-        <button onClick={() => onIniciarPreparo(item)}
-          className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="ChefHat" size={13} /> Iniciar Preparo
-        </button>
-      ) : item.status === 'pronto' ? (
-        <div className="w-full py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="Check" size={13} /> {item.entregue_garcom ? 'Entregue pelo garçom' : 'Entregue'}
-        </div>
-      ) : (
-        <button onClick={() => onMarcarPronto(item.id)}
-          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="Check" size={13} /> Pronto
-        </button>
-      )}
+      <div className="flex gap-2">
+        {item.status !== 'enviado' && (
+          <button onClick={() => onVoltar(item)} title="Desfazer — clicou errado"
+            className="flex-shrink-0 px-3 py-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+            <Icon name="Undo2" size={13} /> Voltar
+          </button>
+        )}
+        {item.status === 'enviado' ? (
+          <button onClick={() => onIniciarPreparo(item)}
+            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+            <Icon name="ChefHat" size={13} /> Iniciar Preparo
+          </button>
+        ) : item.status === 'pronto' ? (
+          <div className="flex-1 py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+            <Icon name="Check" size={13} /> {item.entregue_garcom ? 'Entregue pelo garçom' : 'Entregue'}
+          </div>
+        ) : (
+          <button onClick={() => onMarcarPronto(item.id)}
+            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+            <Icon name="Check" size={13} /> Pronto
+          </button>
+        )}
+      </div>
     </div>
   );
 };
@@ -92,6 +103,7 @@ const RestauranteProducao = () => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const now = useNowTick();
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
+  const [verTodosEntregues, setVerTodosEntregues] = useState({}); // { [impressoraId]: bool }
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
@@ -146,6 +158,11 @@ const RestauranteProducao = () => {
 
   const iniciarPreparo = async (item) => {
     await iniciarPreparoItemRestaurante(item.id);
+    carregar(impressoras);
+  };
+
+  const voltarItem = async (item) => {
+    await voltarStatusItemRestaurante(item.id);
     carregar(impressoras);
   };
 
@@ -268,7 +285,7 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
                           ))}
                         </div>
                       )}
@@ -281,22 +298,30 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {preparando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
                           ))}
                         </div>
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Entregues (últimos 10min)</p>
+                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Entregues hoje</p>
                       {entregues.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                          {entregues.map((item, idx) => (
-                            <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} />
-                          ))}
-                        </div>
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                            {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 5)).map((item, idx) => (
+                              <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
+                            ))}
+                          </div>
+                          {entregues.length > 5 && (
+                            <button onClick={() => setVerTodosEntregues((v) => ({ ...v, [imp.id]: !v[imp.id] }))}
+                              className="mt-3 w-full py-2 text-xs font-bold text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10">
+                              {verTodosEntregues[imp.id] ? 'Mostrar menos' : `Ver todos (${entregues.length})`}
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
