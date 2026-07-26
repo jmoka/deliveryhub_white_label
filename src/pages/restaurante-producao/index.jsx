@@ -39,6 +39,12 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
       <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
         <Icon name="MapPin" size={12} />
         <span>{item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
+        {item.numero_comanda && (
+          <>
+            <span className="text-[#3A3A3A]">•</span>
+            <span>Comanda #{item.numero_comanda}</span>
+          </>
+        )}
         {item.garcom && (
           <>
             <span className="text-[#3A3A3A]">•</span>
@@ -104,6 +110,7 @@ const RestauranteProducao = () => {
   const now = useNowTick();
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const [verTodosEntregues, setVerTodosEntregues] = useState({}); // { [impressoraId]: bool }
+  const [busca, setBusca] = useState('');
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
@@ -186,7 +193,16 @@ const RestauranteProducao = () => {
   const todosItens = Object.values(itensPorImpressora).flat();
   const totalDelivery = todosItens.filter((i) => i.tipo === 'delivery').length;
   const totalSalao = todosItens.filter((i) => i.tipo === 'salao').length;
-  const passaFiltro = (i) => filtroCanal === 'todos' || i.tipo === filtroCanal;
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const passaBusca = (i) => {
+    if (!buscaNormalizada) return true;
+    const alvo = [i.cliente, i.mesa, i.mesa_numero, i.numero_comanda, i.garcom]
+      .filter((v) => v !== null && v !== undefined)
+      .join(' ')
+      .toLowerCase();
+    return alvo.includes(buscaNormalizada);
+  };
+  const passaFiltro = (i) => (filtroCanal === 'todos' || i.tipo === filtroCanal) && passaBusca(i);
   const totalItens = todosItens.filter(passaFiltro).length;
 
   return (
@@ -214,6 +230,23 @@ const RestauranteProducao = () => {
               <Icon name="RefreshCw" size={16} />
             </button>
           </div>
+        </div>
+
+        {/* Busca por cliente, mesa, comanda ou garçom */}
+        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#111111] focus-within:border-[#FF441F]">
+          <Icon name="Search" size={16} className="text-[#71717A] flex-shrink-0" />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por cliente, mesa, comanda ou garçom..."
+            className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3A3A3A] outline-none"
+          />
+          {busca && (
+            <button onClick={() => setBusca('')} className="text-[#71717A] hover:text-white flex-shrink-0">
+              <Icon name="X" size={15} />
+            </button>
+          )}
         </div>
 
         {/* Filtro de canal — Todos/Delivery/Salão */}
