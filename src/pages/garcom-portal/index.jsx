@@ -959,8 +959,9 @@ const GarcomHome = () => {
         if (novos.length > 0) {
           tocarAlarmePronto();
           const i = novos[0];
-          setAvisoPronto(`${i.product_name} — ${i.mesa ?? `Comanda #${i.numero_comanda}`} está pronto pra buscar!`);
-          setTimeout(() => setAvisoPronto(null), 8000);
+          const mesaLabel = i.mesa ?? `Comanda #${i.numero_comanda}`;
+          setAvisoPronto(`Seu pedido está pronto! Mesa: ${mesaLabel}${i.cliente ? ` · Cliente: ${i.cliente}` : ''} · Pedido: ${i.product_name}`);
+          setTimeout(() => setAvisoPronto(null), 10000);
         }
       } catch {}
       try {
@@ -985,9 +986,9 @@ const GarcomHome = () => {
   if (bloqueado) return <RestauranteFechado />;
 
   const avisoProntoToast = avisoPronto && (
-    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[100] bg-white/95 border border-emerald-200 text-emerald-700 text-xs px-3 py-1.5 rounded-full shadow-md max-w-[90vw] text-center flex items-center gap-1.5 pointer-events-none">
-      <Icon name="BellRing" size={12} className="flex-shrink-0" />
-      <span className="truncate">{avisoPronto}</span>
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-[#FF441F] text-white text-sm font-bold px-4 py-3 shadow-lg flex items-center gap-2 animate-pulse">
+      <Icon name="BellRing" size={18} className="flex-shrink-0" />
+      <span>{avisoPronto}</span>
     </div>
   );
 
