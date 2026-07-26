@@ -48,13 +48,22 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
   const tempoTotal = now - enviadoEm;
 
   return (
-  <div className={`bg-[#1A1A1A] border rounded-2xl p-4 relative ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
-    <div className="flex items-center justify-between mb-1">
-      <div className="flex items-center gap-2">
-        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
+  <div className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden relative ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+    {item.garcom && (
+      <div className="bg-white px-4 py-2">
+        <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
+      </div>
+    )}
+    <div className="p-4">
+    <div className="flex items-start justify-between mb-1 gap-2">
+      <div className="flex items-start gap-2">
+        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
           {posicao}
         </span>
-        <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
+        <div className="leading-tight">
+          <p className="text-xl font-black text-white">Quantidade: {item.quantity}</p>
+          <p className="text-lg font-bold text-white">Produto: {item.product_name}</p>
+        </div>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <AlertaMotoboy item={item} />
@@ -65,15 +74,14 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
       </div>
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-    {item.observacao && <p className="text-xs text-amber-400 mb-1">Obs: {item.observacao}</p>}
-    <div className="flex items-center gap-2 text-xs text-[#71717A] mb-2">
-      <Icon name="MapPin" size={12} />
+    {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
+    <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
+      <Icon name="MapPin" size={14} />
       <span>{item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
-      {item.garcom && (
+      {item.numero_comanda && (
         <>
-          <span className="text-[#3A3A3A]">•</span>
-          <Icon name="User" size={12} />
-          <span>{item.garcom}</span>
+          <span className="text-[#71717A]">•</span>
+          <span>Comanda #{item.numero_comanda}</span>
         </>
       )}
       <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${item.tipo === 'delivery' ? 'bg-sky-500/20 text-sky-400' : 'bg-purple-500/20 text-purple-300'}`}>
@@ -116,6 +124,7 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
         </div>
       )}
     </div>
+    </div>
   </div>
   );
 };
@@ -133,6 +142,8 @@ const RestauranteBar = () => {
   const [erro, setErro] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
+  const [busca, setBusca] = useState('');
+  const [verTodosEntregues, setVerTodosEntregues] = useState(false);
   const now = useNowTick();
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -215,10 +226,20 @@ const RestauranteBar = () => {
     </div>
   );
 
-  const itensFiltrados = itens.filter((i) => filtroCanal === 'todos' || i.tipo === filtroCanal);
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const passaBusca = (i) => {
+    if (!buscaNormalizada) return true;
+    const alvo = [i.cliente, i.mesa, i.mesa_numero, i.numero_comanda, i.garcom]
+      .filter((v) => v !== null && v !== undefined)
+      .join(' ')
+      .toLowerCase();
+    return alvo.includes(buscaNormalizada);
+  };
+  const itensFiltrados = itens.filter((i) => (filtroCanal === 'todos' || i.tipo === filtroCanal) && passaBusca(i));
   const aguardando = itensFiltrados.filter((i) => i.status === 'enviado');
   const preparando = itensFiltrados.filter((i) => i.status === 'preparando');
-  const prontosRecentes = itensFiltrados.filter((i) => i.status === 'pronto');
+  const prontosRecentes = itensFiltrados.filter((i) => i.status === 'pronto')
+    .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
   const totalDelivery = itens.filter((i) => i.tipo === 'delivery').length;
   const totalSalao = itens.filter((i) => i.tipo === 'salao').length;
 
@@ -247,6 +268,23 @@ const RestauranteBar = () => {
               <Icon name="RefreshCw" size={16} />
             </button>
           </div>
+        </div>
+
+        {/* Busca por cliente, mesa, comanda ou garçom */}
+        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#111111] focus-within:border-[#FF441F]">
+          <Icon name="Search" size={16} className="text-[#71717A] flex-shrink-0" />
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por cliente, mesa, comanda ou garçom..."
+            className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3A3A3A] outline-none"
+          />
+          {busca && (
+            <button onClick={() => setBusca('')} className="text-[#71717A] hover:text-white flex-shrink-0">
+              <Icon name="X" size={15} />
+            </button>
+          )}
         </div>
 
         {/* Filtro de canal — Todos/Delivery/Salão */}
@@ -336,14 +374,20 @@ const RestauranteBar = () => {
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregues recentemente (clicou errado? desfaz aqui)</h2>
+                <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregues hoje (clicou errado? desfaz aqui)</h2>
                 <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontosRecentes.length}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {prontosRecentes.map((item, idx) => (
+                {(verTodosEntregues ? prontosRecentes : prontosRecentes.slice(0, 2)).map((item, idx) => (
                   <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
                 ))}
               </div>
+              {prontosRecentes.length > 2 && (
+                <button onClick={() => setVerTodosEntregues((v) => !v)}
+                  className="mt-3 w-full py-2 text-xs font-bold text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10">
+                  {verTodosEntregues ? 'Recolher / fechar a lista' : `Ver todos (${prontosRecentes.length})`}
+                </button>
+              )}
             </div>
           )}
         </main>
