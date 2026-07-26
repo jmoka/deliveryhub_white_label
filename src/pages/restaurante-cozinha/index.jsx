@@ -547,7 +547,9 @@ const RestauranteCozinha = () => {
   const preparando = pedidos.filter((p) => p.status === 'preparing' && idsDeliveryRoteadosParaCozinha.has(p.id));
   const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado');
   const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando');
-  const itensSalaoProntos = itensSalao.filter((i) => i.status === 'pronto');
+  const itensSalaoProntos = itensSalao
+    .filter((i) => i.status === 'pronto')
+    .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
 
   // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.
   const filaAguardando = [

@@ -292,7 +292,9 @@ const RestauranteProducao = () => {
             const itens = (itensPorImpressora[imp.id] ?? []).filter(passaFiltro);
             const aguardando = itens.filter((i) => i.status === 'enviado');
             const preparando = itens.filter((i) => i.status === 'preparando');
-            const entregues = itens.filter((i) => i.status === 'pronto');
+            const entregues = itens
+              .filter((i) => i.status === 'pronto')
+              .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
             return (
               <div key={imp.id}>
                 <div className="flex items-center gap-2 mb-3">
