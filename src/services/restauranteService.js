@@ -127,6 +127,9 @@ export const adicionarSaida = (data) =>
 export const adicionarEntrada = (data) =>
   apiFetch('/caixa/entrada', { method: 'POST', body: JSON.stringify(data) });
 
+export const estornarSaida = (index) =>
+  apiFetch(`/caixa/saida/${index}`, { method: 'DELETE' });
+
 export const getCaixaHistorico = () => apiFetch('/caixa/historico');
 export const getCaixaDetalhe = (id) => apiFetch(`/caixa/${id}`);
 export const aprovarConferencia = (caixaId) =>

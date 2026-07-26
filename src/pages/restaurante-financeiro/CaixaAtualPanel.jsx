@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
-import { adicionarSaida, adicionarEntrada, fecharCaixa } from '../../services/restauranteService';
+import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa } from '../../services/restauranteService';
 import FecharCaixaModal from '../restaurante-dashboard/FecharCaixaModal';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -88,6 +88,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
   const [modal, setModal] = useState(null); // 'sangria' | 'adicao' | 'fechar' | null
   const [salvando, setSalvando] = useState(false);
   const [fechando, setFechando] = useState(false);
+  const [estornando, setEstornando] = useState(null); // index da saída sendo estornada
 
   if (!caixa?.aberto) return null;
 
@@ -107,6 +108,16 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
       setModal(null);
     } catch (e) { alert(e.message); }
     finally { setSalvando(false); }
+  };
+
+  const handleEstornar = async (index) => {
+    if (!confirm('Estornar essa saída? O valor volta a contar no caixa.')) return;
+    setEstornando(index);
+    try {
+      await estornarSaida(index);
+      await onRefresh();
+    } catch (e) { alert(e.message); }
+    finally { setEstornando(null); }
   };
 
   const handleFechar = async (body) => {
@@ -191,19 +202,31 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
             <div>
               <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Sangrias / Saídas</p>
               <div className="space-y-1 max-h-28 overflow-y-auto">
-                {[...saidas].reverse().map((s, i) => (
-                  <div key={i} className="flex justify-between text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
-                    <span className="text-[#71717A] truncate mr-2 flex items-center gap-1">
-                      {MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}
-                      {s.tipo && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-100 text-red-700 flex-shrink-0">
-                          {s.tipo === 'troco' ? 'Troco' : s.tipo === 'gorjeta' ? 'Gorjeta' : s.tipo}
-                        </span>
-                      )}
-                    </span>
-                    <span className="font-bold text-red-600 flex-shrink-0">- {fmt(s.valor)}</span>
-                  </div>
-                ))}
+                {[...saidas].reverse().map((s, i) => {
+                  const idx = saidas.length - 1 - i;
+                  return (
+                    <div key={idx} className="flex justify-between text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
+                      <span className="text-[#71717A] truncate mr-2 flex items-center gap-1">
+                        {MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}
+                        {s.tipo && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-100 text-red-700 flex-shrink-0">
+                            {s.tipo === 'troco' ? 'Troco' : s.tipo === 'gorjeta' ? 'Gorjeta' : s.tipo}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="font-bold text-red-600">- {fmt(s.valor)}</span>
+                        <button
+                          onClick={() => handleEstornar(idx)}
+                          disabled={estornando === idx}
+                          title="Retornar ao caixa"
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-200 text-red-500 hover:bg-red-100 disabled:opacity-50">
+                          {estornando === idx ? '...' : 'Retornar'}
+                        </button>
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
