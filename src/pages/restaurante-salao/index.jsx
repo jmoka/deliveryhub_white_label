@@ -290,7 +290,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
         formaPagamento: forma,
       };
       const res = await imprimirConferenciaSalao(comandaId, valores);
-      if (res?.via !== 'agente') printConferenciaComanda(comanda, comanda.itens ?? [], valores);
+      if (res?.via !== 'agente') printConferenciaComanda(comanda, comanda.itens ?? [], { ...valores, pagamentos: comanda.pagamentos ?? [] });
     });
   };
 
@@ -304,7 +304,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           acrescimo: Number(comanda.acrescimo_valor || 0),
           gorjeta: Number(comanda.gorjeta_valor || 0),
           taxaCartao: res?.taxa_cartao_valor ?? 0,
-          total: comanda.total,
+          total: res?.total ?? comanda.total,
           formaPagamento: comanda.payment_method,
           trocoDado: 0,
           pagamentos: res?.pagamentos ?? comanda.pagamentos ?? [],
@@ -330,7 +330,7 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
           acrescimo: Number(acrescimoInput || 0),
           gorjeta: Number(gorjeta || 0),
           taxaCartao: res?.taxa_cartao_valor ?? 0,
-          total: res?.valor_cobrado ?? res?.total ?? valorACobrarFinal,
+          total: res?.total_geral ?? (totalFinal + Number(gorjeta || 0) + taxaCartaoTotalExibida),
           formaPagamento: forma,
           trocoDado: res?.troco ?? 0,
           pagamentos: res?.pagamentos ?? [],
@@ -598,6 +598,33 @@ const ComandaModal = ({ comandaId, mesas, onFechar, onMudou }) => {
             <span>Total</span><span>{fmt(totalFinal)}</span>
           </div>
         </div>
+
+        {/* Comanda já paga/cancelada: mostra o resumo completo (desconto, acréscimo,
+            gorjeta, taxa cartão, forma de pagamento e total geral) em modo leitura —
+            antes esse bloco só aparecia enquanto podeEditar, sumindo tudo isso depois
+            de fechada e deixando a conferência/recibo sem essas informações. */}
+        {!podeEditar && (
+          <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-1">
+            {Number(comanda.desconto_valor || 0) > 0 && (
+              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Desconto</span><span>- {fmt(comanda.desconto_valor)}</span></div>
+            )}
+            {Number(comanda.acrescimo_valor || 0) > 0 && (
+              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Acréscimo</span><span>+ {fmt(comanda.acrescimo_valor)}</span></div>
+            )}
+            {Number(comanda.gorjeta_valor || 0) > 0 && (
+              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Gorjeta</span><span>{fmt(comanda.gorjeta_valor)}</span></div>
+            )}
+            {taxaCartaoRegistrada > 0 && (
+              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Taxa cartão</span><span className="text-[#FF441F]">+ {fmt(taxaCartaoRegistrada)}</span></div>
+            )}
+            {comanda.payment_method && (
+              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Forma de pagamento</span><span>{PAGAMENTO_LABEL[comanda.payment_method] ?? comanda.payment_method}</span></div>
+            )}
+            <div className="flex justify-between text-base font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+              <span>Total geral</span><span>{fmt(comanda.saldo?.total ?? totalFinal)}</span>
+            </div>
+          </div>
+        )}
 
         <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
           <div className="flex justify-between text-sm">
@@ -881,7 +908,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
           desconto: Number(descontoInput || 0),
           acrescimo: Number(acrescimoInput || 0),
           taxaCartao: res?.taxa_cartao_valor ?? 0,
-          total: res?.valor_cobrado ?? res?.total ?? valorACobrarFinal,
+          total: res?.total_geral ?? (totalFinal + taxaCartaoValorFinal),
           formaPagamento: forma,
           trocoDado: res?.troco ?? 0,
           pagamentos: res?.pagamentos ?? [],

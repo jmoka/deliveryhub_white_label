@@ -292,7 +292,7 @@ ${taxaCartao > 0 ? `<div class="linha"><span>Taxa cartão</span><span>+ ${fmt(ta
 ${pagamentos.length > 0 ? `
 <hr/>
 <div class="center" style="font-size:11px;font-weight:bold">PAGAMENTOS</div>
-${pagamentos.map((p) => `<div class="linha"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})</span><span>${fmt(p.valor)}</span></div>`).join('')}
+${pagamentos.map((p) => `<div class="linha"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>`).join('')}
 ` : `
 <div class="linha"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>
 `}
@@ -328,10 +328,11 @@ try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
 export const printConferenciaComanda = (comanda, itens, valores = {}, restauranteNome) => {
   const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
   const subtotal = itens.reduce((acc, i) => acc + i.quantity * (i.unit_price ?? i.products?.price ?? 0), 0);
-  const { desconto = 0, acrescimo = 0, gorjeta = 0, taxaCartao = 0, formaPagamento } = valores;
+  const { desconto = 0, acrescimo = 0, gorjeta = 0, taxaCartao = 0, formaPagamento, pagamentos = [] } = valores;
   const total = subtotal - desconto + acrescimo + gorjeta + taxaCartao;
   const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
   const hora = new Date().toLocaleString('pt-BR');
+  const PAGAMENTO_ORIGEM = { garcom: 'garçom', estabelecimento: 'caixa' };
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Conferência</title>
 <style>
@@ -350,6 +351,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 <hr/>
 <div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
 ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
+${comanda?.garcons?.nome ? `<div class="center" style="font-size:12px">Garçom: ${comanda.garcons.nome}</div>` : ''}
 <div class="center" style="font-size:11px">${hora}</div>
 <hr/>
 ${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i.products?.name}</span><span>${fmt(i.quantity * (i.unit_price ?? i.products?.price ?? 0))}</span></div>`).join('')}
@@ -361,7 +363,11 @@ ${gorjeta > 0 ? `<div class="item"><span>Gorjeta</span><span>+ ${fmt(gorjeta)}</
 ${taxaCartao > 0 ? `<div class="item"><span>Taxa cartão</span><span>+ ${fmt(taxaCartao)}</span></div>` : ''}
 <hr/>
 <div class="total"><span>TOTAL</span><span>${fmt(total)}</span></div>
-${formaPagamento ? `<div class="item"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>` : ''}
+${pagamentos.length > 0 ? `
+<hr/>
+<div class="center" style="font-size:11px;font-weight:bold">JÁ PAGO</div>
+${pagamentos.map((p) => `<div class="item"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>`).join('')}
+` : formaPagamento ? `<div class="item"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>` : ''}
 <hr/>
 <div class="foot">Confira os itens antes de fechar a conta</div>
 <script>
