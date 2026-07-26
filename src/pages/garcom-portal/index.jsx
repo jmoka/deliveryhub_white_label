@@ -933,7 +933,6 @@ const GarcomHome = () => {
         tocarAlarmeConferencia();
         const nc = novas[0];
         setAvisoPronto(`${nc.cliente_mesa_nome} pediu conferência — #${nc.numero_comanda ?? nc.id}`);
-        setTimeout(() => setAvisoPronto(null), 8000);
       }
     } catch (err) {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
@@ -959,8 +958,8 @@ const GarcomHome = () => {
         if (novos.length > 0) {
           tocarAlarmePronto();
           const i = novos[0];
-          setAvisoPronto(`${i.product_name} — ${i.mesa ?? `Comanda #${i.numero_comanda}`} está pronto pra buscar!`);
-          setTimeout(() => setAvisoPronto(null), 8000);
+          const mesaLabel = i.mesa ?? `Comanda #${i.numero_comanda}`;
+          setAvisoPronto(`Seu pedido está pronto! Mesa: ${mesaLabel}${i.cliente ? ` · Cliente: ${i.cliente}` : ''} · Pedido: ${i.product_name}`);
         }
       } catch {}
       try {
@@ -985,9 +984,15 @@ const GarcomHome = () => {
   if (bloqueado) return <RestauranteFechado />;
 
   const avisoProntoToast = avisoPronto && (
-    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-[100] bg-white/95 border border-emerald-200 text-emerald-700 text-xs px-3 py-1.5 rounded-full shadow-md max-w-[90vw] text-center flex items-center gap-1.5 pointer-events-none">
-      <Icon name="BellRing" size={12} className="flex-shrink-0" />
-      <span className="truncate">{avisoPronto}</span>
+    <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+        <Icon name="BellRing" size={40} className="mx-auto text-[#FF441F] mb-3 animate-pulse" />
+        <p className="text-base font-bold text-[#18181B] mb-5">{avisoPronto}</p>
+        <button onClick={() => setAvisoPronto(null)}
+          className="w-full py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F]">
+          OK, entendi
+        </button>
+      </div>
     </div>
   );
 
