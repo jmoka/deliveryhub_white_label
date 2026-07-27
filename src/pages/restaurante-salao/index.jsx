@@ -557,8 +557,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4" onClick={onFechar}>
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-3">
           <div>
             <h2 className="text-base font-bold text-[#18181B]">
@@ -576,12 +576,17 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               {comanda.garcons?.nome ? `Garçom: ${comanda.garcons.nome}` : comanda.aberto_por_nome ? `Caixa: ${comanda.aberto_por_nome}` : 'Garçom: —'}
             </p>
           </div>
-          <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
-            {comanda.status === 'aberta' ? 'Em aberto'
-              : comanda.status === 'fechada_garcom' ? 'Aguardando pagamento'
-              : comanda.status === 'paga' ? 'Paga'
-              : comanda.status === 'canceled' ? 'Cancelada' : comanda.status}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
+              {comanda.status === 'aberta' ? 'Em aberto'
+                : comanda.status === 'fechada_garcom' ? 'Aguardando pagamento'
+                : comanda.status === 'paga' ? 'Paga'
+                : comanda.status === 'canceled' ? 'Cancelada' : comanda.status}
+            </span>
+            <button onClick={onFechar} className="p-1 text-[#71717A] hover:text-[#FF441F]" title="Fechar">
+              <Icon name="X" size={18} />
+            </button>
+          </div>
         </div>
 
         {comanda.status === 'fechada_garcom' && (
