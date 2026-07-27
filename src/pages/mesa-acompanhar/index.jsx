@@ -132,7 +132,10 @@ const MesaAcompanhar = () => {
             </div>
           )}
           <div className="flex justify-between text-sm text-[#71717A]">
-            <span>Gorjeta {dados.gorjeta_percentual ? `(${dados.gorjeta_percentual}%)` : ''}</span>
+            <span>
+              Gorjeta {dados.gorjeta_percentual ? `(${dados.gorjeta_percentual}%)` : ''}
+              {dados.gorjeta_estimativa && <span className="text-[10px]"> · estimativa</span>}
+            </span>
             <span>{fmt(dados.gorjeta)}</span>
           </div>
           {dados.taxa_cartao_total > 0 && (
