@@ -47,6 +47,8 @@ const Modal = ({ empresa, onClose, onSave }) => {
     address: empresa?.address ?? '',
     comissao_pct: empresa?.comissao_pct ?? 5,
     user_id: empresa?.user_id ?? '',
+    modulo_delivery: empresa?.modulo_delivery ?? true,
+    modulo_salao: empresa?.modulo_salao ?? false,
   });
   const [salvando, setSalvando] = useState(false);
 
@@ -114,6 +116,27 @@ const Modal = ({ empresa, onClose, onSave }) => {
             <p className="text-xs text-gray-400 mt-1">
               UUID do usuário cadastrado como restaurant_owner. Deixe vazio se não houver dono ainda.
             </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Módulos liberados</label>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.modulo_delivery}
+                  onChange={(e) => setForm({ ...form, modulo_delivery: e.target.checked })}
+                />
+                Delivery
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.modulo_salao}
+                  onChange={(e) => setForm({ ...form, modulo_salao: e.target.checked })}
+                />
+                Salão (mesas/comandas/garçons)
+              </label>
+            </div>
           </div>
           <div className="flex gap-3 pt-2">
             <button
@@ -311,6 +334,7 @@ const AdminEmpresas = () => {
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Slug / Link</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Endereço</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Módulos</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Domínio</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden md:table-cell">Comissão</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden lg:table-cell">Cadastro</th>
@@ -349,6 +373,19 @@ const AdminEmpresas = () => {
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
                           </span>
                         )}
+                      </td>
+                      <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
+                        <div className="flex gap-1">
+                          {e.modulo_delivery && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Delivery</span>
+                          )}
+                          {e.modulo_salao && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Salão</span>
+                          )}
+                          {!e.modulo_delivery && !e.modulo_salao && (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         {e.custom_domain_status === 'pendente' ? (

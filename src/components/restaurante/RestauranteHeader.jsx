@@ -7,7 +7,7 @@ import MobileMenu from './MobileMenu';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useRestauranteFavoritos } from '../../hooks/useRestauranteFavoritos';
 import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
@@ -20,13 +20,13 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
   const { signOut } = useAuth();
   const slugLoja = useMinhaLojaSlug();
   const logoUrl = useMinhaLojaLogo();
-  const tipoRestaurante = useTipoRestaurante();
+  const { moduloDelivery, moduloSalao } = useModulosEmpresa();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const { favoritos, toggleFavorito, isFavorito } = useRestauranteFavoritos();
   const [sidebarAberto, setSidebarAberto] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
 
-  const links = getRestauranteNavLinks(tipoRestaurante);
+  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao);
   const linksFavoritos = links.filter((l) => favoritos.includes(l.path));
 
   return (
