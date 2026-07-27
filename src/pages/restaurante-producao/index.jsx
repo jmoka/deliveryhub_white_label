@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
@@ -10,7 +10,7 @@ import Icon from '../../components/AppIcon';
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
 // pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar }) => {
+const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -74,10 +74,16 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
           </button>
         )}
         {item.status === 'enviado' ? (
-          <button onClick={() => onIniciarPreparo(item)}
-            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-            <Icon name="ChefHat" size={13} /> Iniciar Preparo
-          </button>
+          <>
+            <button onClick={() => onCancelar(item)} title="Cancelar item"
+              className="flex-shrink-0 px-3 py-2 bg-red-900/40 hover:bg-red-900/60 text-red-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+              <Icon name="X" size={13} /> Cancelar
+            </button>
+            <button onClick={() => onIniciarPreparo(item)}
+              className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+              <Icon name="ChefHat" size={13} /> Iniciar Preparo
+            </button>
+          </>
         ) : item.status === 'pronto' ? (
           <div className="flex-1 py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
             <Icon name="Check" size={13} /> {item.entregue_garcom ? 'Entregue pelo garçom' : 'Entregue'}
@@ -171,6 +177,16 @@ const RestauranteProducao = () => {
   const voltarItem = async (item) => {
     await voltarStatusItemRestaurante(item.id);
     carregar(impressoras);
+  };
+
+  const cancelarItem = async (item) => {
+    if (!confirm(`Cancelar "${item.product_name}"? Esta ação não pode ser desfeita.`)) return;
+    try {
+      await cancelarItemRestaurante(item.id);
+      carregar(impressoras);
+    } catch (e) {
+      alert(e.message);
+    }
   };
 
   const reimprimir = async (item, setorNome) => {
@@ -320,7 +336,7 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} />
                           ))}
                         </div>
                       )}
