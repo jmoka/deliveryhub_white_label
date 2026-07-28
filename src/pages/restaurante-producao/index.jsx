@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
@@ -10,15 +10,28 @@ import Icon from '../../components/AppIcon';
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
 // pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar }) => {
+const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, onAbrirComanda, onSalvarObservacao }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
   const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
   const tempoTotal = now - enviadoEm;
+  const podeAbrirComanda = item.tipo === 'salao' && !!item.numero_comanda;
+  const podeEditarObs = item.tipo === 'salao';
+  const [editandoObs, setEditandoObs] = useState(false);
+  const [obsInput, setObsInput] = useState(item.observacao ?? '');
+  useEffect(() => { if (!editandoObs) setObsInput(item.observacao ?? ''); }, [item.observacao, editandoObs]);
+
+  const salvarObs = () => {
+    onSalvarObservacao(item, obsInput);
+    setEditandoObs(false);
+  };
 
   return (
-    <div className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+    <div
+      onClick={podeAbrirComanda ? () => onAbrirComanda(item.order_id) : undefined}
+      title={podeAbrirComanda ? 'Ver comanda completa' : undefined}
+      className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden ${podeAbrirComanda ? 'cursor-pointer hover:border-[#FF441F]/60' : ''} ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
       {item.garcom && (
         <div className="bg-white px-4 py-2">
           <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
@@ -35,13 +48,30 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
             <p className="text-lg font-bold text-white">Produto: {item.product_name}</p>
           </div>
         </div>
-        <button onClick={() => onReimprimir(item)}
+        <button onClick={(e) => { e.stopPropagation(); onReimprimir(item); }}
           className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
           <Icon name="Printer" size={11} /> Reimpressão
         </button>
       </div>
       {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-      {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
+      {editandoObs ? (
+        <div className="flex items-center gap-1.5 mb-1" onClick={(e) => e.stopPropagation()}>
+          <input value={obsInput} onChange={(e) => setObsInput(e.target.value)} autoFocus
+            placeholder="Observação..." className="flex-1 text-xs bg-[#111111] border border-[#3A3A3A] rounded-lg px-2 py-1 text-white focus:outline-none focus:border-[#FF441F]" />
+          <button onClick={salvarObs} className="text-xs font-bold text-emerald-400">Salvar</button>
+          <button onClick={() => setEditandoObs(false)} className="text-xs text-[#71717A]">Cancelar</button>
+        </div>
+      ) : item.observacao ? (
+        <p onClick={podeEditarObs ? (e) => { e.stopPropagation(); setEditandoObs(true); } : undefined}
+          className={`text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse ${podeEditarObs ? 'cursor-pointer' : ''}`}>
+          Obs: {item.observacao}
+        </p>
+      ) : podeEditarObs ? (
+        <button onClick={(e) => { e.stopPropagation(); setEditandoObs(true); }}
+          className="flex items-center gap-1 mb-1 text-xs text-[#71717A] hover:text-white">
+          <Icon name="MessageSquare" size={11} /> Adicionar observação
+        </button>
+      ) : null}
       <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
         <Icon name="MapPin" size={14} />
         <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
@@ -66,7 +96,7 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
         )}
         <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
         {item.status !== 'enviado' && (
           <button onClick={() => onVoltar(item)} title="Desfazer — clicou errado"
             className="flex-shrink-0 px-3 py-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
@@ -100,6 +130,60 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
   );
 };
 
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+// Clique no card (só itens de Salão, com numero_comanda) abre essa comanda completa —
+// mesmo endpoint que o PDV do Salão usa, só leitura aqui (sem ações de pagamento).
+const ComandaModal = ({ orderId, onFechar }) => {
+  const [comanda, setComanda] = useState(null);
+  const [erro, setErro] = useState(null);
+
+  useEffect(() => {
+    getSalaoComandaDetalhe(orderId).then(setComanda).catch((e) => setErro(e.message));
+  }, [orderId]);
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onFechar}>
+      <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#2A2A2A] sticky top-0 bg-[#1A1A1A]">
+          <h2 className="text-sm font-black text-white">
+            Comanda {comanda?.numero_comanda ? `#${comanda.numero_comanda}` : ''}
+          </h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A] hover:text-white"><Icon name="X" size={18} /></button>
+        </div>
+        <div className="p-4">
+          {erro && <p className="text-sm text-red-400">{erro}</p>}
+          {!comanda && !erro && <p className="text-sm text-[#71717A]">Carregando...</p>}
+          {comanda && (
+            <>
+              <p className="text-xs text-[#71717A] mb-3">
+                {comanda.mesas ? `Mesa ${comanda.mesas.numero}${comanda.mesas.nome ? ' - ' + comanda.mesas.nome : ''}` : comanda.cliente_mesa_nome}
+                {comanda.garcons?.nome && ` • Garçom: ${comanda.garcons.nome}`}
+                {comanda.aberto_por_nome && ` • Aberto por: ${comanda.aberto_por_nome}`}
+              </p>
+              <div className="space-y-2 mb-3">
+                {(comanda.itens ?? []).map((item) => (
+                  <div key={item.id} className="flex items-center justify-between gap-2 bg-[#111111] rounded-lg px-3 py-2">
+                    <div>
+                      <p className="text-sm font-bold text-white">{item.quantity}x {item.products?.name}</p>
+                      {item.observacao && <p className="text-xs text-blue-400">Obs: {item.observacao}</p>}
+                    </div>
+                    <span className="text-xs text-[#71717A]">{fmt(item.quantity * item.unit_price)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-[#2A2A2A] pt-3 flex items-center justify-between">
+                <span className="text-xs font-bold text-[#71717A] uppercase">Total</span>
+                <span className="text-lg font-black text-white">{fmt(comanda.total)}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Linha de produção do Salão — visão unificada de TODOS os setores (cozinha, bar,
 // salgados...) num painel só, dono acessa direto logado (sem link/token separado, mesmo
 // padrão de acesso da tela de Cozinha do delivery). Cada setor é uma impressora
@@ -113,6 +197,7 @@ const RestauranteProducao = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [comandaAbertaId, setComandaAbertaId] = useState(null);
   const now = useNowTick();
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const [verTodosEntregues, setVerTodosEntregues] = useState({}); // { [impressoraId]: bool }
@@ -195,6 +280,15 @@ const RestauranteProducao = () => {
       if (res.via === 'navegador') {
         printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente }, setorNome);
       }
+    } catch (e) {
+      setErro(e.message);
+    }
+  };
+
+  const salvarObservacao = async (item, observacao) => {
+    try {
+      await editarItemComandaSalao(item.order_id, item.id, { observacao });
+      carregar(impressoras);
     } catch (e) {
       setErro(e.message);
     }
@@ -336,7 +430,7 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
                           ))}
                         </div>
                       )}
@@ -349,7 +443,7 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {preparando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
                           ))}
                         </div>
                       )}
@@ -363,7 +457,7 @@ const RestauranteProducao = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                             {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((item, idx) => (
                               <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} />
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
                             ))}
                           </div>
                           {entregues.length > 2 && (
@@ -391,6 +485,8 @@ const RestauranteProducao = () => {
       )}
 
       <p className="text-center text-xs text-[#3A3A3A] py-4">Atualiza automaticamente a cada 15 segundos</p>
+
+      {comandaAbertaId && <ComandaModal orderId={comandaAbertaId} onFechar={() => setComandaAbertaId(null)} />}
     </div>
   );
 };

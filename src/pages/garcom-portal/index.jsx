@@ -5,7 +5,7 @@ import {
   getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
-  confirmarEntregaItem, dividirComanda,
+  confirmarEntregaItem, dividirComanda, editarObservacaoItem,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
@@ -589,6 +589,8 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [mostrarQr, setMostrarQr] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
   const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
+  const [observacaoEditandoId, setObservacaoEditandoId] = useState(null);
+  const [observacaoInput, setObservacaoInput] = useState('');
   const [excluindo, setExcluindo] = useState(false);
   const [mostrarDividir, setMostrarDividir] = useState(false);
   const [dividindo, setDividindo] = useState(false);
@@ -633,6 +635,22 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
       await carregar();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível alterar a quantidade.');
+    }
+  };
+
+  const abrirEdicaoObservacao = (item) => {
+    setObservacaoEditandoId(item.id);
+    setObservacaoInput(item.observacao ?? '');
+  };
+
+  const salvarObservacao = async (item) => {
+    setErro(null);
+    try {
+      await editarObservacaoItem(comandaId, item.id, observacaoInput);
+      setObservacaoEditandoId(null);
+      await carregar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível salvar a observação.');
     }
   };
 
@@ -764,38 +782,54 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
 
       <div className="p-4 space-y-2">
         {(comanda.itens ?? []).map((item) => (
-          <div key={item.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
-                {item.products?.image_url
-                  ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
+          <div key={item.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3">
+            <div className="flex justify-between items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                  {item.products?.image_url
+                    ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#18181B] truncate">{item.quantity}x {item.products?.name}</p>
+                  <p className="text-xs text-[#71717A]">{fmt(item.unit_price)} un.</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-[#18181B] truncate">{item.quantity}x {item.products?.name}</p>
-                <p className="text-xs text-[#71717A]">{fmt(item.unit_price)} un.</p>
-                {item.observacao && <p className="text-xs text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 mt-0.5 inline-block">{item.observacao}</p>}
-              </div>
-            </div>
-            {item.status === 'pendente' ? (
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">−</button>
-                <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">+</button>
-                <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 text-red-500 flex items-center justify-center">
-                  <Icon name="X" size={12} />
+              {item.status === 'pendente' ? (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">−</button>
+                  <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">+</button>
+                  <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 text-red-500 flex items-center justify-center">
+                    <Icon name="X" size={12} />
+                  </button>
+                </div>
+              ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
+                <button onClick={() => confirmarEntrega(item)}
+                  className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
+                  <Icon name="Check" size={12} /> Entregar
                 </button>
+              ) : (
+                <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                  item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
+                </span>
+              )}
+            </div>
+
+            {observacaoEditandoId === item.id ? (
+              <div className="flex items-center gap-1.5 mt-2">
+                <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
+                  placeholder="Observação..." className="flex-1 text-xs border border-[#E4E4E7] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FF441F]" />
+                <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
+                <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
               </div>
-            ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
-              <button onClick={() => confirmarEntrega(item)}
-                className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
-                <Icon name="Check" size={12} /> Entregar
-              </button>
             ) : (
-              <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
-                item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
-              }`}>
-                {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
-              </span>
+              <button onClick={() => abrirEdicaoObservacao(item)}
+                className="flex items-center gap-1 mt-1.5 text-xs text-amber-700 bg-amber-50 rounded px-1.5 py-0.5">
+                <Icon name="MessageSquare" size={11} />
+                {item.observacao || 'Adicionar observação'}
+              </button>
             )}
           </div>
         ))}

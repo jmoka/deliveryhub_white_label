@@ -31,6 +31,7 @@ const COPA_LINKS = [
 
 const SALAO_LINKS = [
   { label: 'Salão', path: '/restaurante/salao', icon: 'UtensilsCrossed' },
+  { label: 'Chamada', path: '/restaurante/chamada', icon: 'Volume2' },
   { label: 'Garçons', path: '/restaurante/garcons', icon: 'Contact' },
   { label: 'Impressoras', path: '/restaurante/impressoras', icon: 'Printer' },
 ];
