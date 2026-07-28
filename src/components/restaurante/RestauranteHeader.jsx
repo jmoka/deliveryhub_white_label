@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import Icon from '../AppIcon';
 import RestauranteSidebar from './RestauranteSidebar';
 import MobileMenu from './MobileMenu';
+import { ThemeToggle } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
@@ -56,6 +57,7 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
         )}
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <ThemeToggle inline />
           <button onClick={() => setSidebarAberto(true)}
             className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
             <Icon name="Menu" size={18} /> Menu

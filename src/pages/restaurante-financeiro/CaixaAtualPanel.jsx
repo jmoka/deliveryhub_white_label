@@ -136,7 +136,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
   return (
     <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -146,7 +146,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
             {caixa.nome_operador} · aberto às {fmtHora(caixa.aberto_em)} · fundo: {fmt(caixa.valor_inicial)}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setModal('sangria')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-200 text-red-600 rounded-xl hover:bg-red-50">
             <Icon name="ArrowDownLeft" size={13} /> Sangria
           </button>
@@ -160,7 +160,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
       </div>
 
       {/* KPIs principais */}
-      <div className="grid grid-cols-3 gap-3 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
         <Kpi icon="Banknote"   label="Espécie no caixa" value={fmt(r.especie_calculada)} color="green" sub="Dinheiro físico esperado" />
         <Kpi icon="Smartphone" label="Digital (PagBank)" value={fmt(digitalTotal)} color="blue"
           sub={taxaEst > 0 ? `Taxa est.: ${fmt(taxaEst)}` : 'Sem taxa configurada'} />
@@ -168,7 +168,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
       </div>
 
       {/* KPIs secundários */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
         <Kpi icon="Wallet"       label="Fundo Inicial (Troco)" value={fmt(caixa.valor_inicial)} color="gray" />
         <Kpi icon="ArrowUpRight" label="Adições"               value={fmt(r.total_entradas)}   color="green" sub={`${entradas.length} registros`} />
         <Kpi icon="ArrowDownLeft" label="Sangrias / Saídas"    value={fmt(r.total_saidas)}     color="red"   sub={`${saidas.length} registros`} />
@@ -199,15 +199,15 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
       {(saidas.length > 0 || entradas.length > 0) && (
         <div className="grid sm:grid-cols-2 gap-3">
           {saidas.length > 0 && (
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Sangrias / Saídas</p>
-              <div className="space-y-1 max-h-28 overflow-y-auto">
+              <div className="space-y-1 max-h-28 overflow-y-auto overflow-x-auto">
                 {[...saidas].reverse().map((s, i) => {
                   const idx = saidas.length - 1 - i;
                   return (
-                    <div key={idx} className="flex justify-between text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
-                      <span className="text-[#71717A] truncate mr-2 flex items-center gap-1">
-                        {MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}
+                    <div key={idx} className="flex justify-between items-center text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
+                      <span className="flex items-center gap-1 mr-2 flex-1 min-w-0">
+                        <span className="text-[#71717A] truncate">{MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}</span>
                         {s.tipo && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-100 text-red-700 flex-shrink-0">
                             {s.tipo === 'troco' ? 'Troco' : s.tipo === 'gorjeta' ? 'Gorjeta' : s.tipo}
@@ -231,12 +231,12 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
             </div>
           )}
           {entradas.length > 0 && (
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Adições</p>
-              <div className="space-y-1 max-h-28 overflow-y-auto">
+              <div className="space-y-1 max-h-28 overflow-y-auto overflow-x-auto">
                 {[...entradas].reverse().map((e, i) => (
-                  <div key={i} className="flex justify-between text-xs bg-green-50 rounded-lg px-2.5 py-1.5">
-                    <span className="text-[#71717A] truncate mr-2">{MEIO_LABELS[e.meio] ?? '💵'} {e.descricao}</span>
+                  <div key={i} className="flex justify-between items-center text-xs bg-green-50 rounded-lg px-2.5 py-1.5">
+                    <span className="text-[#71717A] truncate mr-2 flex-1 min-w-0">{MEIO_LABELS[e.meio] ?? '💵'} {e.descricao}</span>
                     <span className="font-bold text-green-700 flex-shrink-0">+ {fmt(e.valor)}</span>
                   </div>
                 ))}

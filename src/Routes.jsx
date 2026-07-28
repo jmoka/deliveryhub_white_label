@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
 import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
+import { ThemeToggle } from "./contexts/ThemeContext";
 import NotFound from "pages/NotFound";
 import ShoppingCartCheckout from './pages/shopping-cart-checkout';
 import MenuCatalogProductBrowse from './pages/menu-catalog-product-browse';
@@ -58,6 +59,7 @@ const Routes = () => {
   return (
     <BrowserRouter>
       <ErrorBoundary>
+      <ThemeToggle />
       <ScrollToTop />
       <RouterRoutes>
         <Route path="/" element={<HomeRouter />} />

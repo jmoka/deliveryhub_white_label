@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const ThemeContext = createContext(null);
 
@@ -29,18 +30,27 @@ export const ThemeProvider = ({ children }) => {
 
 export const useTheme = () => useContext(ThemeContext);
 
-// Ícone fixo no canto superior direito, disponível em todas as telas.
+// Ícone disponível em todas as telas pra alternar claro/escuro.
 // Páginas ainda não adaptadas pro dark mode simplesmente ignoram a classe "dark" na <html>
 // até serem migradas — alternar o tema não quebra o visual delas.
-export const ThemeToggle = () => {
+//
+// Por padrão fica fixo no canto superior direito (fallback pra páginas sem cabeçalho
+// próprio). Em /restaurante/* o RestauranteHeader já renderiza uma cópia `inline` dentro
+// da barra superior — nesse caso o fallback fixo se esconde sozinho pra não duplicar
+// nem sobrepor o botão do menu (ver RestauranteHeader.jsx).
+export const ThemeToggle = ({ inline = false }) => {
   const { tema, alternarTema } = useTheme() ?? {};
+  const location = useLocation();
   if (!alternarTema) return null;
+  if (!inline && location.pathname.startsWith('/restaurante')) return null;
+
+  const posicao = inline ? '' : 'fixed top-3 right-3 z-[100]';
   return (
     <button
       onClick={alternarTema}
       title={tema === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
       aria-label="Alternar tema claro/escuro"
-      className="fixed top-3 right-3 z-[100] w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] shadow-md hover:scale-105 transition-transform"
+      className={`${posicao} w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] shadow-md hover:scale-105 transition-transform flex-shrink-0`}
     >
       {tema === 'dark' ? (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
