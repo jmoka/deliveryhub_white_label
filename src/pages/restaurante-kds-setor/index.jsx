@@ -131,7 +131,7 @@ const RestauranteKdsSetor = () => {
             {idx === 0 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
             <div className="flex items-center gap-2 text-xs text-[#71717A] mb-3">
               <Icon name="MapPin" size={12} />
-              <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+              <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? 'Avulsa'}</span>
               {item.garcom && (
                 <>
                   <span className="text-[#3A3A3A]">•</span>

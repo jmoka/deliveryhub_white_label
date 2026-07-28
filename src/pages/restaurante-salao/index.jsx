@@ -355,6 +355,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [formaEdicao, setFormaEdicao] = useState('pix');
   const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
   const [semGorjeta, setSemGorjeta] = useState(false);
+  const [observacaoEditandoId, setObservacaoEditandoId] = useState(null);
+  const [observacaoInput, setObservacaoInput] = useState('');
 
   const carregar = useCallback(async () => {
     const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
@@ -479,6 +481,16 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     const novaQtd = item.quantity + delta;
     if (novaQtd < 1) return;
     acao(() => editarItemComandaSalao(comandaId, item.id, { quantity: novaQtd }));
+  };
+
+  const abrirEdicaoObservacao = (item) => {
+    setObservacaoEditandoId(item.id);
+    setObservacaoInput(item.observacao ?? '');
+  };
+
+  const salvarObservacao = (item) => {
+    acao(() => editarItemComandaSalao(comandaId, item.id, { observacao: observacaoInput }));
+    setObservacaoEditandoId(null);
   };
 
   const registrarPagamento = () => {
@@ -683,27 +695,43 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
         <div className="space-y-1 mb-3">
           {(comanda.itens ?? []).map((item) => (
-            <div key={item.id} className="flex justify-between items-center text-sm gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
-                  {item.products?.image_url
-                    ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={14} className="text-[#A1A1AA]" /></div>}
+            <div key={item.id} className="py-0.5">
+              <div className="flex justify-between items-center text-sm gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                    {item.products?.image_url
+                      ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={14} className="text-[#A1A1AA]" /></div>}
+                  </div>
+                  <span className="truncate">{item.quantity}x {item.products?.name}</span>
                 </div>
-                <span className="truncate">{item.quantity}x {item.products?.name}</span>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span>{fmt(item.quantity * item.unit_price)}</span>
+                  {['aberta', 'fechada_garcom'].includes(comanda.status) && (
+                    <>
+                      <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-5 h-5 rounded-md border border-[#E4E4E7] text-[#71717A] flex items-center justify-center">
+                        <Icon name="MessageSquare" size={11} />
+                      </button>
+                      <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">−</button>
+                      <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">+</button>
+                      <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                        <Icon name="X" size={11} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                <span>{fmt(item.quantity * item.unit_price)}</span>
-                {['aberta', 'fechada_garcom'].includes(comanda.status) && (
-                  <>
-                    <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">−</button>
-                    <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">+</button>
-                    <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
-                      <Icon name="X" size={11} />
-                    </button>
-                  </>
-                )}
-              </div>
+              {observacaoEditandoId === item.id ? (
+                <div className="flex items-center gap-1.5 mt-1 pl-10">
+                  <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
+                    placeholder="Observação..." className="flex-1 text-xs border border-[#E4E4E7] rounded-lg px-2 py-1 focus:outline-none focus:border-[#FF441F]" />
+                  <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
+                  <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
+                </div>
+              ) : item.observacao ? (
+                <p onClick={() => ['aberta', 'fechada_garcom'].includes(comanda.status) && abrirEdicaoObservacao(item)}
+                  className="text-xs text-blue-600 pl-10 cursor-pointer">Obs: {item.observacao}</p>
+              ) : null}
             </div>
           ))}
         </div>

@@ -5,6 +5,7 @@ const TONES = {
   pedido:     [[523, 0, 0.12], [659, 0.15, 0.12], [784, 0.3, 0.12], [1047, 0.45, 0.3]],  // C5 E5 G5 C6 — novo pedido (restaurante)
   cozinha:    [[784, 0, 0.15], [784, 0.2, 0.15], [1047, 0.4, 0.3]],                         // G5 G5 C6 — pedido na cozinha
   motoboy:    [[1047, 0, 0.15], [880, 0.2, 0.15], [1047, 0.4, 0.3]],                        // C6 A5 C6 — pronto p/ buscar
+  chamada:    [[880, 0, 0.18], [1175, 0.22, 0.18], [880, 0.44, 0.18], [1175, 0.66, 0.35]],  // bipe repetitivo — chama cliente no balcão
 };
 
 export function useNotificacaoSonora(tipo = 'pedido') {
