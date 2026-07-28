@@ -160,6 +160,10 @@ export const cancelarItemRestaurante = (itemId) =>
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const getRelatorioFretes = (periodo = 'hoje') => apiFetch(`/relatorio/fretes?periodo=${encodeURIComponent(periodo)}`);
 export const getRelatorioGarcom = (de, ate) => apiFetch(`/relatorio/garcom?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
+export const registrarRepasseGarcom = (garcomId, data) =>
+  apiFetch(`/relatorio/garcom/${garcomId}/repasse`, { method: 'POST', body: JSON.stringify(data) });
+export const estornarRepasseGarcom = (repasseId) =>
+  apiFetch(`/relatorio/garcom/repasse/${repasseId}`, { method: 'DELETE' });
 export const getRelatorioProdutos = (de, ate) => apiFetch(`/relatorio/produtos?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 

@@ -354,6 +354,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
   const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
+  const [semGorjeta, setSemGorjeta] = useState(false);
 
   const carregar = useCallback(async () => {
     const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
@@ -407,7 +408,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
       const valores = {
         desconto: Number(descontoInput || 0),
         acrescimo: Number(acrescimoInput || 0),
-        gorjeta: Number(gorjeta || 0),
+        gorjeta: gorjetaEfetiva,
         taxaCartao: taxaCartaoTotalExibida,
         formaPagamento: forma,
       };
@@ -442,7 +443,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     }
     acao(async () => {
       const res = await pagarComandaSalao(
-        comandaId, forma, gorjeta ? Number(gorjeta) : undefined,
+        comandaId, forma, gorjetaEfetiva,
         forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
       );
       if (res?.recibo?.via !== 'agente') {
@@ -450,9 +451,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           subtotal,
           desconto: Number(descontoInput || 0),
           acrescimo: Number(acrescimoInput || 0),
-          gorjeta: Number(gorjeta || 0),
+          gorjeta: gorjetaEfetiva,
           taxaCartao: res?.taxa_cartao_valor ?? 0,
-          total: res?.total_geral ?? (totalFinal + Number(gorjeta || 0) + taxaCartaoTotalExibida),
+          total: res?.total_geral ?? (totalFinal + gorjetaEfetiva + taxaCartaoTotalExibida),
           formaPagamento: forma,
           trocoDado: res?.troco ?? 0,
           pagamentos: res?.pagamentos ?? [],
@@ -542,9 +543,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   // engano, era dinheiro) — não reabre valor nem permite remover. Backend também bloqueia
   // se o caixa dessa comanda já tiver sido fechado (resumo já foi gravado e congelado).
   const podeCorrigirFormaPagamento = podeEditar || comanda.status === 'paga';
+  const gorjetaEfetiva = semGorjeta ? 0 : Number(gorjeta || 0);
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
-  const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + Number(gorjeta || 0)).toFixed(2));
+  const saldoDevedor = comanda.saldo?.saldo ?? totalFinal;
+  const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + gorjetaEfetiva).toFixed(2));
   const taxaCartaoValorFinal = isCartao(forma) ? parseFloat((valorACobrarFinalBase * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const valorACobrarFinal = parseFloat((valorACobrarFinalBase + taxaCartaoValorFinal).toFixed(2));
   // Taxa de cartão de pagamentos parciais já registrados (ex: garçom cobrou parte no cartão
@@ -901,8 +904,12 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           <label className="text-xs text-[#71717A]">
             Gorjeta {gorjetaPercentual > 0 ? `(sugerida ${gorjetaPercentual}% — ajustável)` : '(opcional)'}
           </label>
-          <input type="number" value={gorjeta} onChange={(e) => setGorjeta(e.target.value)}
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          <input type="number" value={gorjeta} onChange={(e) => setGorjeta(e.target.value)} disabled={semGorjeta}
+            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm disabled:opacity-50 disabled:bg-[#F4F4F5]" />
+          <label className="flex items-center gap-2 text-xs text-[#71717A]">
+            <input type="checkbox" checked={semGorjeta} onChange={(e) => setSemGorjeta(e.target.checked)} className="rounded" />
+            Não cobrar gorjeta
+          </label>
           <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-1">
             <div className="flex justify-between text-sm">
               <span className="text-[#71717A]">Valor da comanda</span>
@@ -910,7 +917,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#71717A]">Gorjeta</span>
-              <span className="text-[#18181B]">{fmt(Number(gorjeta || 0))}</span>
+              <span className="text-[#18181B]">{fmt(gorjetaEfetiva)}</span>
             </div>
             {taxaCartaoTotalExibida > 0 && (
               <div className="flex justify-between text-sm">
@@ -920,7 +927,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             )}
             <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
               <span>Total (comanda + gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
-              <span>{fmt(totalFinal + Number(gorjeta || 0) + taxaCartaoTotalExibida)}</span>
+              <span>{fmt(totalFinal + gorjetaEfetiva + taxaCartaoTotalExibida)}</span>
             </div>
             {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
               <>
@@ -952,13 +959,20 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
         {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
 
+        {podeEditar && saldoDevedor > 0.01 && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+            Ainda falta {fmt(saldoDevedor)} de saldo devedor. Registre os pagamentos acima (com a forma de cada um) até zerar pra poder fechar a comanda.
+          </p>
+        )}
+
         {podeEditar && (
         <div className="flex gap-2 mt-4">
           <button onClick={cancelar} disabled={salvando}
             className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
             Cancelar comanda
           </button>
-          <button onClick={pagar} disabled={salvando}
+          <button onClick={pagar} disabled={salvando || saldoDevedor > 0.01}
+            title={saldoDevedor > 0.01 ? 'Registre os pagamentos até o saldo zerar' : undefined}
             className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
             {salvando ? 'Processando...' : 'Confirmar pagamento'}
           </button>
@@ -1285,12 +1299,19 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
 
           {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
 
+          {saldo > 0.01 && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+              Ainda falta {fmt(saldo)} de saldo devedor. Adicione os pagamentos acima (com a forma de cada um) até zerar pra poder finalizar.
+            </p>
+          )}
+
           <div className="flex gap-2 mt-4">
             <button onClick={cancelar} disabled={salvando}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
               Cancelar venda
             </button>
-            <button onClick={finalizar} disabled={salvando || (comanda.itens ?? []).length === 0}
+            <button onClick={finalizar} disabled={salvando || (comanda.itens ?? []).length === 0 || saldo > 0.01}
+              title={saldo > 0.01 ? 'Registre os pagamentos até o saldo zerar' : undefined}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
               {salvando ? 'Processando...' : 'Finalizar venda'}
             </button>
