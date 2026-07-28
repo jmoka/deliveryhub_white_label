@@ -22,8 +22,8 @@ const buildPrintHtml = (dados, restauranteNome, label) => {
 <div class="sub">Relatório Financeiro — ${label}</div>
 <div class="kpi-grid">
   <div class="kpi"><span class="val green">${fmt(r.total_vendas)}</span><span class="lbl">Vendas</span></div>
-  <div class="kpi"><span class="val">${fmt(r.total_comissao)}</span><span class="lbl">Comissão Paga</span></div>
-  <div class="kpi"><span class="val">${fmt(r.total_gorjeta)}</span><span class="lbl">Gorjetas Pagas</span></div>
+  <div class="kpi"><span class="val">${fmt(r.total_comissoes_pagas)}</span><span class="lbl">Comissão Paga</span></div>
+  <div class="kpi"><span class="val">${fmt(r.total_gorjetas_pagas)}</span><span class="lbl">Gorjetas Pagas</span></div>
   <div class="kpi"><span class="val">${fmt(r.total_troco)}</span><span class="lbl">Troco</span></div>
 </div>
 <h2>Por Forma de Pagamento</h2>
@@ -85,11 +85,11 @@ const RelatorioFinanceiro = () => {
               </div>
               <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
                 <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Comissão Paga</p>
-                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_comissao)}</p>
+                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_comissoes_pagas)}</p>
               </div>
               <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
                 <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Gorjetas Pagas</p>
-                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_gorjeta)}</p>
+                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_gorjetas_pagas)}</p>
               </div>
               <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
                 <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Troco</p>

@@ -179,7 +179,6 @@ const EditarClienteModal = ({ comanda, onFechar, onEditado }) => {
 };
 
 const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
-  const [forma, setForma] = useState('pix');
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -187,7 +186,7 @@ const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
     setErro(null);
     setSalvando(true);
     try {
-      await fecharComanda(comanda.id, forma);
+      await fecharComanda(comanda.id);
       onFechada();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível fechar a comanda.');
@@ -203,14 +202,6 @@ const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
         <p className="text-xs text-[#71717A] mb-4">
           A mesa fica bloqueada aguardando pagamento — quem finaliza e emite o recibo é o caixa.
         </p>
-        <label className="text-xs text-[#71717A]">Forma de pagamento informada pelo cliente</label>
-        <select value={forma} onChange={(e) => setForma(e.target.value)}
-          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm mt-1 mb-3">
-          <option value="pix">PIX</option>
-          <option value="credit_card">Cartão de crédito</option>
-          <option value="debit_card">Cartão de débito</option>
-          <option value="cash">Dinheiro</option>
-        </select>
         {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
         <div className="flex gap-2">
           <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
@@ -349,7 +340,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
   );
 };
 
-const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
+const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPagar }) => {
   const [valor, setValor] = useState('');
   const [forma, setForma] = useState('pix');
   const [valorRecebido, setValorRecebido] = useState('');
@@ -360,6 +351,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
   const [formaEdicao, setFormaEdicao] = useState('pix');
 
   const saldo = comanda.saldo?.saldo ?? 0;
+  // Falta pagar já soma gorjeta/acréscimo (calculado pelo componente pai) — o campo de
+  // lançar pagamento fica disponível até isso zerar, não só o saldo dos itens, senão
+  // esconde a possibilidade de cobrar a gorjeta assim que os produtos já foram pagos.
+  const faltaPagarEfetivo = faltaPagar ?? saldo;
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
   // Comanda paga/cancelada não deixa mais mexer nos pagamentos, mesma regra de editar itens.
   const podeMexer = ['aberta', 'fechada_garcom'].includes(comanda.status);
@@ -469,7 +464,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
           ))}
         </div>
       )}
-      {saldo > 0.01 && podePagamentoParcial && (
+      {faltaPagarEfetivo > 0.01 && podePagamentoParcial && (
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center gap-1.5">
             <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
@@ -505,7 +500,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial }) => {
           )}
         </div>
       )}
-      {saldo > 0.01 && !podePagamentoParcial && (
+      {faltaPagarEfetivo > 0.01 && !podePagamentoParcial && (
         <p className="text-xs text-[#A1A1AA] pt-1">Você não tem permissão para registrar pagamento parcial.</p>
       )}
       {erro && <p className="text-xs text-red-600">{erro}</p>}
@@ -699,6 +694,17 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   // decide é o estabelecimento (cancelar via PDV), pra não sumir pedido em preparo.
   const podeExcluir = (comanda.itens ?? []).every((i) => i.status === 'pendente');
 
+  // Gorjeta só vira valor definitivo quando o caixa fecha a conta (orders.gorjeta_valor).
+  // Antes disso é só estimativa (gorjeta_sugestao) — não soma junto do saldo real do
+  // backend (que já inclui a gorjeta confirmada + taxa de cartão), senão duplica.
+  const gorjetaConfirmada = comanda.gorjeta_valor != null;
+  const gorjetaExibida = gorjetaConfirmada ? comanda.gorjeta_valor : (comanda.gorjeta_sugestao?.valor_sugerido ?? 0);
+  const totalComGorjeta = (comanda.saldo?.total ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
+  // Falta pagar já soma a gorjeta (estimada ou confirmada) — garçom só fecha depois de
+  // cobrar tudo do cliente na mesa, dinheiro/pix/cartão já lançados como pagamento parcial.
+  const faltaPagar = (comanda.saldo?.saldo ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
+  const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
+
   return (
     <div className={`min-h-screen bg-[#F4F4F5] ${!fechada ? 'pb-44' : 'pb-6'}`}>
       <div className="bg-white border-b border-[#E4E4E7] p-4 sticky top-0 z-10">
@@ -805,7 +811,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
       </div>
 
       <div className="px-4 pb-4">
-        <PagamentoParcial comanda={comanda} onRegistrado={carregar} podePagamentoParcial={podePagamentoParcial} />
+        <PagamentoParcial comanda={comanda} onRegistrado={carregar} podePagamentoParcial={podePagamentoParcial} faltaPagar={faltaPagar} />
       </div>
 
       {/* Resumo financeiro fica no fluxo normal da página (não fixo) — com desconto/acréscimo/
@@ -813,14 +819,6 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           lançamentos e travar o scroll (o pb-24 do container não acompanhava a altura real). */}
       <div className="px-4 pb-4">
         {(() => {
-          // Gorjeta só vira valor definitivo quando o caixa fecha a conta (orders.gorjeta_valor).
-          // Antes disso é só estimativa (gorjeta_sugestao) — não soma junto do saldo real do
-          // backend (que já inclui a gorjeta confirmada + taxa de cartão), senão duplica.
-          const gorjetaConfirmada = comanda.gorjeta_valor != null;
-          const gorjetaExibida = gorjetaConfirmada ? comanda.gorjeta_valor : (comanda.gorjeta_sugestao?.valor_sugerido ?? 0);
-          const totalComGorjeta = (comanda.saldo?.total ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
-          const faltaPagar = (comanda.saldo?.saldo ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
-          const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
           return (
             <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
               <div className="flex justify-between text-sm">
@@ -883,12 +881,18 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
             <Icon name="Plus" size={18} /> Adicionar produto
           </button>
           {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
+          {faltaPagar > 0.01 && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2 py-1.5 mb-2">
+              Falta {fmt(faltaPagar)} (com gorjeta) — lance os pagamentos até zerar pra poder fechar.
+            </p>
+          )}
           <div className="flex gap-2">
             <button onClick={enviar} disabled={!temPendente || enviando}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
               {enviando ? 'Enviando...' : 'Enviar novos itens'}
             </button>
-            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0}
+            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0 || faltaPagar > 0.01}
+              title={faltaPagar > 0.01 ? 'Registre os pagamentos até zerar (com gorjeta) pra fechar' : undefined}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
               Fechar comanda
             </button>

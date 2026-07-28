@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getRelatorioGarcom, getMinhaEmpresa } from '../../services/restauranteService';
+import { getRelatorioGarcom, getMinhaEmpresa, registrarRepasseGarcom, estornarRepasseGarcom } from '../../services/restauranteService';
 import RelatorioNav from './RelatorioNav';
 import FiltroPeriodo from './FiltroPeriodo';
 import { fmt, buildRange, printIframe, reportBaseStyle, printFooterScript, defaultFiltroState } from '../../utils/relatorioPrint';
 
 const dataHora = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—';
 const agora = () => new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
+const traduzFormas = (s) => s ? s.split(' + ').map((f) => PAGAMENTO_LABEL[f] ?? f).join(' + ') : '—';
 
 const buildPrintHtml = (garcons, vendas, restauranteNome, label, garcomNome) => {
   const rows = garcons.map((g) => `<tr>
@@ -26,7 +29,7 @@ const buildPrintHtml = (garcons, vendas, restauranteNome, label, garcomNome) => 
     <td class="right">${fmt(v.total)}</td>
     <td class="right">${fmt(v.gorjeta)}</td>
     <td class="right">${fmt(v.taxa_cartao)}</td>
-    <td>${v.formas_pagamento ?? '—'}</td>
+    <td>${traduzFormas(v.formas_pagamento)}</td>
     <td class="right bold">${fmt(v.total_geral)}</td>
   </tr>`).join('');
 
@@ -71,6 +74,11 @@ const RelatorioGarcom = () => {
   const [garcomId, setGarcomId] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
+  const [rangeAtual, setRangeAtual] = useState(null);
+  const [marcandoPago, setMarcandoPago] = useState(null);
+  const [repasseModal, setRepasseModal] = useState(null);
+  const [valorDinheiro, setValorDinheiro] = useState('');
+  const [valorPix, setValorPix] = useState('');
 
   useEffect(() => {
     getMinhaEmpresa().then((d) => setRestauranteNome(d.empresa?.name ?? '')).catch(() => {});
@@ -85,8 +93,51 @@ const RelatorioGarcom = () => {
       setGarcons(d.garcons ?? []);
       setVendas(d.vendas ?? []);
       setLabel(range.label);
+      setRangeAtual(range);
     } catch (e) { setErro(e.message); }
     finally { setLoading(false); }
+  };
+
+  const abrirRepasse = (g) => {
+    setErro(null);
+    setRepasseModal(g);
+    setValorDinheiro((g.total_gorjeta + g.total_comissao).toFixed(2));
+    setValorPix('0.00');
+  };
+
+  const confirmarRepasse = async () => {
+    if (!rangeAtual || !repasseModal) return;
+    const total = repasseModal.total_gorjeta + repasseModal.total_comissao;
+    const vd = Number(valorDinheiro || 0);
+    const vp = Number(valorPix || 0);
+    if (Math.abs(vd + vp - total) > 0.01) {
+      setErro(`Soma dos valores (${fmt(vd + vp)}) não bate com o total a repassar (${fmt(total)})`);
+      return;
+    }
+    setMarcandoPago(repasseModal.garcom_id);
+    try {
+      await registrarRepasseGarcom(repasseModal.garcom_id, {
+        de: rangeAtual.de,
+        ate: rangeAtual.ate,
+        valor_gorjeta: repasseModal.total_gorjeta,
+        valor_comissao: repasseModal.total_comissao,
+        valor_dinheiro: vd,
+        valor_pix: vp,
+      });
+      setRepasseModal(null);
+      await buscar();
+    } catch (e) { setErro(e.message); }
+    finally { setMarcandoPago(null); }
+  };
+
+  const estornarRepasse = async (g) => {
+    if (!window.confirm(`Reverter o repasse de ${g.nome} pra "não pago"? Se teve baixa em dinheiro no caixa, ela também é estornada.`)) return;
+    setMarcandoPago(g.garcom_id);
+    try {
+      await estornarRepasseGarcom(g.repasse.id);
+      await buscar();
+    } catch (e) { setErro(e.message); }
+    finally { setMarcandoPago(null); }
   };
 
   useEffect(() => { buscar(); }, []); // eslint-disable-line
@@ -166,6 +217,7 @@ const RelatorioGarcom = () => {
                         <th className="text-right px-5 py-3">Total a Receber</th>
                         <th className="text-right px-5 py-3">Comandas Abertas</th>
                         <th className="text-right px-5 py-3">Pendentes</th>
+                        <th className="text-center px-5 py-3">Repasse</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F4F4F5]">
@@ -185,6 +237,25 @@ const RelatorioGarcom = () => {
                             {g.comandas_pendentes > 0
                               ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">{g.comandas_pendentes}</span>
                               : <span className="text-[#A1A1AA]">0</span>}
+                          </td>
+                          <td className="px-5 py-3 text-center">
+                            {g.repasse ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700" title={`Pago em ${dataHora(g.repasse.pago_em)}`}>
+                                  ✓ Pago em {dataHora(g.repasse.pago_em)}
+                                </span>
+                                <button onClick={() => estornarRepasse(g)} disabled={marcandoPago === g.garcom_id}
+                                  title="Reverter pra não pago (corrigir lançamento)"
+                                  className="w-5 h-5 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-500 flex items-center justify-center hover:bg-zinc-100 disabled:opacity-50 flex-shrink-0">
+                                  ↺
+                                </button>
+                              </div>
+                            ) : (g.total_comissao + g.total_gorjeta) > 0 ? (
+                              <button onClick={() => abrirRepasse(g)} disabled={marcandoPago === g.garcom_id}
+                                className="px-3 py-1.5 bg-[#18181B] text-white text-xs font-bold rounded-lg hover:bg-[#27272A] disabled:opacity-50">
+                                Pagar
+                              </button>
+                            ) : <span className="text-[#A1A1AA]">—</span>}
                           </td>
                         </tr>
                       ))}
@@ -229,7 +300,7 @@ const RelatorioGarcom = () => {
                           <td className="px-5 py-3 text-right">{fmt(v.total)}</td>
                           <td className="px-5 py-3 text-right">{fmt(v.gorjeta)}</td>
                           <td className="px-5 py-3 text-right">{fmt(v.taxa_cartao)}</td>
-                          <td className="px-5 py-3">{v.formas_pagamento ?? '—'}</td>
+                          <td className="px-5 py-3">{traduzFormas(v.formas_pagamento)}</td>
                           <td className="px-5 py-3 text-right font-bold text-[#FF441F]">{fmt(v.total_geral)}</td>
                         </tr>
                       ))}
@@ -251,6 +322,52 @@ const RelatorioGarcom = () => {
           </>
         )}
       </main>
+
+      {repasseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 className="text-base font-bold text-[#18181B] mb-1">Pagar {repasseModal.nome}</h2>
+            <p className="text-xs text-[#71717A] mb-4">
+              Total a repassar: <span className="font-bold">{fmt(repasseModal.total_gorjeta + repasseModal.total_comissao)}</span>
+              {' '}(gorjeta {fmt(repasseModal.total_gorjeta)} + comissão {fmt(repasseModal.total_comissao)})
+            </p>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-[#71717A] mb-1">Dinheiro (R$)</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={valorDinheiro}
+                    onChange={(e) => setValorDinheiro(e.target.value)}
+                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-[#71717A] mb-1">PIX (R$)</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={valorPix}
+                    onChange={(e) => setValorPix(e.target.value)}
+                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-[#71717A]">Valor em dinheiro dá baixa automática no caixa aberto (sangria). PIX não mexe no caixa.</p>
+              {erro && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-xl">{erro}</p>}
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => { setRepasseModal(null); setErro(null); }}
+                  className="flex-1 py-2 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+                  Cancelar
+                </button>
+                <button type="button" onClick={confirmarRepasse} disabled={marcandoPago === repasseModal.garcom_id}
+                  className="flex-1 py-2 text-sm bg-[#FF441F] text-white rounded-xl font-semibold hover:bg-[#E63A19] disabled:opacity-50">
+                  {marcandoPago === repasseModal.garcom_id ? 'Confirmando...' : 'Confirmar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

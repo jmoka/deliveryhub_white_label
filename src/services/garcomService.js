@@ -92,8 +92,5 @@ export const removerPagamento = (comandaId, pagamentoId) =>
 export const enviarItens = (comandaId) =>
   garcomFetch(`/comandas/${comandaId}/enviar`, { method: 'POST' });
 
-export const fecharComanda = (comandaId, formaPagamento) =>
-  garcomFetch(`/comandas/${comandaId}/fechar`, {
-    method: 'POST',
-    body: JSON.stringify({ forma_pagamento: formaPagamento }),
-  });
+export const fecharComanda = (comandaId) =>
+  garcomFetch(`/comandas/${comandaId}/fechar`, { method: 'POST' });
