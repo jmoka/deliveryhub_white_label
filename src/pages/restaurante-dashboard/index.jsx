@@ -9,6 +9,8 @@ import Icon from '../../components/AppIcon';
 import RelatorioPanel from './RelatorioPanel';
 import SaidaModal from './SaidaModal';
 import FecharCaixaModal from './FecharCaixaModal';
+import SaldoDiaModal from './SaldoDiaModal';
+import DetalheModal from './DetalheModal';
 import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
@@ -37,6 +39,12 @@ const RestauranteDashboard = () => {
   const [relFretes, setRelFretes] = useState(null);
   const [periodoFretes, setPeriodoFretes] = useState('hoje');
   const [showDetalheFretes, setShowDetalheFretes] = useState(false);
+  const [showSaldoDia, setShowSaldoDia] = useState(false);
+  const [showEspecieDetalhe, setShowEspecieDetalhe] = useState(false);
+  const [showDigitalDetalhe, setShowDigitalDetalhe] = useState(false);
+  const [showVendasEspecieDetalhe, setShowVendasEspecieDetalhe] = useState(false);
+  const [showAdicoesDetalhe, setShowAdicoesDetalhe] = useState(false);
+  const [showSangriasDetalhe, setShowSangriasDetalhe] = useState(false);
   const [nomeOperador, setNomeOperador] = useState('');
   const [pedidosAbertos, setPedidosAbertos] = useState([]);
   const [comandasAbertas, setComandasAbertas] = useState([]);
@@ -392,7 +400,7 @@ const RestauranteDashboard = () => {
               <KpiCard icon="TrendingUp" label="Vendas" value={fmt(r?.total_vendas)} sub={`${r?.entregues ?? 0} entregues`} color="green" />
               <KpiCard icon="Clock" label="Em andamento" value={r?.em_andamento ?? 0} sub={`${r?.cancelados ?? 0} cancelados`} color="blue" />
               <KpiCard icon="ArrowDownLeft" label="Saídas" value={fmt(r?.total_saidas)} sub={`${caixa?.saidas?.length ?? 0} registros`} color="red" />
-              <KpiCard icon="Wallet" label="Saldo caixa" value={fmt(r?.saldo)} sub={`Inicial: ${fmt(caixa.valor_inicial)}`} color="orange" />
+              <KpiCard icon="Wallet" label="Saldo geral do dia" value={fmt(r?.saldo)} sub={`Inicial: ${fmt(caixa.valor_inicial)}`} color="orange" onClick={() => setShowSaldoDia(true)} />
             </div>
 
             {/* KPIs Fretes + Troco */}
@@ -502,27 +510,42 @@ const RestauranteDashboard = () => {
               const saldoEspecie = r?.especie_calculada ?? caixa.valor_inicial ?? 0;
               const saldoDigital = (r?.total_vendas ?? 0) - vendasCash;
               return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
                     <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">💵 Fundo inicial</p>
                     <p className="text-lg font-black text-green-700">{fmt(caixa.valor_inicial)}</p>
                     <p className="text-[10px] text-green-600">em espécie</p>
                   </div>
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                  <button onClick={() => setShowVendasEspecieDetalhe(true)}
+                    className="bg-green-50 border border-green-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
                     <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">💵 Vendas espécie</p>
                     <p className="text-lg font-black text-green-700">{fmt(vendasCash)}</p>
                     <p className="text-[10px] text-green-600">pagos em dinheiro</p>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">🏦 Vendas digital</p>
-                    <p className="text-lg font-black text-blue-700">{fmt(saldoDigital)}</p>
-                    <p className="text-[10px] text-blue-600">PIX / cartão</p>
-                  </div>
-                  <div className="bg-[#FF441F]/5 border border-[#FF441F]/30 rounded-xl p-3 text-center">
+                  </button>
+                  <button onClick={() => setShowAdicoesDetalhe(true)}
+                    className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">➕ Adições</p>
+                    <p className="text-lg font-black text-emerald-700">{fmt(r?.total_entradas)}</p>
+                    <p className="text-[10px] text-emerald-600">{caixa?.entradas?.length ?? 0} registros</p>
+                  </button>
+                  <button onClick={() => setShowSangriasDetalhe(true)}
+                    className="bg-red-50 border border-red-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">➖ Sangrias</p>
+                    <p className="text-lg font-black text-red-700">{fmt(r?.total_saidas)}</p>
+                    <p className="text-[10px] text-red-600">{caixa?.saidas?.length ?? 0} registros</p>
+                  </button>
+                  <button onClick={() => setShowEspecieDetalhe(true)}
+                    className="bg-[#FF441F]/5 border border-[#FF441F]/30 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
                     <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1">💵 Espécie no caixa</p>
                     <p className="text-lg font-black text-[#FF441F]">{fmt(saldoEspecie)}</p>
                     <p className="text-[10px] text-[#FF441F]">estimativa física</p>
-                  </div>
+                  </button>
+                  <button onClick={() => setShowDigitalDetalhe(true)}
+                    className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">🏦 Vendas digital</p>
+                    <p className="text-lg font-black text-blue-700">{fmt(saldoDigital)}</p>
+                    <p className="text-[10px] text-blue-600">PIX / cartão</p>
+                  </button>
                 </div>
               );
             })()}
@@ -629,6 +652,81 @@ const RestauranteDashboard = () => {
           onFecharETransferir={handleFecharETransferir}
           onCancelar={() => { setShowFechar(false); setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]); }}
           fechando={fechando}
+        />
+      )}
+
+      {showSaldoDia && (
+        <SaldoDiaModal
+          resumo={caixa?.resumo}
+          valorInicial={caixa?.valor_inicial}
+          onFechar={() => setShowSaldoDia(false)}
+        />
+      )}
+
+      {showEspecieDetalhe && (
+        <DetalheModal
+          titulo="Espécie no Caixa"
+          subtitulo="Estimativa do dinheiro físico na gaveta agora"
+          linhas={[
+            { label: 'Fundo inicial', value: fmt(caixa?.valor_inicial) },
+            { label: 'Vendas em dinheiro', value: fmt(r?.por_pagamento?.cash), sinal: '+ ' },
+            { label: 'Adições', value: fmt(r?.total_entradas), sinal: '+ ' },
+            { label: 'Sangrias / saídas', value: fmt(r?.total_saidas), sinal: '− ' },
+          ]}
+          totalLabel="Espécie no caixa"
+          totalValue={fmt(r?.especie_calculada ?? caixa?.valor_inicial)}
+          nota="Só conta pagamentos em dinheiro — PIX e cartão nunca passam pela gaveta física."
+          onFechar={() => setShowEspecieDetalhe(false)}
+        />
+      )}
+
+      {showDigitalDetalhe && (
+        <DetalheModal
+          titulo="Vendas Digital"
+          subtitulo="PIX, cartão e taxas — nunca passam pela gaveta"
+          linhas={Object.entries(r?.por_pagamento ?? {})
+            .filter(([k]) => k !== 'cash')
+            .map(([k, v]) => ({ label: PAGAMENTO_LABEL[k] ?? k, value: fmt(v) }))}
+          totalLabel="Total digital"
+          totalValue={fmt((r?.total_vendas ?? 0) - (r?.por_pagamento?.cash ?? 0))}
+          nota="Cai direto na conta do PagBank/maquininha — não afeta a espécie no caixa."
+          onFechar={() => setShowDigitalDetalhe(false)}
+        />
+      )}
+
+      {showVendasEspecieDetalhe && (
+        <DetalheModal
+          titulo="Vendas em Espécie"
+          subtitulo="Vendas em dinheiro registradas individualmente no caixa"
+          linhas={(caixa?.entradas ?? [])
+            .filter((e) => e.tipo === 'venda_dinheiro')
+            .map((e) => ({ label: e.descricao, value: fmt(e.valor), sinal: '+ ' }))}
+          totalLabel="Vendas espécie (total)"
+          totalValue={fmt(r?.por_pagamento?.cash)}
+          nota="Lista só as vendas com valor recebido/troco informado. O total pode incluir vendas em dinheiro sem esse lançamento individual."
+          onFechar={() => setShowVendasEspecieDetalhe(false)}
+        />
+      )}
+
+      {showAdicoesDetalhe && (
+        <DetalheModal
+          titulo="Adições no Caixa"
+          subtitulo="Entradas de dinheiro no caixa (vendas + reforços manuais)"
+          linhas={(caixa?.entradas ?? []).map((e) => ({ label: e.descricao, value: fmt(e.valor), sinal: '+ ' }))}
+          totalLabel="Total adições"
+          totalValue={fmt(r?.total_entradas)}
+          onFechar={() => setShowAdicoesDetalhe(false)}
+        />
+      )}
+
+      {showSangriasDetalhe && (
+        <DetalheModal
+          titulo="Sangrias / Saídas"
+          subtitulo="Saídas de dinheiro do caixa (troco + retiradas manuais)"
+          linhas={(caixa?.saidas ?? []).map((s) => ({ label: s.descricao, value: fmt(s.valor), sinal: '− ' }))}
+          totalLabel="Total sangrias"
+          totalValue={fmt(r?.total_saidas)}
+          onFechar={() => setShowSangriasDetalhe(false)}
         />
       )}
     </div>

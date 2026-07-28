@@ -9,8 +9,11 @@ const COLORS = {
   gray:   'border-[#E4E4E7] bg-white text-[#18181B]',
 };
 
-const KpiCard = ({ icon, label, value, sub, color = 'gray' }) => (
-  <div className={`rounded-xl border p-4 ${COLORS[color]}`}>
+const KpiCard = ({ icon, label, value, sub, color = 'gray', onClick }) => (
+  <div
+    onClick={onClick}
+    className={`rounded-xl border p-4 ${COLORS[color]} ${onClick ? 'cursor-pointer hover:brightness-95 transition-[filter]' : ''}`}
+  >
     <div className="flex items-center gap-1.5 mb-1">
       <Icon name={icon} size={14} className="opacity-70" />
       <p className="text-xs font-medium opacity-75">{label}</p>
