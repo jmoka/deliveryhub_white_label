@@ -89,6 +89,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
   const [salvando, setSalvando] = useState(false);
   const [fechando, setFechando] = useState(false);
   const [estornando, setEstornando] = useState(null); // index da saída sendo estornada
+  const [pendencias, setPendencias] = useState(null); // { pedidos, comandas, mesas } vindo do 409 do backend
 
   if (!caixa?.aberto) return null;
 
@@ -126,9 +127,13 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
       await fecharCaixa(body);
       await onRefresh();
       setModal(null);
+      setPendencias(null);
     } catch (e) {
-      if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) alert(e.data.message ?? 'Existem pedidos, comandas ou mesas em aberto');
-      else alert(e.message);
+      if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) {
+        setPendencias({ pedidos: e.data.pedidos ?? [], comandas: e.data.comandas ?? [], mesas: e.data.mesas ?? [] });
+      } else {
+        alert(e.message);
+      }
     }
     finally { setFechando(false); }
   };
@@ -153,7 +158,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
           <button onClick={() => setModal('adicao')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-green-200 text-green-700 rounded-xl hover:bg-green-50">
             <Icon name="ArrowUpRight" size={13} /> Adição
           </button>
-          <button onClick={() => setModal('fechar')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-xl hover:bg-red-600">
+          <button onClick={() => { setPendencias(null); setModal('fechar'); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-xl hover:bg-red-600">
             <Icon name="Lock" size={13} /> Fechar Caixa
           </button>
         </div>
@@ -255,10 +260,12 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
           resumo={caixa.resumo}
           aberto_em={caixa.aberto_em}
           valorInicial={caixa.valor_inicial}
-          pedidosAbertos={pedidosAbertos}
+          pedidosAbertos={pendencias?.pedidos ?? pedidosAbertos}
+          comandasAbertas={pendencias?.comandas ?? []}
+          mesasAbertas={pendencias?.mesas ?? []}
           onConfirmar={handleFechar}
           onFecharETransferir={() => {}}
-          onCancelar={() => setModal(null)}
+          onCancelar={() => { setPendencias(null); setModal(null); }}
           fechando={fechando}
         />
       )}
