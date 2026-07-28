@@ -196,7 +196,7 @@ const HistoricoCaixasPanel = ({ historico = [] }) => {
                       const difCor = dif === 0 ? 'text-green-700' : dif < 0 ? 'text-red-600' : 'text-blue-600';
                       return (
                         <div className="grid md:grid-cols-3 gap-4">
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Resumo</p>
                             <div className="bg-[#FAFAFA] rounded-xl p-3">
                               <Row label="Valor inicial" value={fmt(det.caixa.valor_inicial)} />
@@ -217,32 +217,32 @@ const HistoricoCaixasPanel = ({ historico = [] }) => {
                             )}
                           </div>
 
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Pedidos ({pedidos.length})</p>
-                            <div className="bg-[#FAFAFA] rounded-xl p-3 max-h-52 overflow-y-auto space-y-0.5">
+                            <div className="bg-[#FAFAFA] rounded-xl p-3 max-h-52 overflow-y-auto overflow-x-auto space-y-0.5">
                               {pedidos.length === 0 ? <p className="text-xs text-[#71717A] text-center py-2">Nenhum pedido</p>
                                 : pedidos.map((p) => (
-                                  <div key={p.id} className="flex justify-between text-xs py-1.5 border-b border-[#F4F4F5] last:border-0">
-                                    <span className="font-semibold text-[#18181B]">#{p.id}</span>
-                                    <span className="text-[#71717A]">{p.status}</span>
-                                    <span className="font-bold text-[#18181B]">{fmt(p.total)}</span>
+                                  <div key={p.id} className="flex justify-between items-center gap-2 text-xs py-1.5 border-b border-[#F4F4F5] last:border-0">
+                                    <span className="font-semibold text-[#18181B] flex-shrink-0">#{p.id}</span>
+                                    <span className="text-[#71717A] truncate flex-1 min-w-0">{p.status}</span>
+                                    <span className="font-bold text-[#18181B] flex-shrink-0">{fmt(p.total)}</span>
                                   </div>
                                 ))}
                             </div>
                           </div>
 
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Movimentos</p>
-                            <div className="space-y-1 max-h-52 overflow-y-auto">
+                            <div className="space-y-1 max-h-52 overflow-y-auto overflow-x-auto">
                               {entradas.map((e, i) => (
                                 <div key={i} className="flex justify-between text-xs bg-green-50 rounded-lg px-2.5 py-1.5">
-                                  <span className="text-[#71717A] truncate mr-2">{MEIO_LABELS[e.meio] ?? '💵'} {e.descricao}</span>
+                                  <span className="text-[#71717A] truncate mr-2 flex-1 min-w-0">{MEIO_LABELS[e.meio] ?? '💵'} {e.descricao}</span>
                                   <span className="font-bold text-green-700 flex-shrink-0">+ {fmt(e.valor)}</span>
                                 </div>
                               ))}
                               {saidas.map((s, i) => (
                                 <div key={i} className="flex justify-between text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
-                                  <span className="text-[#71717A] truncate mr-2">{MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}</span>
+                                  <span className="text-[#71717A] truncate mr-2 flex-1 min-w-0">{MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}</span>
                                   <span className="font-bold text-red-600 flex-shrink-0">- {fmt(s.valor)}</span>
                                 </div>
                               ))}
