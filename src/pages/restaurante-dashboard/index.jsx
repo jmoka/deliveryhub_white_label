@@ -498,11 +498,8 @@ const RestauranteDashboard = () => {
 
             {/* Breakdown espécie vs digital */}
             {(() => {
-              const pedidos      = caixa.pedidos ?? [];
-              const saidas       = caixa.saidas ?? [];
-              const vendasCash   = pedidos.filter((p) => ['delivered', 'paga'].includes(p.status) && p.payment_method === 'cash').reduce((s, p) => s + (p.total ?? 0), 0);
-              const saidas_cash  = saidas.filter((s) => !s.meio || s.meio === 'dinheiro').reduce((s, x) => s + (x.valor ?? 0), 0);
-              const saldoEspecie = (caixa.valor_inicial ?? 0) + vendasCash - saidas_cash;
+              const vendasCash   = r?.por_pagamento?.cash ?? 0;
+              const saldoEspecie = r?.especie_calculada ?? caixa.valor_inicial ?? 0;
               const saldoDigital = (r?.total_vendas ?? 0) - vendasCash;
               return (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
