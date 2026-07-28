@@ -124,8 +124,9 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
   const [dinheiroContado, setDinheiroContado] = useState('');
 
   const vendasDinheiro  = r.por_pagamento?.cash ?? 0;
+  const cashRecebido    = r.cash_recebido ?? vendasDinheiro;
   const saidasEspecie   = r.saidas_especie ?? 0;
-  const especieCalc     = r.especie_calculada ?? Math.max(0, (valorInicial ?? 0) + vendasDinheiro - saidasEspecie);
+  const especieCalc     = r.especie_calculada ?? Math.max(0, (valorInicial ?? 0) + cashRecebido - saidasEspecie);
   // Taxa de cartão some daqui (mostrada junto de cada forma abaixo, não como linha solta).
   const digitais        = Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash' && k !== 'taxa_cartao');
   const taxaPorForma     = r.taxa_por_forma ?? {};
@@ -155,7 +156,7 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
       <div className="bg-[#FAFAFA] rounded-xl px-4 py-3 mb-3">
         <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Composição do caixa</p>
         <Row label="Fundo inicial (troco)" value={fmt(valorInicial ?? 0)} />
-        <Row label="+ Vendas em dinheiro"  value={fmt(vendasDinheiro)} />
+        <Row label="+ Dinheiro recebido dos clientes"  value={fmt(cashRecebido)} />
         {saidasEspecie > 0 && <Row label="− Sangrias / saídas (dinheiro)" value={`- ${fmt(saidasEspecie)}`} />}
         <div className="pt-1 mt-1 border-t border-[#E4E4E7]">
           <Row label="Espécie esperada no caixa" value={fmt(especieCalc)} bold />
