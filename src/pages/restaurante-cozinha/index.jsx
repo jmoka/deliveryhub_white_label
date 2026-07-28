@@ -164,7 +164,7 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
     {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
       <Icon name="MapPin" size={14} />
-      <span>{item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+      <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? 'Avulsa'}</span>
     </div>
     <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
       <span className="flex items-center gap-1 text-blue-400">
