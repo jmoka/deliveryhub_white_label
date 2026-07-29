@@ -29,10 +29,10 @@ const aplicarFiltroQtd = (lista, campo, filtro) => {
 
 const QtdFiltroBar = ({ filtro, onChange, labelZero }) => (
   <div className="flex items-center gap-2 flex-wrap">
-    <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit">
+    <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
       {[{ id: 'todos', label: 'Todos' }, { id: 'zero', label: labelZero }, { id: 'valor', label: 'Valor' }].map((o) => (
         <button key={o.id} onClick={() => onChange({ ...filtro, modo: o.id })}
-          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${filtro.modo === o.id ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+          className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${filtro.modo === o.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
           {o.label}
         </button>
       ))}
@@ -43,7 +43,7 @@ const QtdFiltroBar = ({ filtro, onChange, labelZero }) => (
         value={filtro.valor}
         onChange={(e) => onChange({ ...filtro, valor: e.target.value })}
         placeholder="Até quantidade..."
-        className="border rounded-lg px-3 py-1.5 text-xs w-36"
+        className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-1.5 text-xs w-36"
       />
     )}
   </div>
@@ -156,7 +156,7 @@ const RelatorioProdutos = () => {
   const listaVendas = dados ? aplicarFiltroQtd(dados.vendas, 'quantidade_vendida', qtdFiltroVendas) : [];
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RelatorioNav titulo="Produtos" />
       <main className="p-6 max-w-5xl mx-auto space-y-4">
         <FiltroPeriodo
@@ -173,49 +173,49 @@ const RelatorioProdutos = () => {
             : undefined))}
         />
 
-        {erro && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{erro}</p>}
+        {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-xl">{erro}</p>}
 
         {dados && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-[#18181B]">{dados.produtos.length}</p>
-                <p className="text-xs text-[#71717A]">Total Produtos</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{dados.produtos.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Total Produtos</p>
               </div>
-              <div className="bg-white border border-red-200 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-red-600">{dados.sem_estoque.length}</p>
-                <p className="text-xs text-[#71717A]">Sem Estoque</p>
+              <div className="bg-white dark:bg-[#27272A] border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-red-600 dark:text-red-400">{dados.sem_estoque.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sem Estoque</p>
               </div>
-              <div className="bg-white border border-green-200 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-green-700">{dados.ativos.length}</p>
-                <p className="text-xs text-[#71717A]">Ativos</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-green-700 dark:text-green-400">{dados.ativos.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Ativos</p>
               </div>
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-[#71717A]">{dados.bloqueados.length}</p>
-                <p className="text-xs text-[#71717A]">Bloqueados</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-[#71717A] dark:text-[#A1A1AA]">{dados.bloqueados.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Bloqueados</p>
               </div>
-              <div className="bg-white border border-amber-200 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-amber-600">{dados.reposicao.length}</p>
-                <p className="text-xs text-[#71717A]">P/ Repor</p>
+              <div className="bg-white dark:bg-[#27272A] border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{dados.reposicao.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">P/ Repor</p>
               </div>
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-[#71717A]">{dados.sem_giro.length}</p>
-                <p className="text-xs text-[#71717A]">Sem Giro</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-[#71717A] dark:text-[#A1A1AA]">{dados.sem_giro.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sem Giro</p>
               </div>
-              <div className="bg-white border border-green-200 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-green-700">{fmt(dados.receita_total)}</p>
-                <p className="text-xs text-[#71717A]">Receita Período</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(dados.receita_total)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Receita Período</p>
               </div>
-              <div className="bg-white border border-green-200 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-green-700">{fmt(dados.lucro_total)}</p>
-                <p className="text-xs text-[#71717A]">Lucro Período</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(dados.lucro_total)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Lucro Período</p>
               </div>
             </div>
 
-            <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit flex-wrap">
+            <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit flex-wrap">
               {ABAS.map((a) => (
                 <button key={a.id} onClick={() => setAba(a.id)}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${aba === a.id ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${aba === a.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                   {a.label}
                 </button>
               ))}
@@ -225,7 +225,7 @@ const RelatorioProdutos = () => {
               <div className="space-y-3">
                 <QtdFiltroBar filtro={qtdFiltroLista} onChange={setQtdFiltroLista} labelZero="Estoque Zero" />
                 {listaLista.length === 0
-                  ? <p className="text-sm text-[#71717A] text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">Nenhum produto encontrado.</p>
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46]">Nenhum produto encontrado.</p>
                   : <ProdutosTabela produtos={listaLista} />}
               </div>
             )}
@@ -234,33 +234,33 @@ const RelatorioProdutos = () => {
               <div className="space-y-3">
                 <QtdFiltroBar filtro={qtdFiltroSemEstoque} onChange={setQtdFiltroSemEstoque} labelZero="Estoque Zero" />
                 {listaSemEstoque.length === 0
-                  ? <p className="text-sm text-[#71717A] text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">Nenhum produto sem estoque.</p>
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46]">Nenhum produto sem estoque.</p>
                   : <ProdutosTabela produtos={listaSemEstoque} />}
               </div>
             )}
 
             {aba === 'reposicao' && (
               <div className="space-y-3">
-                <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit">
+                <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
                   {[{ id: 'minimo', label: 'No Mínimo' }, { id: 'geral', label: 'Geral' }].map((s) => (
                     <button key={s.id} onClick={() => setRepFiltro(s.id)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${repFiltro === s.id ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${repFiltro === s.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                       {s.label}
                     </button>
                   ))}
                 </div>
                 {listaReposicao.length === 0
-                  ? <p className="text-sm text-[#71717A] text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">Nenhum produto {repFiltro === 'geral' ? 'cadastrado' : 'abaixo do estoque mínimo'}.</p>
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46]">Nenhum produto {repFiltro === 'geral' ? 'cadastrado' : 'abaixo do estoque mínimo'}.</p>
                   : <ReposicaoTabela produtos={listaReposicao} />}
               </div>
             )}
 
             {aba === 'status' && (
               <div className="space-y-3">
-                <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit">
+                <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
                   {[{ id: 'todos', label: 'Todos' }, { id: 'ativos', label: 'Ativos' }, { id: 'bloqueados', label: 'Bloqueados' }].map((s) => (
                     <button key={s.id} onClick={() => setStatusFiltro(s.id)}
-                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${statusFiltro === s.id ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${statusFiltro === s.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                       {s.label}
                     </button>
                   ))}
@@ -272,25 +272,25 @@ const RelatorioProdutos = () => {
             {aba === 'vendas' && (
               <div className="space-y-3">
                 <QtdFiltroBar filtro={qtdFiltroVendas} onChange={setQtdFiltroVendas} labelZero="Quantidade Zero" />
-                <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+                <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                   {listaVendas.length === 0 ? (
-                    <p className="text-sm text-[#71717A] text-center py-10">Nenhum produto encontrado.</p>
+                    <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum produto encontrado.</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-[#FAFAFA] border-b border-[#F4F4F5] text-xs font-bold text-[#71717A] uppercase tracking-widest">
+                          <tr className="bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
                             <th className="text-left px-5 py-3">Produto</th>
                             <th className="text-right px-5 py-3">Qtd Vendida</th>
                             <th className="text-right px-5 py-3">Receita</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#F4F4F5]">
+                        <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
                           {listaVendas.map((p) => (
-                            <tr key={p.product_id} className="hover:bg-[#FAFAFA]">
-                              <td className="px-5 py-3 font-semibold text-[#18181B]">{p.name}</td>
+                            <tr key={p.product_id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                              <td className="px-5 py-3 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p.name}</td>
                               <td className="px-5 py-3 text-right">{p.quantidade_vendida}</td>
-                              <td className="px-5 py-3 text-right font-bold text-green-700">{fmt(p.receita)}</td>
+                              <td className="px-5 py-3 text-right font-bold text-green-700 dark:text-green-400">{fmt(p.receita)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -305,21 +305,21 @@ const RelatorioProdutos = () => {
               <div className="space-y-3">
                 <QtdFiltroBar filtro={qtdFiltroSemGiro} onChange={setQtdFiltroSemGiro} labelZero="Quantidade Zero" />
                 {listaSemGiro.length === 0 ? (
-                  <p className="text-sm text-[#71717A] text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">Nenhum produto encontrado.</p>
+                  <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46]">Nenhum produto encontrado.</p>
                 ) : (
-                  <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+                  <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-[#FAFAFA] border-b border-[#F4F4F5] text-xs font-bold text-[#71717A] uppercase tracking-widest">
+                          <tr className="bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
                             <th className="text-left px-5 py-3">Produto</th>
                             <th className="text-right px-5 py-3">Qtd Vendida</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#F4F4F5]">
+                        <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
                           {listaSemGiro.map((p) => (
-                            <tr key={p.product_id} className="hover:bg-[#FAFAFA]">
-                              <td className="px-5 py-3 font-semibold text-[#18181B]">{p.name}</td>
+                            <tr key={p.product_id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                              <td className="px-5 py-3 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p.name}</td>
                               <td className="px-5 py-3 text-right">{p.quantidade_vendida}</td>
                             </tr>
                           ))}
@@ -334,14 +334,14 @@ const RelatorioProdutos = () => {
             {aba === 'lucro' && (
               <div className="space-y-3">
                 <QtdFiltroBar filtro={qtdFiltroLucro} onChange={setQtdFiltroLucro} labelZero="Quantidade Zero" />
-                <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+                <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                   {listaLucro.length === 0 ? (
-                    <p className="text-sm text-[#71717A] text-center py-10">Nenhum produto encontrado.</p>
+                    <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum produto encontrado.</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-[#FAFAFA] border-b border-[#F4F4F5] text-xs font-bold text-[#71717A] uppercase tracking-widest">
+                          <tr className="bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
                             <th className="text-left px-5 py-3">Produto</th>
                             <th className="text-right px-5 py-3">Qtd Vendida</th>
                             <th className="text-right px-5 py-3">Receita</th>
@@ -349,24 +349,24 @@ const RelatorioProdutos = () => {
                             <th className="text-right px-5 py-3">Lucro</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#F4F4F5]">
+                        <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
                           {listaLucro.map((p) => (
-                            <tr key={p.product_id} className="hover:bg-[#FAFAFA]">
-                              <td className="px-5 py-3 font-semibold text-[#18181B]">{p.name}</td>
+                            <tr key={p.product_id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                              <td className="px-5 py-3 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p.name}</td>
                               <td className="px-5 py-3 text-right">{p.quantidade_vendida}</td>
                               <td className="px-5 py-3 text-right">{fmt(p.receita)}</td>
                               <td className="px-5 py-3 text-right">{fmt(p.custo_total)}</td>
-                              <td className="px-5 py-3 text-right font-bold text-green-700">{fmt(p.lucro)}</td>
+                              <td className="px-5 py-3 text-right font-bold text-green-700 dark:text-green-400">{fmt(p.lucro)}</td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
-                          <tr className="border-t-2 border-[#E4E4E7] font-bold">
+                          <tr className="border-t-2 border-[#E4E4E7] dark:border-[#3F3F46] font-bold">
                             <td className="px-5 py-3">Total</td>
                             <td className="px-5 py-3 text-right"></td>
                             <td className="px-5 py-3 text-right">{fmt(dados.receita_total)}</td>
                             <td className="px-5 py-3 text-right"></td>
-                            <td className="px-5 py-3 text-right text-green-700">{fmt(dados.lucro_total)}</td>
+                            <td className="px-5 py-3 text-right text-green-700 dark:text-green-400">{fmt(dados.lucro_total)}</td>
                           </tr>
                         </tfoot>
                       </table>
@@ -383,14 +383,14 @@ const RelatorioProdutos = () => {
 };
 
 const ProdutosTabela = ({ produtos }) => (
-  <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+  <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
     {produtos.length === 0 ? (
-      <p className="text-sm text-[#71717A] text-center py-10">Nenhum produto encontrado.</p>
+      <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum produto encontrado.</p>
     ) : (
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-[#FAFAFA] border-b border-[#F4F4F5] text-xs font-bold text-[#71717A] uppercase tracking-widest">
+            <tr className="bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
               <th className="text-left px-5 py-3">Produto</th>
               <th className="text-left px-5 py-3">Categoria</th>
               <th className="text-right px-5 py-3">Preço</th>
@@ -398,19 +398,19 @@ const ProdutosTabela = ({ produtos }) => (
               <th className="text-left px-5 py-3">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F4F4F5]">
+          <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
             {produtos.map((p) => (
-              <tr key={p.id} className="hover:bg-[#FAFAFA]">
-                <td className="px-5 py-3 font-semibold text-[#18181B]">{p.name}</td>
-                <td className="px-5 py-3 text-[#71717A]">{p.category_name}</td>
+              <tr key={p.id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                <td className="px-5 py-3 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p.name}</td>
+                <td className="px-5 py-3 text-[#71717A] dark:text-[#A1A1AA]">{p.category_name}</td>
                 <td className="px-5 py-3 text-right">{fmt(p.price)}</td>
                 <td className="px-5 py-3 text-right">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${(p.quantidade_estoque ?? 0) <= 0 ? 'bg-red-100 text-red-700' : 'bg-[#F4F4F5] text-[#27272A]'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${(p.quantidade_estoque ?? 0) <= 0 ? 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5]'}`}>
                     {p.quantidade_estoque ?? 0}
                   </span>
                 </td>
                 <td className="px-5 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${p.is_active ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-950/40 text-gray-500 dark:text-gray-400'}`}>
                     {p.is_active ? 'Ativo' : 'Bloqueado'}
                   </span>
                 </td>
@@ -424,28 +424,28 @@ const ProdutosTabela = ({ produtos }) => (
 );
 
 const ReposicaoTabela = ({ produtos }) => (
-  <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+  <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-[#FAFAFA] border-b border-[#F4F4F5] text-xs font-bold text-[#71717A] uppercase tracking-widest">
+          <tr className="bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
             <th className="text-left px-5 py-3">Produto</th>
             <th className="text-left px-5 py-3">Categoria</th>
             <th className="text-right px-5 py-3">Estoque</th>
             <th className="text-right px-5 py-3">Mínimo</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#F4F4F5]">
+        <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
           {produtos.map((p) => (
-            <tr key={p.id} className="hover:bg-[#FAFAFA]">
-              <td className="px-5 py-3 font-semibold text-[#18181B]">{p.name}</td>
-              <td className="px-5 py-3 text-[#71717A]">{p.category_name}</td>
+            <tr key={p.id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+              <td className="px-5 py-3 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{p.name}</td>
+              <td className="px-5 py-3 text-[#71717A] dark:text-[#A1A1AA]">{p.category_name}</td>
               <td className="px-5 py-3 text-right">
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
                   {p.quantidade_estoque ?? 0}
                 </span>
               </td>
-              <td className="px-5 py-3 text-right text-[#71717A]">{p.quantidade_minima ?? 0}</td>
+              <td className="px-5 py-3 text-right text-[#71717A] dark:text-[#A1A1AA]">{p.quantidade_minima ?? 0}</td>
             </tr>
           ))}
         </tbody>
