@@ -135,14 +135,14 @@ const RestauranteCombos = () => {
   const produtosDisponiveis = produtos.filter((p) => !produtosSelecionados.has(p.id));
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/combos" title="Combos" />
 
       <main className="p-6 max-w-4xl mx-auto">
-        {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
+        {erro && <p className="text-red-600 dark:text-red-400 mb-4 text-sm">{erro}</p>}
 
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#18181B]">
+          <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">
             Combos <span className="text-gray-400 font-normal">({combos.length})</span>
           </h2>
           <button onClick={abrirNovo} className="px-4 py-2 text-sm bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a]">
@@ -155,7 +155,7 @@ const RestauranteCombos = () => {
             <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : combos.length === 0 ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
+          <div className="bg-white dark:bg-[#27272A] rounded-xl border p-12 text-center">
             <p className="text-gray-400 mb-3">Nenhum combo cadastrado</p>
             <button onClick={abrirNovo} className="text-sm text-[#FF441F] hover:underline">
               Criar primeiro combo →
@@ -164,35 +164,35 @@ const RestauranteCombos = () => {
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {combos.map((c) => (
-              <div key={c.id} className="bg-white rounded-xl border p-4 flex gap-3">
+              <div key={c.id} className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex gap-3">
                 {c.image_url && (
                   <img src={c.image_url} alt={c.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-gray-900 truncate">
+                    <p className="font-medium text-gray-900 dark:text-gray-400 truncate">
                       {c.destaque && '⭐ '}{c.name}
                     </p>
-                    <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-purple-100 text-purple-700 flex-shrink-0">COMBO</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 flex-shrink-0">COMBO</span>
                   </div>
-                  {c.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{c.description}</p>}
+                  {c.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{c.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-semibold text-[#FF441F]">{fmt(c.price)}</p>
                     {c.preco_promo && (
-                      <p className="text-xs text-green-600 font-semibold">{fmt(c.preco_promo)} promo</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 font-semibold">{fmt(c.preco_promo)} promo</p>
                     )}
                   </div>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => abrirEditar(c)}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]"
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]"
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleDeletar(c)}
                       disabled={deletando === c.id}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      className="text-xs px-2.5 py-1 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50"
                     >
                       {deletando === c.id ? '...' : 'Deletar'}
                     </button>
@@ -207,69 +207,69 @@ const RestauranteCombos = () => {
       {/* Modal criar / editar combo */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-[#18181B] mb-4">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4">
               {editando ? 'Editar Combo' : 'Novo Combo'}
             </h2>
             <form onSubmit={handleSalvar} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nome *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   placeholder="Ex: Combo Família"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Descrição</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   rows={2}
                   placeholder="O que vem incluso..."
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço (R$) *</label>
                   <input
                     type="number" min="0" step="0.01"
                     value={form.price}
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="0,00"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço promo (R$)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço promo (R$)</label>
                   <input
                     type="number" min="0" step="0.01"
                     value={form.preco_promo}
                     onChange={(e) => setForm((f) => ({ ...f, preco_promo: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="Opcional"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">URL da imagem</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">URL da imagem</label>
                 <input
                   value={form.image_url}
                   onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   placeholder="https://..."
                 />
               </div>
 
               {/* Produtos do combo */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">
                   Produtos do combo *
-                  <span className="text-xs text-[#71717A] font-normal ml-1">({form.items.length} adicionado{form.items.length !== 1 ? 's' : ''})</span>
+                  <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-normal ml-1">({form.items.length} adicionado{form.items.length !== 1 ? 's' : ''})</span>
                 </label>
 
                 {/* Itens já adicionados */}
@@ -278,21 +278,21 @@ const RestauranteCombos = () => {
                     {form.items.map((item) => {
                       const prod = prodMap[item.product_id];
                       return (
-                        <div key={item.product_id} className="flex items-center gap-2 bg-[#F4F4F5] rounded-lg px-3 py-2">
-                          <p className="flex-1 text-sm text-[#18181B] truncate">{prod?.name ?? `Produto #${item.product_id}`}</p>
+                        <div key={item.product_id} className="flex items-center gap-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg px-3 py-2">
+                          <p className="flex-1 text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{prod?.name ?? `Produto #${item.product_id}`}</p>
                           <div className="flex items-center gap-1">
                             <button type="button" onClick={() => setQty(item.product_id, item.quantity - 1)}
-                              className="w-6 h-6 rounded-full bg-white border text-sm font-bold flex items-center justify-center hover:bg-gray-50">
+                              className="w-6 h-6 rounded-full bg-white dark:bg-[#27272A] border text-sm font-bold flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-950/40">
                               -
                             </button>
                             <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
                             <button type="button" onClick={() => setQty(item.product_id, item.quantity + 1)}
-                              className="w-6 h-6 rounded-full bg-white border text-sm font-bold flex items-center justify-center hover:bg-gray-50">
+                              className="w-6 h-6 rounded-full bg-white dark:bg-[#27272A] border text-sm font-bold flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-950/40">
                               +
                             </button>
                           </div>
                           <button type="button" onClick={() => removeItem(item.product_id)}
-                            className="text-red-500 hover:text-red-700 text-sm font-bold ml-1">
+                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 text-sm font-bold ml-1">
                             ×
                           </button>
                         </div>
@@ -306,7 +306,7 @@ const RestauranteCombos = () => {
                   <select
                     onChange={(e) => { addItem(e.target.value); e.target.value = ''; }}
                     defaultValue=""
-                    className="w-full border rounded-lg px-3 py-2 text-sm text-[#71717A]"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] rounded-lg px-3 py-2 text-sm text-[#71717A] dark:text-[#A1A1AA]"
                   >
                     <option value="" disabled>+ Adicionar produto...</option>
                     {produtosDisponiveis.map((p) => (
@@ -314,7 +314,7 @@ const RestauranteCombos = () => {
                     ))}
                   </select>
                 ) : (
-                  <p className="text-xs text-[#71717A]">Todos os produtos já foram adicionados</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Todos os produtos já foram adicionados</p>
                 )}
               </div>
 
@@ -325,12 +325,12 @@ const RestauranteCombos = () => {
                   onChange={(e) => setForm((f) => ({ ...f, destaque: e.target.checked }))}
                   className="w-4 h-4 accent-[#FF441F]"
                 />
-                <span className="text-sm text-gray-700">⭐ Destacar combo</span>
+                <span className="text-sm text-gray-700 dark:text-gray-400">⭐ Destacar combo</span>
               </label>
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={fecharModal}
-                  className="flex-1 py-2 text-sm border rounded-lg text-gray-700 hover:bg-gray-50">
+                  className="flex-1 py-2 text-sm border rounded-lg text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-950/40">
                   Cancelar
                 </button>
                 <button type="submit" disabled={salvando}

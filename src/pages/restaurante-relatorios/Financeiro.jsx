@@ -65,7 +65,7 @@ const RelatorioFinanceiro = () => {
   const fluxo = (dados?.fluxo_caixa ?? []).slice().sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RelatorioNav titulo="Financeiro" />
       <main className="p-6 max-w-5xl mx-auto space-y-4">
         <FiltroPeriodo
@@ -73,56 +73,56 @@ const RelatorioFinanceiro = () => {
           podeImprimir={!!dados} onImprimir={() => printIframe(buildPrintHtml(dados, restauranteNome, label))}
         />
 
-        {erro && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{erro}</p>}
+        {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-xl">{erro}</p>}
 
         {dados && r && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white border border-green-200 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Vendas</p>
-                <p className="text-2xl font-black text-green-700">{fmt(r.total_vendas)}</p>
-                <p className="text-xs text-[#71717A] mt-1">{r.entregues} finalizados</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Vendas</p>
+                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(r.total_vendas)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{r.entregues} finalizados</p>
               </div>
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Comissão Paga</p>
-                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_comissoes_pagas)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Comissão Paga</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_comissoes_pagas)}</p>
               </div>
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Gorjetas Pagas</p>
-                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_gorjetas_pagas)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Gorjetas Pagas</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_gorjetas_pagas)}</p>
               </div>
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Troco</p>
-                <p className="text-2xl font-black text-[#18181B]">{fmt(r.total_troco)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Troco</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_troco)}</p>
               </div>
             </div>
 
-            <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4">
-              <p className="text-xs font-bold text-[#71717A] mb-3 uppercase tracking-wide">Por Forma de Pagamento</p>
+            <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4">
+              <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-3 uppercase tracking-wide">Por Forma de Pagamento</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Object.entries(r.por_pagamento ?? {}).length === 0 ? (
-                  <p className="text-sm text-[#71717A] col-span-4 text-center py-4">Sem dados no período.</p>
+                  <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] col-span-4 text-center py-4">Sem dados no período.</p>
                 ) : Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
-                  <div key={k} className="border border-[#F4F4F5] rounded-xl p-3">
-                    <p className="text-xs text-[#71717A] mb-1">{PAYMENT_LABELS[k] ?? k}</p>
-                    <p className="text-lg font-black text-[#18181B]">{fmt(v.total)}</p>
-                    <p className="text-[10px] text-[#71717A]">{v.count} pagamento{v.count !== 1 ? 's' : ''}</p>
+                  <div key={k} className="border border-[#F4F4F5] dark:border-[#3F3F46] rounded-xl p-3">
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1">{PAYMENT_LABELS[k] ?? k}</p>
+                    <p className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(v.total)}</p>
+                    <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{v.count} pagamento{v.count !== 1 ? 's' : ''}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
-              <div className="px-5 py-3 bg-[#FAFAFA] border-b border-[#F4F4F5]">
-                <p className="text-xs font-bold text-[#71717A] uppercase tracking-widest">Fluxo de Caixa Detalhado ({fluxo.length})</p>
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
+              <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46]">
+                <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Fluxo de Caixa Detalhado ({fluxo.length})</p>
               </div>
               {fluxo.length === 0 ? (
-                <p className="text-sm text-[#71717A] text-center py-10">Nenhum pagamento registrado no período.</p>
+                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum pagamento registrado no período.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-xs font-bold text-[#71717A] uppercase tracking-widest">
+                      <tr className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
                         <th className="text-left px-5 py-2">Hora</th>
                         <th className="text-left px-5 py-2">Pedido</th>
                         <th className="text-left px-5 py-2">Forma</th>
@@ -130,14 +130,14 @@ const RelatorioFinanceiro = () => {
                         <th className="text-right px-5 py-2">Valor</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#F4F4F5]">
+                    <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
                       {fluxo.map((f, i) => (
-                        <tr key={i} className="hover:bg-[#FAFAFA]">
-                          <td className="px-5 py-2.5 text-xs text-[#71717A]">{new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                        <tr key={i} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                          <td className="px-5 py-2.5 text-xs text-[#71717A] dark:text-[#A1A1AA]">{new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
                           <td className="px-5 py-2.5 font-semibold">#{f.order_id}</td>
                           <td className="px-5 py-2.5">{PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td>
-                          <td className="px-5 py-2.5 text-[#71717A]">{ORIGEM_LABELS[f.origem] ?? f.origem}</td>
-                          <td className="px-5 py-2.5 text-right font-bold text-green-700">{fmt(f.valor)}</td>
+                          <td className="px-5 py-2.5 text-[#71717A] dark:text-[#A1A1AA]">{ORIGEM_LABELS[f.origem] ?? f.origem}</td>
+                          <td className="px-5 py-2.5 text-right font-bold text-green-700 dark:text-green-400">{fmt(f.valor)}</td>
                         </tr>
                       ))}
                     </tbody>

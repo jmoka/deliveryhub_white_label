@@ -30,23 +30,23 @@ const NovoGarcomForm = ({ onCriado }) => {
   };
 
   return (
-    <form onSubmit={submit} className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4 flex flex-wrap gap-2 items-end">
+    <form onSubmit={submit} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4 flex flex-wrap gap-2 items-end">
       <div className="flex-1 min-w-[140px]">
-        <label className="text-xs text-[#71717A]">Nome</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nome</label>
         <input value={nome} onChange={(e) => setNome(e.target.value)} required
-          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
       </div>
       <div className="flex-1 min-w-[140px]">
-        <label className="text-xs text-[#71717A]">Telefone</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Telefone</label>
         <input value={telefone} onChange={(e) => setTelefone(e.target.value)}
-          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
       </div>
       <div className="flex-1 min-w-[140px]">
-        <label className="text-xs text-[#71717A]">Senha inicial</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Senha inicial</label>
         <input value={senha} onChange={(e) => setSenha(e.target.value)} required minLength={4}
-          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
       </div>
-      {erro && <p className="text-xs text-red-600 w-full">{erro}</p>}
+      {erro && <p className="text-xs text-red-600 dark:text-red-400 w-full">{erro}</p>}
       <button type="submit" disabled={salvando}
         className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl disabled:opacity-50">
         {salvando ? 'Criando...' : 'Criar garçom'}
@@ -86,13 +86,13 @@ const GarcomCard = ({ garcom, onMudou }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
       <div className="flex justify-between items-start">
         <div>
-          <p className="text-sm font-bold text-[#18181B]">{garcom.nome}</p>
-          <p className="text-xs text-[#71717A]">{garcom.telefone}</p>
+          <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{garcom.nome}</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{garcom.telefone}</p>
         </div>
-        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${garcom.ativo ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>
+        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${garcom.ativo ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
           {garcom.ativo ? 'Ativo' : 'Desativado'}
         </span>
       </div>
@@ -100,17 +100,17 @@ const GarcomCard = ({ garcom, onMudou }) => {
       {urls.lan && (
         <div className="flex gap-2 mt-3">
           <button onClick={() => setModo('online')}
-            className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             ONLINE
           </button>
           <button onClick={() => setModo('local')}
-            className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             LOCAL
           </button>
         </div>
       )}
-      <div className="flex items-center gap-2 mt-2 bg-[#F4F4F5] rounded-xl px-3 py-2">
-        <span className="text-xs font-mono text-[#71717A] truncate flex-1">{link}</span>
+      <div className="flex items-center gap-2 mt-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+        <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{link}</span>
         <button onClick={copiarLink} className="text-xs font-bold text-[#FF441F]">{copiado ? 'Copiado!' : 'Copiar'}</button>
       </div>
 
@@ -121,17 +121,17 @@ const GarcomCard = ({ garcom, onMudou }) => {
             porque o garçom nunca teve essas ações na tela dele — eram vestigiais. */}
         <button onClick={() => togglePermissao('pagamento_parcial')}
           className={`text-[10px] px-2 py-1 rounded-full font-medium border ${
-            garcom.permissoes?.pagamento_parcial !== false ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-[#F4F4F5] text-[#A1A1AA] border-[#E4E4E7]'
+            garcom.permissoes?.pagamento_parcial !== false ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#A1A1AA] border-[#E4E4E7] dark:border-[#3F3F46]'
           }`}>
           Pagamento parcial
         </button>
       </div>
 
       <div className="flex gap-2 mt-3">
-        <button onClick={toggleAtivo} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] rounded-lg text-[#71717A] hover:bg-[#F4F4F5]">
+        <button onClick={toggleAtivo} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
           {garcom.ativo ? 'Desativar' : 'Ativar'}
         </button>
-        <button onClick={remover} className="flex-1 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+        <button onClick={remover} className="flex-1 py-1.5 text-xs border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40">
           Remover
         </button>
       </div>
@@ -195,42 +195,42 @@ const MesasTab = () => {
 
   return (
     <div>
-      <form onSubmit={criar} className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4 flex flex-wrap gap-2 items-end">
+      <form onSubmit={criar} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4 flex flex-wrap gap-2 items-end">
         <div>
-          <label className="text-xs text-[#71717A]">Número</label>
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Número</label>
           <input type="number" value={numero} onChange={(e) => setNumero(e.target.value)} required
-            className="w-24 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+            className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
         </div>
         <div className="flex-1 min-w-[140px]">
-          <label className="text-xs text-[#71717A]">Nome (opcional)</label>
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nome (opcional)</label>
           <input value={nome} onChange={(e) => setNome(e.target.value)}
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
         </div>
-        {erro && <p className="text-xs text-red-600 w-full">{erro}</p>}
+        {erro && <p className="text-xs text-red-600 dark:text-red-400 w-full">{erro}</p>}
         <button type="submit" className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl">Adicionar mesa</button>
       </form>
 
-      <form onSubmit={criarLote} className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4">
-        <p className="text-xs font-semibold text-[#71717A] mb-2">Criar várias de uma vez (mesas fixas numeradas)</p>
+      <form onSubmit={criarLote} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+        <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Criar várias de uma vez (mesas fixas numeradas)</p>
         <div className="flex flex-wrap gap-2 items-end">
           <div>
-            <label className="text-xs text-[#71717A]">De</label>
+            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">De</label>
             <input type="number" value={loteDe} onChange={(e) => setLoteDe(e.target.value)} required
-              className="w-24 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+              className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
           </div>
           <div>
-            <label className="text-xs text-[#71717A]">Até</label>
+            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Até</label>
             <input type="number" value={loteAte} onChange={(e) => setLoteAte(e.target.value)} required
-              className="w-24 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+              className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
           </div>
           <button type="submit" disabled={loteSalvando}
             className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
             {loteSalvando ? 'Criando...' : 'Criar mesas'}
           </button>
         </div>
-        {loteErro && <p className="text-xs text-red-600 mt-2">{loteErro}</p>}
+        {loteErro && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{loteErro}</p>}
         {loteResultado && (
-          <p className="text-xs text-emerald-700 mt-2">
+          <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
             {loteResultado.criadas} mesa(s) criada(s){loteResultado.ja_existiam > 0 ? `, ${loteResultado.ja_existiam} já existiam (puladas)` : ''}.
           </p>
         )}
@@ -238,12 +238,12 @@ const MesasTab = () => {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {mesas.map((m) => (
-          <div key={m.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3 text-center">
-            <p className="text-lg font-black text-[#18181B]">{m.numero}</p>
-            {m.nome && <p className="text-xs text-[#71717A]">{m.nome}</p>}
+          <div key={m.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 text-center">
+            <p className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">{m.numero}</p>
+            {m.nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{m.nome}</p>}
             <p className="text-[10px] text-[#A1A1AA] mt-1">{m.status}</p>
             {m.status === 'livre' && (
-              <button onClick={() => remover(m.id)} className="text-[10px] text-red-500 mt-1">Remover</button>
+              <button onClick={() => remover(m.id)} className="text-[10px] text-red-500 dark:text-red-400 mt-1">Remover</button>
             )}
           </div>
         ))}
@@ -260,16 +260,16 @@ const RestauranteGarcons = () => {
   useEffect(() => { carregar(); }, [carregar]);
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/garcons" title="Garçons" />
       <div className="max-w-5xl mx-auto p-4">
         <div className="flex gap-2 mb-4">
           <button onClick={() => setAba('garcons')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'garcons' ? 'bg-[#FF441F] text-white' : 'bg-white text-[#71717A] border border-[#E4E4E7]'}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'garcons' ? 'bg-[#FF441F] text-white' : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#3F3F46]'}`}>
             Garçons
           </button>
           <button onClick={() => setAba('mesas')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-white text-[#71717A] border border-[#E4E4E7]'}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#3F3F46]'}`}>
             Mesas
           </button>
         </div>

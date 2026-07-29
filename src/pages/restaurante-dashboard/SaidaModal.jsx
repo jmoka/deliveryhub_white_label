@@ -18,37 +18,37 @@ const SaidaModal = ({ onConfirmar, onFechar, salvando }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-base font-bold text-[#18181B] mb-4">Registrar Saída</h2>
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4">Registrar Saída</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-[#71717A] mb-1">Descrição</label>
+            <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Descrição</label>
             <input
               value={form.descricao}
               onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
               placeholder="Ex: Troco, compra de ingrediente, troco em PIX..."
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
               required
             />
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-[#71717A] mb-1">Valor (R$)</label>
+              <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Valor (R$)</label>
               <input
                 type="number" min="0.01" step="0.01"
                 value={form.valor}
                 onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))}
                 placeholder="0,00"
-                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
                 required
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium text-[#71717A] mb-1">Meio</label>
+              <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Meio</label>
               <select
                 value={form.meio}
                 onChange={(e) => setForm((f) => ({ ...f, meio: e.target.value }))}
-                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] bg-white mx-2"
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] mx-2"
               >
                 {MEIOS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
@@ -56,7 +56,7 @@ const SaidaModal = ({ onConfirmar, onFechar, salvando }) => {
           </div>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
-              className="flex-1 py-2 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              className="flex-1 py-2 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
               Cancelar
             </button>
             <button type="submit" disabled={salvando}

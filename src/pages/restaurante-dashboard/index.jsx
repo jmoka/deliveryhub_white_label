@@ -290,21 +290,21 @@ const RestauranteDashboard = () => {
 
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#18181B]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   if (erro) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-      <p className="text-red-600 text-sm">{erro}</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#18181B]">
+      <p className="text-red-600 dark:text-red-400 text-sm">{erro}</p>
     </div>
   );
 
   const r = caixa?.resumo;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
 
       <AlertasToast alertas={alertas} onDismiss={(id) => setAlertas((prev) => prev.filter((a) => a.id !== id))} />
 
@@ -315,36 +315,36 @@ const RestauranteDashboard = () => {
         {/* Fechamento anterior */}
         {fechamento && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center justify-between">
+            className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-5 py-3 flex items-center justify-between">
             <div>
-              <p className="text-sm font-bold text-green-800">Caixa fechado com sucesso</p>
-              <p className="text-xs text-green-600">Vendas: {fmt(fechamento.resumo?.total_vendas)} · Saldo: {fmt(fechamento.resumo?.saldo)}</p>
+              <p className="text-sm font-bold text-green-800 dark:text-green-400">Caixa fechado com sucesso</p>
+              <p className="text-xs text-green-600 dark:text-green-400">Vendas: {fmt(fechamento.resumo?.total_vendas)} · Saldo: {fmt(fechamento.resumo?.saldo)}</p>
             </div>
-            <button onClick={() => setFechamento(null)} className="text-green-400 hover:text-green-600 p-1"><Icon name="X" size={16} /></button>
+            <button onClick={() => setFechamento(null)} className="text-green-400 hover:text-green-600 dark:hover:text-green-400 p-1"><Icon name="X" size={16} /></button>
           </motion.div>
         )}
 
         {/* Status restaurante */}
         <motion.div animate={{ borderColor: statusAberto ? '#22C55E' : '#EF4444' }}
-          className={`rounded-2xl border-2 p-4 flex items-center justify-between ${statusAberto ? 'bg-green-50' : 'bg-red-50'}`}>
+          className={`rounded-2xl border-2 p-4 flex items-center justify-between ${statusAberto ? 'bg-green-50 dark:bg-green-950/40' : 'bg-red-50 dark:bg-red-950/40'}`}>
           <div>
-            <p className="font-black text-[#18181B]">{statusAberto ? '🟢 Restaurante ABERTO' : '🔴 Restaurante FECHADO'}</p>
-            <p className="text-xs text-[#71717A] mt-0.5">{statusAberto ? 'Clientes podem fazer pedidos agora.' : 'Pedidos pausados.'}</p>
+            <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">{statusAberto ? '🟢 Restaurante ABERTO' : '🔴 Restaurante FECHADO'}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{statusAberto ? 'Clientes podem fazer pedidos agora.' : 'Pedidos pausados.'}</p>
           </div>
           <button type="button" onClick={() => handleToggleStatus(!statusAberto)}
             className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ${statusAberto ? 'bg-green-500' : 'bg-red-400'}`}>
-            <span className={`absolute top-1.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${statusAberto ? 'left-8' : 'left-1.5'}`} />
+            <span className={`absolute top-1.5 w-4 h-4 bg-white dark:bg-[#27272A] rounded-full shadow transition-transform ${statusAberto ? 'left-8' : 'left-1.5'}`} />
           </button>
         </motion.div>
 
         {/* Caixa — expirado (8h) */}
         {caixa?.expirado && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <Icon name="AlertTriangle" size={18} className="text-red-500 flex-shrink-0" />
+              <Icon name="AlertTriangle" size={18} className="text-red-500 dark:text-red-400 flex-shrink-0" />
               <div>
-                <p className="text-sm font-bold text-red-800">Caixa expirado</p>
-                <p className="text-xs text-red-600">Mais de 8h desde a abertura. Feche para continuar operando.</p>
+                <p className="text-sm font-bold text-red-800 dark:text-red-400">Caixa expirado</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Mais de 8h desde a abertura. Feche para continuar operando.</p>
               </div>
             </div>
             <button onClick={() => setShowFechar(true)}
@@ -356,22 +356,22 @@ const RestauranteDashboard = () => {
 
         {/* Caixa — fechado */}
         {!caixa?.aberto && !caixa?.expirado && (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5">
             <div className="flex items-center gap-2 mb-4">
               <Icon name="Wallet" size={18} className="text-[#FF441F]" />
-              <h2 className="font-bold text-[#18181B]">Caixa</h2>
-              <span className="ml-auto text-xs bg-[#F4F4F5] text-[#71717A] px-2 py-0.5 rounded-full font-medium">Fechado</span>
+              <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Caixa</h2>
+              <span className="ml-auto text-xs bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] px-2 py-0.5 rounded-full font-medium">Fechado</span>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-[#71717A] mb-1">Nome do operador *</label>
+                <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Nome do operador *</label>
                 <input value={nomeOperador} onChange={(e) => setNomeOperador(e.target.value)}
                   placeholder="Ex: João"
-                  className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-[#71717A] mb-1">
+                  <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">
                     Valor inicial (R$)
                     {(caixa?.saldo_caixa ?? 0) > 0 && <span className="ml-1 text-[#FF441F]">← cofre</span>}
                   </label>
@@ -379,7 +379,7 @@ const RestauranteDashboard = () => {
                     value={valorInicial !== '' ? valorInicial : (caixa?.saldo_caixa ?? '')}
                     onChange={(e) => setValorInicial(e.target.value)}
                     placeholder={caixa?.saldo_caixa > 0 ? String(caixa.saldo_caixa) : '0,00'}
-                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
                 </div>
                 <div className="flex items-end">
                   <button onClick={handleAbrirCaixa}
@@ -410,11 +410,11 @@ const RestauranteDashboard = () => {
             </div>
 
             {/* Filtro período + tabela detalhe por motoboy */}
-            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <button
                   onClick={() => setShowDetalheFretes((v) => !v)}
-                  className="flex items-center gap-2 text-sm font-semibold text-[#18181B] hover:text-[#FF441F]"
+                  className="flex items-center gap-2 text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] hover:text-[#FF441F]"
                 >
                   <Icon name="Truck" size={16} />
                   Fretes e Troco por motoboy
@@ -431,7 +431,7 @@ const RestauranteDashboard = () => {
                     <button
                       key={v}
                       onClick={() => setPeriodoFretes(v)}
-                      className={`px-2 py-1 text-xs rounded-lg font-medium transition-colors ${periodoFretes === v ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A] hover:bg-[#E4E4E7]'}`}
+                      className={`px-2 py-1 text-xs rounded-lg font-medium transition-colors ${periodoFretes === v ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'}`}
                     >
                       {l}
                     </button>
@@ -444,11 +444,11 @@ const RestauranteDashboard = () => {
                   {/* Por motoboy */}
                   {relFretes?.por_motoboy?.length > 0 ? (
                     <div>
-                      <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide mb-2">Por motoboy</p>
+                      <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-2">Por motoboy</p>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b text-xs text-[#71717A]">
+                            <tr className="border-b text-xs text-[#71717A] dark:text-[#A1A1AA]">
                               <th className="text-left py-1.5 pr-3">Motoboy</th>
                               <th className="text-right py-1.5 px-2 whitespace-nowrap">Entregas</th>
                               <th className="text-right py-1.5 px-2 whitespace-nowrap">Fretes</th>
@@ -458,10 +458,10 @@ const RestauranteDashboard = () => {
                           <tbody>
                             {relFretes.por_motoboy.map((m) => (
                               <tr key={m.motoboy_id} className="border-b last:border-0">
-                                <td className="py-1.5 pr-3 font-medium text-[#18181B]">{m.nome}</td>
-                                <td className="py-1.5 px-2 text-right text-[#71717A]">{m.entregas}</td>
-                                <td className="py-1.5 px-2 text-right text-green-700 font-semibold">{fmt(m.fretes)}</td>
-                                <td className="py-1.5 pl-2 text-right text-orange-700 font-semibold">{fmt(m.troco)}</td>
+                                <td className="py-1.5 pr-3 font-medium text-[#18181B] dark:text-[#F4F4F5]">{m.nome}</td>
+                                <td className="py-1.5 px-2 text-right text-[#71717A] dark:text-[#A1A1AA]">{m.entregas}</td>
+                                <td className="py-1.5 px-2 text-right text-green-700 dark:text-green-400 font-semibold">{fmt(m.fretes)}</td>
+                                <td className="py-1.5 pl-2 text-right text-orange-700 dark:text-orange-400 font-semibold">{fmt(m.troco)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -469,17 +469,17 @@ const RestauranteDashboard = () => {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-[#71717A] text-center py-4">Nenhuma entrega no período</p>
+                    <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-4">Nenhuma entrega no período</p>
                   )}
 
                   {/* Por dia */}
                   {relFretes?.por_dia?.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide mb-2 mt-4">Por dia</p>
+                      <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-2 mt-4">Por dia</p>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b text-xs text-[#71717A]">
+                            <tr className="border-b text-xs text-[#71717A] dark:text-[#A1A1AA]">
                               <th className="text-left py-1.5 pr-3">Data</th>
                               <th className="text-right py-1.5 px-2 whitespace-nowrap">Entregas</th>
                               <th className="text-right py-1.5 px-2 whitespace-nowrap">Fretes</th>
@@ -489,10 +489,10 @@ const RestauranteDashboard = () => {
                           <tbody>
                             {relFretes.por_dia.map((d) => (
                               <tr key={d.dia} className="border-b last:border-0">
-                                <td className="py-1.5 pr-3 font-medium text-[#18181B]">{d.dia}</td>
-                                <td className="py-1.5 px-2 text-right text-[#71717A]">{d.entregas}</td>
-                                <td className="py-1.5 px-2 text-right text-green-700 font-semibold">{fmt(d.fretes)}</td>
-                                <td className="py-1.5 pl-2 text-right text-orange-700 font-semibold">{fmt(d.troco)}</td>
+                                <td className="py-1.5 pr-3 font-medium text-[#18181B] dark:text-[#F4F4F5]">{d.dia}</td>
+                                <td className="py-1.5 px-2 text-right text-[#71717A] dark:text-[#A1A1AA]">{d.entregas}</td>
+                                <td className="py-1.5 px-2 text-right text-green-700 dark:text-green-400 font-semibold">{fmt(d.fretes)}</td>
+                                <td className="py-1.5 pl-2 text-right text-orange-700 dark:text-orange-400 font-semibold">{fmt(d.troco)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -511,28 +511,28 @@ const RestauranteDashboard = () => {
               const saldoDigital = (r?.total_vendas ?? 0) - vendasCash;
               return (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
-                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">💵 Fundo inicial</p>
-                    <p className="text-lg font-black text-green-700">{fmt(caixa.valor_inicial)}</p>
-                    <p className="text-[10px] text-green-600">em espécie</p>
+                  <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center">
+                    <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">💵 Fundo inicial</p>
+                    <p className="text-lg font-black text-green-700 dark:text-green-400">{fmt(caixa.valor_inicial)}</p>
+                    <p className="text-[10px] text-green-600 dark:text-green-400">em espécie</p>
                   </div>
                   <button onClick={() => setShowVendasEspecieDetalhe(true)}
-                    className="bg-green-50 border border-green-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">💵 Vendas espécie</p>
-                    <p className="text-lg font-black text-green-700">{fmt(vendasCash)}</p>
-                    <p className="text-[10px] text-green-600">pagos em dinheiro</p>
+                    className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">💵 Vendas espécie</p>
+                    <p className="text-lg font-black text-green-700 dark:text-green-400">{fmt(vendasCash)}</p>
+                    <p className="text-[10px] text-green-600 dark:text-green-400">pagos em dinheiro</p>
                   </button>
                   <button onClick={() => setShowAdicoesDetalhe(true)}
-                    className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">➕ Adições</p>
-                    <p className="text-lg font-black text-emerald-700">{fmt(r?.total_entradas)}</p>
-                    <p className="text-[10px] text-emerald-600">{caixa?.entradas?.length ?? 0} registros</p>
+                    className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">➕ Adições</p>
+                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">{fmt(r?.total_entradas)}</p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400">{caixa?.entradas?.length ?? 0} registros</p>
                   </button>
                   <button onClick={() => setShowSangriasDetalhe(true)}
-                    className="bg-red-50 border border-red-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">➖ Sangrias</p>
-                    <p className="text-lg font-black text-red-700">{fmt(r?.total_saidas)}</p>
-                    <p className="text-[10px] text-red-600">{caixa?.saidas?.length ?? 0} registros</p>
+                    className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">➖ Sangrias</p>
+                    <p className="text-lg font-black text-red-700 dark:text-red-400">{fmt(r?.total_saidas)}</p>
+                    <p className="text-[10px] text-red-600 dark:text-red-400">{caixa?.saidas?.length ?? 0} registros</p>
                   </button>
                   <button onClick={() => setShowEspecieDetalhe(true)}
                     className="bg-[#FF441F]/5 border border-[#FF441F]/30 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
@@ -541,10 +541,10 @@ const RestauranteDashboard = () => {
                     <p className="text-[10px] text-[#FF441F]">estimativa física</p>
                   </button>
                   <button onClick={() => setShowDigitalDetalhe(true)}
-                    className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">🏦 Vendas digital</p>
-                    <p className="text-lg font-black text-blue-700">{fmt(saldoDigital)}</p>
-                    <p className="text-[10px] text-blue-600">PIX / cartão</p>
+                    className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">🏦 Vendas digital</p>
+                    <p className="text-lg font-black text-blue-700 dark:text-blue-400">{fmt(saldoDigital)}</p>
+                    <p className="text-[10px] text-blue-600 dark:text-blue-400">PIX / cartão</p>
                   </button>
                 </div>
               );
@@ -552,14 +552,14 @@ const RestauranteDashboard = () => {
 
             {/* Recebido por forma de pagamento (delivery + salão combinados) */}
             {Object.keys(r?.por_pagamento ?? {}).length > 0 && (
-              <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+              <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
                 <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-3">Recebido por forma de pagamento</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Object.entries(r.por_pagamento).map(([metodo, valor]) => (
-                    <div key={metodo} className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 text-center">
+                    <div key={metodo} className="bg-[#FAFAFA] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center">
                       <p className="text-lg">{PAGAMENTO_ICONE[metodo] ?? '💰'}</p>
-                      <p className="text-base font-black text-[#18181B]">{fmt(valor)}</p>
-                      <p className="text-[10px] text-[#71717A]">{PAGAMENTO_LABEL[metodo] ?? metodo}</p>
+                      <p className="text-base font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(valor)}</p>
+                      <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{PAGAMENTO_LABEL[metodo] ?? metodo}</p>
                     </div>
                   ))}
                 </div>
@@ -567,17 +567,17 @@ const RestauranteDashboard = () => {
             )}
 
             {/* Barra caixa */}
-            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 flex items-center gap-3 flex-wrap">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-[#18181B]">Caixa aberto</p>
-                  <p className="text-xs text-[#71717A]">Desde {new Date(caixa.aberto_em).toLocaleString('pt-BR')}</p>
+                  <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Caixa aberto</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Desde {new Date(caixa.aberto_em).toLocaleString('pt-BR')}</p>
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <button onClick={() => setShowSaida(true)}
-                  className="px-3 py-1.5 text-xs font-semibold border border-[#E4E4E7] rounded-lg text-[#27272A] hover:bg-[#F4F4F5] flex items-center gap-1">
+                  className="px-3 py-1.5 text-xs font-semibold border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] flex items-center gap-1">
                   <Icon name="ArrowDownLeft" size={13} /> Saída
                 </button>
                 <button onClick={() => setShowFechar(true)}
@@ -588,14 +588,14 @@ const RestauranteDashboard = () => {
             </div>
 
             {/* Pedidos de delivery agora têm painel próprio — ver /restaurante/delivery */}
-            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 flex items-center justify-between flex-wrap gap-3">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#FF441F]/10 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Icon name="Bike" size={18} className="text-[#FF441F]" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#18181B]">Pedidos de delivery</p>
-                  <p className="text-xs text-[#71717A]">Acompanhe, avance status e atribua motoboy no painel dedicado</p>
+                  <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Pedidos de delivery</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Acompanhe, avance status e atribua motoboy no painel dedicado</p>
                 </div>
               </div>
               <button onClick={() => navigate('/restaurante/delivery')}
@@ -606,21 +606,21 @@ const RestauranteDashboard = () => {
 
             {/* Saídas */}
             {(caixa.saidas?.length ?? 0) > 0 && (
-              <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
-                <h2 className="font-bold text-[#18181B] mb-3 flex items-center gap-2">
-                  <Icon name="ArrowDownLeft" size={16} className="text-red-500" /> Saídas registradas
+              <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5">
+                <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5] mb-3 flex items-center gap-2">
+                  <Icon name="ArrowDownLeft" size={16} className="text-red-500 dark:text-red-400" /> Saídas registradas
                 </h2>
                 <div className="space-y-2">
                   {caixa.saidas.map((s, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-[#F4F4F5] last:border-0">
+                    <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-[#F4F4F5] dark:border-[#3F3F46] last:border-0">
                       <div>
-                        <p className="font-medium text-[#18181B]">{s.descricao}</p>
-                        <p className="text-xs text-[#71717A]">
+                        <p className="font-medium text-[#18181B] dark:text-[#F4F4F5]">{s.descricao}</p>
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
                           {new Date(s.criado_em).toLocaleString('pt-BR')}
-                          {s.meio && <span className="ml-1.5 px-1.5 py-0.5 bg-[#F4F4F5] rounded text-[10px] font-semibold">{s.meio}</span>}
+                          {s.meio && <span className="ml-1.5 px-1.5 py-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded text-[10px] font-semibold">{s.meio}</span>}
                         </p>
                       </div>
-                      <p className="font-bold text-red-500">- {fmt(s.valor)}</p>
+                      <p className="font-bold text-red-500 dark:text-red-400">- {fmt(s.valor)}</p>
                     </div>
                   ))}
                 </div>

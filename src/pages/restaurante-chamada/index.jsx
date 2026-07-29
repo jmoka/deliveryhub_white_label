@@ -109,7 +109,7 @@ const RestauranteChamada = () => {
         <h1 className="text-xl font-black text-white uppercase flex items-center gap-2">
           <Icon name="Volume2" size={22} className="text-orange-400" /> Chamada — Balcão
         </h1>
-        {naFila > 0 && <span className="text-xs font-bold text-[#71717A]">+{naFila} na fila</span>}
+        {naFila > 0 && <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA]">+{naFila} na fila</span>}
       </div>
       {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
 
@@ -117,14 +117,14 @@ const RestauranteChamada = () => {
         {/* Destaque central — 1 comanda por vez, pisca contínuo + flash no bipe */}
         <div className="flex-1 flex items-center justify-center">
           {central ? (
-            <div className={`w-full max-w-xl rounded-3xl border-4 p-8 text-center transition-colors animate-pulse ${flash ? 'bg-yellow-400/20 border-yellow-400' : 'bg-[#232323] border-orange-500/60'}`}>
+            <div className={`w-full max-w-xl rounded-3xl border-4 p-8 text-center transition-colors animate-pulse ${flash ? 'bg-yellow-400/20 border-yellow-400 dark:border-yellow-800' : 'bg-[#232323] border-orange-500/60'}`}>
               <p className="text-sm font-bold text-orange-400 uppercase tracking-widest mb-2">Pedido pronto</p>
               <p className="text-4xl font-black text-white mb-1">{central.cliente}</p>
-              <p className="text-xs text-[#71717A] mb-5">Chamado {central.chamado_count}/{MAX_CHAMADOS}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-5">Chamado {central.chamado_count}/{MAX_CHAMADOS}</p>
               <ItensLista pedido={central} tamanho="lg" />
             </div>
           ) : (
-            <p className="text-[#71717A] text-sm">Nenhum pedido de balcão aguardando.</p>
+            <p className="text-[#71717A] dark:text-[#A1A1AA] text-sm">Nenhum pedido de balcão aguardando.</p>
           )}
         </div>
 
@@ -139,19 +139,19 @@ const RestauranteChamada = () => {
                   <ItensLista pedido={p} />
                 </div>
               ))}
-              {aguardando.length === 0 && <p className="text-xs text-[#71717A]">Vazio.</p>}
+              {aguardando.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vazio.</p>}
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Entregue</h2>
             <div className="space-y-1.5">
               {historico.map((p, idx) => (
-                <div key={`${p.order_id}-${idx}`} className="flex items-center gap-2 text-xs text-[#71717A] bg-[#1F1F1F] rounded-lg px-2.5 py-1.5">
-                  <Icon name="Check" size={12} className="text-emerald-500 flex-shrink-0" />
+                <div key={`${p.order_id}-${idx}`} className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#1F1F1F] rounded-lg px-2.5 py-1.5">
+                  <Icon name="Check" size={12} className="text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
                   <span className="text-white font-bold">{p.cliente}</span>
                 </div>
               ))}
-              {historico.length === 0 && <p className="text-xs text-[#71717A]">Nada ainda.</p>}
+              {historico.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nada ainda.</p>}
             </div>
           </div>
         </div>

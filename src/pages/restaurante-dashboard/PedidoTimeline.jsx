@@ -12,7 +12,7 @@ const STEPS = [
 
 const PedidoTimeline = ({ status }) => {
   if (status === 'canceled') return (
-    <p className="hidden md:block text-[10px] text-red-500 font-semibold mt-1.5 pt-1.5 border-t border-[#F4F4F5]">
+    <p className="hidden md:block text-[10px] text-red-500 font-semibold mt-1.5 pt-1.5 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
       Cancelado
     </p>
   );
@@ -20,7 +20,7 @@ const PedidoTimeline = ({ status }) => {
   const currentIdx = STEPS.findIndex((s) => s.key === status);
 
   return (
-    <div className="hidden md:flex items-end mt-2 pt-2 border-t border-[#F4F4F5]">
+    <div className="hidden md:flex items-end mt-2 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
       {STEPS.map((step, idx) => {
         const isPast    = idx < currentIdx;
         const isCurrent = idx === currentIdx;
@@ -31,16 +31,16 @@ const PedidoTimeline = ({ status }) => {
               <div className={`rounded-full border-2 transition-all ${
                 isCurrent ? `w-5 h-5 ${step.color} border-transparent ring-2 ring-offset-1 ring-current` :
                 isPast    ? `w-4 h-4 ${step.color} border-transparent opacity-70` :
-                            'w-3.5 h-3.5 bg-white border-[#D4D4D8]'
+                            'w-3.5 h-3.5 bg-white dark:bg-[#27272A] border-[#D4D4D8] dark:border-[#52525B]'
               }`} />
               <span className={`text-[8px] font-semibold leading-none whitespace-nowrap ${
-                isCurrent ? 'text-[#18181B]' : isPast ? 'text-[#A1A1AA]' : 'text-[#D4D4D8]'
+                isCurrent ? 'text-[#18181B] dark:text-[#F4F4F5]' : isPast ? 'text-[#A1A1AA]' : 'text-[#D4D4D8] dark:text-[#52525B]'
               }`}>
                 {step.label}
               </span>
             </div>
             {!isLast && (
-              <div className={`flex-1 h-0.5 mx-1 mb-4 rounded-full ${isPast ? 'bg-[#D4D4D8]' : 'bg-[#F0F0F0]'}`} />
+              <div className={`flex-1 h-0.5 mx-1 mb-4 rounded-full ${isPast ? 'bg-[#D4D4D8] dark:bg-[#52525B]' : 'bg-[#F0F0F0] dark:bg-[#3F3F46]'}`} />
             )}
           </React.Fragment>
         );

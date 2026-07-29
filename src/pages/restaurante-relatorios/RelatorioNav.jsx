@@ -15,12 +15,12 @@ const RelatorioNav = ({ titulo }) => {
   const slugLoja = useMinhaLojaSlug();
 
   return (
-    <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between">
+    <header className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate('/restaurante/relatorios')} className="text-[#71717A] hover:text-[#18181B]">
+        <button onClick={() => navigate('/restaurante/relatorios')} className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
           <Icon name="ChevronLeft" size={20} />
         </button>
-        <h1 className="text-xl font-bold text-[#18181B]">Relatório — {titulo}</h1>
+        <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">Relatório — {titulo}</h1>
       </div>
       <nav className="hidden md:flex gap-1.5 flex-wrap">
         {SUBLINKS.map((l) => (
@@ -28,14 +28,14 @@ const RelatorioNav = ({ titulo }) => {
             className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
               l.path === window.location.pathname
                 ? 'text-white bg-[#FF441F] shadow-sm shadow-[#FF441F]/30'
-                : 'text-[#27272A] hover:bg-[#F4F4F5]'
+                : 'text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]'
             }`}>
             {l.label}
           </button>
         ))}
         {slugLoja && (
           <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-            className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 flex items-center gap-1.5">
+            className="px-3 py-2 text-sm font-semibold rounded-lg text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 hover:bg-green-100 dark:hover:bg-green-950/40 border border-green-200 dark:border-green-800 flex items-center gap-1.5">
             <Icon name="ExternalLink" size={14} /> Loja
           </button>
         )}
