@@ -17,9 +17,9 @@ const ANOS      = Array.from({ length: 4 }, (_, i) => String(new Date().getFullY
 const MODOS     = [{ value: 'dia', label: 'Dia' }, { value: 'mes', label: 'Mês' }, { value: 'ano', label: 'Ano' }, { value: 'periodo', label: 'Período' }];
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
 const PAYMENT_ICONS  = { pix: 'QrCode', credit_card: 'CreditCard', debit_card: 'CreditCard', cash: 'Banknote' };
-const PAYMENT_COLORS = { pix: 'border-blue-200 bg-blue-50 text-blue-800', credit_card: 'border-purple-200 bg-purple-50 text-purple-800', debit_card: 'border-indigo-200 bg-indigo-50 text-indigo-800', cash: 'border-green-200 bg-green-50 text-green-800' };
+const PAYMENT_COLORS = { pix: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', credit_card: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', debit_card: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', cash: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-400' };
 const STATUS_LABELS  = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', motoboy_collecting: 'Motoboy', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
-const STATUS_COLORS  = { pending: 'bg-yellow-100 text-yellow-800', confirmed: 'bg-blue-100 text-blue-800', preparing: 'bg-orange-100 text-orange-800', ready: 'bg-purple-100 text-purple-800', motoboy_collecting: 'bg-sky-100 text-sky-800', out_for_delivery: 'bg-indigo-100 text-indigo-800', delivered: 'bg-green-100 text-green-800', canceled: 'bg-red-100 text-red-800' };
+const STATUS_COLORS  = { pending: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400', confirmed: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', preparing: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400', ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', motoboy_collecting: 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400', out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', delivered: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400', canceled: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' };
 
 const PRINT_STYLE = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16px;max-width:800px;margin:0 auto}h1{font-size:18px;font-weight:900;margin-bottom:2px}h2{font-size:13px;font-weight:700;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}.sub{font-size:11px;color:#555;margin-bottom:12px}table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}th{background:#f0f0f0;padding:6px 8px;text-align:left;font-weight:700;border:1px solid #ddd}td{padding:5px 8px;border:1px solid #ddd}.right{text-align:right}.bold{font-weight:700}.green{color:#166534}.red{color:#991b1b}.kpi{display:inline-block;border:1px solid #ddd;border-radius:6px;padding:8px 14px;margin:4px;text-align:center;min-width:120px}.kpi .val{font-size:18px;font-weight:900;display:block}.kpi .lbl{font-size:10px;color:#555}@media print{button{display:none!important}}`;
 const buildPrint = (dados, nome, label) => {
@@ -100,7 +100,7 @@ const RestauranteFinanceiro = () => {
   const digitalTotal = Object.entries(r?.por_pagamento ?? {}).filter(([k]) => k !== 'cash').reduce((s, [, v]) => s + v.total, 0);
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/financeiro" title="Financeiro" subtitle="Gestão financeira gerencial" />
 
       <main className="p-6 w-[95%] mx-auto max-w-5xl space-y-5">
@@ -109,13 +109,13 @@ const RestauranteFinanceiro = () => {
         {caixa?.aberto
           ? <CaixaAtualPanel caixa={caixa} taxaPagbank={taxaPagbank} onRefresh={carregarDados} />
           : caixa && (
-            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#F4F4F5] flex items-center justify-center flex-shrink-0">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-[#F4F4F5] dark:bg-[#3F3F46] flex items-center justify-center flex-shrink-0">
                 <Icon name="Lock" size={18} className="text-[#A1A1AA]" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#18181B]">Caixa Fechado</p>
-                <p className="text-xs text-[#71717A]">Abra o caixa no Dashboard para iniciar uma sessão.</p>
+                <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Caixa Fechado</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Abra o caixa no Dashboard para iniciar uma sessão.</p>
               </div>
             </div>
           )
@@ -123,20 +123,20 @@ const RestauranteFinanceiro = () => {
 
         {/* Conferências Pendentes */}
         {conferenciasPendentes.length > 0 && (
-          <div className="bg-white rounded-2xl border border-amber-200 p-5">
-            <p className="text-sm font-bold text-[#18181B] mb-1">Conferências Pendentes</p>
-            <p className="text-[10px] text-[#71717A] mb-3">Fechamentos aguardando aprovação do gerente</p>
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-amber-200 dark:border-amber-800 p-5">
+            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Conferências Pendentes</p>
+            <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mb-3">Fechamentos aguardando aprovação do gerente</p>
             <div className="space-y-3">
               {conferenciasPendentes.map((cx) => {
                 const d   = cx.destinacao_fechamento ?? {};
                 const dif = d.diferenca ?? 0;
-                const difCor = dif === 0 ? 'text-green-700' : dif > 0 ? 'text-blue-600' : 'text-red-600';
+                const difCor = dif === 0 ? 'text-green-700 dark:text-green-400' : dif > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400';
                 return (
-                  <div key={cx.id} className="border border-[#E4E4E7] rounded-xl p-3">
+                  <div key={cx.id} className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div>
-                        <p className="text-sm font-semibold text-[#18181B]">{cx.nome_operador}</p>
-                        <p className="text-[10px] text-[#71717A]">{fmtDate(cx.fechado_em)}</p>
+                        <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{cx.nome_operador}</p>
+                        <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{fmtDate(cx.fechado_em)}</p>
                       </div>
                       <button onClick={() => handleAprovarConferencia(cx.id)} disabled={aprovando === cx.id}
                         className="px-3 py-1.5 text-xs font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex-shrink-0">
@@ -144,9 +144,9 @@ const RestauranteFinanceiro = () => {
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-                      <div className="bg-[#FAFAFA] rounded-lg p-2"><p className="text-[#71717A]">Esperado</p><p className="font-bold text-[#18181B]">{fmt(d.especie_calculada)}</p></div>
-                      <div className="bg-[#FAFAFA] rounded-lg p-2"><p className="text-[#71717A]">Contou</p><p className="font-bold text-[#18181B]">{fmt(d.dinheiro_contado)}</p></div>
-                      <div className="bg-[#FAFAFA] rounded-lg p-2"><p className="text-[#71717A]">Diferença</p><p className={`font-bold ${difCor}`}>{dif > 0 ? '+' : ''}{fmt(dif)}</p></div>
+                      <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Esperado</p><p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(d.especie_calculada)}</p></div>
+                      <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Contou</p><p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(d.dinheiro_contado)}</p></div>
+                      <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Diferença</p><p className={`font-bold ${difCor}`}>{dif > 0 ? '+' : ''}{fmt(dif)}</p></div>
                     </div>
                   </div>
                 );
@@ -156,25 +156,25 @@ const RestauranteFinanceiro = () => {
         )}
 
         {/* Análise por Período */}
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
           <p className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest mb-3">Análise por Período</p>
           <div className="flex flex-wrap gap-2 items-end">
-            <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl">
+            <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl">
               {MODOS.map((m) => (
                 <button key={m.value} onClick={() => setModo(m.value)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${modo === m.value ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${modo === m.value ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                   {m.label}
                 </button>
               ))}
             </div>
-            {modo === 'dia'     && <input type="date" value={dia} onChange={(e) => setDia(e.target.value)} className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />}
-            {modo === 'mes'     && <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />}
-            {modo === 'ano'     && <select value={ano} onChange={(e) => setAno(e.target.value)} className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">{ANOS.map((a) => <option key={a}>{a}</option>)}</select>}
+            {modo === 'dia'     && <input type="date" value={dia} onChange={(e) => setDia(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />}
+            {modo === 'mes'     && <input type="month" value={mes} onChange={(e) => setMes(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />}
+            {modo === 'ano'     && <select value={ano} onChange={(e) => setAno(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">{ANOS.map((a) => <option key={a}>{a}</option>)}</select>}
             {modo === 'periodo' && (
               <>
-                <input type="date" value={ini} onChange={(e) => setIni(e.target.value)} className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-                <span className="text-sm text-[#71717A] self-center">até</span>
-                <input type="date" value={fim} min={ini} onChange={(e) => setFim(e.target.value)} className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                <input type="date" value={ini} onChange={(e) => setIni(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                <span className="text-sm text-[#71717A] dark:text-[#A1A1AA] self-center">até</span>
+                <input type="date" value={fim} min={ini} onChange={(e) => setFim(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
               </>
             )}
             <button onClick={buscar} disabled={loading}
@@ -184,43 +184,43 @@ const RestauranteFinanceiro = () => {
             </button>
             {dados && (
               <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label))}
-                className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] hover:bg-[#F4F4F5]">
+                className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                 <Icon name="Printer" size={14} /> Imprimir
               </button>
             )}
           </div>
-          {erro && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl mt-3">{erro}</p>}
+          {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-xl mt-3">{erro}</p>}
         </div>
 
         {dados && r && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white border border-green-200 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Faturamento</p>
-                <p className="text-2xl font-black text-green-700">{fmt(r.total_vendas)}</p>
-                <p className="text-xs text-[#71717A] mt-1">{r.entregues} pedidos entregues</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Faturamento</p>
+                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(r.total_vendas)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{r.entregues} pedidos entregues</p>
               </div>
-              <div className="bg-white border border-red-200 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Saídas</p>
-                <p className="text-2xl font-black text-red-600">- {fmt(r.total_saidas)}</p>
-                <p className="text-xs text-[#71717A] mt-1">{(dados.saidas ?? []).length} registros</p>
+              <div className="bg-white dark:bg-[#27272A] border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">Saídas</p>
+                <p className="text-2xl font-black text-red-600 dark:text-red-400">- {fmt(r.total_saidas)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{(dados.saidas ?? []).length} registros</p>
               </div>
-              <div className={`bg-white border rounded-2xl p-4 text-center ${r.saldo_liquido >= 0 ? 'border-[#FF441F]/30' : 'border-red-200'}`}>
-                <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Saldo Líquido</p>
-                <p className={`text-2xl font-black ${r.saldo_liquido >= 0 ? 'text-[#FF441F]' : 'text-red-600'}`}>{fmt(r.saldo_liquido)}</p>
-                <p className="text-xs text-[#71717A] mt-1">Faturamento − Saídas</p>
+              <div className={`bg-white dark:bg-[#27272A] border rounded-2xl p-4 text-center ${r.saldo_liquido >= 0 ? 'border-[#FF441F]/30' : 'border-red-200 dark:border-red-800'}`}>
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Saldo Líquido</p>
+                <p className={`text-2xl font-black ${r.saldo_liquido >= 0 ? 'text-[#FF441F]' : 'text-red-600 dark:text-red-400'}`}>{fmt(r.saldo_liquido)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Faturamento − Saídas</p>
               </div>
-              <div className="bg-white border border-[#E4E4E7] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] uppercase tracking-widest mb-1">Ticket Médio</p>
-                <p className="text-2xl font-black text-[#18181B]">{fmt(r.ticket_medio)}</p>
-                <p className="text-xs text-[#71717A] mt-1">{r.total_pedidos} pedidos total</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Ticket Médio</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.ticket_medio)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{r.total_pedidos} pedidos total</p>
               </div>
             </div>
 
-            <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit">
+            <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
               {[{ id: 'resumo', label: 'Entradas' }, { id: 'canais', label: 'Canais' }, { id: 'saidas', label: `Saídas (${(dados.saidas ?? []).length})` }, { id: 'pedidos', label: `Pedidos (${dados.pedidos?.length ?? 0})` }].map((a) => (
                 <button key={a.id} onClick={() => setAbaAtiva(a.id)}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${abaAtiva === a.id ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${abaAtiva === a.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                   {a.label}
                 </button>
               ))}
@@ -229,9 +229,9 @@ const RestauranteFinanceiro = () => {
             {abaAtiva === 'resumo' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {Object.entries(r.por_pagamento ?? {}).length === 0
-                  ? <p className="text-sm text-[#71717A] col-span-4 text-center py-6">Nenhuma entrada no período.</p>
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] col-span-4 text-center py-6">Nenhuma entrada no período.</p>
                   : Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
-                    <div key={k} className={`bg-white border rounded-2xl p-4 ${PAYMENT_COLORS[k] ?? 'border-gray-200 bg-gray-50 text-gray-800'}`}>
+                    <div key={k} className={`bg-white dark:bg-[#27272A] border rounded-2xl p-4 ${PAYMENT_COLORS[k] ?? 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40 text-gray-800 dark:text-gray-400'}`}>
                       <div className="flex items-center gap-2 mb-2"><Icon name={PAYMENT_ICONS[k] ?? 'DollarSign'} size={16} /><p className="text-xs font-bold uppercase tracking-wide">{PAYMENT_LABELS[k] ?? k}</p></div>
                       <p className="text-2xl font-black">{fmt(v.total)}</p>
                       <p className="text-xs mt-1 opacity-70">{v.count} pedido{v.count !== 1 ? 's' : ''}</p>
@@ -242,21 +242,21 @@ const RestauranteFinanceiro = () => {
 
             {abaAtiva === 'canais' && (
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white border border-green-200 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3"><Icon name="Banknote" size={18} className="text-green-600" /><h3 className="font-bold text-[#18181B]">Dinheiro Físico (Caixa)</h3></div>
-                  <p className="text-3xl font-black text-green-700 mb-1">{fmt(cashTotal)}</p>
-                  <p className="text-xs text-[#71717A]">{r.por_pagamento?.cash?.count ?? 0} pagamentos em dinheiro</p>
-                  <div className="mt-4 pt-3 border-t border-green-100">
-                    <p className="text-xs font-semibold text-green-700">Estimativa em caixa: {fmt(Math.max(0, cashTotal - r.total_saidas))}</p>
+                <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-3"><Icon name="Banknote" size={18} className="text-green-600 dark:text-green-400" /><h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Dinheiro Físico (Caixa)</h3></div>
+                  <p className="text-3xl font-black text-green-700 dark:text-green-400 mb-1">{fmt(cashTotal)}</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{r.por_pagamento?.cash?.count ?? 0} pagamentos em dinheiro</p>
+                  <div className="mt-4 pt-3 border-t border-green-100 dark:border-green-800">
+                    <p className="text-xs font-semibold text-green-700 dark:text-green-400">Estimativa em caixa: {fmt(Math.max(0, cashTotal - r.total_saidas))}</p>
                   </div>
                 </div>
-                <div className="bg-white border border-blue-200 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3"><Icon name="Landmark" size={18} className="text-blue-600" /><h3 className="font-bold text-[#18181B]">Digital / Banco (PagBank)</h3></div>
-                  <p className="text-3xl font-black text-blue-700 mb-1">{fmt(digitalTotal)}</p>
-                  {taxaPagbank > 0 && <p className="text-xs text-red-500 font-semibold">Taxa est. ({taxaPagbank}%): - {fmt(digitalTotal * taxaPagbank / 100)}</p>}
-                  <div className="mt-4 pt-3 border-t border-blue-100 space-y-1">
+                <div className="bg-white dark:bg-[#27272A] border border-blue-200 dark:border-blue-800 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-3"><Icon name="Landmark" size={18} className="text-blue-600 dark:text-blue-400" /><h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Digital / Banco (PagBank)</h3></div>
+                  <p className="text-3xl font-black text-blue-700 dark:text-blue-400 mb-1">{fmt(digitalTotal)}</p>
+                  {taxaPagbank > 0 && <p className="text-xs text-red-500 dark:text-red-400 font-semibold">Taxa est. ({taxaPagbank}%): - {fmt(digitalTotal * taxaPagbank / 100)}</p>}
+                  <div className="mt-4 pt-3 border-t border-blue-100 dark:border-blue-800 space-y-1">
                     {Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash').map(([k, v]) => (
-                      <div key={k} className="flex justify-between text-xs"><span className="text-[#71717A]">{PAYMENT_LABELS[k] ?? k}</span><span className="font-semibold">{fmt(v.total)} ({v.count})</span></div>
+                      <div key={k} className="flex justify-between text-xs"><span className="text-[#71717A] dark:text-[#A1A1AA]">{PAYMENT_LABELS[k] ?? k}</span><span className="font-semibold">{fmt(v.total)} ({v.count})</span></div>
                     ))}
                   </div>
                 </div>
@@ -264,44 +264,44 @@ const RestauranteFinanceiro = () => {
             )}
 
             {abaAtiva === 'saidas' && (
-              <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+              <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                 {(dados.saidas ?? []).length === 0
-                  ? <p className="text-sm text-[#71717A] text-center py-10">Nenhuma saída registrada no período.</p>
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhuma saída registrada no período.</p>
                   : (
                     <div>
-                      <div className="px-5 py-3 bg-[#FAFAFA] border-b border-[#F4F4F5] flex justify-between text-xs font-bold text-[#71717A] uppercase tracking-widest"><span>Data / Descrição</span><span>Valor</span></div>
-                      <div className="divide-y divide-[#F4F4F5] max-h-[400px] overflow-y-auto">
+                      <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] flex justify-between text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest"><span>Data / Descrição</span><span>Valor</span></div>
+                      <div className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46] max-h-[400px] overflow-y-auto">
                         {(dados.saidas ?? []).sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em)).map((s, i) => (
                           <div key={i} className="flex items-center justify-between px-5 py-3">
-                            <div><p className="text-sm font-semibold text-[#18181B]">{s.descricao}</p><p className="text-xs text-[#71717A]">{fmtDate(s.criado_em)}{s.meio && <span className="ml-1.5 px-1.5 py-0.5 bg-[#F4F4F5] rounded text-[10px] capitalize">{s.meio}</span>}</p></div>
-                            <p className="font-bold text-red-500 text-sm flex-shrink-0">- {fmt(s.valor)}</p>
+                            <div><p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{s.descricao}</p><p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtDate(s.criado_em)}{s.meio && <span className="ml-1.5 px-1.5 py-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded text-[10px] capitalize">{s.meio}</span>}</p></div>
+                            <p className="font-bold text-red-500 dark:text-red-400 text-sm flex-shrink-0">- {fmt(s.valor)}</p>
                           </div>
                         ))}
                       </div>
-                      <div className="px-5 py-3 bg-red-50 border-t border-red-100 flex justify-between"><span className="text-sm font-bold text-red-700">Total saídas</span><span className="text-sm font-black text-red-700">- {fmt(r.total_saidas)}</span></div>
+                      <div className="px-5 py-3 bg-red-50 dark:bg-red-950/40 border-t border-red-100 dark:border-red-800 flex justify-between"><span className="text-sm font-bold text-red-700 dark:text-red-400">Total saídas</span><span className="text-sm font-black text-red-700 dark:text-red-400">- {fmt(r.total_saidas)}</span></div>
                     </div>
                   )}
               </div>
             )}
 
             {abaAtiva === 'pedidos' && (
-              <div className="bg-white rounded-2xl border border-[#E4E4E7] overflow-hidden">
+              <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                 {(dados.pedidos ?? []).length === 0
-                  ? <p className="text-sm text-[#71717A] text-center py-10">Nenhum pedido no período.</p>
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum pedido no período.</p>
                   : (
                     <div>
-                      <div className="px-5 py-3 bg-[#FAFAFA] border-b border-[#F4F4F5] grid grid-cols-4 text-xs font-bold text-[#71717A] uppercase tracking-widest"><span>Pedido</span><span>Cliente</span><span>Pagamento</span><span className="text-right">Total</span></div>
-                      <div className="divide-y divide-[#F4F4F5] max-h-[500px] overflow-y-auto">
+                      <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] grid grid-cols-4 text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest"><span>Pedido</span><span>Cliente</span><span>Pagamento</span><span className="text-right">Total</span></div>
+                      <div className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46] max-h-[500px] overflow-y-auto">
                         {dados.pedidos.map((p) => (
-                          <div key={p.id} className="px-5 py-3 grid grid-cols-4 items-center gap-2 hover:bg-[#FAFAFA]">
-                            <div><div className="flex items-center gap-1.5"><span className="text-sm font-bold">#{p.id}</span><span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-700'}`}>{STATUS_LABELS[p.status] ?? p.status}</span></div><p className="text-[10px] text-[#71717A]">{fmtDate(p.created_at)}</p></div>
+                          <div key={p.id} className="px-5 py-3 grid grid-cols-4 items-center gap-2 hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                            <div><div className="flex items-center gap-1.5"><span className="text-sm font-bold">#{p.id}</span><span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${STATUS_COLORS[p.status] ?? 'bg-gray-100 dark:bg-gray-950/40 text-gray-700 dark:text-gray-400'}`}>{STATUS_LABELS[p.status] ?? p.status}</span></div><p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{fmtDate(p.created_at)}</p></div>
                             <p className="text-xs truncate">{p.customers?.name ?? '—'}</p>
-                            <p className="text-xs text-[#71717A]">{PAYMENT_LABELS[p.payment_method] ?? p.payment_method}</p>
-                            <p className={`text-sm font-bold text-right ${p.status === 'canceled' ? 'text-red-400 line-through' : 'text-[#18181B]'}`}>{fmt(p.total)}</p>
+                            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{PAYMENT_LABELS[p.payment_method] ?? p.payment_method}</p>
+                            <p className={`text-sm font-bold text-right ${p.status === 'canceled' ? 'text-red-400 line-through' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>{fmt(p.total)}</p>
                           </div>
                         ))}
                       </div>
-                      <div className="px-5 py-3 bg-[#FAFAFA] border-t border-[#E4E4E7] flex justify-between"><span className="text-sm text-[#71717A]">{dados.pedidos.length} pedidos · {r.cancelados} cancelados</span><span className="text-sm font-black text-green-700">{fmt(r.total_vendas)} faturados</span></div>
+                      <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-t border-[#E4E4E7] dark:border-[#3F3F46] flex justify-between"><span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{dados.pedidos.length} pedidos · {r.cancelados} cancelados</span><span className="text-sm font-black text-green-700 dark:text-green-400">{fmt(r.total_vendas)} faturados</span></div>
                     </div>
                   )}
               </div>
@@ -310,9 +310,9 @@ const RestauranteFinanceiro = () => {
         )}
 
         {!dados && !loading && (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-10 text-center">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-10 text-center">
             <Icon name="BarChart2" size={32} className="text-[#D4D4D8] mx-auto mb-3" />
-            <p className="text-[#71717A]">Selecione o período e clique em Buscar.</p>
+            <p className="text-[#71717A] dark:text-[#A1A1AA]">Selecione o período e clique em Buscar.</p>
           </div>
         )}
 

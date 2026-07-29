@@ -5,7 +5,7 @@ import Icon from '../../components/AppIcon';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
 const STATUS_LABELS = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
-const STATUS_COLORS = { pending: 'bg-yellow-100 text-yellow-800', confirmed: 'bg-blue-100 text-blue-800', preparing: 'bg-orange-100 text-orange-800', ready: 'bg-purple-100 text-purple-800', out_for_delivery: 'bg-indigo-100 text-indigo-800', delivered: 'bg-green-100 text-green-800', canceled: 'bg-red-100 text-red-800' };
+const STATUS_COLORS = { pending: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400', confirmed: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', preparing: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400', ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', delivered: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400', canceled: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' };
 
 const today = () => new Date().toISOString().slice(0, 10);
 const thisMonth = () => new Date().toISOString().slice(0, 7);
@@ -159,18 +159,18 @@ const RelatorioPanel = ({ restauranteNome }) => {
   const r = dados?.resumo;
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E4E7]">
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46]">
       {/* Header colapsável */}
       <button
         onClick={() => setAberto((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
-        <h2 className="font-bold text-[#18181B] flex items-center gap-2">
+        <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
           <Icon name="BarChart2" size={16} className="text-[#FF441F]" />
           Relatórios
-          {dados && <span className="text-xs font-normal text-[#71717A]">— {label}</span>}
+          {dados && <span className="text-xs font-normal text-[#71717A] dark:text-[#A1A1AA]">— {label}</span>}
         </h2>
-        <Icon name={aberto ? 'ChevronUp' : 'ChevronDown'} size={18} className="text-[#71717A]" />
+        <Icon name={aberto ? 'ChevronUp' : 'ChevronDown'} size={18} className="text-[#71717A] dark:text-[#A1A1AA]" />
       </button>
 
       {aberto && (
@@ -178,10 +178,10 @@ const RelatorioPanel = ({ restauranteNome }) => {
           {/* Filtros */}
           <div className="flex flex-wrap gap-2 items-end">
             {/* Modo tabs */}
-            <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl">
+            <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl">
               {MODOS.map((m) => (
                 <button key={m.value} onClick={() => setModo(m.value)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${modo === m.value ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${modo === m.value ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                   {m.label}
                 </button>
               ))}
@@ -190,26 +190,26 @@ const RelatorioPanel = ({ restauranteNome }) => {
             {/* Inputs por modo */}
             {modo === 'dia' && (
               <input type="date" value={dia} onChange={(e) => setDia(e.target.value)}
-                className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
             )}
             {modo === 'mes' && (
               <input type="month" value={mes} onChange={(e) => setMes(e.target.value)}
-                className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
             )}
             {modo === 'ano' && (
               <select value={ano} onChange={(e) => setAno(e.target.value)}
-                className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
                 {ANOS.map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             )}
             {modo === 'periodo' && (
               <>
                 <input type="date" value={periodoIni} onChange={(e) => setPeriodoIni(e.target.value)}
-                  className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-                <span className="text-sm text-[#71717A] self-center">até</span>
+                  className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                <span className="text-sm text-[#71717A] dark:text-[#A1A1AA] self-center">até</span>
                 <input type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)}
                   min={periodoIni}
-                  className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                  className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
               </>
             )}
 
@@ -220,25 +220,25 @@ const RelatorioPanel = ({ restauranteNome }) => {
             </button>
           </div>
 
-          {erro && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-xl">{erro}</p>}
+          {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-xl">{erro}</p>}
 
           {dados && r && (
             <>
               {/* KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="border border-[#E4E4E7] rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-[#18181B]">{r.total_pedidos}</p>
-                  <p className="text-xs text-[#71717A]">Total Pedidos</p>
+                <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center">
+                  <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{r.total_pedidos}</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Total Pedidos</p>
                 </div>
-                <div className="border border-green-200 bg-green-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-green-700">{r.entregues}</p>
-                  <p className="text-xs text-green-600">Entregues</p>
+                <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-black text-green-700 dark:text-green-400">{r.entregues}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">Entregues</p>
                 </div>
-                <div className="border border-red-200 bg-red-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-red-600">{r.cancelados}</p>
-                  <p className="text-xs text-red-500">Cancelados</p>
+                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 rounded-xl p-3 text-center">
+                  <p className="text-2xl font-black text-red-600 dark:text-red-400">{r.cancelados}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400">Cancelados</p>
                 </div>
-                <div className="border border-[#FF441F]/20 bg-[#FFF4F1] rounded-xl p-3 text-center">
+                <div className="border border-[#FF441F]/20 bg-[#FFF4F1] dark:bg-[#3F2620] rounded-xl p-3 text-center">
                   <p className="text-2xl font-black text-[#FF441F]">{fmt(r.total_vendas)}</p>
                   <p className="text-xs text-[#FF441F]/70">Total Vendas</p>
                 </div>
@@ -246,28 +246,28 @@ const RelatorioPanel = ({ restauranteNome }) => {
 
               {/* Pagamentos + ticket */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="border border-[#E4E4E7] rounded-xl p-4">
-                  <p className="text-xs font-bold text-[#71717A] mb-2 uppercase tracking-wide">Por Forma de Pagamento</p>
+                <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-4">
+                  <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-2 uppercase tracking-wide">Por Forma de Pagamento</p>
                   <div className="space-y-1.5">
                     {Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
                       <div key={k} className="flex items-center justify-between text-sm">
-                        <span className="text-[#27272A]">{PAYMENT_LABELS[k] ?? k} <span className="text-[#71717A] text-xs">({v.count})</span></span>
-                        <span className="font-bold text-green-700">{fmt(v.total)}</span>
+                        <span className="text-[#27272A] dark:text-[#F4F4F5]">{PAYMENT_LABELS[k] ?? k} <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">({v.count})</span></span>
+                        <span className="font-bold text-green-700 dark:text-green-400">{fmt(v.total)}</span>
                       </div>
                     ))}
                     {Object.keys(r.por_pagamento ?? {}).length === 0 && (
-                      <p className="text-xs text-[#71717A]">Sem dados</p>
+                      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sem dados</p>
                     )}
                   </div>
                 </div>
-                <div className="border border-[#E4E4E7] rounded-xl p-4 flex flex-col justify-between">
+                <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-4 flex flex-col justify-between">
                   <div>
-                    <p className="text-xs font-bold text-[#71717A] mb-1 uppercase tracking-wide">Ticket Médio</p>
-                    <p className="text-2xl font-black text-[#18181B]">{fmt(r.ticket_medio)}</p>
+                    <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase tracking-wide">Ticket Médio</p>
+                    <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.ticket_medio)}</p>
                   </div>
                   <div className="mt-3">
-                    <p className="text-xs font-bold text-[#71717A] mb-1 uppercase tracking-wide">Em Andamento</p>
-                    <p className="text-lg font-black text-blue-600">{r.em_andamento}</p>
+                    <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase tracking-wide">Em Andamento</p>
+                    <p className="text-lg font-black text-blue-600 dark:text-blue-400">{r.em_andamento}</p>
                   </div>
                 </div>
               </div>
@@ -276,13 +276,13 @@ const RelatorioPanel = ({ restauranteNome }) => {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => printIframe(buildSintetico(dados, restauranteNome, label))}
-                  className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] hover:bg-[#F4F4F5] transition-colors">
+                  className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] dark:bg-[#3F3F46] transition-colors">
                   <Icon name="FileText" size={14} />
                   Imprimir Sintético
                 </button>
                 <button
                   onClick={() => printIframe(buildDetalhado(dados, restauranteNome, label))}
-                  className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] hover:bg-[#F4F4F5] transition-colors">
+                  className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] dark:bg-[#3F3F46] transition-colors">
                   <Icon name="FileSpreadsheet" size={14} />
                   Imprimir Detalhado
                 </button>
@@ -291,12 +291,12 @@ const RelatorioPanel = ({ restauranteNome }) => {
               {/* Lista de pedidos */}
               {(dados.pedidos?.length ?? 0) > 0 && (
                 <div>
-                  <p className="text-xs font-bold text-[#71717A] uppercase tracking-wide mb-2">Pedidos ({dados.pedidos.length})</p>
+                  <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-2">Pedidos ({dados.pedidos.length})</p>
                   <div className="space-y-1.5 max-h-72 overflow-y-auto">
                     {dados.pedidos.map((p) => {
-                      const sc = STATUS_COLORS[p.status] ?? 'bg-gray-100 text-gray-700';
+                      const sc = STATUS_COLORS[p.status] ?? 'bg-gray-100 dark:bg-[#3F3F46] text-gray-700 dark:text-[#A1A1AA]';
                       return (
-                        <div key={p.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[#F4F4F5] hover:bg-[#FAFAFA]">
+                        <div key={p.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-[#F4F4F5] dark:border-[#3F3F46] hover:bg-[#FAFAFA] dark:hover:bg-[#27272A]">
                           <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
                             p.status === 'delivered' ? 'bg-green-400' :
                             p.status === 'canceled' ? 'bg-red-300' :
@@ -304,14 +304,14 @@ const RelatorioPanel = ({ restauranteNome }) => {
                           }`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold text-[#18181B]">#{p.id}</p>
+                              <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">#{p.id}</p>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sc}`}>{STATUS_LABELS[p.status] ?? p.status}</span>
                             </div>
-                            {p.customers?.name && <p className="text-xs text-[#71717A] truncate">{p.customers.name}</p>}
+                            {p.customers?.name && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{p.customers.name}</p>}
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-bold text-[#18181B]">{fmt(p.total)}</p>
-                            <p className="text-[10px] text-[#71717A]">{new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(p.total)}</p>
+                            <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                           </div>
                         </div>
                       );
@@ -321,7 +321,7 @@ const RelatorioPanel = ({ restauranteNome }) => {
               )}
 
               {dados.pedidos?.length === 0 && (
-                <p className="text-sm text-[#71717A] text-center py-4">Nenhum pedido neste período.</p>
+                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-4">Nenhum pedido neste período.</p>
               )}
             </>
           )}

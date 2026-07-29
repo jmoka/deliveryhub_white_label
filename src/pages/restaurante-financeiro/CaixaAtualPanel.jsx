@@ -10,21 +10,21 @@ const PL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão Crédito', debi
 
 const Kpi = ({ icon, label, value, sub, color = 'gray' }) => {
   const colors = {
-    green: 'border-green-200 bg-green-50',
-    blue:  'border-blue-200 bg-blue-50',
-    amber: 'border-amber-200 bg-amber-50',
-    red:   'border-red-200 bg-red-50',
-    gray:  'border-[#E4E4E7] bg-white',
+    green: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40',
+    blue:  'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40',
+    amber: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40',
+    red:   'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40',
+    gray:  'border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A]',
   };
-  const txt = { green: 'text-green-700', blue: 'text-blue-700', amber: 'text-amber-700', red: 'text-red-600', gray: 'text-[#18181B]' };
+  const txt = { green: 'text-green-700 dark:text-green-400', blue: 'text-blue-700 dark:text-blue-400', amber: 'text-amber-700 dark:text-amber-400', red: 'text-red-600 dark:text-red-400', gray: 'text-[#18181B] dark:text-[#F4F4F5]' };
   return (
     <div className={`rounded-xl border p-3 ${colors[color]}`}>
       <div className="flex items-center gap-1.5 mb-1">
         <Icon name={icon} size={13} className={txt[color]} />
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717A]">{label}</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA]">{label}</p>
       </div>
       <p className={`text-xl font-black ${txt[color]}`}>{value}</p>
-      {sub && <p className="text-[10px] text-[#71717A] mt-0.5">{sub}</p>}
+      {sub && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{sub}</p>}
     </div>
   );
 };
@@ -38,31 +38,31 @@ const MovimentoModal = ({ tipo, onSalvar, onCancelar, salvando }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
         <div className="text-center mb-4">
           <p className="text-2xl mb-1">{isSaida ? '💸' : '💰'}</p>
-          <h2 className="text-base font-bold text-[#18181B]">{isSaida ? 'Sangria (Retirada)' : 'Adição de Dinheiro'}</h2>
-          <p className="text-xs text-[#71717A] mt-0.5">{isSaida ? 'Retirada de dinheiro do caixa com motivo' : 'Entrada de dinheiro no caixa'}</p>
+          <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">{isSaida ? 'Sangria (Retirada)' : 'Adição de Dinheiro'}</h2>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{isSaida ? 'Retirada de dinheiro do caixa com motivo' : 'Entrada de dinheiro no caixa'}</p>
         </div>
         <div className="space-y-3 mb-4">
           <div>
-            <label className="block text-xs font-semibold text-[#71717A] mb-1">
+            <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">
               {isSaida ? 'Motivo da retirada *' : 'Descrição *'}
             </label>
             <input value={descricao} onChange={(e) => setDescricao(e.target.value)}
               placeholder={isSaida ? 'Ex: Pagamento fornecedor, troco extra…' : 'Ex: Reforço de troco, fundo extra…'}
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#71717A] mb-1">Valor (R$) *</label>
+            <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Valor (R$) *</label>
             <input type="number" min="0.01" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)}
               placeholder="0,00"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#71717A] mb-1">Meio</label>
+            <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Meio</label>
             <select value={meio} onChange={(e) => setMeio(e.target.value)}
-              className="mx-2 sm:mx-0 w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
+              className="mx-2 sm:mx-0 w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
               <option value="dinheiro">Dinheiro</option>
               <option value="pix">PIX</option>
               <option value="transferencia">Transferência</option>
@@ -71,7 +71,7 @@ const MovimentoModal = ({ tipo, onSalvar, onCancelar, salvando }) => {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">Cancelar</button>
+          <button onClick={onCancelar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">Cancelar</button>
           <button
             onClick={() => onSalvar({ descricao: descricao.trim(), valor: parseFloat(valor) || 0, meio })}
             disabled={salvando || !descricao.trim() || !parseFloat(valor)}
@@ -139,23 +139,23 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <p className="text-sm font-bold text-[#18181B]">Caixa em Operação</p>
+            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Caixa em Operação</p>
           </div>
-          <p className="text-xs text-[#71717A] mt-0.5">
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
             {caixa.nome_operador} · aberto às {fmtHora(caixa.aberto_em)} · fundo: {fmt(caixa.valor_inicial)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setModal('sangria')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-200 text-red-600 rounded-xl hover:bg-red-50">
+          <button onClick={() => setModal('sangria')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40">
             <Icon name="ArrowDownLeft" size={13} /> Sangria
           </button>
-          <button onClick={() => setModal('adicao')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-green-200 text-green-700 rounded-xl hover:bg-green-50">
+          <button onClick={() => setModal('adicao')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-xl hover:bg-green-50 dark:hover:bg-green-950/40">
             <Icon name="ArrowUpRight" size={13} /> Adição
           </button>
           <button onClick={() => { setPendencias(null); setModal('fechar'); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-xl hover:bg-red-600">
@@ -181,20 +181,20 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
 
       {/* Vendas por método */}
       {Object.keys(por).length > 0 && (
-        <div className="bg-[#FAFAFA] rounded-xl p-3 mb-3">
+        <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl p-3 mb-3">
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas por método de pagamento</p>
           <div className="flex flex-wrap gap-3">
             {Object.entries(por).map(([k, v]) => (
               <div key={k} className="text-sm">
-                <span className="text-[#71717A]">{PL[k] ?? k}: </span>
-                <span className="font-bold text-[#18181B]">{fmt(v)}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">{PL[k] ?? k}: </span>
+                <span className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(v)}</span>
               </div>
             ))}
           </div>
           {taxaEst > 0 && (
-            <div className="mt-2 pt-2 border-t border-[#E4E4E7] flex justify-between text-xs">
-              <span className="text-[#71717A]">Estimativa desconto PagBank ({taxaPagbank}%)</span>
-              <span className="font-bold text-red-500">- {fmt(taxaEst)}</span>
+            <div className="mt-2 pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex justify-between text-xs">
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">Estimativa desconto PagBank ({taxaPagbank}%)</span>
+              <span className="font-bold text-red-500 dark:text-red-400">- {fmt(taxaEst)}</span>
             </div>
           )}
         </div>
@@ -205,27 +205,27 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
         <div className="grid sm:grid-cols-2 gap-3">
           {saidas.length > 0 && (
             <div className="min-w-0">
-              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Sangrias / Saídas</p>
+              <p className="text-[10px] font-black text-red-500 dark:text-red-400 uppercase tracking-widest mb-1">Sangrias / Saídas</p>
               <div className="space-y-1 max-h-28 overflow-y-auto overflow-x-auto">
                 {[...saidas].reverse().map((s, i) => {
                   const idx = saidas.length - 1 - i;
                   return (
-                    <div key={idx} className="flex justify-between items-center text-xs bg-red-50 rounded-lg px-2.5 py-1.5">
+                    <div key={idx} className="flex justify-between items-center text-xs bg-red-50 dark:bg-red-950/40 rounded-lg px-2.5 py-1.5">
                       <span className="flex items-center gap-1 mr-2 flex-1 min-w-0">
-                        <span className="text-[#71717A] truncate">{MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}</span>
+                        <span className="text-[#71717A] dark:text-[#A1A1AA] truncate">{MEIO_LABELS[s.meio] ?? '💵'} {s.descricao}</span>
                         {s.tipo && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-100 text-red-700 flex-shrink-0">
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 flex-shrink-0">
                             {s.tipo === 'troco' ? 'Troco' : s.tipo === 'gorjeta' ? 'Gorjeta' : s.tipo}
                           </span>
                         )}
                       </span>
                       <span className="flex items-center gap-1.5 flex-shrink-0">
-                        <span className="font-bold text-red-600">- {fmt(s.valor)}</span>
+                        <span className="font-bold text-red-600 dark:text-red-400">- {fmt(s.valor)}</span>
                         <button
                           onClick={() => handleEstornar(idx)}
                           disabled={estornando === idx}
                           title="Retornar ao caixa"
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-200 text-red-500 hover:bg-red-100 disabled:opacity-50">
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50">
                           {estornando === idx ? '...' : 'Retornar'}
                         </button>
                       </span>
@@ -237,12 +237,12 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
           )}
           {entradas.length > 0 && (
             <div className="min-w-0">
-              <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Adições</p>
+              <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Adições</p>
               <div className="space-y-1 max-h-28 overflow-y-auto overflow-x-auto">
                 {[...entradas].reverse().map((e, i) => (
-                  <div key={i} className="flex justify-between items-center text-xs bg-green-50 rounded-lg px-2.5 py-1.5">
-                    <span className="text-[#71717A] truncate mr-2 flex-1 min-w-0">{MEIO_LABELS[e.meio] ?? '💵'} {e.descricao}</span>
-                    <span className="font-bold text-green-700 flex-shrink-0">+ {fmt(e.valor)}</span>
+                  <div key={i} className="flex justify-between items-center text-xs bg-green-50 dark:bg-green-950/40 rounded-lg px-2.5 py-1.5">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA] truncate mr-2 flex-1 min-w-0">{MEIO_LABELS[e.meio] ?? '💵'} {e.descricao}</span>
+                    <span className="font-bold text-green-700 dark:text-green-400 flex-shrink-0">+ {fmt(e.valor)}</span>
                   </div>
                 ))}
               </div>

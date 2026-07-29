@@ -2,11 +2,11 @@ import React from 'react';
 import Icon from '../../components/AppIcon';
 
 const COLORS = {
-  orange: 'border-orange-200 bg-orange-50 text-orange-700',
-  green:  'border-green-200 bg-green-50 text-green-700',
-  blue:   'border-blue-200 bg-blue-50 text-blue-700',
-  red:    'border-red-200 bg-red-50 text-red-700',
-  gray:   'border-[#E4E4E7] bg-white text-[#18181B]',
+  orange: 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400',
+  green:  'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400',
+  blue:   'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400',
+  red:    'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400',
+  gray:   'border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5]',
 };
 
 const KpiCard = ({ icon, label, value, sub, color = 'gray', onClick }) => (
