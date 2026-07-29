@@ -27,27 +27,27 @@ const Guia = () => {
   };
 
   return (
-    <div className="bg-blue-50 border border-blue-100 rounded-xl overflow-hidden">
+    <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setAberto((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-4 text-left"
       >
         <div className="flex items-center gap-2">
-          <Icon name="BookOpen" size={16} className="text-blue-600" />
-          <span className="text-sm font-semibold text-blue-800">Como configurar o PagBank? (passo a passo)</span>
+          <Icon name="BookOpen" size={16} className="text-blue-600 dark:text-blue-400" />
+          <span className="text-sm font-semibold text-blue-800 dark:text-blue-400">Como configurar o PagBank? (passo a passo)</span>
         </div>
-        <Icon name={aberto ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-blue-500 flex-shrink-0" />
+        <Icon name={aberto ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-blue-500 dark:text-blue-400 flex-shrink-0" />
       </button>
 
       {aberto && (
-        <div className="px-5 pb-5 space-y-4 border-t border-blue-100">
+        <div className="px-5 pb-5 space-y-4 border-t border-blue-100 dark:border-blue-800">
           <ol className="space-y-3 mt-4">
             <li className="flex gap-3">
               <span className="w-6 h-6 bg-blue-500 text-white rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
               <div>
-                <p className="text-sm font-medium text-blue-900">Acesse o PagBank</p>
-                <p className="text-xs text-blue-700 mt-0.5">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-400">Acesse o PagBank</p>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
                   Crie uma conta ou faça login em{' '}
                   <a href={PAGBANK_URL} target="_blank" rel="noopener noreferrer"
                     className="underline font-semibold">pagseguro.uol.com.br</a>
@@ -58,8 +58,8 @@ const Guia = () => {
             <li className="flex gap-3">
               <span className="w-6 h-6 bg-blue-500 text-white rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
               <div>
-                <p className="text-sm font-medium text-blue-900">Obtenha o Token</p>
-                <p className="text-xs text-blue-700 mt-0.5">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-400">Obtenha o Token</p>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
                   <strong>Minha Conta → Preferências → Integrações → Token de Segurança</strong><br />
                   Copie o token e cole no campo "Token PagBank" abaixo.
                 </p>
@@ -69,10 +69,10 @@ const Guia = () => {
             <li className="flex gap-3">
               <span className="w-6 h-6 bg-blue-500 text-white rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
               <div>
-                <p className="text-sm font-medium text-blue-900">Obtenha seu Account ID</p>
-                <p className="text-xs text-blue-700 mt-0.5">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-400">Obtenha seu Account ID</p>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
                   <strong>Minha Conta → Dados da Conta → Identificador da conta</strong><br />
-                  Formato: <code className="bg-blue-100 px-1 rounded">ACCT_XXXXXXXXXXXX</code>. Cole no campo "ID da conta" abaixo.
+                  Formato: <code className="bg-blue-100 dark:bg-blue-950/40 px-1 rounded">ACCT_XXXXXXXXXXXX</code>. Cole no campo "ID da conta" abaixo.
                 </p>
               </div>
             </li>
@@ -80,10 +80,10 @@ const Guia = () => {
             <li className="flex gap-3">
               <span className="w-6 h-6 bg-blue-500 text-white rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
               <div>
-                <p className="text-sm font-medium text-blue-900">Copie a URL Webhook (gerada automaticamente)</p>
-                <p className="text-xs text-blue-700 mt-1">Cadastre esta URL no PagBank em <strong>Preferências → Notificações</strong>:</p>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-400">Copie a URL Webhook (gerada automaticamente)</p>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">Cadastre esta URL no PagBank em <strong>Preferências → Notificações</strong>:</p>
                 <div className="flex items-center gap-2 mt-1.5">
-                  <code className="flex-1 bg-white border border-blue-200 rounded-lg px-2 py-1.5 text-xs text-blue-900 font-mono break-all">
+                  <code className="flex-1 bg-white dark:bg-[#27272A] border border-blue-200 dark:border-blue-800 rounded-lg px-2 py-1.5 text-xs text-blue-900 dark:text-blue-400 font-mono break-all">
                     {WEBHOOK_URL}
                   </code>
                   <button type="button" onClick={copiarWebhook}
@@ -99,8 +99,8 @@ const Guia = () => {
             <li className="flex gap-3">
               <span className="w-6 h-6 bg-green-500 text-white rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">5</span>
               <div>
-                <p className="text-sm font-medium text-blue-900">Salve as configurações abaixo</p>
-                <p className="text-xs text-blue-700 mt-0.5">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-400">Salve as configurações abaixo</p>
+                <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
                   A URL Webhook já foi preenchida automaticamente. Só precisa do token e account ID.
                 </p>
               </div>
@@ -202,12 +202,12 @@ const EnderecoCard = ({ geocodeFalhou }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl border p-6">
-      <h2 className="font-semibold text-[#18181B] mb-1">Endereço do estabelecimento</h2>
-      <p className="text-xs text-[#71717A] mb-4">Usado pro filtro de Estado/Cidade/Bairro/CEP e "restaurantes perto de mim" na home.</p>
+    <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">
+      <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Endereço do estabelecimento</h2>
+      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Usado pro filtro de Estado/Cidade/Bairro/CEP e "restaurantes perto de mim" na home.</p>
 
       {geocodeFalhou && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+        <div className="mb-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
           ⚠️ Não conseguimos localizar esse endereço no mapa — confira se está completo e correto.
         </div>
       )}
@@ -220,52 +220,52 @@ const EnderecoCard = ({ geocodeFalhou }) => {
         <form onSubmit={salvar} className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-[#71717A]">Logradouro (rua/av.)</label>
+              <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Logradouro (rua/av.)</label>
               <input value={form.logradouro} onChange={(e) => setForm((f) => ({ ...f, logradouro: e.target.value }))}
                 placeholder="Rua Exemplo"
-                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
             <div>
-              <label className="text-xs font-medium text-[#71717A]">Número</label>
+              <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Número</label>
               <input value={form.numero} onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
                 placeholder="123"
-                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs font-medium text-[#71717A]">CEP</label>
+              <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">CEP</label>
               <input value={form.cep} onChange={handleCepChange}
                 placeholder="00000-000" maxLength={9}
-                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
-              {buscandoCep && <p className="text-[10px] text-[#71717A] mt-1">Buscando endereço...</p>}
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+              {buscandoCep && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-1">Buscando endereço...</p>}
             </div>
             <div>
-              <label className="text-xs font-medium text-[#71717A]">Bairro</label>
+              <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Bairro</label>
               <input value={form.neighborhood} onChange={(e) => setForm((f) => ({ ...f, neighborhood: e.target.value }))}
                 placeholder="Centro"
-                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
             <div>
-              <label className="text-xs font-medium text-[#71717A]">Cidade</label>
+              <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Cidade</label>
               <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                 placeholder="São Paulo"
-                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
             <div>
-              <label className="text-xs font-medium text-[#71717A]">Estado (UF)</label>
+              <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Estado (UF)</label>
               <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value.toUpperCase() }))}
                 placeholder="SP" maxLength={2}
-                className="w-full mt-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
           </div>
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
+          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex items-center gap-3 pt-1">
             <button type="submit" disabled={salvando}
               className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-50">
               {salvando ? 'Salvando...' : 'Salvar endereço'}
             </button>
-            {sucesso && <span className="text-xs font-semibold text-green-600 flex items-center gap-1"><Icon name="Check" size={14} /> Salvo</span>}
+            {sucesso && <span className="text-xs font-semibold text-green-600 dark:text-green-400 flex items-center gap-1"><Icon name="Check" size={14} /> Salvo</span>}
           </div>
         </form>
       )}
@@ -330,8 +330,8 @@ const ComissoesConfig = () => {
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Comissão do garçom</label>
-      <p className="text-xs text-gray-500 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Comissão do garçom</label>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         Regra vale pro estabelecimento inteiro (todo garçom recebe igual). Sem regra ativa, a comissão fica em R$ 0,00.
       </p>
 
@@ -342,18 +342,18 @@ const ComissoesConfig = () => {
           {comissoes.map((c) => (
             <div key={c.id} className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2 text-sm">
               <div className="min-w-0">
-                <p className="font-medium text-gray-800 truncate">{c.nome}</p>
-                <p className="text-xs text-gray-500">
+                <p className="font-medium text-gray-800 dark:text-gray-400 truncate">{c.nome}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {c.tipo === 'percentual' ? `${c.valor}%` : `R$ ${Number(c.valor).toFixed(2)}`}
                   {' '}sobre {c.base_calculo === 'total_recebido' ? 'total recebido' : 'total vendido'}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button type="button" onClick={() => toggleAtivo(c)}
-                  className={`text-xs font-bold px-2 py-1 rounded-full ${c.ativo ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                  className={`text-xs font-bold px-2 py-1 rounded-full ${c.ativo ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-950/40 text-gray-500 dark:text-gray-400'}`}>
                   {c.ativo ? 'Ativa' : 'Inativa'}
                 </button>
-                <button type="button" onClick={() => remover(c)} className="text-red-500 hover:text-red-700 flex-shrink-0">
+                <button type="button" onClick={() => remover(c)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 flex-shrink-0">
                   <Icon name="Trash2" size={16} />
                 </button>
               </div>
@@ -367,25 +367,25 @@ const ComissoesConfig = () => {
 
       <div className="flex flex-wrap gap-2 items-end border-t pt-2">
         <div className="flex-1 min-w-[140px]">
-          <label className="block text-xs text-gray-500 mb-0.5">Nome</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">Nome</label>
           <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} placeholder="Ex: Comissão padrão"
-            className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-0.5">Tipo</label>
-          <select value={novoTipo} onChange={(e) => setNovoTipo(e.target.value)} className="border rounded-lg px-2 py-1.5 text-sm">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">Tipo</label>
+          <select value={novoTipo} onChange={(e) => setNovoTipo(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm">
             <option value="percentual">%</option>
             <option value="fixo">R$ fixo</option>
           </select>
         </div>
         <div className="w-24">
-          <label className="block text-xs text-gray-500 mb-0.5">Valor</label>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">Valor</label>
           <input type="number" min="0" step="0.01" value={novoValor} onChange={(e) => setNovoValor(e.target.value)}
-            className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-0.5">Base de cálculo</label>
-          <select value={novoBase} onChange={(e) => setNovoBase(e.target.value)} className="border rounded-lg px-2 py-1.5 text-sm">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">Base de cálculo</label>
+          <select value={novoBase} onChange={(e) => setNovoBase(e.target.value)} className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm">
             <option value="total_vendido">Total vendido</option>
             <option value="total_recebido">Total recebido</option>
           </select>
@@ -395,7 +395,7 @@ const ComissoesConfig = () => {
           Adicionar
         </button>
       </div>
-      {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
+      {erro && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erro}</p>}
     </div>
   );
 };
@@ -499,7 +499,7 @@ const RestauranteConfig = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/config" title="Configurações de Pagamento" subtitle="Integração PagBank" />
 
       <main className="p-6 max-w-2xl mx-auto">
@@ -512,15 +512,15 @@ const RestauranteConfig = () => {
 
             {/* Status */}
             <div className={`rounded-xl border p-4 flex items-center gap-3 ${
-              config?.configurado ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+              config?.configurado ? 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800'
             }`}>
               <Icon name={config?.configurado ? 'CheckCircle' : 'AlertCircle'} size={20}
-                className={config?.configurado ? 'text-green-600' : 'text-yellow-600'} />
+                className={config?.configurado ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'} />
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold ${config?.configurado ? 'text-green-800' : 'text-yellow-800'}`}>
+                <p className={`text-sm font-semibold ${config?.configurado ? 'text-green-800 dark:text-green-400' : 'text-yellow-800 dark:text-yellow-400'}`}>
                   {config?.configurado ? 'PagBank configurado' : 'PagBank não configurado'}
                 </p>
-                <p className={`text-xs mt-0.5 ${config?.configurado ? 'text-green-600' : 'text-yellow-600'}`}>
+                <p className={`text-xs mt-0.5 ${config?.configurado ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
                   {config?.configurado
                     ? `Token: ${config.pagbank_token_masked} · ${config.split_ativo ? 'Split ativo ✓' : ''} · ${config.pagbank_sandbox ? 'Sandbox' : 'Produção'}`
                     : 'Configure abaixo para receber pagamentos diretamente'
@@ -536,13 +536,13 @@ const RestauranteConfig = () => {
             <Guia />
 
             {/* Formulário — limpo */}
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-[#18181B] mb-4">Suas credenciais</h2>
+            <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">
+              <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-4">Suas credenciais</h2>
 
               <form onSubmit={handleSalvar} className="space-y-4">
                 {/* Token */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Token PagBank
                     {config?.configurado && (
                       <span className="text-xs text-gray-400 ml-2">(deixe vazio para manter o atual)</span>
@@ -553,16 +553,16 @@ const RestauranteConfig = () => {
                     value={form.pagbank_token}
                     onChange={(e) => setForm((f) => ({ ...f, pagbank_token: e.target.value }))}
                     placeholder={config?.configurado ? config.pagbank_token_masked : 'Cole o token do PagBank'}
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                 </div>
 
                 {/* Account ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     ID da conta PagBank
                     {config?.split_ativo && (
-                      <span className="text-xs bg-green-100 text-green-700 font-semibold px-1.5 py-0.5 rounded ml-2">Split ativo</span>
+                      <span className="text-xs bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 font-semibold px-1.5 py-0.5 rounded ml-2">Split ativo</span>
                     )}
                   </label>
                   <input
@@ -570,14 +570,14 @@ const RestauranteConfig = () => {
                     value={form.pagbank_seller_account_id}
                     onChange={(e) => setForm((f) => ({ ...f, pagbank_seller_account_id: e.target.value }))}
                     placeholder="ACCT_XXXXXXXXXXXX"
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                   <p className="text-xs text-gray-400 mt-1">Necessário para o repasse automático (Split Payment)</p>
                 </div>
 
                 {/* Taxa PagBank */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Chave PIX (para pagamentos na entrega)
                   </label>
                   <input
@@ -585,18 +585,18 @@ const RestauranteConfig = () => {
                     value={form.chave_pix}
                     onChange={(e) => setForm((f) => ({ ...f, chave_pix: e.target.value }))}
                     placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                   <p className="text-xs text-gray-400 mt-1">Usada para gerar QR Code PIX quando motoboy precisar cobrar na entrega</p>
                 </div>
 
                 {/* Frete Motoboy */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Frete Motoboy (taxa de entrega)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$</span>
                     <input
                       type="number"
                       min="0"
@@ -604,7 +604,7 @@ const RestauranteConfig = () => {
                       value={form.frete_motoboy}
                       onChange={(e) => setForm((f) => ({ ...f, frete_motoboy: e.target.value }))}
                       placeholder="0,00"
-                      className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     />
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Valor somado ao pedido e exibido ao cliente no checkout (independente de usar motoboy ou não)</p>
@@ -614,7 +614,7 @@ const RestauranteConfig = () => {
                 <div className="border-t pt-4 mt-2">
                   <label className="flex items-center justify-between gap-3 cursor-pointer">
                     <span>
-                      <span className="block text-sm font-medium text-gray-700">Usar motoboy</span>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">Usar motoboy</span>
                       <span className="block text-xs text-gray-400 mt-0.5">
                         {form.usa_motoboy
                           ? 'Motoboys afiliados podem pegar seus pedidos prontos'
@@ -630,7 +630,7 @@ const RestauranteConfig = () => {
                 {/* Comissão do motoboy */}
                 {form.usa_motoboy && (
                 <div className="border-t pt-4 mt-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Comissão do Motoboy
                   </label>
                   <p className="text-xs text-gray-400 mb-2">
@@ -640,7 +640,7 @@ const RestauranteConfig = () => {
                   <select
                     value={form.motoboy_comissao_tipo}
                     onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_tipo: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 mb-2"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 mb-2"
                   >
                     <option value="fixo">+ Valor fixo por entrega</option>
                     <option value="percentual">+ Percentual do frete</option>
@@ -649,12 +649,12 @@ const RestauranteConfig = () => {
 
                   {form.motoboy_comissao_tipo === 'fixo' && (
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$</span>
                       <input type="number" min="0" step="0.01"
                         value={form.motoboy_comissao_valor_fixo}
                         onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_valor_fixo: e.target.value }))}
                         placeholder="0,00"
-                        className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                        className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                     </div>
                   )}
 
@@ -664,39 +664,39 @@ const RestauranteConfig = () => {
                         value={form.motoboy_comissao_percentual}
                         onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_percentual: e.target.value }))}
                         placeholder="Ex: 80"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8" />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">%</span>
+                        className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">%</span>
                     </div>
                   )}
 
                   {form.motoboy_comissao_tipo === 'km' && (
                     <div className="space-y-2">
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$/km</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$/km</span>
                         <input type="number" min="0" step="0.01"
                           value={form.motoboy_comissao_valor_km}
                           onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_valor_km: e.target.value }))}
                           placeholder="0,00"
-                          className="w-full border rounded-lg pl-16 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-16 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                       </div>
                       <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">R$</span>
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$</span>
                         <input type="number" min="0" step="0.01"
                           value={form.motoboy_comissao_km_fallback}
                           onChange={(e) => setForm((f) => ({ ...f, motoboy_comissao_km_fallback: e.target.value }))}
                           placeholder="0,00"
-                          className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                       </div>
                       <p className="text-xs text-gray-400">
                         O valor de segurança é usado quando não conseguimos calcular a distância (endereço não localizado).
                         {config?.geocode_falhou && (
-                          <span className="text-amber-600 font-medium"> ⚠️ O endereço do seu estabelecimento não foi localizado — confira o endereço no topo desta página pra habilitar o cálculo por km.</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-medium"> ⚠️ O endereço do seu estabelecimento não foi localizado — confira o endereço no topo desta página pra habilitar o cálculo por km.</span>
                         )}
                       </p>
                     </div>
                   )}
 
-                  <p className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-950/40 rounded-lg px-3 py-2 mt-2">
                     Exemplo: frete de R$ {form.frete_motoboy || '0,00'} {
                       form.motoboy_comissao_tipo === 'fixo' ? `+ R$ ${form.motoboy_comissao_valor_fixo || '0,00'} fixo`
                       : form.motoboy_comissao_tipo === 'percentual' ? `+ ${form.motoboy_comissao_percentual || '0'}% do frete`
@@ -708,7 +708,7 @@ const RestauranteConfig = () => {
 
                 {tipoRestaurante && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Gorjeta sugerida (% sobre o subtotal da comanda)
                     </label>
                     <div className="relative">
@@ -717,11 +717,11 @@ const RestauranteConfig = () => {
                         value={form.gorjeta_percentual}
                         onChange={(e) => setForm((f) => ({ ...f, gorjeta_percentual: e.target.value }))}
                         placeholder="Ex: 10"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
+                        className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       O caixa vê esse valor sugerido ao fechar a conta (PDV do Salão) — ainda pode ajustar na hora.
                     </p>
                   </div>
@@ -729,7 +729,7 @@ const RestauranteConfig = () => {
 
                 {tipoRestaurante && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Taxa do cartão (% sobre débito e crédito)
                     </label>
                     <div className="relative">
@@ -738,11 +738,11 @@ const RestauranteConfig = () => {
                         value={form.taxa_cartao_percentual}
                         onChange={(e) => setForm((f) => ({ ...f, taxa_cartao_percentual: e.target.value }))}
                         placeholder="Ex: 3"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
+                        className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Acrescentada ao valor cobrado do cliente quando a comanda/mesa é fechada (ou paga
                       parcialmente) com débito ou crédito no PDV do Salão.
                     </p>
@@ -753,19 +753,19 @@ const RestauranteConfig = () => {
 
                 {tipoRestaurante && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Modo de venda do Salão
                     </label>
                     <select
                       value={form.salao_modo}
                       onChange={(e) => setForm((f) => ({ ...f, salao_modo: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     >
                       <option value="ambos">Mesas e comandas avulsas</option>
                       <option value="mesas">Somente mesas</option>
                       <option value="comandas">Somente comandas avulsas</option>
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Controla o que o garçom pode abrir no portal dele.
                     </p>
                   </div>
@@ -773,27 +773,27 @@ const RestauranteConfig = () => {
 
                 {tipoRestaurante && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Impressora do recibo
                     </label>
                     <select
                       value={form.recibo_impressora_id}
                       onChange={(e) => setForm((f) => ({ ...f, recibo_impressora_id: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                     >
                       <option value="">Nenhuma — imprimir pelo navegador</option>
                       {impressoras.map((imp) => (
                         <option key={imp.id} value={imp.id}>{imp.nome} ({imp.setor})</option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Recibo de venda (pagamento final e venda direta) sai direto nessa impressora se ela tiver o agente local pareado — senão cai no navegador.
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Taxa PagBank (% sobre vendas digitais)
                   </label>
                   <div className="relative">
@@ -802,7 +802,7 @@ const RestauranteConfig = () => {
                       value={form.taxa_pagbank_percent}
                       onChange={(e) => setForm((f) => ({ ...f, taxa_pagbank_percent: e.target.value }))}
                       placeholder="Ex: 2.50"
-                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
                   </div>
@@ -810,11 +810,11 @@ const RestauranteConfig = () => {
                 </div>
 
                 {/* Webhook — apenas informativo */}
-                <div className="bg-gray-50 border rounded-xl px-4 py-3">
-                  <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                <div className="bg-gray-50 dark:bg-gray-950/40 border rounded-xl px-4 py-3">
+                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
                     <Icon name="Link" size={12} /> URL Webhook (gerada automaticamente)
                   </p>
-                  <p className="text-xs font-mono text-gray-500 break-all">{WEBHOOK_URL}</p>
+                  <p className="text-xs font-mono text-gray-500 dark:text-gray-400 break-all">{WEBHOOK_URL}</p>
                   <p className="text-xs text-gray-400 mt-1">Cadastre esta URL em PagBank → Preferências → Notificações</p>
                 </div>
 
@@ -823,18 +823,18 @@ const RestauranteConfig = () => {
                   <button type="button"
                     onClick={() => setForm((f) => ({ ...f, pagbank_sandbox: !f.pagbank_sandbox }))}
                     className={`relative w-10 h-6 rounded-full transition-colors ${form.pagbank_sandbox ? 'bg-[#FF441F]' : 'bg-green-500'}`}>
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.pagbank_sandbox ? 'left-1' : 'left-5'}`} />
+                    <span className={`absolute top-1 w-4 h-4 bg-white dark:bg-[#27272A] rounded-full shadow transition-transform ${form.pagbank_sandbox ? 'left-1' : 'left-5'}`} />
                   </button>
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-gray-400">
                     {form.pagbank_sandbox ? 'Sandbox (testes — sem cobranças reais)' : 'Produção (cobranças reais)'}
                   </span>
                 </div>
 
                 {erro && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{erro}</div>
+                  <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">{erro}</div>
                 )}
                 {sucesso && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <div className="p-3 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-700 dark:text-green-400">
                     Configuração salva com sucesso!
                   </div>
                 )}

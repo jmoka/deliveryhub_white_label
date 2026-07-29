@@ -14,19 +14,19 @@ const SERVIDOR_IP = '148.230.76.22';
 const ToggleSwitch = ({ value, onChange, label, desc }) => (
   <div className="flex items-center justify-between gap-4">
     <div>
-      <p className="text-sm font-semibold text-[#18181B]">{label}</p>
-      {desc && <p className="text-xs text-[#71717A] mt-0.5">{desc}</p>}
+      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{label}</p>
+      {desc && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{desc}</p>}
     </div>
     <button type="button" onClick={() => onChange(!value)}
-      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-[#FF441F]' : 'bg-[#E4E4E7]'}`}>
-      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'left-7' : 'left-1'}`} />
+      className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${value ? 'bg-[#FF441F]' : 'bg-[#E4E4E7] dark:bg-[#3F3F46]'}`}>
+      <span className={`absolute top-1 w-4 h-4 bg-white dark:bg-[#27272A] rounded-full shadow transition-transform ${value ? 'left-7' : 'left-1'}`} />
     </button>
   </div>
 );
 
 const Section = ({ icon, title, children }) => (
-  <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5">
-    <h2 className="font-bold text-[#18181B] mb-4 flex items-center gap-2 text-sm">
+  <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5">
+    <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4 flex items-center gap-2 text-sm">
       <Icon name={icon} size={16} className="text-[#FF441F]" /> {title}
     </h2>
     {children}
@@ -179,7 +179,7 @@ const RestauranteAparencia = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5] dark:bg-[#18181B]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
     </div>
   );
@@ -187,7 +187,7 @@ const RestauranteAparencia = () => {
   const linkUrl = `${window.location.origin}/r/${slug}`;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/aparencia" title="Designer" subtitle="Personalização da página de vendas" />
 
       <main className="max-w-2xl mx-auto px-4 py-6">
@@ -198,19 +198,19 @@ const RestauranteAparencia = () => {
             <Section icon="Share2" title="Link da sua página">
               {editandoSlug ? (
                 <>
-                  <div className="flex items-center gap-2 bg-[#F4F4F5] rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-[#FF441F]">
-                    <span className="text-xs text-[#71717A] font-mono flex-shrink-0">{window.location.origin}/r/</span>
+                  <div className="flex items-center gap-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-[#FF441F]">
+                    <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono flex-shrink-0">{window.location.origin}/r/</span>
                     <input
                       type="text"
                       value={slugInput}
                       onChange={(e) => setSlugInput(e.target.value)}
                       placeholder="restaurante-demo"
-                      className="flex-1 min-w-0 bg-transparent text-xs text-[#27272A] font-mono focus:outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-xs text-[#27272A] dark:text-[#F4F4F5] font-mono focus:outline-none"
                     />
                   </div>
                   <p className="text-[10px] text-[#A1A1AA] mt-1.5">Só letras minúsculas, números e hífen. Mín. 3 caracteres.</p>
                   {msgSlug && (
-                    <p className={`text-xs mt-1.5 ${msgSlug.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>{msgSlug.texto}</p>
+                    <p className={`text-xs mt-1.5 ${msgSlug.tipo === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{msgSlug.texto}</p>
                   )}
                   <div className="flex gap-2 mt-3">
                     <button type="button" onClick={handleSalvarSlug} disabled={salvandoSlug || !slugInput.trim()}
@@ -218,16 +218,16 @@ const RestauranteAparencia = () => {
                       {salvandoSlug ? 'Salvando...' : 'Salvar link'}
                     </button>
                     <button type="button" onClick={() => { setEditandoSlug(false); setMsgSlug(null); }} disabled={salvandoSlug}
-                      className="px-4 py-2 bg-[#F4F4F5] text-[#27272A] rounded-lg text-sm font-semibold hover:bg-[#E4E4E7]">
+                      className="px-4 py-2 bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-lg text-sm font-semibold hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]">
                       Cancelar
                     </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 bg-[#F4F4F5] rounded-xl px-3 py-2.5">
-                    <Icon name="Link" size={14} className="text-[#71717A] flex-shrink-0" />
-                    <p className="flex-1 text-xs text-[#27272A] font-mono truncate">{linkUrl}</p>
+                  <div className="flex items-center gap-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2.5">
+                    <Icon name="Link" size={14} className="text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0" />
+                    <p className="flex-1 text-xs text-[#27272A] dark:text-[#F4F4F5] font-mono truncate">{linkUrl}</p>
                     <button type="button" onClick={copiarLink}
                       className={`flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
                         copiado ? 'bg-green-500 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'
@@ -237,7 +237,7 @@ const RestauranteAparencia = () => {
                     </button>
                   </div>
                   {msgSlug && (
-                    <p className={`text-xs mt-1.5 ${msgSlug.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>{msgSlug.texto}</p>
+                    <p className={`text-xs mt-1.5 ${msgSlug.tipo === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{msgSlug.texto}</p>
                   )}
                   <div className="flex gap-3 mt-3">
                     <a href={`/r/${slug}`} target="_blank" rel="noopener noreferrer"
@@ -245,7 +245,7 @@ const RestauranteAparencia = () => {
                       <Icon name="ExternalLink" size={12} /> Abrir página
                     </a>
                     <button type="button" onClick={iniciarEdicaoSlug}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-[#71717A] hover:text-[#27272A] hover:underline">
+                      className="flex items-center gap-1.5 text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5] hover:underline">
                       <Icon name="Pencil" size={12} /> Editar link
                     </button>
                   </div>
@@ -256,18 +256,18 @@ const RestauranteAparencia = () => {
 
           {/* ── Domínio personalizado ──────────────────────────────── */}
           <Section icon="Globe" title="Domínio personalizado">
-            <p className="text-xs text-[#71717A] mb-3">
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
               Tem um domínio próprio (ex.: <span className="font-mono">seusite.com</span>)? Sua página passa a
               abrir direto por ele, sem precisar do link acima. Siga os passos:
             </p>
 
-            <ol className="text-xs text-[#27272A] space-y-3 mb-4">
+            <ol className="text-xs text-[#27272A] dark:text-[#F4F4F5] space-y-3 mb-4">
               <li>
                 <p className="font-semibold mb-1.5">1. Crie um registro A no DNS do seu domínio, apontando pro servidor:</p>
-                <div className="overflow-x-auto rounded-xl border border-[#E4E4E7]">
+                <div className="overflow-x-auto rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46]">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-[#FAFAFA] text-[#71717A] uppercase tracking-wide">
+                      <tr className="bg-[#FAFAFA] dark:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide">
                         <th className="text-left px-3 py-2 font-bold">Tipo</th>
                         <th className="text-left px-3 py-2 font-bold">Nome</th>
                         <th className="text-left px-3 py-2 font-bold">Valor</th>
@@ -276,7 +276,7 @@ const RestauranteAparencia = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-t border-[#F4F4F5]">
+                      <tr className="border-t border-[#F4F4F5] dark:border-[#3F3F46]">
                         <td className="px-3 py-2 font-mono">A</td>
                         <td className="px-3 py-2 font-mono">@ (ou www)</td>
                         <td className="px-3 py-2 font-mono">{SERVIDOR_IP}</td>
@@ -284,7 +284,7 @@ const RestauranteAparencia = () => {
                         <td className="px-3 py-2">
                           <button type="button" onClick={copiarIp}
                             className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg transition-colors ${
-                              ipCopiado ? 'bg-green-500 text-white' : 'bg-[#F4F4F5] text-[#27272A] hover:bg-[#E4E4E7]'
+                              ipCopiado ? 'bg-green-500 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'
                             }`}>
                             <Icon name={ipCopiado ? 'Check' : 'Copy'} size={11} />
                             {ipCopiado ? 'Copiado!' : 'Copiar IP'}
@@ -303,7 +303,7 @@ const RestauranteAparencia = () => {
               </li>
               <li>
                 <p className="font-semibold">3. Envie a solicitação pro admin</p>
-                <p className="text-[#71717A] mt-0.5">Só depois que o admin adicionar o domínio no painel é que ele passa a abrir sua página.</p>
+                <p className="text-[#71717A] dark:text-[#A1A1AA] mt-0.5">Só depois que o admin adicionar o domínio no painel é que ele passa a abrir sua página.</p>
               </li>
             </ol>
 
@@ -313,7 +313,7 @@ const RestauranteAparencia = () => {
                 value={dominio}
                 onChange={(e) => setDominio(e.target.value)}
                 placeholder="seusite.com"
-                className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono"
+                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm font-mono"
               />
               <button
                 type="button"
@@ -325,20 +325,20 @@ const RestauranteAparencia = () => {
               </button>
             </div>
             {msgDominio && (
-              <p className={`text-xs mt-2 ${msgDominio.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+              <p className={`text-xs mt-2 ${msgDominio.tipo === 'ok' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {msgDominio.texto}
               </p>
             )}
 
             {dominio.trim() && (
-              <div className="mt-3 pt-3 border-t border-[#F4F4F5] space-y-2">
+              <div className="mt-3 pt-3 border-t border-[#F4F4F5] dark:border-[#3F3F46] space-y-2">
                 {statusDominio === 'recusado' && (
-                  <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
                     <strong>Solicitação recusada:</strong> {motivoRecusaDominio || 'Não especificado'}
                   </p>
                 )}
                 {statusDominio === 'pendente' ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
                     <Icon name="Clock" size={13} /> Solicitação enviada — aguardando o admin configurar
                   </span>
                 ) : (
@@ -369,12 +369,12 @@ const RestauranteAparencia = () => {
             </p>
             {form.logo_url && (
               <div className="mt-3 flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#E4E4E7] flex-shrink-0">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
                   <img src={form.logo_url} alt="Avatar" className="w-full h-full object-cover" />
                 </div>
-                <div className="flex-1 rounded-xl border border-[#E4E4E7] overflow-hidden">
+                <div className="flex-1 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                   <div className="h-14 overflow-hidden"><img src={form.logo_url} alt="Card" className="w-full h-full object-cover" /></div>
-                  <div className="px-2 py-1.5"><p className="text-[10px] font-bold text-[#18181B]">Preview no card</p></div>
+                  <div className="px-2 py-1.5"><p className="text-[10px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Preview no card</p></div>
                 </div>
               </div>
             )}
@@ -396,11 +396,11 @@ const RestauranteAparencia = () => {
 
           {/* ── Fundo ─────────────────────────────────────────────── */}
           <Section icon="Palette" title="Fundo da página">
-            <div className="flex gap-1 mb-4 bg-[#F4F4F5] p-1 rounded-xl w-fit">
+            <div className="flex gap-1 mb-4 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
               {[['gradient', 'Gradiente'], ['cor', 'Cor sólida'], ['imagem', 'Imagem']].map(([k, label]) => (
                 <button key={k} type="button" onClick={() => setFundoTipo(k)}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                    fundoTipo === k ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'
+                    fundoTipo === k ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'
                   }`}>
                   {label}
                 </button>
@@ -415,11 +415,11 @@ const RestauranteAparencia = () => {
               <div className="flex items-center gap-3">
                 <input type="color" value={form.background_color}
                   onChange={(e) => set('background_color', e.target.value)}
-                  className="w-12 h-10 rounded-lg border border-[#E4E4E7] cursor-pointer p-0.5" />
+                  className="w-12 h-10 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] cursor-pointer p-0.5" />
                 <input type="text" value={form.background_color}
                   onChange={(e) => set('background_color', e.target.value)}
-                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#FF441F]" />
-                <div className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex-shrink-0"
+                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#FF441F]" />
+                <div className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0"
                   style={{ background: form.background_color }} />
               </div>
             )}
@@ -444,12 +444,12 @@ const RestauranteAparencia = () => {
           <Section icon="Images" title="Carrossel de imagens">
             <div className="space-y-2.5">
               {form.carousel_images.map((url, i) => (
-                <div key={i} className="flex items-center gap-3 bg-[#F4F4F5] rounded-xl p-2">
+                <div key={i} className="flex items-center gap-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl p-2">
                   <img src={url} alt="" onError={(e) => (e.target.style.display = 'none')}
                     className="w-14 h-10 object-cover rounded-lg flex-shrink-0" />
-                  <p className="flex-1 text-xs text-[#71717A] font-mono truncate">{url}</p>
+                  <p className="flex-1 text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono truncate">{url}</p>
                   <button type="button" onClick={() => set('carousel_images', form.carousel_images.filter((_, j) => j !== i))}
-                    className="text-red-400 hover:text-red-600 flex-shrink-0 p-1">
+                    className="text-red-400 hover:text-red-600 dark:hover:text-red-400 flex-shrink-0 p-1">
                     <Icon name="X" size={14} />
                   </button>
                 </div>
@@ -472,13 +472,13 @@ const RestauranteAparencia = () => {
             <textarea value={form.descricao}
               onChange={(e) => set('descricao', e.target.value)}
               rows={2} placeholder="Ex: Comida caseira feita com amor desde 2010..."
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] resize-none" />
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] resize-none" />
           </Section>
 
           {/* ── Mensagem e salvar ──────────────────────────────────── */}
           {msg && (
             <div className={`text-sm rounded-xl px-4 py-3 ${
-              msg.tipo === 'ok' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'
+              msg.tipo === 'ok' ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'
             }`}>
               {msg.texto}
             </div>

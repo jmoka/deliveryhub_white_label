@@ -8,14 +8,14 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const STATUS_LABELS = {
-  pending:            { label: 'Pendente',       color: 'bg-yellow-100 text-yellow-800' },
-  confirmed:          { label: 'Confirmado',     color: 'bg-blue-100 text-blue-800' },
-  preparing:          { label: 'Em preparo',     color: 'bg-orange-100 text-orange-800' },
-  ready:              { label: 'Pronto',         color: 'bg-purple-100 text-purple-800' },
-  motoboy_collecting: { label: 'Motoboy vindo',  color: 'bg-sky-100 text-sky-800' },
-  out_for_delivery:   { label: 'Em entrega',     color: 'bg-indigo-100 text-indigo-800' },
-  delivered:          { label: 'Entregue',       color: 'bg-green-100 text-green-800' },
-  canceled:           { label: 'Cancelado',      color: 'bg-red-100 text-red-800' },
+  pending:            { label: 'Pendente',       color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
+  confirmed:          { label: 'Confirmado',     color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
+  preparing:          { label: 'Em preparo',     color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
+  ready:              { label: 'Pronto',         color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
+  motoboy_collecting: { label: 'Motoboy vindo',  color: 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400' },
+  out_for_delivery:   { label: 'Em entrega',     color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
+  delivered:          { label: 'Entregue',       color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
+  canceled:           { label: 'Cancelado',      color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
 };
 
 const PROXIMOS_STATUS = {
@@ -83,7 +83,7 @@ const RestaurantePedidos = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/pedidos" title="Pedidos" />
 
       <main className="p-6 max-w-4xl mx-auto">
@@ -91,38 +91,38 @@ const RestaurantePedidos = () => {
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="mx-2 border rounded-lg px-3 py-2 text-sm"
+            className="mx-2 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
           >
             <option value="">Todos os status</option>
             {FILTROS.slice(1).map((s) => (
               <option key={s} value={s}>{STATUS_LABELS[s]?.label}</option>
             ))}
           </select>
-          <button onClick={carregar} className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">
+          <button onClick={carregar} className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-950/40 hover:bg-gray-200 dark:hover:bg-gray-950/40 rounded-lg">
             Atualizar
           </button>
         </div>
 
-        {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
+        {erro && <p className="text-red-600 dark:text-red-400 mb-4 text-sm">{erro}</p>}
 
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : pedidos.length === 0 ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
+          <div className="bg-white dark:bg-[#27272A] rounded-xl border p-12 text-center">
             <p className="text-gray-400">Nenhum pedido encontrado</p>
           </div>
         ) : (
           <div className="space-y-3">
             {pedidos.map((p) => {
-              const s = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 text-gray-700' };
+              const s = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 dark:bg-gray-950/40 text-gray-700 dark:text-gray-400' };
               const proximo = PROXIMOS_STATUS[p.status];
               return (
-                <div key={p.id} className="bg-white rounded-xl border p-4 flex items-center justify-between">
+                <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">Pedido #{p.id}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <p className="font-medium text-gray-900 dark:text-gray-400">Pedido #{p.id}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                       {fmt(p.total)} · {p.payment_method} · {new Date(p.created_at).toLocaleString('pt-BR')}
                     </p>
                   </div>

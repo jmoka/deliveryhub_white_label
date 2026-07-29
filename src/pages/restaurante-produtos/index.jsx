@@ -16,8 +16,8 @@ const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', imag
 
 const TagBadge = ({ slug, tagsMap }) => {
   const t = tagsMap[slug];
-  if (!t) return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-gray-100 text-gray-600">{slug}</span>;
-  return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-orange-100 text-orange-700">{t.name}</span>;
+  if (!t) return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-gray-100 dark:bg-gray-950/40 text-gray-600 dark:text-gray-400">{slug}</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">{t.name}</span>;
 };
 
 const RestauranteProdutos = () => {
@@ -223,35 +223,35 @@ const RestauranteProdutos = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/produtos" title="Produtos" />
 
       <main className="p-6 max-w-4xl mx-auto">
-        {erro && <p className="text-red-600 mb-4 text-sm">{erro}</p>}
+        {erro && <p className="text-red-600 dark:text-red-400 mb-4 text-sm">{erro}</p>}
 
         {/* Painel de categorias do restaurante */}
-        <div className="bg-white rounded-xl border border-[#E4E4E7] mb-5">
+        <div className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] mb-5">
           <button
             type="button"
             onClick={() => setShowCategPanel((v) => !v)}
             className="w-full flex items-center justify-between px-5 py-3.5 text-left"
           >
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-[#18181B] text-sm">Minhas Categorias</span>
-              <span className="text-xs text-[#71717A] bg-[#F4F4F5] px-2 py-0.5 rounded-full">{categorias.length}</span>
+              <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm">Minhas Categorias</span>
+              <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#3F3F46] px-2 py-0.5 rounded-full">{categorias.length}</span>
             </div>
-            <span className="text-[#71717A] text-xs">{showCategPanel ? '▲' : '▼'}</span>
+            <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">{showCategPanel ? '▲' : '▼'}</span>
           </button>
 
           {showCategPanel && (
-            <div className="px-5 pb-4 border-t border-[#F4F4F5]">
+            <div className="px-5 pb-4 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
               {/* Criar nova */}
               <form onSubmit={handleCriarCategoria} className="flex gap-2 mt-3 mb-4">
                 <input
                   value={novaCategoria}
                   onChange={(e) => setNovaCategoria(e.target.value)}
                   placeholder="Nome da nova categoria..."
-                  className="flex-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
                 />
                 <button
                   type="submit"
@@ -263,20 +263,20 @@ const RestauranteProdutos = () => {
               </form>
 
               {categorias.length === 0 ? (
-                <p className="text-xs text-[#71717A]">Nenhuma categoria própria. Crie acima ou use as globais da plataforma.</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhuma categoria própria. Crie acima ou use as globais da plataforma.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {categorias.map((c) => (
-                    <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-full px-3 py-1.5">
-                      <span className="text-sm text-[#27272A]">{c.name}</span>
+                    <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full px-3 py-1.5">
+                      <span className="text-sm text-[#27272A] dark:text-[#F4F4F5]">{c.name}</span>
                       {c.total_produtos > 0 && (
-                        <span className="text-[10px] text-[#71717A]">({c.total_produtos})</span>
+                        <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">({c.total_produtos})</span>
                       )}
                       <button
                         type="button"
                         onClick={() => handleDeletarCategoria(c)}
                         disabled={deletandoCateg === c.id}
-                        className="text-[#A1A1AA] hover:text-red-500 text-sm leading-none disabled:opacity-40"
+                        className="text-[#A1A1AA] hover:text-red-500 dark:hover:text-red-400 text-sm leading-none disabled:opacity-40"
                       >
                         ×
                       </button>
@@ -289,7 +289,7 @@ const RestauranteProdutos = () => {
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#18181B]">
+          <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">
             Produtos <span className="text-gray-400 font-normal">({produtosFiltrados.length}{produtosFiltrados.length !== produtos.length ? ` de ${produtos.length}` : ''})</span>
           </h2>
           <button
@@ -302,17 +302,17 @@ const RestauranteProdutos = () => {
 
         {/* Filtros de consulta */}
         {produtos.length > 0 && (
-          <div className="bg-white rounded-xl border border-[#E4E4E7] p-3 mb-4 flex flex-col sm:flex-row gap-2">
+          <div className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 mb-4 flex flex-col sm:flex-row gap-2">
             <input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por nome..."
-              className="flex-1 border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
+              className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
             />
             <select
               value={filtroCategoria}
               onChange={(e) => setFiltroCategoria(e.target.value)}
-              className="border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm"
+              className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
             >
               <option value="">Todas categorias</option>
               {categorias.length > 0 && (
@@ -333,7 +333,7 @@ const RestauranteProdutos = () => {
             <select
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm"
+              className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
             >
               <option value="todos">Todos status</option>
               <option value="ativos">Ativos</option>
@@ -342,7 +342,7 @@ const RestauranteProdutos = () => {
             <select
               value={filtroEstoque}
               onChange={(e) => setFiltroEstoque(e.target.value)}
-              className="border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm"
+              className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
             >
               <option value="todos">Todo estoque</option>
               <option value="sem_estoque">Sem estoque</option>
@@ -351,7 +351,7 @@ const RestauranteProdutos = () => {
               <button
                 type="button"
                 onClick={() => { setBusca(''); setFiltroCategoria(''); setFiltroStatus('todos'); setFiltroEstoque('todos'); }}
-                className="px-3 py-2 text-sm text-[#71717A] hover:text-[#27272A] whitespace-nowrap"
+                className="px-3 py-2 text-sm text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5] whitespace-nowrap"
               >
                 Limpar filtros
               </button>
@@ -364,43 +364,43 @@ const RestauranteProdutos = () => {
             <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : produtos.length === 0 ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
+          <div className="bg-white dark:bg-[#27272A] rounded-xl border p-12 text-center">
             <p className="text-gray-400 mb-3">Nenhum produto cadastrado</p>
             <button onClick={abrirNovo} className="text-sm text-[#FF441F] hover:underline">
               Criar primeiro produto →
             </button>
           </div>
         ) : produtosFiltrados.length === 0 ? (
-          <div className="bg-white rounded-xl border p-12 text-center">
+          <div className="bg-white dark:bg-[#27272A] rounded-xl border p-12 text-center">
             <p className="text-gray-400">Nenhum produto encontrado com esse filtro</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {produtosFiltrados.map((p) => (
-              <div key={p.id} className="bg-white rounded-xl border p-4 flex gap-3">
+              <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex gap-3">
                 {p.image_url && (
                   <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{p.name}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-400 truncate">{p.name}</p>
                       {p.destaque && <span className="text-xs">⭐</span>}
                     </div>
                     <button
                       onClick={() => handleToggle(p)}
                       className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
-                        p.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        p.is_active ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-950/40 text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       {p.is_active ? 'Ativo' : 'Inativo'}
                     </button>
                   </div>
-                  {p.description && <p className="text-xs text-gray-500 mt-0.5 truncate">{p.description}</p>}
+                  {p.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{p.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-semibold text-[#FF441F]">{fmt(p.price)}</p>
                     {p.tags?.includes('promo') && p.preco_promo && (
-                      <p className="text-xs text-green-600 font-semibold">{fmt(p.preco_promo)} promo</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 font-semibold">{fmt(p.preco_promo)} promo</p>
                     )}
                   </div>
                   {Array.isArray(p.tags) && p.tags.length > 0 && (
@@ -409,13 +409,13 @@ const RestauranteProdutos = () => {
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mt-0.5">{catMap[p.category_id] ?? 'Sem categoria'}</p>
-                  <p className={`text-xs mt-0.5 ${(p.quantidade_estoque ?? 0) <= 0 ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
+                  <p className={`text-xs mt-0.5 ${(p.quantidade_estoque ?? 0) <= 0 ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-gray-400'}`}>
                     Estoque: {p.quantidade_estoque ?? 0}
                   </p>
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => abrirEditar(p)}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]"
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]"
                     >
                       Editar
                     </button>
@@ -423,14 +423,14 @@ const RestauranteProdutos = () => {
                       onClick={() => handleAdicionarAoCarrossel(p)}
                       disabled={!p.image_url || adicionandoCarrossel === p.id}
                       title={!p.image_url ? 'Produto sem imagem cadastrada' : 'Adicionar imagem ao carrossel da vitrine'}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5] disabled:opacity-40"
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-40"
                     >
                       {adicionandoCarrossel === p.id ? '...' : 'Carrossel'}
                     </button>
                     <button
                       onClick={() => handleDeletar(p)}
                       disabled={deletando === p.id}
-                      className="text-xs px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      className="text-xs px-2.5 py-1 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50"
                     >
                       {deletando === p.id ? '...' : 'Deletar'}
                     </button>
@@ -445,59 +445,59 @@ const RestauranteProdutos = () => {
       {/* Modal criar / editar produto */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-[#18181B] mb-4">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4">
               {editando ? 'Editar Produto' : 'Novo Produto'}
             </h2>
             <form onSubmit={handleSalvar} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nome *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   placeholder="Nome do produto"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Descrição</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   rows={2}
                   placeholder="Descrição opcional"
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço (R$) *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço (R$) *</label>
                   <input
                     type="number" min="0" step="0.01"
                     value={form.price}
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="0,00"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estoque</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Estoque</label>
                   <input
                     type="number" min="0" step="1"
                     value={form.quantidade_estoque}
                     onChange={(e) => setForm((f) => ({ ...f, quantidade_estoque: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="0"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoria *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Categoria *</label>
                   <select
                     value={form.category_id}
                     onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     required
                   >
                     <option value="">Selecionar</option>
@@ -520,33 +520,33 @@ const RestauranteProdutos = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço de custo (R$)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço de custo (R$)</label>
                   <input
                     type="number" min="0" step="0.01"
                     value={form.preco_custo}
                     onChange={(e) => setForm((f) => ({ ...f, preco_custo: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="0,00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Estoque mínimo</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Estoque mínimo</label>
                   <input
                     type="number" min="0" step="1"
                     value={form.quantidade_minima}
                     onChange={(e) => setForm((f) => ({ ...f, quantidade_minima: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="0"
                   />
                 </div>
               </div>
               {tipoRestaurante && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Impressora / setor</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Impressora / setor</label>
                   <select
                     value={form.impressora_id}
                     onChange={(e) => setForm((f) => ({ ...f, impressora_id: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   >
                     <option value="">Sem impressora</option>
                     {impressoras.map((imp) => (
@@ -556,7 +556,7 @@ const RestauranteProdutos = () => {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Imagem do produto</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Imagem do produto</label>
                 <ImageUpload
                   value={form.image_url}
                   onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
@@ -567,7 +567,7 @@ const RestauranteProdutos = () => {
 
               {/* Tags — multi-seleção (carregadas da API) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tags / Carrosseis (pode marcar várias)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Tags / Carrosseis (pode marcar várias)</label>
                 {tagsDisponiveis.length === 0 ? (
                   <p className="text-xs text-gray-400 italic">Nenhuma tag disponível. O admin precisa criar tags primeiro.</p>
                 ) : (
@@ -580,7 +580,7 @@ const RestauranteProdutos = () => {
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                           form.tags.includes(t.slug)
                             ? 'bg-[#FF441F] text-white border-[#FF441F]'
-                            : 'bg-white text-[#71717A] border-[#E4E4E7] hover:border-[#FF441F]'
+                            : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]'
                         }`}
                       >
                         {t.name}
@@ -593,12 +593,12 @@ const RestauranteProdutos = () => {
               {/* Preço promo — só aparece se tag promo ativa */}
               {temPromo && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preço promocional (R$)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço promocional (R$)</label>
                   <input
                     type="number" min="0" step="0.01"
                     value={form.preco_promo}
                     onChange={(e) => setForm((f) => ({ ...f, preco_promo: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                     placeholder="Preço com desconto"
                   />
                 </div>
@@ -611,14 +611,14 @@ const RestauranteProdutos = () => {
                   onChange={(e) => setForm((f) => ({ ...f, destaque: e.target.checked }))}
                   className="w-4 h-4 accent-[#FF441F]"
                 />
-                <span className="text-sm text-gray-700">⭐ Destacar produto</span>
+                <span className="text-sm text-gray-700 dark:text-gray-400">⭐ Destacar produto</span>
               </label>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={fecharModal}
-                  className="flex-1 py-2 text-sm border rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="flex-1 py-2 text-sm border rounded-lg text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-950/40"
                 >
                   Cancelar
                 </button>

@@ -37,16 +37,16 @@ const AgenteImpressaoPanel = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4">
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-bold text-[#18181B]">Agente de impressão local</p>
+        <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Agente de impressão local</p>
         {status && (
-          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${status.online ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${status.online ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
             {status.online ? 'Online' : status.pareado ? 'Offline' : 'Não pareado'}
           </span>
         )}
       </div>
-      <p className="text-xs text-[#71717A] mb-3">
+      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
         Baixe e rode o agente no PC das impressoras — ele detecta e imprime as comandas automaticamente.
         <a href="https://github.com/jmoka/deliveryhub_white_label/tree/main/print-agent" target="_blank" rel="noreferrer" className="text-[#FF441F] font-semibold ml-1">Ver instruções</a>
       </p>
@@ -55,8 +55,8 @@ const AgenteImpressaoPanel = () => {
         {gerando ? 'Gerando...' : 'Gerar token de pareamento'}
       </button>
       {token && (
-        <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] rounded-xl px-3 py-2">
-          <span className="text-xs font-mono text-[#71717A] truncate flex-1">{token}</span>
+        <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+          <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{token}</span>
           <button onClick={copiar} className="text-xs font-bold text-[#FF441F]">{copiado ? 'Copiado!' : 'Copiar'}</button>
         </div>
       )}
@@ -128,35 +128,35 @@ const RestauranteImpressoras = () => {
   const linkKds = (imp) => `${window.location.origin}/restaurante/kds?impressora_id=${imp.id}&setor=${encodeURIComponent(imp.setor)}`;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/impressoras" title="Impressoras" />
       <div className="max-w-4xl mx-auto p-4">
         <AgenteImpressaoPanel />
 
-        <form onSubmit={criar} className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4 flex flex-wrap gap-2 items-end">
+        <form onSubmit={criar} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4 flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[120px]">
-            <label className="text-xs text-[#71717A]">Nome</label>
+            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nome</label>
             <input value={nome} onChange={(e) => setNome(e.target.value)} required placeholder="Ex: Impressora Bar"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
           </div>
           <div className="flex-1 min-w-[120px]">
-            <label className="text-xs text-[#71717A]">Setor</label>
+            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Setor</label>
             <input value={setor} onChange={(e) => setSetor(e.target.value)} required placeholder="Ex: bar, cozinha, salgados"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
           </div>
           <div>
-            <label className="text-xs text-[#71717A]">Conexão</label>
+            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Conexão</label>
             <select value={tipoConexao} onChange={(e) => setTipoConexao(e.target.value)}
-              className="border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+              className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
               <option value="rede">Rede</option>
               <option value="local">Local (USB)</option>
             </select>
           </div>
           {detectadas.length > 0 ? (
             <div className="flex-1 min-w-[160px]">
-              <label className="text-xs text-[#71717A]">Impressora detectada pelo agente</label>
+              <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Impressora detectada pelo agente</label>
               <select value={nomeSistema} onChange={(e) => setNomeSistema(e.target.value)}
-                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
                 <option value="">Nenhuma (manual/rede)</option>
                 {detectadas.map((d) => (
                   <option key={d.id} value={d.nome_sistema}>{d.nome_sistema}</option>
@@ -165,36 +165,36 @@ const RestauranteImpressoras = () => {
             </div>
           ) : (
             <div className="flex-1 min-w-[120px]">
-              <label className="text-xs text-[#71717A]">Endereço (IP ou nome)</label>
+              <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Endereço (IP ou nome)</label>
               <input value={endereco} onChange={(e) => setEndereco(e.target.value)}
-                className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
             </div>
           )}
-          {erro && <p className="text-xs text-red-600 w-full">{erro}</p>}
+          {erro && <p className="text-xs text-red-600 dark:text-red-400 w-full">{erro}</p>}
           <button type="submit" className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl">Adicionar</button>
         </form>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {impressoras.map((imp) => (
-            <div key={imp.id} className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
+            <div key={imp.id} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-bold text-[#18181B]">{imp.nome}</p>
-                  <p className="text-xs text-[#71717A]">Setor: {imp.setor} · {imp.tipo_conexao}</p>
+                  <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{imp.nome}</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Setor: {imp.setor} · {imp.tipo_conexao}</p>
                   {imp.nome_sistema
-                    ? <p className="text-xs text-emerald-700">🖨 {imp.nome_sistema} (agente)</p>
+                    ? <p className="text-xs text-emerald-700 dark:text-emerald-400">🖨 {imp.nome_sistema} (agente)</p>
                     : imp.endereco && <p className="text-xs text-[#A1A1AA]">{imp.endereco}</p>}
                 </div>
-                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${imp.ativo ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>
+                <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${imp.ativo ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
                   {imp.ativo ? 'Ativa' : 'Inativa'}
                 </span>
               </div>
 
               {detectadas.length > 0 && (
                 <div className="mt-3">
-                  <label className="text-xs text-[#71717A]">Vincular impressora detectada</label>
+                  <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vincular impressora detectada</label>
                   <select value={imp.nome_sistema ?? ''} onChange={(e) => vincularDetectada(imp.id, e.target.value)}
-                    className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm mt-1">
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm mt-1">
                     <option value="">Nenhuma (manual/rede)</option>
                     {detectadas.map((d) => (
                       <option key={d.id} value={d.nome_sistema}>{d.nome_sistema}</option>
@@ -202,8 +202,8 @@ const RestauranteImpressoras = () => {
                   </select>
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] rounded-xl px-3 py-2">
-                <span className="text-xs font-mono text-[#71717A] truncate flex-1">{linkKds(imp)}</span>
+              <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+                <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{linkKds(imp)}</span>
                 <button onClick={() => navigator.clipboard?.writeText(linkKds(imp))} className="text-xs font-bold text-[#FF441F]">Copiar</button>
               </div>
               {imp.nome_sistema && (
@@ -213,10 +213,10 @@ const RestauranteImpressoras = () => {
                 </button>
               )}
               <div className="flex gap-2 mt-3">
-                <button onClick={() => toggleAtiva(imp)} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] rounded-lg text-[#71717A] hover:bg-[#F4F4F5]">
+                <button onClick={() => toggleAtiva(imp)} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                   {imp.ativo ? 'Desativar' : 'Ativar'}
                 </button>
-                <button onClick={() => remover(imp.id)} className="flex-1 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+                <button onClick={() => remover(imp.id)} className="flex-1 py-1.5 text-xs border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40">
                   Remover
                 </button>
               </div>

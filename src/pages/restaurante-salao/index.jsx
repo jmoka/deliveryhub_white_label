@@ -19,10 +19,10 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 
 const MESA_STATUS_COR = {
-  livre: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  ocupada: 'bg-orange-100 text-orange-700 border-orange-200',
-  aguardando_pagamento: 'bg-blue-100 text-blue-700 border-blue-200',
-  bloqueada: 'bg-zinc-200 text-zinc-500 border-zinc-300',
+  livre: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+  ocupada: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+  aguardando_pagamento: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+  bloqueada: 'bg-zinc-200 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400 border-zinc-300 dark:border-zinc-800',
 };
 const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento', bloqueada: 'Bloqueada' };
 
@@ -49,20 +49,20 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-base font-bold text-[#18181B] mb-1">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">
           {mesa ? `Abrir Mesa ${mesa.numero}` : 'Abrir comanda avulsa'}
         </h2>
-        <p className="text-xs text-[#71717A] mb-4">Nome e telefone do cliente são obrigatórios antes de vender.</p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Nome e telefone do cliente são obrigatórios antes de vender.</p>
         <form onSubmit={submit} className="space-y-3">
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
           <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
-              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
               Cancelar
             </button>
             <button type="submit" disabled={salvando}
@@ -94,35 +94,35 @@ const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-sm p-5 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+          <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
             {produto.image_url
               ? <img src={produto.image_url} alt="" className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={20} className="text-[#A1A1AA]" /></div>}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-[#18181B] truncate">{produto.name}</p>
-            <p className="text-xs text-[#71717A]">{fmt(produto.price)}</p>
+            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{produto.name}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>
           </div>
         </div>
 
-        <label className="text-xs text-[#71717A]">Quantidade</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Quantidade</label>
         <div className="flex items-center gap-3 mt-1 mb-3">
           <button onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
-            className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex items-center justify-center text-lg font-bold text-[#27272A]">−</button>
-          <span className="text-lg font-bold text-[#18181B] w-8 text-center">{quantidade}</span>
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
+          <span className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] w-8 text-center">{quantidade}</span>
           <button onClick={() => setQuantidade((q) => q + 1)}
-            className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex items-center justify-center text-lg font-bold text-[#27272A]">+</button>
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
         </div>
 
-        <label className="text-xs text-[#71717A]">Observação (opcional)</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Observação (opcional)</label>
         <textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={2}
           placeholder="Ex: sem cebola, ponto da carne..."
-          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
 
         <div className="flex gap-2">
-          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A]">
+          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
             Cancelar
           </button>
           <button onClick={confirmar} disabled={salvando}
@@ -151,22 +151,22 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
   });
 
   return (
-    <div className="fixed inset-0 bg-white z-[55] flex flex-col">
-      <div className="p-4 border-b border-[#E4E4E7] sticky top-0 bg-white max-w-2xl w-full mx-auto">
+    <div className="fixed inset-0 bg-white dark:bg-[#27272A] z-[55] flex flex-col">
+      <div className="p-4 border-b border-[#E4E4E7] dark:border-[#3F3F46] sticky top-0 bg-white dark:bg-[#27272A] max-w-2xl w-full mx-auto">
         <div className="flex items-center gap-2 mb-3">
-          <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="ArrowLeft" size={20} /></button>
-          <h2 className="text-base font-bold text-[#18181B]">Adicionar produto</h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="ArrowLeft" size={20} /></button>
+          <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Adicionar produto</h2>
         </div>
         <div className="relative">
           <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..." autoFocus
-            className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
         </div>
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
           {categorias.map((c) => (
             <button key={c} onClick={() => setCategoria(c)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
-                categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
+                categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
               }`}>
               {c === 'todas' ? 'Todas' : c}
             </button>
@@ -177,15 +177,15 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
       <div className="flex-1 overflow-y-auto p-4 max-w-2xl w-full mx-auto space-y-2">
         {filtrados.map((p) => (
           <button key={p.id} onClick={() => setProdutoAtivo(p)}
-            className="w-full bg-white border border-[#E4E4E7] rounded-xl p-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+            className="w-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
               {p.image_url
                 ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[#18181B] truncate">{p.name}</p>
-              <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+              <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.price)}</p>
             </div>
             <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
@@ -228,23 +228,23 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[55] p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto flex flex-col">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto flex flex-col">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-base font-bold text-[#18181B]">Separar comanda</h2>
-          <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="X" size={20} /></button>
+          <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Separar comanda</h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="X" size={20} /></button>
         </div>
-        <p className="text-xs text-[#71717A] mb-3">Marque os itens que vão pra uma comanda separada nova.</p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">Marque os itens que vão pra uma comanda separada nova.</p>
 
         <div className="space-y-1.5 flex-1 overflow-y-auto">
           {itens.map((item) => (
             <label key={item.id}
               className={`flex items-center gap-2.5 rounded-xl border p-2.5 cursor-pointer transition-colors ${
-                selecionados.has(item.id) ? 'border-[#FF441F] bg-[#FF441F]/5' : 'border-[#E4E4E7]'
+                selecionados.has(item.id) ? 'border-[#FF441F] bg-[#FF441F]/5' : 'border-[#E4E4E7] dark:border-[#3F3F46]'
               }`}>
               <input type="checkbox" checked={selecionados.has(item.id)} onChange={() => toggle(item.id)}
                 className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
-              <span className="flex-1 min-w-0 text-sm text-[#18181B] truncate">{item.quantity}x {item.product_name ?? item.products?.name}</span>
-              <span className="text-sm font-semibold text-[#18181B] flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
+              <span className="flex-1 min-w-0 text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.product_name ?? item.products?.name}</span>
+              <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
             </label>
           ))}
         </div>
@@ -253,17 +253,17 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
           <p className="text-xs text-[#FF441F] font-medium mt-2">Desmarque ao menos 1 item — pra mover a comanda inteira use "Transferir".</p>
         )}
 
-        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
-          <label className="text-xs text-[#71717A]">Nome do cliente da nova comanda *</label>
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nome do cliente da nova comanda *</label>
           <input value={clienteNome} onChange={(e) => setClienteNome(e.target.value)} placeholder="Nome do cliente" autoFocus
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           <input value={clienteTelefone} onChange={(e) => setClienteTelefone(e.target.value)} placeholder="Telefone (opcional)"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
         </div>
 
-        <div className="border-t border-[#E4E4E7] mt-3 pt-3 flex items-center justify-between">
-          <span className="text-sm text-[#71717A]">{selecionados.size} item(s) selecionado(s)</span>
-          <span className="text-base font-bold text-[#18181B]">{fmt(subtotalSelecionado)}</span>
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 flex items-center justify-between">
+          <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{selecionados.size} item(s) selecionado(s)</span>
+          <span className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(subtotalSelecionado)}</span>
         </div>
         <button
           onClick={() => onConfirmar([...selecionados], clienteNome, clienteTelefone)}
@@ -299,18 +299,18 @@ const EditarClienteComandaModal = ({ comanda, onFechar, onEditado }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-base font-bold text-[#18181B] mb-1">Editar dados do cliente</h2>
-        <p className="text-xs text-[#71717A] mb-4">Corrige nome ou telefone digitados errado.</p>
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Editar dados do cliente</h2>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Corrige nome ou telefone digitados errado.</p>
         <form onSubmit={submit} className="space-y-3">
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required autoFocus
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
           <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
-              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
               Cancelar
             </button>
             <button type="submit" disabled={salvando}
@@ -573,32 +573,32 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-3">
           <div>
-            <h2 className="text-base font-bold text-[#18181B]">
+            <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
               Comanda #{comanda.numero_comanda ?? comanda.id}{comanda.mesas ? ` — Mesa ${comanda.mesas.numero}` : ''}
             </h2>
             <div className="flex items-center gap-1.5">
-              <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
               {podeEditar && (
-                <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
+                <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
                   <Icon name="Pencil" size={12} />
                 </button>
               )}
             </div>
-            <p className="text-xs text-[#71717A]">
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
               {comanda.garcons?.nome ? `Garçom: ${comanda.garcons.nome}` : comanda.aberto_por_nome ? `Caixa: ${comanda.aberto_por_nome}` : 'Garçom: —'}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
+            <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
               {comanda.status === 'aberta' ? 'Em aberto'
                 : comanda.status === 'fechada_garcom' ? 'Aguardando pagamento'
                 : comanda.status === 'paga' ? 'Paga'
                 : comanda.status === 'canceled' ? 'Cancelada' : comanda.status}
             </span>
-            <button onClick={onFechar} className="p-1 text-[#71717A] hover:text-[#FF441F]" title="Fechar">
+            <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F]" title="Fechar">
               <Icon name="X" size={18} />
             </button>
           </div>
@@ -613,7 +613,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
         {comanda.status === 'paga' && (
           <button onClick={reimprimirRecibo} disabled={salvando}
-            className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+            className="w-full mb-3 py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
             <Icon name="Printer" size={16} /> Reimprimir recibo (comanda já paga)
           </button>
         )}
@@ -632,21 +632,21 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                   {urls.lan && (
                     <div className="flex gap-2 mb-2">
                       <button onClick={() => setQrModo('online')}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                         ONLINE
                       </button>
                       <button onClick={() => setQrModo('local')}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                         LOCAL
                       </button>
                     </div>
                   )}
-                  <div className="bg-[#FAFAFA] border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                  <div className="bg-[#FAFAFA] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 inline-flex flex-col items-center gap-1">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlAtiva)}`}
                       alt="QR de acompanhamento" width={150} height={150}
                     />
-                    <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
+                    <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">Cliente escaneia pra acompanhar o preparo</p>
                   </div>
                 </div>
               );
@@ -657,7 +657,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         {podeEditar && (
         <div className="flex items-center gap-2 mb-3">
           <select value={garcomSelecionado} onChange={(e) => setGarcomSelecionado(e.target.value)}
-            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
             <option value="">Transferir pra outro garçom...</option>
             {garcons.filter((g) => g.id !== comanda.garcom_id).map((g) => (
               <option key={g.id} value={g.id}>{g.nome}</option>
@@ -671,7 +671,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         {podeEditar && (
         <div className="flex items-center gap-2 mb-3">
           <select value={mesaDestino} onChange={(e) => setMesaDestino(e.target.value)}
-            className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
             <option value="">Transferir mesa/comanda pra...</option>
             <optgroup label="Mesas">
               {(mesas ?? []).filter((m) => m.id !== comanda.mesa_id).map((m) => (
@@ -698,7 +698,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             <div key={item.id} className="py-0.5">
               <div className="flex justify-between items-center text-sm gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
                     {item.products?.image_url
                       ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
                       : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={14} className="text-[#A1A1AA]" /></div>}
@@ -709,12 +709,12 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                   <span>{fmt(item.quantity * item.unit_price)}</span>
                   {['aberta', 'fechada_garcom'].includes(comanda.status) && (
                     <>
-                      <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-5 h-5 rounded-md border border-[#E4E4E7] text-[#71717A] flex items-center justify-center">
+                      <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] flex items-center justify-center">
                         <Icon name="MessageSquare" size={11} />
                       </button>
-                      <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">−</button>
-                      <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center">+</button>
-                      <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center">
+                      <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-xs font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">−</button>
+                      <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-xs font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">+</button>
+                      <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
                         <Icon name="X" size={11} />
                       </button>
                     </>
@@ -724,13 +724,13 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               {observacaoEditandoId === item.id ? (
                 <div className="flex items-center gap-1.5 mt-1 pl-10">
                   <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
-                    placeholder="Observação..." className="flex-1 text-xs border border-[#E4E4E7] rounded-lg px-2 py-1 focus:outline-none focus:border-[#FF441F]" />
+                    placeholder="Observação..." className="flex-1 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1 focus:outline-none focus:border-[#FF441F]" />
                   <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
                   <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
                 </div>
               ) : item.observacao ? (
                 <p onClick={() => ['aberta', 'fechada_garcom'].includes(comanda.status) && abrirEdicaoObservacao(item)}
-                  className="text-xs text-blue-600 pl-10 cursor-pointer">Obs: {item.observacao}</p>
+                  className="text-xs text-blue-600 dark:text-blue-400 pl-10 cursor-pointer">Obs: {item.observacao}</p>
               ) : null}
             </div>
           ))}
@@ -738,20 +738,20 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
         {comanda.status === 'aberta' && (
           <button onClick={() => setMostrarPicker(true)} disabled={salvando}
-            className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+            className="w-full mb-3 py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
             <Icon name="Plus" size={16} /> Incluir produto
           </button>
         )}
 
         {comanda.status === 'aberta' && (comanda.itens ?? []).length > 1 && (
           <button onClick={() => setMostrarDividir(true)} disabled={salvando}
-            className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+            className="w-full mb-3 py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
             <Icon name="Scissors" size={16} /> Separar comanda
           </button>
         )}
 
         <button onClick={imprimirConferencia} disabled={salvando}
-          className="w-full mb-3 py-2.5 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#27272A] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+          className="w-full mb-3 py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
           <Icon name="Printer" size={16} /> Imprimir comanda (conferência)
         </button>
 
@@ -780,13 +780,13 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           />
         )}
 
-        <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-3 space-y-2">
           <div className="flex justify-between text-sm"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
           {podeEditar && (
           <div className="flex justify-between items-center text-sm gap-2">
             <span>Desconto</span>
             <input type="number" value={descontoInput} onChange={(e) => setDescontoInput(e.target.value)}
-              className="w-24 border border-[#E4E4E7] rounded-lg px-2 py-1 text-right text-sm" />
+              className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1 text-right text-sm" />
             <button onClick={() => acao(() => aplicarDescontoComanda(comandaId, Number(descontoInput || 0)))}
               className="text-xs text-[#FF441F] font-bold">Aplicar</button>
           </div>
@@ -795,12 +795,12 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           <div className="flex justify-between items-center text-sm gap-2">
             <span>Acréscimo</span>
             <input type="number" value={acrescimoInput} onChange={(e) => setAcrescimoInput(e.target.value)}
-              className="w-24 border border-[#E4E4E7] rounded-lg px-2 py-1 text-right text-sm" />
+              className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1 text-right text-sm" />
             <button onClick={() => acao(() => aplicarAcrescimoComanda(comandaId, Number(acrescimoInput || 0)))}
               className="text-xs text-[#FF441F] font-bold">Aplicar</button>
           </div>
           )}
-          <div className="flex justify-between text-base font-bold text-[#18181B]">
+          <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
             <span>Total</span><span>{fmt(totalFinal)}</span>
           </div>
         </div>
@@ -810,32 +810,32 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             antes esse bloco só aparecia enquanto podeEditar, sumindo tudo isso depois
             de fechada e deixando a conferência/recibo sem essas informações. */}
         {!podeEditar && (
-          <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-1">
+          <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-1">
             {Number(comanda.desconto_valor || 0) > 0 && (
-              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Desconto</span><span>- {fmt(comanda.desconto_valor)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-[#71717A] dark:text-[#A1A1AA]">Desconto</span><span>- {fmt(comanda.desconto_valor)}</span></div>
             )}
             {Number(comanda.acrescimo_valor || 0) > 0 && (
-              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Acréscimo</span><span>+ {fmt(comanda.acrescimo_valor)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-[#71717A] dark:text-[#A1A1AA]">Acréscimo</span><span>+ {fmt(comanda.acrescimo_valor)}</span></div>
             )}
             {Number(comanda.gorjeta_valor || 0) > 0 && (
-              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Gorjeta</span><span>{fmt(comanda.gorjeta_valor)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta</span><span>{fmt(comanda.gorjeta_valor)}</span></div>
             )}
             {taxaCartaoRegistrada > 0 && (
-              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Taxa cartão</span><span className="text-[#FF441F]">+ {fmt(taxaCartaoRegistrada)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão</span><span className="text-[#FF441F]">+ {fmt(taxaCartaoRegistrada)}</span></div>
             )}
             {comanda.payment_method && (
-              <div className="flex justify-between text-sm"><span className="text-[#71717A]">Forma de pagamento</span><span>{PAGAMENTO_LABEL[comanda.payment_method] ?? comanda.payment_method}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento</span><span>{PAGAMENTO_LABEL[comanda.payment_method] ?? comanda.payment_method}</span></div>
             )}
-            <div className="flex justify-between text-base font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+            <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
               <span>Total geral</span><span>{fmt(comanda.saldo?.total ?? totalFinal)}</span>
             </div>
           </div>
         )}
 
-        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-[#71717A]">Saldo devedor</span>
-            <strong className={(comanda.saldo?.saldo ?? 0) > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>
+            <span className="text-[#71717A] dark:text-[#A1A1AA]">Saldo devedor</span>
+            <strong className={(comanda.saldo?.saldo ?? 0) > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}>
               {fmt(comanda.saldo?.saldo ?? totalFinal)}
             </strong>
           </div>
@@ -843,24 +843,24 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             <div className="space-y-1">
               {comanda.pagamentos.map((p) => (
                 pagamentoEditandoId === p.id ? (
-                  <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-lg p-1.5">
+                  <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg p-1.5">
                     <input type="number" value={valorEdicao} onChange={(e) => setValorEdicao(e.target.value)}
                       disabled={comanda.status === 'paga'} title={comanda.status === 'paga' ? 'Comanda paga: só a forma de pagamento pode ser corrigida' : undefined}
-                      className="w-16 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs disabled:opacity-50 disabled:bg-[#F4F4F5]" />
+                      className="w-16 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-1.5 py-1 text-xs bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] disabled:opacity-50 disabled:bg-[#F4F4F5] dark:disabled:bg-[#3F3F46]" />
                     <select value={formaEdicao} onChange={(e) => setFormaEdicao(e.target.value)}
-                      className="flex-1 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs">
+                      className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1.5 py-1 text-xs">
                       <option value="pix">PIX</option>
                       <option value="credit_card">Cartão de crédito</option>
                       <option value="debit_card">Cartão de débito</option>
                       <option value="cash">Dinheiro</option>
                     </select>
                     <button onClick={salvarEdicaoPagamento} disabled={!valorEdicao || salvando}
-                      className="text-xs font-bold text-emerald-700 disabled:opacity-40 flex-shrink-0">Salvar</button>
+                      className="text-xs font-bold text-emerald-700 dark:text-emerald-400 disabled:opacity-40 flex-shrink-0">Salvar</button>
                     <button onClick={() => setPagamentoEditandoId(null)}
-                      className="text-xs text-[#71717A] flex-shrink-0">Cancelar</button>
+                      className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">Cancelar</button>
                   </div>
                 ) : (
-                  <div key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
+                  <div key={p.id} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
                     <span>
                       {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
                       {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
@@ -869,12 +869,12 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                       <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
                       {podeCorrigirFormaPagamento && (
                         <button onClick={() => iniciarEdicaoPagamento(p)} title="Corrigir forma de pagamento"
-                          className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                          className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-950/40 flex-shrink-0">
                           <Icon name="Pencil" size={13} strokeWidth={2.5} />
                         </button>
                       )}
                       {podeEditar && (
-                        <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
+                        <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/40 flex-shrink-0">
                           <Icon name="X" size={14} strokeWidth={2.5} />
                         </button>
                       )}
@@ -887,9 +887,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           {podeEditar && (
           <div className="flex items-center gap-1.5">
             <input type="number" value={valorPagamento} onChange={(e) => setValorPagamento(e.target.value)} placeholder="Valor"
-              className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+              className="w-20 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
             <select value={formaPagamentoParcial} onChange={(e) => setFormaPagamentoParcial(e.target.value)}
-              className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+              className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
               <option value="pix">PIX</option>
               <option value="credit_card">Cartão de crédito</option>
               <option value="debit_card">Cartão de débito</option>
@@ -910,9 +910,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             <div className="flex items-center gap-1.5">
               <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
                 placeholder="Valor recebido do cliente"
-                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
               {trocoParcial !== null && (
-                <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                   Troco: {fmt(Math.max(trocoParcial, 0))}
                 </span>
               )}
@@ -921,49 +921,49 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         </div>
 
         {podeEditar && (
-        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
-          <label className="text-xs text-[#71717A]">Forma de pagamento</label>
-          <select value={forma} onChange={(e) => { formaTocada.current = true; setForma(e.target.value); }} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento</label>
+          <select value={forma} onChange={(e) => { formaTocada.current = true; setForma(e.target.value); }} className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
             <option value="pix">PIX</option>
             <option value="credit_card">Cartão de crédito</option>
             <option value="debit_card">Cartão de débito</option>
             <option value="cash">Dinheiro</option>
           </select>
-          <label className="text-xs text-[#71717A]">
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
             Gorjeta {gorjetaPercentual > 0 ? `(sugerida ${gorjetaPercentual}% — ajustável)` : '(opcional)'}
           </label>
           <input type="number" value={gorjeta} onChange={(e) => setGorjeta(e.target.value)} disabled={semGorjeta}
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm disabled:opacity-50 disabled:bg-[#F4F4F5]" />
-          <label className="flex items-center gap-2 text-xs text-[#71717A]">
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] disabled:opacity-50 disabled:bg-[#F4F4F5] dark:disabled:bg-[#3F3F46]" />
+          <label className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
             <input type="checkbox" checked={semGorjeta} onChange={(e) => setSemGorjeta(e.target.checked)} className="rounded" />
             Não cobrar gorjeta
           </label>
-          <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-1">
+          <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl px-3 py-2 space-y-1 mt-1">
             <div className="flex justify-between text-sm">
-              <span className="text-[#71717A]">Valor da comanda</span>
-              <span className="text-[#18181B]">{fmt(totalFinal)}</span>
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">Valor da comanda</span>
+              <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalFinal)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-[#71717A]">Gorjeta</span>
-              <span className="text-[#18181B]">{fmt(gorjetaEfetiva)}</span>
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta</span>
+              <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(gorjetaEfetiva)}</span>
             </div>
             {taxaCartaoTotalExibida > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Taxa cartão</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão</span>
                 <span className="text-[#FF441F]">+ {fmt(taxaCartaoTotalExibida)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+            <div className="flex justify-between text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
               <span>Total (comanda + gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
               <span>{fmt(totalFinal + gorjetaEfetiva + taxaCartaoTotalExibida)}</span>
             </div>
             {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#71717A]">Já pago</span>
-                  <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Já pago</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">- {fmt(comanda.saldo.total_pago)}</span>
                 </div>
-                <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
+                <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                   <span>Falta pagar (com gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
                   <span>{fmt(valorACobrarFinal)}</span>
                 </div>
@@ -974,9 +974,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             <div className="flex items-center gap-1.5">
               <input type="number" value={valorRecebidoFinal} onChange={(e) => setValorRecebidoFinal(e.target.value)}
                 placeholder="Valor recebido do cliente"
-                className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
               {trocoFinal !== null && (
-                <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                   Troco: {fmt(Math.max(trocoFinal, 0))}
                 </span>
               )}
@@ -985,10 +985,10 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         </div>
         )}
 
-        {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
+        {erro && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erro}</p>}
 
         {podeEditar && saldoDevedor > 0.01 && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+          <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 mt-2">
             Ainda falta {fmt(saldoDevedor)} de saldo devedor. Registre os pagamentos acima (com a forma de cada um) até zerar pra poder fechar a comanda.
           </p>
         )}
@@ -996,7 +996,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         {podeEditar && (
         <div className="flex gap-2 mt-4">
           <button onClick={cancelar} disabled={salvando}
-            className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
+            className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
             Cancelar comanda
           </button>
           <button onClick={pagar} disabled={salvando || saldoDevedor > 0.01}
@@ -1155,26 +1155,26 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
   });
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7] flex-shrink-0">
-        <h2 className="text-base font-bold text-[#18181B]">Venda balcão</h2>
-        <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="X" size={22} /></button>
+    <div className="fixed inset-0 bg-white dark:bg-[#27272A] z-50 flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Venda balcão</h2>
+        <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="X" size={22} /></button>
       </div>
 
       <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">
         {/* Catálogo — busca + categorias + grade de produtos, igual PDV de mercado */}
-        <div className="flex-1 flex flex-col overflow-hidden border-b sm:border-b-0 sm:border-r border-[#E4E4E7] min-h-[45%] sm:min-h-0">
-          <div className="p-3 border-b border-[#E4E4E7] flex-shrink-0">
+        <div className="flex-1 flex flex-col overflow-hidden border-b sm:border-b-0 sm:border-r border-[#E4E4E7] dark:border-[#3F3F46] min-h-[45%] sm:min-h-0">
+          <div className="p-3 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
             <div className="relative">
               <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
               <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..."
-                className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
             </div>
             <div className="flex gap-1.5 mt-2 overflow-x-auto pb-1">
               {categorias.map((c) => (
                 <button key={c} onClick={() => setCategoria(c)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
-                    categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
+                    categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
                   }`}>
                   {c === 'todas' ? 'Todas' : c}
                 </button>
@@ -1184,14 +1184,14 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
           <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 content-start">
             {produtosFiltrados.map((p) => (
               <button key={p.id} onClick={() => setProdutoAtivo(p)} disabled={salvando}
-                className="bg-white border border-[#E4E4E7] rounded-xl p-2 text-left active:scale-[0.98] transition-transform disabled:opacity-50">
-                <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#F4F4F5] mb-1.5">
+                className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-2 text-left active:scale-[0.98] transition-transform disabled:opacity-50">
+                <div className="w-full aspect-square rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] mb-1.5">
                   {p.image_url
                     ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
                 </div>
-                <p className="text-xs font-semibold text-[#18181B] truncate">{p.name}</p>
-                <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+                <p className="text-xs font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.price)}</p>
               </button>
             ))}
             {produtosFiltrados.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}
@@ -1200,16 +1200,16 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
 
         {/* Carrinho + pagamento */}
         <div className="w-full sm:max-w-md lg:max-w-lg flex flex-col overflow-y-auto p-4 flex-shrink-0">
-          <p className="text-xs font-semibold text-[#71717A] mb-2">Itens incluídos</p>
+          <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Itens incluídos</p>
           <div className="space-y-1 mb-3">
             {(comanda.itens ?? []).map((item) => (
               <div key={item.id} className="flex justify-between items-center text-sm gap-2">
                 <span className="truncate min-w-0">{item.quantity}x {item.products?.name}</span>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <span>{fmt(item.quantity * item.unit_price)}</span>
-                  <button onClick={() => alterarQuantidade(item, -1)} disabled={salvando} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center disabled:opacity-40">−</button>
-                  <button onClick={() => alterarQuantidade(item, 1)} disabled={salvando} className="w-5 h-5 rounded-md border border-[#E4E4E7] text-xs font-bold text-[#27272A] flex items-center justify-center disabled:opacity-40">+</button>
-                  <button onClick={() => removerItem(item)} disabled={salvando} className="w-5 h-5 rounded-md border border-red-200 text-red-500 flex items-center justify-center disabled:opacity-40">
+                  <button onClick={() => alterarQuantidade(item, -1)} disabled={salvando} className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-xs font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center disabled:opacity-40">−</button>
+                  <button onClick={() => alterarQuantidade(item, 1)} disabled={salvando} className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-xs font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center disabled:opacity-40">+</button>
+                  <button onClick={() => removerItem(item)} disabled={salvando} className="w-5 h-5 rounded-md border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center disabled:opacity-40">
                     <Icon name="X" size={11} />
                   </button>
                 </div>
@@ -1218,41 +1218,41 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             {(comanda.itens ?? []).length === 0 && <p className="text-xs text-[#A1A1AA] text-center py-3">Carrinho vazio — clique num produto ao lado.</p>}
           </div>
 
-          <div className="border-t border-[#E4E4E7] pt-3 space-y-2">
+          <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-3 space-y-2">
             <div className="flex justify-between text-sm"><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between items-center text-sm gap-2">
               <span>Desconto</span>
               <input type="number" value={descontoInput} onChange={(e) => setDescontoInput(e.target.value)}
-                className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1 text-right text-sm" />
+                className="w-20 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1 text-right text-sm" />
               <button onClick={aplicarDesconto} className="text-xs text-[#FF441F] font-bold flex-shrink-0">Aplicar</button>
             </div>
             <div className="flex justify-between items-center text-sm gap-2">
               <span>Acréscimo</span>
               <input type="number" value={acrescimoInput} onChange={(e) => setAcrescimoInput(e.target.value)}
-                className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1 text-right text-sm" />
+                className="w-20 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1 text-right text-sm" />
               <button onClick={aplicarAcrescimo} className="text-xs text-[#FF441F] font-bold flex-shrink-0">Aplicar</button>
             </div>
-            <div className="flex justify-between text-base font-bold text-[#18181B]">
+            <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
               <span>Total</span><span>{fmt(totalFinal)}</span>
             </div>
           </div>
 
-          <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
+          <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-[#71717A]">Saldo devedor</span>
-              <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>{fmt(saldo)}</strong>
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">Saldo devedor</span>
+              <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}>{fmt(saldo)}</strong>
             </div>
             {(comanda.pagamentos ?? []).length > 0 && (
               <div className="space-y-1">
                 {comanda.pagamentos.map((p) => (
-                  <div key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
+                  <div key={p.id} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
                     <span>
                       {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}
                       {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
-                      <button onClick={() => removerPagamento(p)} className="w-5 h-5 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center">
+                      <button onClick={() => removerPagamento(p)} className="w-5 h-5 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center">
                         <Icon name="X" size={11} />
                       </button>
                     </div>
@@ -1262,9 +1262,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             )}
             <div className="flex items-center gap-1.5">
               <input type="number" value={valorPagamento} onChange={(e) => setValorPagamento(e.target.value)} placeholder="Valor"
-                className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+                className="w-20 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
               <select value={formaPagamentoParcial} onChange={(e) => setFormaPagamentoParcial(e.target.value)}
-                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
                 <option value="pix">PIX</option>
                 <option value="credit_card">Cartão de crédito</option>
                 <option value="debit_card">Cartão de débito</option>
@@ -1284,9 +1284,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
               <div className="flex items-center gap-1.5">
                 <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
                   placeholder="Valor recebido do cliente"
-                  className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
                 {trocoParcial !== null && (
-                  <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                  <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                     Troco: {fmt(Math.max(trocoParcial, 0))}
                   </span>
                 )}
@@ -1294,9 +1294,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             )}
           </div>
 
-          <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
-            <label className="text-xs text-[#71717A]">Forma de pagamento (fechamento)</label>
-            <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm">
+          <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
+            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento (fechamento)</label>
+            <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
               <option value="pix">PIX</option>
               <option value="credit_card">Cartão de crédito</option>
               <option value="debit_card">Cartão de débito</option>
@@ -1304,20 +1304,20 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             </select>
             {taxaCartaoValorFinal > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Taxa cartão ({taxaCartaoPercentual}%)</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão ({taxaCartaoPercentual}%)</span>
                 <span className="text-[#FF441F]">+ {fmt(taxaCartaoValorFinal)}</span>
               </div>
             )}
-            <div className="flex justify-between text-base font-bold text-[#18181B]">
+            <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
               <span>Falta pagar</span><span>{fmt(valorACobrarFinal)}</span>
             </div>
             {forma === 'cash' && (
               <div className="flex items-center gap-1.5">
                 <input type="number" value={valorRecebidoFinal} onChange={(e) => setValorRecebidoFinal(e.target.value)}
                   placeholder="Valor recebido do cliente"
-                  className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm" />
+                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
                 {trocoFinal !== null && (
-                  <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                  <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                     Troco: {fmt(Math.max(trocoFinal, 0))}
                   </span>
                 )}
@@ -1325,17 +1325,17 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             )}
           </div>
 
-          {erro && <p className="text-xs text-red-600 mt-2">{erro}</p>}
+          {erro && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erro}</p>}
 
           {saldo > 0.01 && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mt-2">
+            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 mt-2">
               Ainda falta {fmt(saldo)} de saldo devedor. Adicione os pagamentos acima (com a forma de cada um) até zerar pra poder finalizar.
             </p>
           )}
 
           <div className="flex gap-2 mt-4">
             <button onClick={cancelar} disabled={salvando}
-              className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
               Cancelar venda
             </button>
             <button onClick={finalizar} disabled={salvando || (comanda.itens ?? []).length === 0 || saldo > 0.01}
@@ -1429,9 +1429,9 @@ const RestauranteSalao = () => {
   const filtroAtivo = !!(filtroNome || filtroData || filtroValorMin);
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       {avisoConferencia && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] bg-white border border-[#FF441F]/30 text-[#FF441F] text-sm font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] bg-white dark:bg-[#27272A] border border-[#FF441F]/30 text-[#FF441F] text-sm font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5">
           <Icon name="BellRing" size={14} /> {avisoConferencia}
         </div>
       )}
@@ -1445,11 +1445,11 @@ const RestauranteSalao = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-4">
-          <p className="text-xs font-semibold text-[#71717A] mb-2">Garçons online agora</p>
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+          <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Garçons online agora</p>
           <div className="flex flex-wrap gap-2">
             {garconsOnline.map((g) => (
-              <span key={g.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
+              <span key={g.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {g.nome}
               </span>
             ))}
@@ -1458,10 +1458,10 @@ const RestauranteSalao = () => {
         </div>
 
         {loading ? (
-          <p className="text-sm text-[#71717A]">Carregando...</p>
+          <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</p>
         ) : (
           <>
-            <p className="text-sm font-bold text-[#18181B] mb-2">Mesas</p>
+            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2">Mesas</p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
               {mesas.map((m) => (
                 <div key={m.id} className={`rounded-xl border p-3 text-center ${MESA_STATUS_COR[m.status] ?? ''}`}>
@@ -1476,7 +1476,7 @@ const RestauranteSalao = () => {
                       <>
                         <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>
                         <p className="text-[10px] truncate">{m.comanda.cliente_mesa_nome}</p>
-                        <p className="text-[10px] text-[#71717A] truncate">
+                        <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] truncate">
                           {m.comanda.garcons?.nome ?? (m.comanda.aberto_por_nome ? `Caixa: ${m.comanda.aberto_por_nome}` : '—')}
                         </p>
                         {m.comanda.conferencia_solicitada_em && (
@@ -1500,14 +1500,14 @@ const RestauranteSalao = () => {
             </div>
 
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-              <p className="text-sm font-bold text-[#18181B]">Comandas em aberto</p>
+              <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Comandas em aberto</p>
               <div className="flex gap-2 flex-wrap">
                 <input value={filtroNome} onChange={(e) => setFiltroNome(e.target.value)} placeholder="Nome do cliente"
-                  className="w-32 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                  className="w-32 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
                 <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)}
-                  className="border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                  className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
                 <input type="number" min="0" value={filtroValorMin} onChange={(e) => setFiltroValorMin(e.target.value)} placeholder="Valor mín."
-                  className="w-24 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                  className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
                 {filtroAtivo && (
                   <button onClick={() => { setFiltroNome(''); setFiltroData(''); setFiltroValorMin(''); }}
                     className="text-xs text-[#FF441F] font-semibold px-1">Limpar</button>
@@ -1517,17 +1517,17 @@ const RestauranteSalao = () => {
             <div className="space-y-2">
               {comandasFiltradas.map((c) => (
                 <button key={c.id} onClick={() => setComandaAtiva(c.id)}
-                  className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
+                  className="w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left">
                   <div>
-                    <p className="text-sm font-medium text-[#18181B]">
+                    <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
                       #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
                     </p>
-                    <p className="text-xs text-[#71717A]">
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
                       {c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —'}
                       {' · '}{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
+                  <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
                 </button>
               ))}
               {comandasFiltradas.length === 0 && (
@@ -1537,21 +1537,21 @@ const RestauranteSalao = () => {
 
             {comandasFechadas.length > 0 && (
               <>
-                <p className="text-sm font-bold text-[#18181B] mb-2 mt-6">Comandas fechadas hoje</p>
+                <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2 mt-6">Comandas fechadas hoje</p>
                 <div className="space-y-2">
                   {comandasFechadasFiltradas.map((c) => (
                     <button key={c.id} onClick={() => setComandaAtiva(c.id)}
-                      className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left opacity-80">
+                      className="w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left opacity-80">
                       <div>
-                        <p className="text-sm font-medium text-[#18181B]">
+                        <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
                           #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
                         </p>
-                        <p className="text-xs text-[#71717A]">
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
                           {c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —'}
                           {' · '}Paga
                         </p>
                       </div>
-                      <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
+                      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
                     </button>
                   ))}
                 </div>
@@ -1559,7 +1559,7 @@ const RestauranteSalao = () => {
             )}
           </>
         )}
-        {erro && <p className="text-xs text-red-600 mt-3">{erro}</p>}
+        {erro && <p className="text-xs text-red-600 dark:text-red-400 mt-3">{erro}</p>}
       </div>
 
       <button

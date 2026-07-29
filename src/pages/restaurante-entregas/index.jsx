@@ -12,9 +12,9 @@ const STATUS_LABEL = {
 };
 
 const STATUS_COLOR = {
-  ready: 'bg-purple-100 text-purple-800 border-purple-200',
-  motoboy_collecting: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  out_for_delivery: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+  motoboy_collecting: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
+  out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
 };
 
 const timeAgo = (iso) => {
@@ -59,11 +59,11 @@ const CardEntrega = ({ entrega, motoboys, onAtribuir, onEntregarProprio }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-black text-[#18181B]">Pedido #{entrega.id}</p>
-          <p className="text-xs text-[#71717A]">{entrega.cliente?.name ?? 'Cliente'}</p>
+          <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">Pedido #{entrega.id}</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{entrega.cliente?.name ?? 'Cliente'}</p>
         </div>
         <div className="text-right flex-shrink-0">
           <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR[entrega.status]}`}>
@@ -73,17 +73,17 @@ const CardEntrega = ({ entrega, motoboys, onAtribuir, onEntregarProprio }) => {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-[#71717A]">
+      <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
         <Icon name="Clock" size={12} /> {timeAgo(entrega.updated_at ?? entrega.created_at)}
       </div>
 
       {entrega.motoboy ? (
-        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-center justify-between gap-2">
+        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-xl p-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <Icon name="Bike" size={15} className="text-indigo-600 flex-shrink-0" />
+            <Icon name="Bike" size={15} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#18181B] truncate">{entrega.motoboy.name}</p>
-              {entrega.motoboy.phone && <p className="text-xs text-[#71717A]">{entrega.motoboy.phone}</p>}
+              <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{entrega.motoboy.name}</p>
+              {entrega.motoboy.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{entrega.motoboy.phone}</p>}
             </div>
           </div>
           {mapsMotoboyUrl && (
@@ -94,30 +94,30 @@ const CardEntrega = ({ entrega, motoboys, onAtribuir, onEntregarProprio }) => {
           )}
         </div>
       ) : entrega.entrega_propria ? (
-        <div className="bg-green-50 border border-green-100 rounded-xl p-3 flex items-center gap-2">
-          <Icon name="Store" size={15} className="text-green-600" />
-          <p className="text-sm font-semibold text-green-700">Entrega própria</p>
+        <div className="bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-800 rounded-xl p-3 flex items-center gap-2">
+          <Icon name="Store" size={15} className="text-green-600 dark:text-green-400" />
+          <p className="text-sm font-semibold text-green-700 dark:text-green-400">Entrega própria</p>
         </div>
       ) : (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2">
-          <Icon name="AlertTriangle" size={15} className="text-amber-600" />
-          <p className="text-sm font-semibold text-amber-700">Aguardando atribuição de motoboy</p>
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center gap-2">
+          <Icon name="AlertTriangle" size={15} className="text-amber-600 dark:text-amber-400" />
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Aguardando atribuição de motoboy</p>
         </div>
       )}
 
       {mapsClienteUrl && (
         <a href={mapsClienteUrl} target="_blank" rel="noreferrer"
-          className="flex items-center justify-center gap-1.5 w-full py-2 border border-[#E4E4E7] text-[#71717A] text-xs font-semibold rounded-lg hover:bg-[#F4F4F5]">
+          className="flex items-center justify-center gap-1.5 w-full py-2 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] text-xs font-semibold rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
           <Icon name="MapPin" size={12} /> Ver endereço do cliente
         </a>
       )}
 
       {podeAgir && (
-        <div className="space-y-2 pt-1 border-t border-[#F4F4F5]">
+        <div className="space-y-2 pt-1 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
           {motoboys.length > 0 && (
             <div className="flex gap-2">
               <select value={motoboySelecionado} onChange={(e) => setMotoboySelecionado(e.target.value)}
-                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-indigo-400">
+                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-400">
                 <option value="">Atribuir motoboy...</option>
                 {motoboys.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
@@ -130,7 +130,7 @@ const CardEntrega = ({ entrega, motoboys, onAtribuir, onEntregarProprio }) => {
             </div>
           )}
           <button onClick={handleEntregarProprio} disabled={processando}
-            className="w-full py-2 border-2 border-green-300 bg-green-50 text-green-700 text-xs font-bold rounded-lg hover:bg-green-100 disabled:opacity-50 flex items-center justify-center gap-1.5">
+            className="w-full py-2 border-2 border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-xs font-bold rounded-lg hover:bg-green-100 dark:hover:bg-green-950/40 disabled:opacity-50 flex items-center justify-center gap-1.5">
             <Icon name="Store" size={13} /> Marcar entregue (própria loja)
           </button>
         </div>
@@ -175,29 +175,29 @@ const RestauranteEntregas = () => {
   const emAndamento = entregas.filter((e) => e.motoboy_id || e.status !== 'ready');
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5] dark:bg-[#18181B]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/entregas" title="Entregas" subtitle={`${entregas.length} entrega(s) em andamento agora`} />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {erro && <div className="bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-3 text-sm">{erro}</div>}
+        {erro && <div className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm">{erro}</div>}
 
         {entregas.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-14 text-center">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
             <Icon name="Truck" size={44} className="text-[#E4E4E7] mx-auto mb-3" />
-            <p className="text-[#27272A] font-bold">Nenhuma entrega em andamento</p>
-            <p className="text-sm text-[#71717A] mt-1">Pedidos prontos aparecem aqui automaticamente</p>
+            <p className="text-[#27272A] dark:text-[#F4F4F5] font-bold">Nenhuma entrega em andamento</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Pedidos prontos aparecem aqui automaticamente</p>
           </div>
         ) : (
           <>
             {aguardando.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-amber-600 uppercase mb-3 flex items-center gap-1.5">
+                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase mb-3 flex items-center gap-1.5">
                   <Icon name="AlertTriangle" size={13} /> Aguardando atribuição ({aguardando.length})
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -211,7 +211,7 @@ const RestauranteEntregas = () => {
 
             {emAndamento.length > 0 && (
               <div>
-                <p className="text-xs font-bold text-[#71717A] uppercase mb-3">Em andamento ({emAndamento.length})</p>
+                <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-3">Em andamento ({emAndamento.length})</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {emAndamento.map((e) => (
                     <CardEntrega key={e.id} entrega={e} motoboys={motoboys}
