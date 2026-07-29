@@ -208,7 +208,7 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
           value={dinheiroContado}
           onChange={(e) => setDinheiroContado(e.target.value)}
           placeholder="0,00"
-          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]"
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]"
           autoFocus
         />
       </div>
