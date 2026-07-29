@@ -32,14 +32,14 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
 
   return (
     <>
-      <header className="bg-white border-b border-[#E4E4E7] px-6 py-4 flex items-center justify-between gap-3">
+      <header className="bg-white dark:bg-[#18181B] border-b border-[#E4E4E7] dark:border-[#3F3F46] px-6 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           {logoUrl
             ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
             : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center flex-shrink-0"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-[#18181B] truncate">{title}</h1>
-            {subtitle && <p className="text-sm text-[#71717A] truncate">{subtitle}</p>}
+            <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{title}</h1>
+            {subtitle && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] truncate">{subtitle}</p>}
           </div>
         </div>
 
@@ -48,7 +48,7 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
             {linksFavoritos.map((l) => (
               <button key={l.path} onClick={() => navigate(l.path)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition-colors ${
-                  l.path === active ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#27272A] hover:bg-[#E4E4E7]'
+                  l.path === active ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'
                 }`}>
                 <Icon name={l.icon} size={13} /> {l.label}
               </button>
@@ -59,10 +59,10 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
         <div className="flex items-center gap-2 flex-shrink-0">
           <ThemeToggle inline />
           <button onClick={() => setSidebarAberto(true)}
-            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] hover:bg-[#F4F4F5] border border-[#E4E4E7]">
+            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
             <Icon name="Menu" size={18} /> Menu
           </button>
-          <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] text-[#18181B]" onClick={() => setMenuAberto((v) => !v)}>
+          <button className="md:hidden p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5]" onClick={() => setMenuAberto((v) => !v)}>
             <Icon name={menuAberto ? 'X' : 'Menu'} size={22} />
           </button>
         </div>

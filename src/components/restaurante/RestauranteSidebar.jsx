@@ -22,18 +22,18 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
           <motion.div
             initial={{ x: -320, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -320, opacity: 0 }}
             transition={{ type: 'tween', duration: 0.2 }}
-            className="fixed top-0 left-0 h-full w-72 bg-white z-50 shadow-2xl flex flex-col"
+            className="fixed top-0 left-0 h-full w-72 bg-white dark:bg-[#18181B] z-50 shadow-2xl flex flex-col"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4E4E7]">
-              <p className="font-bold text-[#18181B]">Menu</p>
-              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F4F4F5] text-[#71717A]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
+              <p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Menu</p>
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA]">
                 <Icon name="X" size={18} />
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-1">
               {links.map((l) => (
                 <div key={l.path} className={`relative flex items-center rounded-xl transition-colors ${
-                    l.path === activePath ? 'text-white bg-[#FF441F]' : 'text-[#27272A] hover:bg-[#F4F4F5]'
+                    l.path === activePath ? 'text-white bg-[#FF441F]' : 'text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A]'
                   }`}>
                   <button onClick={() => ir(l.path)}
                     className="flex-1 flex items-center justify-between text-left pl-4 pr-2 py-2.5 text-sm font-semibold min-w-0">
@@ -46,7 +46,7 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
                   </button>
                   {onToggleFavorito && (
                     <button onClick={() => onToggleFavorito(l.path)}
-                      className={`p-2 mr-1 rounded-lg flex-shrink-0 ${l.path === activePath ? 'hover:bg-white/20' : 'hover:bg-[#E4E4E7]'}`}
+                      className={`p-2 mr-1 rounded-lg flex-shrink-0 ${l.path === activePath ? 'hover:bg-white/20' : 'hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'}`}
                       title={isFavorito?.(l.path) ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}>
                       <Icon name="Star" size={15} className={isFavorito?.(l.path) ? 'fill-current' : ''} />
                     </button>
@@ -55,16 +55,16 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
               ))}
             </nav>
             {(slugLoja || onSair) && (
-              <div className="px-3 py-3 border-t border-[#E4E4E7] flex flex-col gap-1.5">
+              <div className="px-3 py-3 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex flex-col gap-1.5">
                 {slugLoja && (
                   <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
-                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 flex items-center gap-2">
+                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 hover:bg-green-100 dark:hover:bg-green-950/60 rounded-xl border border-green-200 dark:border-green-800 flex items-center gap-2">
                     <Icon name="ExternalLink" size={14} /> Loja
                   </button>
                 )}
                 {onSair && (
                   <button onClick={onSair}
-                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl border border-red-200">
+                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-800">
                     Sair
                   </button>
                 )}
