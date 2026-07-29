@@ -19,13 +19,13 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 
 const MESA_STATUS_COR = {
-  livre: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  ocupada: 'bg-orange-100 text-orange-700 border-orange-200',
-  aguardando_pagamento: 'bg-blue-100 text-blue-700 border-blue-200',
-  bloqueada: 'bg-zinc-200 text-zinc-500 border-zinc-300',
+  livre: 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+  ocupada: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+  aguardando_pagamento: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+  bloqueada: 'bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 border-zinc-300 dark:border-zinc-600',
 };
 const MESA_STATUS_LABEL = { livre: 'Livre', ocupada: 'Ocupada', aguardando_pagamento: 'Aguard. pagamento', bloqueada: 'Bloqueada' };
-const MESA_OCUPADA_OUTRO_COR = 'bg-purple-100 text-purple-700 border-purple-200';
+const MESA_OCUPADA_OUTRO_COR = 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800';
 
 const responsavelMesa = (comanda) =>
   comanda?.garcons?.nome ?? (comanda?.aberto_por_nome ? `Caixa: ${comanda.aberto_por_nome}` : null);
@@ -51,14 +51,14 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 w-full max-w-sm shadow-lg">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-6 w-full max-w-sm shadow-lg">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Icon name="UtensilsCrossed" size={28} className="text-[#FF441F]" />
           </div>
-          <h1 className="text-lg font-black text-[#18181B]">Portal do Garçom</h1>
-          <p className="text-sm text-[#71717A] mt-1">Digite sua senha pra entrar</p>
+          <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">Portal do Garçom</h1>
+          <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Digite sua senha pra entrar</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
@@ -68,9 +68,9 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
             placeholder="Senha"
             autoFocus
             required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F]"
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F]"
           />
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
+          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <button type="submit" disabled={loading}
             className="w-full py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 text-sm">
             {loading ? 'Entrando...' : 'Entrar'}
@@ -103,20 +103,20 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-base font-bold text-[#18181B] mb-1">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">
           {mesa ? `Abrir Mesa ${mesa.numero}` : 'Abrir comanda avulsa'}
         </h2>
-        <p className="text-xs text-[#71717A] mb-4">Nome e telefone do cliente são obrigatórios antes de vender.</p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Nome e telefone do cliente são obrigatórios antes de vender.</p>
         <form onSubmit={submit} className="space-y-3">
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
           <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
-              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
               Cancelar
             </button>
             <button type="submit" disabled={salvando}
@@ -153,18 +153,18 @@ const EditarClienteModal = ({ comanda, onFechar, onEditado }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-base font-bold text-[#18181B] mb-1">Editar dados do cliente</h2>
-        <p className="text-xs text-[#71717A] mb-4">Corrige nome ou telefone digitados errado na abertura.</p>
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Editar dados do cliente</h2>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Corrige nome ou telefone digitados errado na abertura.</p>
         <form onSubmit={submit} className="space-y-3">
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
           <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
-              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
               Cancelar
             </button>
             <button type="submit" disabled={salvando}
@@ -197,14 +197,14 @@ const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-        <h2 className="text-base font-bold text-[#18181B] mb-1">Fechar comanda</h2>
-        <p className="text-xs text-[#71717A] mb-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Fechar comanda</h2>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">
           A mesa fica bloqueada aguardando pagamento — quem finaliza e emite o recibo é o caixa.
         </p>
-        {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
+        {erro && <p className="text-xs text-red-600 dark:text-red-400 mb-2">{erro}</p>}
         <div className="flex gap-2">
-          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
             Voltar
           </button>
           <button onClick={confirmar} disabled={salvando}
@@ -233,35 +233,35 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-sm p-5 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+          <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
             {produto.image_url
               ? <img src={produto.image_url} alt="" className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={20} className="text-[#A1A1AA]" /></div>}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-[#18181B] truncate">{produto.name}</p>
-            <p className="text-xs text-[#71717A]">{fmt(produto.price)}</p>
+            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{produto.name}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>
           </div>
         </div>
 
-        <label className="text-xs text-[#71717A]">Quantidade</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Quantidade</label>
         <div className="flex items-center gap-3 mt-1 mb-3">
           <button onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
-            className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex items-center justify-center text-lg font-bold text-[#27272A]">−</button>
-          <span className="text-lg font-bold text-[#18181B] w-8 text-center">{quantidade}</span>
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
+          <span className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] w-8 text-center">{quantidade}</span>
           <button onClick={() => setQuantidade((q) => q + 1)}
-            className="w-10 h-10 rounded-xl border border-[#E4E4E7] flex items-center justify-center text-lg font-bold text-[#27272A]">+</button>
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
         </div>
 
-        <label className="text-xs text-[#71717A]">Observação (opcional)</label>
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Observação (opcional)</label>
         <textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={2}
           placeholder="Ex: sem cebola, ponto da carne..."
-          className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
+          className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
 
         <div className="flex gap-2">
-          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A]">
+          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
             Cancelar
           </button>
           <button onClick={confirmar} disabled={salvando}
@@ -287,22 +287,22 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
   });
 
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      <div className="p-4 border-b border-[#E4E4E7] sticky top-0 bg-white max-w-2xl w-full mx-auto">
+    <div className="fixed inset-0 bg-white dark:bg-[#18181B] z-50 flex flex-col">
+      <div className="p-4 border-b border-[#E4E4E7] dark:border-[#3F3F46] sticky top-0 bg-white dark:bg-[#27272A] max-w-2xl w-full mx-auto">
         <div className="flex items-center gap-2 mb-3">
-          <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="ArrowLeft" size={20} /></button>
-          <h2 className="text-base font-bold text-[#18181B]">Adicionar produto</h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="ArrowLeft" size={20} /></button>
+          <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Adicionar produto</h2>
         </div>
         <div className="relative">
           <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..." autoFocus
-            className="w-full border border-[#E4E4E7] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
         </div>
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
           {categorias.map((c) => (
             <button key={c} onClick={() => setCategoria(c)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
-                categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'
+                categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
               }`}>
               {c === 'todas' ? 'Todas' : c}
             </button>
@@ -313,15 +313,15 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
       <div className="flex-1 overflow-y-auto p-4 max-w-2xl w-full mx-auto space-y-2">
         {filtrados.map((p) => (
           <button key={p.id} onClick={() => setProdutoAtivo(p)}
-            className="w-full bg-white border border-[#E4E4E7] rounded-xl p-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+            className="w-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
               {p.image_url
                 ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[#18181B] truncate">{p.name}</p>
-              <p className="text-xs text-[#71717A]">{fmt(p.price)}</p>
+              <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.price)}</p>
             </div>
             <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
@@ -417,31 +417,31 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   };
 
   return (
-    <div className="bg-white rounded-xl border border-[#E4E4E7] p-3 space-y-2">
+    <div className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 space-y-2">
       <div className="flex justify-between text-sm">
-        <span className="text-[#71717A]">Saldo devedor</span>
-        <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600'}>{fmt(saldo)}</strong>
+        <span className="text-[#71717A] dark:text-[#A1A1AA]">Saldo devedor</span>
+        <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}>{fmt(saldo)}</strong>
       </div>
       {(comanda.pagamentos ?? []).length > 0 && (
         <div className="space-y-1">
           {comanda.pagamentos.map((p) => (
             editandoId === p.id ? (
-              <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] rounded-lg p-1.5">
+              <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg p-1.5">
                 <input type="number" value={valorEdicao} onChange={(e) => setValorEdicao(e.target.value)}
-                  className="w-16 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs" />
+                  className="w-16 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-1.5 py-1 text-xs" />
                 <select value={formaEdicao} onChange={(e) => setFormaEdicao(e.target.value)}
-                  className="flex-1 border border-[#E4E4E7] rounded-lg px-1.5 py-1 text-xs">
+                  className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-1.5 py-1 text-xs">
                   <option value="pix">PIX</option>
                   <option value="credit_card">Cartão de crédito</option>
                   <option value="debit_card">Cartão de débito</option>
                   <option value="cash">Dinheiro</option>
                 </select>
                 <button onClick={salvarEdicao} disabled={!valorEdicao || salvando}
-                  className="text-xs font-bold text-emerald-700 disabled:opacity-40 flex-shrink-0">Salvar</button>
-                <button onClick={() => setEditandoId(null)} className="text-xs text-[#71717A] flex-shrink-0">Cancelar</button>
+                  className="text-xs font-bold text-emerald-700 dark:text-emerald-400 disabled:opacity-40 flex-shrink-0">Salvar</button>
+                <button onClick={() => setEditandoId(null)} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">Cancelar</button>
               </div>
             ) : (
-              <p key={p.id} className="text-xs text-[#71717A] flex justify-between items-center gap-2">
+              <p key={p.id} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
                 <span>
                   {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
                   {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
@@ -450,10 +450,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
                   {fmt(p.valor + (p.taxa_cartao_valor || 0))}
                   {podeMexer && podePagamentoParcial && p.origem === 'garcom' && (
                     <>
-                      <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 bg-zinc-50 text-zinc-600 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                      <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
                         <Icon name="Pencil" size={13} strokeWidth={2.5} />
                       </button>
-                      <button onClick={() => remover(p)} className="w-6 h-6 rounded-md border border-red-200 bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
+                      <button onClick={() => remover(p)} className="w-6 h-6 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/60 flex-shrink-0">
                         <Icon name="X" size={14} strokeWidth={2.5} />
                       </button>
                     </>
@@ -468,9 +468,9 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center gap-1.5">
             <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
-              className="w-20 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+              className="w-20 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs" />
             <select value={forma} onChange={(e) => setForma(e.target.value)}
-              className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs">
+              className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs">
               <option value="pix">PIX</option>
               <option value="credit_card">Cartão de crédito</option>
               <option value="debit_card">Cartão de débito</option>
@@ -490,9 +490,9 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
             <div className="flex items-center gap-1.5">
               <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
                 placeholder="Valor recebido do cliente"
-                className="flex-1 border border-[#E4E4E7] rounded-lg px-2 py-1.5 text-xs" />
+                className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs" />
               {troco !== null && (
-                <span className={`text-xs font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                <span className={`text-xs font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                   Troco: {fmt(Math.max(troco, 0))}
                 </span>
               )}
@@ -503,7 +503,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
       {faltaPagarEfetivo > 0.01 && !podePagamentoParcial && (
         <p className="text-xs text-[#A1A1AA] pt-1">Você não tem permissão para registrar pagamento parcial.</p>
       )}
-      {erro && <p className="text-xs text-red-600">{erro}</p>}
+      {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
     </div>
   );
 };
@@ -531,23 +531,23 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto flex flex-col">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto flex flex-col">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-base font-bold text-[#18181B]">Separar comanda</h2>
-          <button onClick={onFechar} className="p-1 text-[#71717A]"><Icon name="X" size={20} /></button>
+          <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Separar comanda</h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="X" size={20} /></button>
         </div>
-        <p className="text-xs text-[#71717A] mb-3">Marque os itens que vão pra uma comanda separada nova.</p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">Marque os itens que vão pra uma comanda separada nova.</p>
 
         <div className="space-y-1.5 flex-1 overflow-y-auto">
           {itens.map((item) => (
             <label key={item.id}
               className={`flex items-center gap-2.5 rounded-xl border p-2.5 cursor-pointer transition-colors ${
-                selecionados.has(item.id) ? 'border-[#FF441F] bg-[#FF441F]/5' : 'border-[#E4E4E7]'
+                selecionados.has(item.id) ? 'border-[#FF441F] bg-[#FF441F]/5' : 'border-[#E4E4E7] dark:border-[#3F3F46]'
               }`}>
               <input type="checkbox" checked={selecionados.has(item.id)} onChange={() => toggle(item.id)}
                 className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
-              <span className="flex-1 min-w-0 text-sm text-[#18181B] truncate">{item.quantity}x {item.products?.name}</span>
-              <span className="text-sm font-semibold text-[#18181B] flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
+              <span className="flex-1 min-w-0 text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</span>
+              <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
             </label>
           ))}
         </div>
@@ -556,17 +556,17 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
           <p className="text-xs text-[#FF441F] font-medium mt-2">Desmarque ao menos 1 item pra separar só parte da comanda.</p>
         )}
 
-        <div className="border-t border-[#E4E4E7] mt-3 pt-3 space-y-2">
-          <label className="text-xs text-[#71717A]">Nome do cliente da nova comanda *</label>
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nome do cliente da nova comanda *</label>
           <input value={clienteNome} onChange={(e) => setClienteNome(e.target.value)} placeholder="Nome do cliente"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           <input value={clienteTelefone} onChange={(e) => setClienteTelefone(e.target.value)} placeholder="Telefone (opcional)"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
         </div>
 
-        <div className="border-t border-[#E4E4E7] mt-3 pt-3 flex items-center justify-between">
-          <span className="text-sm text-[#71717A]">{selecionados.size} item(s) selecionado(s)</span>
-          <span className="text-base font-bold text-[#18181B]">{fmt(subtotalSelecionado)}</span>
+        <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 flex items-center justify-between">
+          <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{selecionados.size} item(s) selecionado(s)</span>
+          <span className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(subtotalSelecionado)}</span>
         </div>
         <button
           onClick={() => onConfirmar([...selecionados], clienteNome, clienteTelefone)}
@@ -703,10 +703,11 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     }
   };
 
-  if (!comanda) return <div className="p-6 text-sm text-[#71717A]">Carregando...</div>;
+  if (!comanda) return <div className="p-6 text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</div>;
 
   const total = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
+  const temEntregaPendente = (comanda.itens ?? []).some((i) => (i.status === 'preparando' || i.status === 'pronto') && !i.entregue_garcom);
   const fechada = comanda.status === 'fechada_garcom';
   // Só dá pra excluir enquanto nada foi mandado pra cozinha ainda — depois disso quem
   // decide é o estabelecimento (cancelar via PDV), pra não sumir pedido em preparo.
@@ -724,22 +725,22 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
 
   return (
-    <div className={`min-h-screen bg-[#F4F4F5] ${!fechada ? 'pb-44' : 'pb-6'}`}>
-      <div className="bg-white border-b border-[#E4E4E7] p-4 sticky top-0 z-10">
-        <button onClick={onVoltar} className="flex items-center gap-1 text-sm text-[#71717A] mb-2">
+    <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!fechada ? 'pb-44' : 'pb-6'}`}>
+      <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4 sticky top-0 z-10">
+        <button onClick={onVoltar} className="flex items-center gap-1 text-sm text-[#71717A] dark:text-[#A1A1AA] mb-2">
           <Icon name="ArrowLeft" size={16} /> Voltar
         </button>
-        <h1 className="text-base font-bold text-[#18181B]">
+        <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
           #{comanda.numero_comanda ?? comanda.id}{comanda.mesa_id ? ` — Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : ''}
         </h1>
         <div className="flex items-center gap-1.5">
-          <p className="text-xs text-[#71717A]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
-          <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+          <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
             <Icon name="Pencil" size={12} />
           </button>
         </div>
         {fechada && (
-          <p className="text-xs text-blue-700 bg-blue-50 rounded-lg px-2 py-1 mt-2 inline-block">
+          <p className="text-xs text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-lg px-2 py-1 mt-2 inline-block">
             Fechada — aguardando pagamento no caixa
           </p>
         )}
@@ -757,21 +758,21 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                   {urls.lan && (
                     <div className="flex gap-2 mb-2">
                       <button onClick={() => setQrModo('online')}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                         ONLINE
                       </button>
                       <button onClick={() => setQrModo('local')}
-                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                         LOCAL
                       </button>
                     </div>
                   )}
-                  <div className="bg-white border border-[#E4E4E7] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                  <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 inline-flex flex-col items-center gap-1">
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlAtiva)}`}
                       alt="QR de acompanhamento" width={150} height={150}
                     />
-                    <p className="text-[10px] text-[#71717A]">Cliente escaneia pra acompanhar o preparo</p>
+                    <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">Cliente escaneia pra acompanhar o preparo</p>
                   </div>
                 </div>
               );
@@ -782,24 +783,24 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
 
       <div className="p-4 space-y-2">
         {(comanda.itens ?? []).map((item) => (
-          <div key={item.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3">
+          <div key={item.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
             <div className="flex justify-between items-center gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
                   {item.products?.image_url
                     ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
                     : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#18181B] truncate">{item.quantity}x {item.products?.name}</p>
-                  <p className="text-xs text-[#71717A]">{fmt(item.unit_price)} un.</p>
+                  <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.unit_price)} un.</p>
                 </div>
               </div>
               {item.status === 'pendente' ? (
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">−</button>
-                  <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] text-sm font-bold text-[#27272A]">+</button>
-                  <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 text-red-500 flex items-center justify-center">
+                  <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
+                  <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
+                  <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
                     <Icon name="X" size={12} />
                   </button>
                 </div>
@@ -810,7 +811,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                 </button>
               ) : (
                 <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
-                  item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
+                  item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
                 }`}>
                   {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
                 </span>
@@ -820,13 +821,13 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
             {observacaoEditandoId === item.id ? (
               <div className="flex items-center gap-1.5 mt-2">
                 <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
-                  placeholder="Observação..." className="flex-1 text-xs border border-[#E4E4E7] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FF441F]" />
+                  placeholder="Observação..." className="flex-1 text-xs bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FF441F]" />
                 <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
                 <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
               </div>
             ) : (
               <button onClick={() => abrirEdicaoObservacao(item)}
-                className="flex items-center gap-1 mt-1.5 text-xs text-amber-700 bg-amber-50 rounded px-1.5 py-0.5">
+                className="flex items-center gap-1 mt-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded px-1.5 py-0.5">
                 <Icon name="MessageSquare" size={11} />
                 {item.observacao || 'Adicionar observação'}
               </button>
@@ -838,7 +839,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         )}
         {!fechada && (comanda.itens ?? []).length > 1 && (
           <button onClick={() => setMostrarDividir(true)}
-            className="w-full py-2.5 border border-[#E4E4E7] rounded-xl text-sm font-bold text-[#27272A] flex items-center justify-center gap-2">
+            className="w-full py-2.5 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center gap-2">
             <Icon name="Scissors" size={16} /> Separar comanda
           </button>
         )}
@@ -854,44 +855,44 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
       <div className="px-4 pb-4">
         {(() => {
           return (
-            <div className="bg-[#FAFAFA] rounded-xl px-3 py-2 space-y-1 mt-2">
+            <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl px-3 py-2 space-y-1 mt-2">
               <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Valor da comanda</span>
-                <span className="text-[#18181B]">{fmt(total)}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Valor da comanda</span>
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(total)}</span>
               </div>
               {comanda.desconto_valor > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#71717A]">Desconto</span>
-                  <span className="text-emerald-700">- {fmt(comanda.desconto_valor)}</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Desconto</span>
+                  <span className="text-emerald-700 dark:text-emerald-400">- {fmt(comanda.desconto_valor)}</span>
                 </div>
               )}
               {comanda.acrescimo_valor > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#71717A]">Acréscimo</span>
-                  <span className="text-[#18181B]">+ {fmt(comanda.acrescimo_valor)}</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Acréscimo</span>
+                  <span className="text-[#18181B] dark:text-[#F4F4F5]">+ {fmt(comanda.acrescimo_valor)}</span>
                 </div>
               )}
               {totalTaxaCartao > 0.001 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#71717A]">Taxa cartão</span>
-                  <span className="text-[#18181B]">+ {fmt(totalTaxaCartao)}</span>
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão</span>
+                  <span className="text-[#18181B] dark:text-[#F4F4F5]">+ {fmt(totalTaxaCartao)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-[#71717A]">Gorjeta{gorjetaConfirmada ? '' : ' (estimada)'}</span>
-                <span className="text-[#18181B]">{fmt(gorjetaExibida)}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta{gorjetaConfirmada ? '' : ' (estimada)'}</span>
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(gorjetaExibida)}</span>
               </div>
-              <div className="flex justify-between text-sm font-bold text-[#18181B] pt-1 border-t border-[#E4E4E7]">
+              <div className="flex justify-between text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                 <span>Total (comanda + gorjeta)</span>
                 <span>{fmt(totalComGorjeta)}</span>
               </div>
               {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
                 <>
                   <div className="flex justify-between text-sm">
-                    <span className="text-[#71717A]">Já pago</span>
-                    <span className="text-emerald-700">- {fmt(comanda.saldo.total_pago)}</span>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">Já pago</span>
+                    <span className="text-emerald-700 dark:text-emerald-400">- {fmt(comanda.saldo.total_pago)}</span>
                   </div>
-                  <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7]">
+                  <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                     <span>Falta pagar (com gorjeta)</span>
                     <span>{fmt(faltaPagar)}</span>
                   </div>
@@ -902,22 +903,27 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         })()}
         {!fechada && podeExcluir && (
           <button onClick={excluir} disabled={excluindo}
-            className="w-full mt-2 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl disabled:opacity-50">
+            className="w-full mt-2 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40 rounded-xl disabled:opacity-50">
             {excluindo ? 'Excluindo...' : 'Excluir comanda'}
           </button>
         )}
       </div>
 
       {!fechada && (
-        <div className="p-4 bg-white border-t border-[#E4E4E7] fixed bottom-0 left-0 right-0">
+        <div className="p-4 bg-white dark:bg-[#27272A] border-t border-[#E4E4E7] dark:border-[#3F3F46] fixed bottom-0 left-0 right-0">
           <button onClick={() => setMostrarPicker(true)}
             className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
             <Icon name="Plus" size={18} /> Adicionar produto
           </button>
-          {erro && <p className="text-xs text-red-600 mb-2">{erro}</p>}
+          {erro && <p className="text-xs text-red-600 dark:text-red-400 mb-2">{erro}</p>}
           {faltaPagar > 0.01 && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2 py-1.5 mb-2">
+            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-2 py-1.5 mb-2">
               Falta {fmt(faltaPagar)} (com gorjeta) — lance os pagamentos até zerar pra poder fechar.
+            </p>
+          )}
+          {faltaPagar <= 0.01 && temEntregaPendente && (
+            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-2 py-1.5 mb-2">
+              Tem item pronto sem confirmar entrega — toque em "Entregar" nos itens acima pra poder fechar.
             </p>
           )}
           <div className="flex gap-2">
@@ -925,8 +931,8 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
               className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
               {enviando ? 'Enviando...' : 'Enviar novos itens'}
             </button>
-            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0 || faltaPagar > 0.01}
-              title={faltaPagar > 0.01 ? 'Registre os pagamentos até zerar (com gorjeta) pra fechar' : undefined}
+            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0 || faltaPagar > 0.01 || temEntregaPendente}
+              title={faltaPagar > 0.01 ? 'Registre os pagamentos até zerar (com gorjeta) pra fechar' : temEntregaPendente ? 'Confirme a entrega dos itens pendentes pra poder fechar' : undefined}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
               Fechar comanda
             </button>
@@ -965,19 +971,19 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
 const RESTAURANTE_FECHADO_MSG = 'Restaurante fechado. Aguarde o caixa ser aberto para entrar.';
 
 const RestauranteFechado = () => (
-  <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 w-full max-w-sm shadow-lg text-center">
-      <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-        <Icon name="Lock" size={28} className="text-red-600" />
+  <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center p-4">
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-6 w-full max-w-sm shadow-lg text-center">
+      <div className="w-14 h-14 bg-red-100 dark:bg-red-950/40 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <Icon name="Lock" size={28} className="text-red-600 dark:text-red-400" />
       </div>
-      <h1 className="text-lg font-black text-[#18181B]">Restaurante fechado</h1>
-      <p className="text-sm text-[#71717A] mt-1">Aguarde o caixa ser aberto para acessar o salão.</p>
+      <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">Restaurante fechado</h1>
+      <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Aguarde o caixa ser aberto para acessar o salão.</p>
       <button onClick={() => window.location.reload()}
         className="w-full mt-4 py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] text-sm">
         Tentar novamente
       </button>
       <button onClick={() => { clearGarcomToken(); window.location.reload(); }}
-        className="w-full mt-2 py-2.5 text-xs font-medium text-[#71717A] hover:text-red-600">
+        className="w-full mt-2 py-2.5 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400">
         Sair
       </button>
     </div>
@@ -993,14 +999,14 @@ const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundo
   const aguardando = itens.filter((i) => i.status === 'enviado');
 
   const linha = (item, posicao, desde) => (
-    <div key={item.item_id} className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center">
+    <div key={item.item_id} className="w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center">
       <div>
-        <p className="text-sm font-medium text-[#18181B]">{posicao}º — {item.quantity}x {item.product_name}</p>
-        <p className="text-xs text-[#71717A]">
+        <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">{posicao}º — {item.quantity}x {item.product_name}</p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
           {item.mesa ?? `Comanda #${item.numero_comanda}`}{item.cliente_mesa_nome ? ` — ${item.cliente_mesa_nome}` : ''}
         </p>
       </div>
-      {desde && <p className="text-sm font-bold text-[#18181B]">{formatDuracao(now - new Date(desde).getTime())}</p>}
+      {desde && <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{formatDuracao(now - new Date(desde).getTime())}</p>}
     </div>
   );
 
@@ -1013,7 +1019,7 @@ const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundo
       </div>
 
       <div>
-        <p className="text-xs font-bold text-[#71717A] mb-2">EM PREPARO ({preparando.length})</p>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-2">EM PREPARO ({preparando.length})</p>
         <div className="space-y-2">
           {preparando.map((item, idx) => linha(item, idx + 1, item.preparando_em))}
           {preparando.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-3">Nada em preparo agora.</p>}
@@ -1021,7 +1027,7 @@ const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundo
       </div>
 
       <div>
-        <p className="text-xs font-bold text-[#71717A] mb-2">AGUARDANDO ({aguardando.length})</p>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-2">AGUARDANDO ({aguardando.length})</p>
         <div className="space-y-2">
           {aguardando.map((item, idx) => linha(item, idx + 1, null))}
           {aguardando.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-3">Nada aguardando.</p>}
@@ -1125,9 +1131,9 @@ const GarcomHome = () => {
 
   const avisoProntoToast = avisoPronto && (
     <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
         <Icon name="BellRing" size={40} className="mx-auto text-[#FF441F] mb-3 animate-pulse" />
-        <p className="text-base font-bold text-[#18181B] mb-5">{avisoPronto}</p>
+        <p className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-5">{avisoPronto}</p>
         <button onClick={() => setAvisoPronto(null)}
           className="w-full py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F]">
           OK, entendi
@@ -1150,36 +1156,36 @@ const GarcomHome = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] pb-6">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] pb-6">
       {avisoProntoToast}
-      <div className="bg-white border-b border-[#E4E4E7] p-4">
+      <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-base font-bold text-[#18181B]">Salão</h1>
+          <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Salão</h1>
           <button onClick={() => { clearGarcomToken(); window.location.reload(); }}
-            className="flex items-center gap-1 text-xs font-medium text-[#71717A] hover:text-red-600 px-2 py-1">
+            className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 px-2 py-1">
             <Icon name="LogOut" size={14} /> Sair
           </button>
         </div>
         <div className="flex gap-2 mt-3">
           {salaoModo !== 'comandas' && (
             <button onClick={() => setAba('mesas')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
               Mesas
             </button>
           )}
           <button onClick={() => setAba('comandas')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'comandas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'comandas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             Minhas comandas ({comandas.length})
           </button>
           <button onClick={() => setAba('cozinha')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'cozinha' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'cozinha' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             Cozinha
           </button>
         </div>
       </div>
 
       {loading ? (
-        <div className="p-6 text-sm text-[#71717A]">Carregando...</div>
+        <div className="p-6 text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</div>
       ) : aba === 'mesas' ? (
         <div className="p-4 grid grid-cols-3 gap-3">
           {mesas.map((mesa) => {
@@ -1224,19 +1230,19 @@ const GarcomHome = () => {
         <div className="p-4 space-y-2">
           {comandas.map((c) => (
             <button key={c.id} onClick={() => setComandaAtivaId(c.id)}
-              className="w-full bg-white rounded-xl border border-[#E4E4E7] p-3 flex justify-between items-center text-left">
+              className="w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left">
               <div>
-                <p className="text-sm font-medium text-[#18181B]">
+                <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
                   #{c.numero_comanda ?? c.id}{c.mesa_id ? ` — Mesa ${c.mesa_id}` : ''} — {c.cliente_mesa_nome}
                 </p>
-                <p className="text-xs text-[#71717A]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
                 {c.conferencia_solicitada_em && (
                   <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
                     <Icon name="BellRing" size={9} /> Pediu conferência
                   </p>
                 )}
               </div>
-              <p className="text-sm font-bold text-[#18181B]">{fmt(c.total)}</p>
+              <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
             </button>
           ))}
           {comandas.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhuma comanda em aberto.</p>}
@@ -1275,7 +1281,7 @@ const GarcomPortal = () => {
   }, []);
 
   if (authed === null) {
-    return <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center text-sm text-[#71717A]">Carregando...</div>;
+    return <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</div>;
   }
 
   if (!authed) {
