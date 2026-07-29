@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getRelatorio, getMinhaEmpresa } from '../../services/restauranteService';
 import RelatorioNav from './RelatorioNav';
 import FiltroPeriodo from './FiltroPeriodo';
@@ -63,6 +63,13 @@ const RelatorioFinanceiro = () => {
 
   const r = dados?.resumo;
   const fluxo = (dados?.fluxo_caixa ?? []).slice().sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+  const maioresVendas = useMemo(() =>
+    (dados?.pedidos ?? [])
+      .filter((p) => p.status !== 'canceled')
+      .slice()
+      .sort((a, b) => (b.total ?? 0) - (a.total ?? 0))
+      .slice(0, 10),
+  [dados]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
@@ -95,6 +102,42 @@ const RelatorioFinanceiro = () => {
                 <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Troco</p>
                 <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_troco)}</p>
               </div>
+            </div>
+
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
+              <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46]">
+                <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Maiores Vendas do Período</p>
+              </div>
+              {maioresVendas.length === 0 ? (
+                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhuma venda no período.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
+                        <th className="text-left px-5 py-2">#</th>
+                        <th className="text-left px-5 py-2">Pedido</th>
+                        <th className="text-left px-5 py-2">Cliente</th>
+                        <th className="text-left px-5 py-2">Canal</th>
+                        <th className="text-left px-5 py-2">Data/Hora</th>
+                        <th className="text-right px-5 py-2">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
+                      {maioresVendas.map((p, i) => (
+                        <tr key={p.id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                          <td className="px-5 py-2.5 font-black text-[#A1A1AA]">{i + 1}º</td>
+                          <td className="px-5 py-2.5 font-semibold text-[#18181B] dark:text-[#F4F4F5]">#{p.id}</td>
+                          <td className="px-5 py-2.5 text-[#71717A] dark:text-[#A1A1AA]">{p.customers?.name ?? '—'}</td>
+                          <td className="px-5 py-2.5 text-[#71717A] dark:text-[#A1A1AA] capitalize">{p.canal ?? '—'}</td>
+                          <td className="px-5 py-2.5 text-xs text-[#71717A] dark:text-[#A1A1AA]">{new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="px-5 py-2.5 text-right font-bold text-green-700 dark:text-green-400">{fmt(p.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4">

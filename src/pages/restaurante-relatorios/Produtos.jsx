@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getRelatorioProdutos, getMinhaEmpresa } from '../../services/restauranteService';
 import RelatorioNav from './RelatorioNav';
 import FiltroPeriodo from './FiltroPeriodo';
@@ -47,6 +47,22 @@ const QtdFiltroBar = ({ filtro, onChange, labelZero }) => (
       />
     )}
   </div>
+);
+
+const OrdemToggle = ({ ordem, onChange }) => (
+  <button onClick={() => onChange(ordem === 'desc' ? 'asc' : 'desc')}
+    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] transition-colors">
+    {ordem === 'desc' ? '↓ Maior → Menor' : '↑ Menor → Maior'}
+  </button>
+);
+
+const DestaqueCard = ({ label, nome, valor, onClick }) => (
+  <button onClick={onClick} disabled={!nome}
+    className="text-left bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 hover:border-[#FF441F]/40 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-default disabled:hover:border-[#E4E4E7] dark:disabled:hover:border-[#3F3F46]">
+    <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">{label}</p>
+    <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{nome ?? '—'}</p>
+    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{valor}</p>}
+  </button>
 );
 
 const buildPrintHtml = (dados, aba, restauranteNome, label, listaOverride) => {
@@ -98,6 +114,8 @@ const RelatorioProdutos = () => {
   const [qtdFiltroSemGiro, setQtdFiltroSemGiro] = useState({ modo: 'zero', valor: '' });
   const [qtdFiltroLucro, setQtdFiltroLucro] = useState(QTD_FILTRO_INICIAL);
   const [qtdFiltroVendas, setQtdFiltroVendas] = useState(QTD_FILTRO_INICIAL);
+  const [ordemVendas, setOrdemVendas] = useState('desc');
+  const [ordemLucro, setOrdemLucro] = useState('desc');
 
   useEffect(() => {
     getMinhaEmpresa().then((d) => setRestauranteNome(d.empresa?.name ?? '')).catch(() => {});
@@ -152,8 +170,23 @@ const RelatorioProdutos = () => {
   const listaLista = dados ? aplicarFiltroQtd(dados.produtos, 'quantidade_estoque', qtdFiltroLista) : [];
   const listaSemEstoque = dados ? aplicarFiltroQtd(dados.produtos, 'quantidade_estoque', qtdFiltroSemEstoque) : [];
   const listaSemGiro = dados ? aplicarFiltroQtd(dados.vendas, 'quantidade_vendida', qtdFiltroSemGiro) : [];
-  const listaLucro = dados ? aplicarFiltroQtd(dados.vendas, 'quantidade_vendida', qtdFiltroLucro) : [];
-  const listaVendas = dados ? aplicarFiltroQtd(dados.vendas, 'quantidade_vendida', qtdFiltroVendas) : [];
+  const listaLucroBase = dados ? aplicarFiltroQtd(dados.vendas, 'quantidade_vendida', qtdFiltroLucro) : [];
+  const listaVendasBase = dados ? aplicarFiltroQtd(dados.vendas, 'quantidade_vendida', qtdFiltroVendas) : [];
+
+  const listaVendas = useMemo(() => [...listaVendasBase].sort((a, b) =>
+    ordemVendas === 'desc' ? b.quantidade_vendida - a.quantidade_vendida : a.quantidade_vendida - b.quantidade_vendida
+  ), [listaVendasBase, ordemVendas]);
+  const listaLucro = useMemo(() => [...listaLucroBase].sort((a, b) =>
+    ordemLucro === 'desc' ? b.lucro - a.lucro : a.lucro - b.lucro
+  ), [listaLucroBase, ordemLucro]);
+
+  const vendas = dados?.vendas ?? [];
+  const maisVendido = useMemo(() => vendas.length ? [...vendas].sort((a, b) => b.quantidade_vendida - a.quantidade_vendida)[0] : null, [vendas]);
+  const menosVendido = useMemo(() => {
+    const comVenda = vendas.filter((v) => v.quantidade_vendida > 0);
+    return comVenda.length ? [...comVenda].sort((a, b) => a.quantidade_vendida - b.quantidade_vendida)[0] : null;
+  }, [vendas]);
+  const maisLucrativo = useMemo(() => vendas.length ? [...vendas].sort((a, b) => b.lucro - a.lucro)[0] : null, [vendas]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
@@ -210,6 +243,18 @@ const RelatorioProdutos = () => {
                 <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(dados.lucro_total)}</p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Lucro Período</p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <DestaqueCard label="Mais Vendido" nome={maisVendido?.name}
+                valor={maisVendido ? `${maisVendido.quantidade_vendida} un. · ${fmt(maisVendido.receita)}` : null}
+                onClick={() => { setAba('vendas'); setOrdemVendas('desc'); }} />
+              <DestaqueCard label="Menos Vendido" nome={menosVendido?.name}
+                valor={menosVendido ? `${menosVendido.quantidade_vendida} un. · ${fmt(menosVendido.receita)}` : null}
+                onClick={() => { setAba('vendas'); setOrdemVendas('asc'); }} />
+              <DestaqueCard label="Mais Lucrativo" nome={maisLucrativo?.name}
+                valor={maisLucrativo ? fmt(maisLucrativo.lucro) : null}
+                onClick={() => { setAba('lucro'); setOrdemLucro('desc'); }} />
             </div>
 
             <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit flex-wrap">
@@ -271,7 +316,10 @@ const RelatorioProdutos = () => {
 
             {aba === 'vendas' && (
               <div className="space-y-3">
-                <QtdFiltroBar filtro={qtdFiltroVendas} onChange={setQtdFiltroVendas} labelZero="Quantidade Zero" />
+                <div className="flex flex-wrap gap-2 items-center justify-between">
+                  <QtdFiltroBar filtro={qtdFiltroVendas} onChange={setQtdFiltroVendas} labelZero="Quantidade Zero" />
+                  <OrdemToggle ordem={ordemVendas} onChange={setOrdemVendas} />
+                </div>
                 <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                   {listaVendas.length === 0 ? (
                     <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum produto encontrado.</p>
@@ -333,7 +381,10 @@ const RelatorioProdutos = () => {
 
             {aba === 'lucro' && (
               <div className="space-y-3">
-                <QtdFiltroBar filtro={qtdFiltroLucro} onChange={setQtdFiltroLucro} labelZero="Quantidade Zero" />
+                <div className="flex flex-wrap gap-2 items-center justify-between">
+                  <QtdFiltroBar filtro={qtdFiltroLucro} onChange={setQtdFiltroLucro} labelZero="Quantidade Zero" />
+                  <OrdemToggle ordem={ordemLucro} onChange={setOrdemLucro} />
+                </div>
                 <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
                   {listaLucro.length === 0 ? (
                     <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum produto encontrado.</p>

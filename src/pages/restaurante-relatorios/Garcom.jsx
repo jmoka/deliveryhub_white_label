@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getRelatorioGarcom, getMinhaEmpresa, registrarRepasseGarcom, estornarRepasseGarcom } from '../../services/restauranteService';
 import RelatorioNav from './RelatorioNav';
 import FiltroPeriodo from './FiltroPeriodo';
@@ -65,6 +65,20 @@ ${printFooterScript}
 </body></html>`;
 };
 
+const DestaqueCard = ({ label, nome, valor }) => (
+  <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4">
+    <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">{label}</p>
+    <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{nome ?? '—'}</p>
+    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{valor}</p>}
+  </div>
+);
+
+const SORT_CAMPOS = [
+  { id: 'total_vendido', label: 'Venda' },
+  { id: 'total_gorjeta', label: 'Gorjeta' },
+  { id: 'total_comissao', label: 'Comissão' },
+];
+
 const RelatorioGarcom = () => {
   const [restauranteNome, setRestauranteNome] = useState('');
   const [filtro, setFiltro] = useState(defaultFiltroState());
@@ -79,6 +93,9 @@ const RelatorioGarcom = () => {
   const [repasseModal, setRepasseModal] = useState(null);
   const [valorDinheiro, setValorDinheiro] = useState('');
   const [valorPix, setValorPix] = useState('');
+  const [busca, setBusca] = useState('');
+  const [sortCampo, setSortCampo] = useState('total_vendido');
+  const [expandido, setExpandido] = useState(null);
 
   useEffect(() => {
     getMinhaEmpresa().then((d) => setRestauranteNome(d.empresa?.name ?? '')).catch(() => {});
@@ -142,7 +159,11 @@ const RelatorioGarcom = () => {
 
   useEffect(() => { buscar(); }, []); // eslint-disable-line
 
-  const garconsFiltrados = garcomId ? (garcons ?? []).filter((g) => String(g.garcom_id) === garcomId) : (garcons ?? []);
+  const garconsFiltrados = useMemo(() => {
+    let lista = garcomId ? (garcons ?? []).filter((g) => String(g.garcom_id) === garcomId) : (garcons ?? []);
+    if (busca.trim()) lista = lista.filter((g) => g.nome.toLowerCase().includes(busca.trim().toLowerCase()));
+    return [...lista].sort((a, b) => (b[sortCampo] ?? 0) - (a[sortCampo] ?? 0));
+  }, [garcons, garcomId, busca, sortCampo]);
   const vendasFiltradas = garcomId ? vendas.filter((v) => String(v.garcom_id) === garcomId) : vendas;
   const garcomSelecionadoNome = garcomId ? (garcons ?? []).find((g) => String(g.garcom_id) === garcomId)?.nome : null;
 
@@ -150,6 +171,15 @@ const RelatorioGarcom = () => {
   const totalComissao = garconsFiltrados.reduce((s, g) => s + g.total_comissao, 0);
   const totalGorjeta = garconsFiltrados.reduce((s, g) => s + g.total_gorjeta, 0);
   const totalAReceber = totalComissao + totalGorjeta;
+
+  const quemVendeuMais = useMemo(() => {
+    const comVenda = (garcons ?? []).filter((g) => g.total_vendido > 0);
+    return comVenda.length ? [...comVenda].sort((a, b) => b.total_vendido - a.total_vendido)[0] : null;
+  }, [garcons]);
+  const quemGanhouMaisGorjeta = useMemo(() => {
+    const comGorjeta = (garcons ?? []).filter((g) => g.total_gorjeta > 0);
+    return comGorjeta.length ? [...comGorjeta].sort((a, b) => b.total_gorjeta - a.total_gorjeta)[0] : null;
+  }, [garcons]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
@@ -163,12 +193,28 @@ const RelatorioGarcom = () => {
         {garcons && garcons.length > 0 && (
           <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Buscar por nome</label>
+              <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Nome do garçom..."
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] min-w-[180px]" />
+            </div>
+            <div className="flex flex-col gap-1">
               <label className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Garçom</label>
               <select value={garcomId} onChange={(e) => setGarcomId(e.target.value)}
                 className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] min-w-[200px]">
                 <option value="">Todos os garçons</option>
                 {garcons.map((g) => <option key={g.garcom_id} value={g.garcom_id}>{g.nome}</option>)}
               </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Ordenar por</label>
+              <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl">
+                {SORT_CAMPOS.map((s) => (
+                  <button key={s.id} onClick={() => setSortCampo(s.id)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${sortCampo === s.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
             {garcomId && (
               <button onClick={() => printIframe(buildPrintHtml(garconsFiltrados, vendasFiltradas, restauranteNome, label, garcomSelecionadoNome))}
@@ -202,6 +248,11 @@ const RelatorioGarcom = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <DestaqueCard label="Quem Vendeu Mais" nome={quemVendeuMais?.nome} valor={quemVendeuMais ? fmt(quemVendeuMais.total_vendido) : null} />
+              <DestaqueCard label="Quem Ganhou Mais Gorjeta" nome={quemGanhouMaisGorjeta?.nome} valor={quemGanhouMaisGorjeta ? fmt(quemGanhouMaisGorjeta.total_gorjeta) : null} />
+            </div>
+
             <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
               {garconsFiltrados.length === 0 ? (
                 <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum garçom cadastrado ou sem movimento no período.</p>
@@ -217,12 +268,14 @@ const RelatorioGarcom = () => {
                         <th className="text-right px-5 py-3">Total a Receber</th>
                         <th className="text-right px-5 py-3">Comandas Abertas</th>
                         <th className="text-right px-5 py-3">Pendentes</th>
+                        <th className="text-left px-5 py-3">Produto Favorito</th>
                         <th className="text-center px-5 py-3">Repasse</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
                       {garconsFiltrados.map((g) => (
-                        <tr key={g.garcom_id} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
+                        <React.Fragment key={g.garcom_id}>
+                        <tr className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
                           <td className="px-5 py-3 font-semibold text-[#18181B] dark:text-[#F4F4F5]">{g.nome}</td>
                           <td className="px-5 py-3 text-right font-bold text-green-700 dark:text-green-400">{fmt(g.total_vendido)}</td>
                           <td className="px-5 py-3 text-right">{fmt(g.total_comissao)}</td>
@@ -237,6 +290,15 @@ const RelatorioGarcom = () => {
                             {g.comandas_pendentes > 0
                               ? <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400">{g.comandas_pendentes}</span>
                               : <span className="text-[#A1A1AA]">0</span>}
+                          </td>
+                          <td className="px-5 py-3">
+                            {(g.produtos ?? []).length > 0 ? (
+                              <button onClick={() => setExpandido(expandido === g.garcom_id ? null : g.garcom_id)}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:text-[#FF441F]">
+                                {g.produtos[0].name} ({g.produtos[0].quantidade})
+                                {g.produtos.length > 1 && <span className="text-[#A1A1AA]">{expandido === g.garcom_id ? '▲' : '▼'}</span>}
+                              </button>
+                            ) : <span className="text-xs text-[#A1A1AA]">—</span>}
                           </td>
                           <td className="px-5 py-3 text-center">
                             {g.repasse ? (
@@ -258,6 +320,21 @@ const RelatorioGarcom = () => {
                             ) : <span className="text-[#A1A1AA]">—</span>}
                           </td>
                         </tr>
+                        {expandido === g.garcom_id && (g.produtos ?? []).length > 1 && (
+                          <tr className="bg-[#FAFAFA] dark:bg-[#18181B]">
+                            <td colSpan={9} className="px-5 py-3">
+                              <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1.5">Top produtos de {g.nome}</p>
+                              <div className="flex flex-wrap gap-2">
+                                {g.produtos.map((p) => (
+                                  <span key={p.product_id} className="text-xs px-2.5 py-1 rounded-lg bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5]">
+                                    {p.name} <span className="text-[#71717A] dark:text-[#A1A1AA]">— {p.quantidade} un. · {fmt(p.receita)}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>
