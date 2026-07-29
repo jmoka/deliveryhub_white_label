@@ -9,7 +9,7 @@ const VARIANTS = {
   success: 'bg-green-100 text-green-700',
   warning: 'bg-yellow-100 text-yellow-700',
   error: 'bg-red-100 text-red-700',
-  neutral: 'bg-[#F4F4F5] text-[#71717A]',
+  neutral: 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]',
 };
 
 const Badge = ({ children, variant = 'neutral', className = '' }) => (

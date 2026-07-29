@@ -52,6 +52,53 @@
     --color-destructive-foreground: #FFFFFF; /* white */
   }
 
+  .dark {
+    /* Core Colors */
+    --color-background: #18181B; /* zinc-900 */
+    --color-foreground: #F4F4F5; /* zinc-100 */
+    --color-border: #3F3F46; /* zinc-700 */
+    --color-input: #27272A; /* zinc-800 */
+    --color-ring: #3B82F6; /* blue-500 */
+
+    /* Card Colors */
+    --color-card: #27272A; /* zinc-800 */
+    --color-card-foreground: #F4F4F5; /* zinc-100 */
+
+    /* Popover Colors */
+    --color-popover: #27272A; /* zinc-800 */
+    --color-popover-foreground: #F4F4F5; /* zinc-100 */
+
+    /* Muted Colors */
+    --color-muted: #3F3F46; /* zinc-700 */
+    --color-muted-foreground: #A1A1AA; /* zinc-400 */
+
+    /* Primary Colors */
+    --color-primary: #FF441F; /* brand red-orange */
+    --color-primary-foreground: #FFFFFF; /* white */
+
+    /* Secondary Colors */
+    --color-secondary: #FF7A00; /* brand orange promo */
+    --color-secondary-foreground: #FFFFFF; /* white */
+
+    /* Accent Colors */
+    --color-accent: #10B981; /* emerald-500 */
+    --color-accent-foreground: #FFFFFF; /* white */
+
+    /* Success Colors */
+    --color-success: #22C55E; /* green-500 */
+    --color-success-foreground: #FFFFFF; /* white */
+
+    /* Warning Colors */
+    --color-warning: #F59E0B; /* amber-500 */
+    --color-warning-foreground: #18181B; /* zinc-900 */
+
+    /* Error/Destructive Colors */
+    --color-error: #EF4444; /* red-500 */
+    --color-error-foreground: #FFFFFF; /* white */
+    --color-destructive: #EF4444; /* red-500 */
+    --color-destructive-foreground: #FFFFFF; /* white */
+  }
+
   * {
     @apply border-border;
   }

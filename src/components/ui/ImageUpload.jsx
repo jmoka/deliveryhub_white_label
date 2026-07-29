@@ -53,7 +53,7 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
   if (value) {
     return (
       <div className="space-y-2">
-        <div className={`relative rounded-xl overflow-hidden border border-[#E4E4E7] bg-[#F4F4F5] ${previewH}`}>
+        <div className={`relative rounded-xl overflow-hidden border border-[#E4E4E7] dark:border-[#3F3F46] bg-[#F4F4F5] dark:bg-[#27272A] ${previewH}`}>
           <img src={value} alt="" onError={(e) => (e.target.style.display = 'none')}
             className="w-full h-full object-cover" />
           <button type="button" onClick={() => onChange('')}
@@ -63,20 +63,20 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
         </div>
         <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E4E4E7] rounded-lg text-xs font-semibold text-[#27272A] hover:bg-[#F4F4F5] disabled:opacity-50 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-xs font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-50 transition-colors">
             {uploading
               ? <div className="w-3 h-3 border-2 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
               : <Icon name="Upload" size={12} />}
             Trocar arquivo
           </button>
           <button type="button" onClick={() => { setTab('url'); onChange(''); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E4E4E7] rounded-lg text-xs font-semibold text-[#71717A] hover:bg-[#F4F4F5] transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] transition-colors">
             <Icon name="Link" size={12} /> Usar URL
           </button>
           <input ref={fileRef} type="file" accept={ACCEPT} onChange={handleFile} className="hidden" />
         </div>
         {uploading && (
-          <div className="w-full h-1.5 bg-[#F4F4F5] rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full overflow-hidden">
             <div className="h-full bg-[#FF441F] rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         )}
@@ -88,10 +88,10 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
   // ── Sem imagem: tabs upload/url ───────────────────────────────────
   return (
     <div className="space-y-2">
-      <div className="flex gap-1 bg-[#F4F4F5] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
         {[['upload', 'Upload'], ['url', 'Link URL']].map(([k, l]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
-            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${tab === k ? 'bg-white text-[#18181B] shadow-sm' : 'text-[#71717A] hover:text-[#27272A]'}`}>
+            className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors ${tab === k ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
             {l}
           </button>
         ))}
@@ -105,27 +105,27 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
             className={`cursor-pointer rounded-xl border-2 border-dashed transition-all p-6 text-center ${
-              dragOver ? 'border-[#FF441F] bg-[#FFF4F1]' : 'border-[#E4E4E7] hover:border-[#FF441F]/40 hover:bg-[#FAFAFA]'
+              dragOver ? 'border-[#FF441F] bg-[#FFF4F1] dark:bg-[#3F2620]' : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]/40 hover:bg-[#FAFAFA] dark:hover:bg-[#27272A]'
             } ${uploading ? 'pointer-events-none opacity-60' : ''}`}
           >
             {uploading ? (
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-2 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
-                <p className="text-xs text-[#71717A]">Enviando...</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Enviando...</p>
               </div>
             ) : (
               <>
                 <div className="w-10 h-10 bg-[#FF441F]/10 rounded-full flex items-center justify-center mx-auto mb-2">
                   <Icon name="Upload" size={18} className="text-[#FF441F]" />
                 </div>
-                <p className="text-sm font-semibold text-[#18181B]">Arraste ou clique para enviar</p>
-                <p className="text-xs text-[#71717A] mt-0.5">JPG, PNG, WEBP · máx {MAX_MB}MB</p>
+                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">Arraste ou clique para enviar</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">JPG, PNG, WEBP · máx {MAX_MB}MB</p>
               </>
             )}
           </div>
           <input ref={fileRef} type="file" accept={ACCEPT} onChange={handleFile} className="hidden" />
           {uploading && (
-            <div className="w-full h-1.5 bg-[#F4F4F5] rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full overflow-hidden">
               <div className="h-full bg-[#FF441F] rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
           )}
@@ -137,7 +137,7 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
           <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUrlConfirm())}
             placeholder={placeholder}
-            className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           <button type="button" onClick={handleUrlConfirm} disabled={!urlInput.trim()}
             className="px-4 py-2 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-40 transition-colors whitespace-nowrap">
             Usar URL
