@@ -104,6 +104,9 @@ const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar }) => {
           <div className="min-w-0">
             <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{produto.name}</p>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>
+            {produto.quantidade_estoque != null && (
+              <p className="text-[11px] text-[#A1A1AA] mt-0.5">Em estoque: {produto.quantidade_estoque}</p>
+            )}
           </div>
         </div>
 
@@ -112,8 +115,10 @@ const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar }) => {
           <button onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
             className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
           <span className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] w-8 text-center">{quantidade}</span>
-          <button onClick={() => setQuantidade((q) => q + 1)}
-            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
+          <button
+            onClick={() => setQuantidade((q) => (produto.quantidade_estoque != null ? Math.min(produto.quantidade_estoque, q + 1) : q + 1))}
+            disabled={produto.quantidade_estoque != null && quantidade >= produto.quantidade_estoque}
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5] disabled:opacity-40">+</button>
         </div>
 
         <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Observação (opcional)</label>
@@ -185,7 +190,10 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.price)}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                {fmt(p.price)}
+                {p.quantidade_estoque != null && <span className="text-[#A1A1AA]"> · estoque: {p.quantidade_estoque}</span>}
+              </p>
             </div>
             <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
@@ -359,12 +367,19 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [observacaoInput, setObservacaoInput] = useState('');
 
   const carregar = useCallback(async () => {
-    const [c, sugestao] = await Promise.all([getSalaoComandaDetalhe(comandaId), getSugestaoGorjeta(comandaId)]);
+    const [c, sugestao, produtosResp] = await Promise.all([
+      getSalaoComandaDetalhe(comandaId),
+      getSugestaoGorjeta(comandaId),
+      getMeusProdutos(),
+    ]);
     setComanda(c);
     setDescontoInput(String(c.desconto_valor ?? 0));
     setAcrescimoInput(String(c.acrescimo_valor ?? 0));
     setGorjetaPercentual(sugestao.percentual);
     setGorjeta((v) => (v === '' ? String(sugestao.valor_sugerido) : v));
+    // Refaz a lista de produtos toda vez que a comanda recarrega — senão a quantidade
+    // em estoque mostrada no picker fica desatualizada depois de incluir/editar item.
+    setProdutos(produtosResp.produtos ?? []);
     // Pré-preenche com a forma que o garçom já informou ao fechar a comanda — só na
     // primeira carga, pra não sobrescrever se o caixa já mudou manualmente.
     if (!formaTocada.current && c.payment_method) {
@@ -375,7 +390,6 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   useEffect(() => { carregar(); }, [carregar]);
   useEffect(() => {
     listarGarcons().then(setGarcons).catch(() => {});
-    getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {});
     getConfig().then((c) => setTaxaCartaoPercentual(c.taxa_cartao_percentual ?? 0)).catch(() => {});
   }, []);
 
@@ -1038,15 +1052,17 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
   const [salvando, setSalvando] = useState(false);
 
   const carregar = useCallback(async () => {
-    const c = await getSalaoComandaDetalhe(comandaId);
+    const [c, produtosResp] = await Promise.all([getSalaoComandaDetalhe(comandaId), getMeusProdutos()]);
     setComanda(c);
     setDescontoInput(String(c.desconto_valor ?? 0));
     setAcrescimoInput(String(c.acrescimo_valor ?? 0));
+    // Refaz a lista de produtos toda vez que a comanda recarrega — senão a quantidade
+    // em estoque mostrada no picker fica desatualizada depois de incluir/editar item.
+    setProdutos(produtosResp.produtos ?? []);
   }, [comandaId]);
 
   useEffect(() => { carregar(); }, [carregar]);
   useEffect(() => {
-    getMeusProdutos().then((d) => setProdutos(d.produtos ?? [])).catch(() => {});
     getConfig().then((c) => setTaxaCartaoPercentual(c.taxa_cartao_percentual ?? 0)).catch(() => {});
   }, []);
 
@@ -1192,6 +1208,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
                 </div>
                 <p className="text-xs font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.price)}</p>
+                {p.quantidade_estoque != null && (
+                  <p className="text-[10px] text-[#A1A1AA]">estoque: {p.quantidade_estoque}</p>
+                )}
               </button>
             ))}
             {produtosFiltrados.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}

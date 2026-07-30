@@ -243,6 +243,9 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
           <div className="min-w-0">
             <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{produto.name}</p>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>
+            {produto.quantidade_estoque != null && (
+              <p className="text-[11px] text-[#A1A1AA] mt-0.5">Em estoque: {produto.quantidade_estoque}</p>
+            )}
           </div>
         </div>
 
@@ -251,8 +254,10 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
           <button onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
             className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
           <span className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] w-8 text-center">{quantidade}</span>
-          <button onClick={() => setQuantidade((q) => q + 1)}
-            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
+          <button
+            onClick={() => setQuantidade((q) => (produto.quantidade_estoque != null ? Math.min(produto.quantidade_estoque, q + 1) : q + 1))}
+            disabled={produto.quantidade_estoque != null && quantidade >= produto.quantidade_estoque}
+            className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center text-lg font-bold text-[#27272A] dark:text-[#F4F4F5] disabled:opacity-40">+</button>
         </div>
 
         <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Observação (opcional)</label>
@@ -321,7 +326,10 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.price)}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                {fmt(p.price)}
+                {p.quantidade_estoque != null && <span className="text-[#A1A1AA]"> · estoque: {p.quantidade_estoque}</span>}
+              </p>
             </div>
             <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
