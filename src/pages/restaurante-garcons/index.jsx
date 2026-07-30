@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  listarGarcons, criarGarcom, atualizarGarcom, removerGarcom,
+  listarGarcons, criarGarcom, atualizarGarcom, removerGarcom, forcarLogoutGarcom,
   listarMesas, criarMesa, removerMesa, criarMesasEmLote,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
@@ -85,6 +85,12 @@ const GarcomCard = ({ garcom, onMudou }) => {
     onMudou();
   };
 
+  const forcarLogout = async () => {
+    if (!window.confirm(`Encerrar a sessão de ${garcom.nome} no dispositivo onde está logado, pra liberar login em outro?`)) return;
+    await forcarLogoutGarcom(garcom.id);
+    onMudou();
+  };
+
   return (
     <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
       <div className="flex justify-between items-start">
@@ -92,9 +98,16 @@ const GarcomCard = ({ garcom, onMudou }) => {
           <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{garcom.nome}</p>
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{garcom.telefone}</p>
         </div>
-        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${garcom.ativo ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
-          {garcom.ativo ? 'Ativo' : 'Desativado'}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${garcom.ativo ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
+            {garcom.ativo ? 'Ativo' : 'Desativado'}
+          </span>
+          {garcom.sessao_ativa && (
+            <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+              Logado em 1 dispositivo
+            </span>
+          )}
+        </div>
       </div>
 
       {urls.lan && (
@@ -126,6 +139,12 @@ const GarcomCard = ({ garcom, onMudou }) => {
           Pagamento parcial
         </button>
       </div>
+
+      {garcom.sessao_ativa && (
+        <button onClick={forcarLogout} className="w-full mt-3 py-1.5 text-xs border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/40 font-medium">
+          Forçar logout (liberar outro dispositivo)
+        </button>
+      )}
 
       <div className="flex gap-2 mt-3">
         <button onClick={toggleAtivo} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">

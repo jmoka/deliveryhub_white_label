@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  login, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
+  login, logout, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
@@ -987,7 +987,7 @@ const RestauranteFechado = () => (
         className="w-full mt-4 py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] text-sm">
         Tentar novamente
       </button>
-      <button onClick={() => { clearGarcomToken(); window.location.reload(); }}
+      <button onClick={async () => { await logout(); clearGarcomToken(); window.location.reload(); }}
         className="w-full mt-2 py-2.5 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400">
         Sair
       </button>
@@ -1166,7 +1166,7 @@ const GarcomHome = () => {
       <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Salão</h1>
-          <button onClick={() => { clearGarcomToken(); window.location.reload(); }}
+          <button onClick={async () => { await logout(); clearGarcomToken(); window.location.reload(); }}
             className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 px-2 py-1">
             <Icon name="LogOut" size={14} /> Sair
           </button>

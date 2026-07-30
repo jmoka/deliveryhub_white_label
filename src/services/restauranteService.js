@@ -200,6 +200,8 @@ export const revisarSolicitacaoMotoboy = (id) =>
   apiFetch(`/motoboys/solicitacoes/${id}/revisar`, { method: 'PATCH' });
 export const removerAfiliacaoMotoboy = (motoboyId) =>
   apiFetch(`/motoboys/${motoboyId}/remover`, { method: 'PATCH' });
+export const forcarLogoutMotoboy = (motoboyId) =>
+  apiFetch(`/motoboys/${motoboyId}/forcar-logout`, { method: 'POST' });
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
 
@@ -256,6 +258,8 @@ export const atualizarGarcom = (id, data) =>
   apiFetch(`/garcons/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerGarcom = (id) =>
   apiFetch(`/garcons/${id}`, { method: 'DELETE' });
+export const forcarLogoutGarcom = (id) =>
+  apiFetch(`/garcons/${id}/forcar-logout`, { method: 'POST' });
 
 // Módulo Salão — regras de comissão do garçom (do estabelecimento, valem pra todos)
 export const listarComissoesGarcom = () => apiFetch('/garcons/comissoes');

@@ -6,7 +6,7 @@ import {
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
   getGanhosResumo, getGanhosHistorico,
 } from '../../services/motoboyService';
-import { login, completarCadastro, arquivoParaBase64, getMotoboyToken, setMotoboyToken, clearMotoboyToken } from '../../services/motoboyAuthService';
+import { login, logout, completarCadastro, arquivoParaBase64, getMotoboyToken, setMotoboyToken, clearMotoboyToken } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
 import ColetaBarcode from './ColetaBarcode';
 import EntregaBarcode from './EntregaBarcode';
@@ -534,7 +534,8 @@ const MotoboyPortal = () => {
     }
   };
 
-  const handleSair = () => {
+  const handleSair = async () => {
+    await logout();
     clearMotoboyToken();
     setAuthed(false);
   };

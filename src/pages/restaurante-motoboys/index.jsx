@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   listarMotoboys, listarSolicitacoesMotoboy, aceitarSolicitacaoMotoboy,
-  recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy,
+  recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy, forcarLogoutMotoboy,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
@@ -116,6 +116,7 @@ const RestauranteMotoboys = () => {
   const [processando, setProcessando] = useState(false);
   const [removendo, setRemovendo] = useState(null);
   const [revisando, setRevisando] = useState(null);
+  const [forcandoLogout, setForcandoLogout] = useState(null);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -168,6 +169,19 @@ const RestauranteMotoboys = () => {
       setMsg({ tipo: 'erro', texto: err.message });
     } finally {
       setRevisando(null);
+    }
+  };
+
+  const handleForcarLogout = async (mb) => {
+    if (!window.confirm(`Encerrar a sessão de ${mb.name} no dispositivo onde está logado, pra liberar login em outro?`)) return;
+    setForcandoLogout(mb.id);
+    try {
+      await forcarLogoutMotoboy(mb.id);
+      setMotoboys((prev) => prev.map((m) => (m.id === mb.id ? { ...m, sessao_ativa: false } : m)));
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setForcandoLogout(null);
     }
   };
 
@@ -264,7 +278,21 @@ const RestauranteMotoboys = () => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{mb.name}</p>
                   {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{mb.phone}</p>}
+                  {mb.sessao_ativa && (
+                    <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                      Logado em 1 dispositivo
+                    </span>
+                  )}
                 </div>
+                {mb.sessao_ativa && (
+                  <button
+                    onClick={() => handleForcarLogout(mb)}
+                    disabled={forcandoLogout === mb.id}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 disabled:opacity-50 flex-shrink-0"
+                  >
+                    {forcandoLogout === mb.id ? '...' : 'Forçar logout'}
+                  </button>
+                )}
                 <button
                   onClick={() => handleRemover(mb)}
                   disabled={removendo === mb.id}

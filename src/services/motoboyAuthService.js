@@ -35,6 +35,12 @@ export const cadastro = async (dados) => postJson('/cadastro', await comTokenCli
 
 export const login = (identificador, password) => postJson('/login', { identificador, password });
 
+export const logout = () => {
+  const token = getMotoboyToken();
+  if (!token) return Promise.resolve();
+  return postJson('/logout', {}, { 'x-motoboy-token': token }).catch(() => {});
+};
+
 // Motoboys antigos (link/token pré-login-por-senha) — completa o cadastro usando o token legado.
 export const completarCadastro = async (dados) => {
   const tokenLegado = getMotoboyToken();
