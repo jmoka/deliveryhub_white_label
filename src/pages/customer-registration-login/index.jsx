@@ -71,21 +71,21 @@ const CustomerRegistrationLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b px-4 py-4 flex items-center justify-between">
+      <header className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] px-4 py-4 flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 -ml-2 rounded-lg hover:bg-gray-100"
+          className="p-2 -ml-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]"
           aria-label="Voltar"
         >
-          <Icon name="ArrowLeft" size={24} className="text-gray-600" />
+          <Icon name="ArrowLeft" size={24} className="text-[#71717A] dark:text-[#A1A1AA]" />
         </button>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Icon name="Utensils" size={18} className="text-white" />
           </div>
-          <span className="text-sm font-semibold text-gray-900">DeliveryHub</span>
+          <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">DeliveryHub</span>
         </div>
         <div className="w-10" />
       </header>
@@ -94,12 +94,12 @@ const CustomerRegistrationLogin = () => {
         <div className="max-w-md mx-auto space-y-6">
 
           {/* Card principal */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-5">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl shadow-sm border border-[#E4E4E7] dark:border-[#3F3F46] p-6 space-y-5">
             <div className="text-center">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5]">
                 {activeTab === TAB_LOGIN ? 'Entrar na sua conta' : 'Criar conta'}
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">
                 {activeTab === TAB_LOGIN
                   ? 'Acesse para acompanhar seus pedidos'
                   : 'Cadastre-se para fazer pedidos'}
@@ -107,13 +107,13 @@ const CustomerRegistrationLogin = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex border border-gray-200 rounded-xl p-1 gap-1">
+            <div className="flex border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-1 gap-1">
               <button
                 onClick={() => setActiveTab(TAB_LOGIN)}
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === TAB_LOGIN
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]'
                 }`}
               >
                 Entrar
@@ -123,7 +123,7 @@ const CustomerRegistrationLogin = () => {
                 className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === TAB_REGISTER
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]'
                 }`}
               >
                 Cadastrar
@@ -131,8 +131,8 @@ const CustomerRegistrationLogin = () => {
             </div>
 
             {erro && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{erro}</p>
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>
               </div>
             )}
 
@@ -154,9 +154,9 @@ const CustomerRegistrationLogin = () => {
 
           {/* Separador */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">Tem um estabelecimento?</span>
-            <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
+            <span className="text-xs text-[#A1A1AA]">Tem um estabelecimento?</span>
+            <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
           </div>
 
           {/* CTA Estabelecimento */}
@@ -167,7 +167,7 @@ const CustomerRegistrationLogin = () => {
             <Icon name="Store" size={18} className="text-white" />
             Cadastrar meu estabelecimento
           </button>
-          <p className="text-center text-xs text-gray-400">
+          <p className="text-center text-xs text-[#A1A1AA]">
             Você precisará estar logado para completar o cadastro do estabelecimento.
           </p>
 
@@ -175,9 +175,9 @@ const CustomerRegistrationLogin = () => {
             <>
               {/* Separador */}
               <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400">Quer entregar com a gente?</span>
-                <div className="flex-1 h-px bg-gray-200" />
+                <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
+                <span className="text-xs text-[#A1A1AA]">Quer entregar com a gente?</span>
+                <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
               </div>
 
               {/* CTA Entregador */}

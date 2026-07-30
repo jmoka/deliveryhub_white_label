@@ -101,8 +101,8 @@ const LoginForm = ({
         </button>
       </div>
       {errors?.submit && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{errors?.submit}</p>
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-sm text-red-600 dark:text-red-400">{errors?.submit}</p>
         </div>
       )}
       <Button

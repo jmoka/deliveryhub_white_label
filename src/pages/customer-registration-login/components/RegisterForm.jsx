@@ -180,9 +180,9 @@ const RegisterForm = ({
                 <div
                   key={level}
                   className={`h-1 flex-1 rounded-full transition-colors duration-200 ${
-                    level <= passwordStrength ? 'bg-current' : 'bg-gray-200'
+                    level <= passwordStrength ? 'bg-current' : 'bg-gray-200 dark:bg-[#3F3F46]'
                   }`}
-                  style={{ color: level <= passwordStrength ? strengthInfo?.color : '#E5E7EB' }}
+                  style={{ color: level <= passwordStrength ? strengthInfo?.color : undefined }}
                 />
               ))}
             </div>
@@ -232,8 +232,8 @@ const RegisterForm = ({
         </div>
       </div>
       {errors?.submit && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{errors?.submit}</p>
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-sm text-red-600 dark:text-red-400">{errors?.submit}</p>
         </div>
       )}
       <Button

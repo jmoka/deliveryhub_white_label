@@ -38,12 +38,16 @@ export const useTheme = () => useContext(ThemeContext);
 // próprio). Em /restaurante/* o RestauranteHeader já renderiza uma cópia `inline` dentro
 // da barra superior — nesse caso o fallback fixo se esconde sozinho pra não duplicar
 // nem sobrepor o botão do menu (ver RestauranteHeader.jsx). Também escondido na home
-// ("/"), a pedido do usuário.
+// ("/") e no catálogo de produtos, onde sobrepunha o botão "Entrar" do header.
 export const ThemeToggle = ({ inline = false }) => {
   const { tema, alternarTema } = useTheme() ?? {};
   const location = useLocation();
   if (!alternarTema) return null;
-  if (!inline && (location.pathname.startsWith('/restaurante') || location.pathname === '/')) return null;
+  if (!inline && (
+    location.pathname.startsWith('/restaurante') ||
+    location.pathname === '/' ||
+    location.pathname === '/menu-catalog-product-browse'
+  )) return null;
 
   const posicao = inline ? '' : 'fixed top-3 right-3 z-[100]';
   return (
