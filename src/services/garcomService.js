@@ -49,6 +49,7 @@ export const getMe = () => garcomFetch('/me');
 export const logout = () => garcomFetch('/logout', { method: 'POST' }).catch(() => {});
 export const getMesas = () => garcomFetch('/mesas');
 export const getProdutos = () => garcomFetch('/produtos');
+export const getCombos = () => garcomFetch('/combos');
 export const getMinhasComandas = () => garcomFetch('/comandas');
 export const getItensProntos = () => garcomFetch('/itens-prontos');
 export const getFilaCozinha = () => garcomFetch('/fila-cozinha');

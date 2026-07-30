@@ -231,6 +231,123 @@ const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
   );
 };
 
+/* ── Card combo (grid comparação) ─────────────────────────────────── */
+const ComboCompCard = ({ combo, i, navigate }) => {
+  const rest = combo.restaurante;
+  const restFechado = rest?.aparencia?.aberto === false;
+  const temPromo = combo.preco_promo != null;
+  const preco = temPromo ? combo.preco_promo : combo.price;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: (i % 12) * 0.04, duration: 0.25 }}
+      whileHover={restFechado ? {} : { y: -2, transition: { duration: 0.12 } }}
+      onClick={() => rest && !restFechado && navigate(`/r/${rest.slug}`)}
+      className={`bg-white rounded-2xl border overflow-hidden transition-all text-left w-full relative ${
+        restFechado ? 'border-red-200 opacity-70 cursor-not-allowed' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20'
+      }`}
+    >
+      <div className="relative h-36 bg-[#F4F4F5] overflow-hidden">
+        {combo.image_url
+          ? <img src={combo.image_url} alt={combo.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="Package" size={36} className="text-[#E4E4E7]" /></div>}
+        <span className="absolute top-2 left-2 text-[10px] font-bold bg-[#FF441F] text-white px-2 py-0.5 rounded-full shadow">COMBO</span>
+        {restFechado && (
+          <div className="absolute inset-0 bg-white/30 flex items-end justify-center pb-3">
+            <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded-lg border border-red-200">
+              Restaurante fechado
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="text-xs font-bold text-[#18181B] leading-tight line-clamp-2">{combo.name}</p>
+        <div className="mt-1.5">
+          {!restFechado && temPromo && <p className="text-[10px] line-through text-[#71717A]">{fmt(combo.price)}</p>}
+          <p className={`text-sm font-black ${restFechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+            {restFechado ? 'Indisponível' : fmt(preco)}
+          </p>
+        </div>
+        {rest && (
+          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#F4F4F5]">
+            <div className="w-5 h-5 rounded-md overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+              {rest.logo_url
+                ? <img src={imgUrl(rest.logo_url)} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
+                : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
+            </div>
+            <p className="text-[10px] text-[#71717A] font-medium truncate">{rest.name}</p>
+            {restFechado && <span className="text-[9px] text-red-500 font-bold flex-shrink-0">• Fechado</span>}
+          </div>
+        )}
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Card combo carrossel ─────────────────────────────────────────── */
+const ComboCarrosselCard = ({ combo, i, navigate }) => {
+  const rest = combo.restaurante;
+  const fechado = rest?.aparencia?.aberto === false;
+  const temPromo = combo.preco_promo != null;
+  const preco = temPromo ? combo.preco_promo : combo.price;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: (i % 10) * 0.05 }}
+      whileHover={{ y: fechado ? 0 : -2 }}
+      onClick={() => rest && !fechado && navigate(`/r/${rest.slug}`)}
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
+        fechado ? 'border-red-200 opacity-70' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      }`}
+    >
+      <div className="relative h-28 bg-[#F4F4F5]">
+        {combo.image_url
+          ? <img src={combo.image_url} alt={combo.name} className={`w-full h-full object-cover ${fechado ? 'grayscale' : ''}`} />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="Package" size={28} className="text-[#E4E4E7]" /></div>}
+        <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">COMBO</span>
+      </div>
+      <div className="p-2.5">
+        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{combo.name}</p>
+        <div className="mt-1.5">
+          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(combo.price)}</p>}
+          <p className={`text-sm font-black ${fechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+            {fechado ? '–' : fmt(preco)}
+          </p>
+        </div>
+        {rest && <p className="text-[9px] text-[#71717A] truncate mt-1">{rest.name}</p>}
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Carrossel de combos ──────────────────────────────────────────── */
+const ComboCarrossel = ({ combos, navigate }) => {
+  const scrollRef = useRef(null);
+  const scroll = (dir) => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={() => scroll(-1)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
+        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+      </button>
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {combos.map((c, i) => <ComboCarrosselCard key={c.id} combo={c} i={i} navigate={navigate} />)}
+      </div>
+      <button onClick={() => scroll(1)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
+        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+      </button>
+    </div>
+  );
+};
+
 /* ── Carrossel restaurantes populares ────────────────────────────── */
 const RestCarrossel = ({ restaurantes, navigate }) => {
   const scrollRef = useRef(null);
@@ -516,6 +633,7 @@ const MenuCatalogProductBrowse = () => {
 
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
+  const [combos, setCombos]             = useState([]);
   const [categorias, setCategorias]     = useState(CATEGORIAS_FALLBACK);
   const [tagsCatalogo, setTagsCatalogo] = useState([]); // tags ativas do admin
   const [loading, setLoading]           = useState(true);
@@ -596,6 +714,11 @@ const MenuCatalogProductBrowse = () => {
       .catch(() => setProdutos([]))
       .finally(() => setLoadProd(false));
 
+    fetch(apiPath('/api/r/combos'))
+      .then((r) => r.json())
+      .then((d) => setCombos(d.combos ?? []))
+      .catch(() => setCombos([]));
+
     fetch(apiPath('/api/categorias/globais'))
       .then((r) => r.json())
       .then((d) => { const cats = d.categorias ?? []; if (cats.length > 0) setCategorias(cats); })
@@ -660,8 +783,15 @@ const MenuCatalogProductBrowse = () => {
     })();
   }, [statusLocalizacao, localizacao, raioKm, filtroEstado, filtroCidade, filtroBairro, filtroCep, temFiltroManual]);
 
+  // Chip sintético de combo junto das categorias reais — não tem category_id, é
+  // tratado à parte (ver mostrandoCombos) pra trocar o conteúdo da seção de produtos.
+  const categoriasParaExibir = combos.length > 0
+    ? [...categorias, { id: 'combos', name: 'Combos', icon_name: 'Package', color_primary: '#FF441F', color_secondary: '#FF7A00' }]
+    : categorias;
+  const mostrandoCombos = catAtiva === 'combos';
+
   // catAtiva === null: sem filtro de categoria (mostra tudo)
-  const produtosPorCategoria = catAtiva === null
+  const produtosPorCategoria = catAtiva === null || mostrandoCombos
     ? produtos
     : produtos.filter((p) => p.category_id === catAtiva);
 
@@ -681,6 +811,13 @@ const MenuCatalogProductBrowse = () => {
         p.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
       )
     : produtosPorCategoria;
+
+  const combosFiltrados = busca
+    ? combos.filter((c) =>
+        c.name.toLowerCase().includes(busca.toLowerCase()) ||
+        c.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
+      )
+    : combos;
 
   // Carrosseis dinâmicos baseados nas tags ativas do admin
   const carrosseis = tagsCatalogo
@@ -861,7 +998,7 @@ const MenuCatalogProductBrowse = () => {
       <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto pb-3">
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
-            {categorias.map((c, i) => {
+            {categoriasParaExibir.map((c, i) => {
               const ativo = catAtiva === c.id;
               return (
                 <motion.button
@@ -912,6 +1049,19 @@ const MenuCatalogProductBrowse = () => {
         </div>
       )}
 
+      {/* ── Carrossel de combos ativos ────────────────────────────── */}
+      {combos.length > 0 && (
+        <div className="bg-white border-b border-[#E4E4E7]">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+              <Icon name="Package" size={15} className="text-[#FF441F]" />
+              Combos em destaque
+            </p>
+            <ComboCarrossel combos={combos} navigate={navigate} />
+          </div>
+        </div>
+      )}
+
       {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
       {loadProd ? (
         <div className="bg-white border-b border-[#E4E4E7]">
@@ -936,7 +1086,7 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
       <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {categorias.map((c, i) => {
+          {categoriasParaExibir.map((c, i) => {
             const ativo = catAtiva === c.id;
             return (
               <motion.button
@@ -968,7 +1118,7 @@ const MenuCatalogProductBrowse = () => {
       {/* ── Layout 3 colunas ─────────────────────────────────────── */}
       <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 flex gap-6 items-start">
 
-        <SidebarLeft categorias={categorias} catAtiva={catAtiva} setCatAtiva={setCatAtiva} />
+        <SidebarLeft categorias={categoriasParaExibir} catAtiva={catAtiva} setCatAtiva={setCatAtiva} />
 
         {/* Centro */}
         <main className="flex-1 min-w-0 space-y-8">
@@ -990,7 +1140,7 @@ const MenuCatalogProductBrowse = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-bold text-[#18181B] text-base">
-                    {catAtiva === null ? 'Todos os restaurantes' : categorias.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
+                    {catAtiva === null ? 'Todos os restaurantes' : categoriasParaExibir.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
                   </h2>
                   {catAtiva !== null && (
                     <button
@@ -1073,20 +1223,34 @@ const MenuCatalogProductBrowse = () => {
             </AnimatePresence>
           </section>
 
-          {/* ── Seção comparação de preços ───────────────────────── */}
-          {(loadProd || produtos.length > 0) && (
+          {/* ── Seção comparação de preços / combos ──────────────── */}
+          {(loadProd || produtos.length > 0 || combos.length > 0) && (
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex-1">
                   <h2 className="font-bold text-[#18181B] text-base flex items-center gap-2">
-                    <Icon name="BarChart2" size={16} className="text-[#FF441F]" />
-                    Compare preços
+                    <Icon name={mostrandoCombos ? 'Package' : 'BarChart2'} size={16} className="text-[#FF441F]" />
+                    {mostrandoCombos ? 'Combos' : 'Compare preços'}
                   </h2>
-                  <p className="text-xs text-[#71717A] mt-0.5">Produtos de todos os restaurantes</p>
+                  <p className="text-xs text-[#71717A] mt-0.5">
+                    {mostrandoCombos ? 'Combos ativos de todos os restaurantes' : 'Produtos de todos os restaurantes'}
+                  </p>
                 </div>
               </div>
 
-              {loadProd ? (
+              {mostrandoCombos ? (
+                combosFiltrados.length === 0 ? (
+                  <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
+                    <p className="text-[#71717A] text-sm">Nenhum combo encontrado</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {combosFiltrados.slice(0, 24).map((c, i) => (
+                      <ComboCompCard key={c.id} combo={c} i={i} navigate={navigate} />
+                    ))}
+                  </div>
+                )
+              ) : loadProd ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
@@ -1102,9 +1266,14 @@ const MenuCatalogProductBrowse = () => {
                 </div>
               )}
 
-              {produtosFiltrados.length > 24 && (
+              {!mostrandoCombos && produtosFiltrados.length > 24 && (
                 <p className="text-center text-xs text-[#71717A] mt-4">
                   Mostrando 24 de {produtosFiltrados.length} produtos
+                </p>
+              )}
+              {mostrandoCombos && combosFiltrados.length > 24 && (
+                <p className="text-center text-xs text-[#71717A] mt-4">
+                  Mostrando 24 de {combosFiltrados.length} combos
                 </p>
               )}
             </section>

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   login, logout, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
-  getMesas, getProdutos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
+  getMesas, getProdutos, getCombos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
   confirmarEntregaItem, dividirComanda, editarObservacaoItem,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
+import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
 import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
@@ -225,7 +226,11 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
   const confirmar = async () => {
     setSalvando(true);
     try {
-      await onConfirmar({ product_id: produto.id, quantity: quantidade, observacao: observacao.trim() || undefined });
+      await onConfirmar({
+        ...(produto.tipo === 'combo' ? { combo_id: produto.id } : { product_id: produto.id }),
+        quantity: quantidade,
+        observacao: observacao.trim() || undefined,
+      });
     } finally {
       setSalvando(false);
     }
@@ -241,8 +246,14 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
               : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={20} className="text-[#A1A1AA]" /></div>}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{produto.name}</p>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>
+            <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">
+              {produto.tipo === 'combo' && <span className="text-[10px] font-bold text-[#FF441F] mr-1">COMBO</span>}
+              {produto.name}
+            </p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              {produto.preco_promo != null && <span className="line-through text-[#A1A1AA] mr-1">{fmt(produto.price)}</span>}
+              {fmt(produto.preco_promo ?? produto.price)}
+            </p>
             {produto.quantidade_estoque != null && (
               <p className="text-[11px] text-[#A1A1AA] mt-0.5">Em estoque: {produto.quantidade_estoque}</p>
             )}
@@ -317,17 +328,23 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
 
       <div className="flex-1 overflow-y-auto p-4 max-w-2xl w-full mx-auto space-y-2">
         {filtrados.map((p) => (
-          <button key={p.id} onClick={() => setProdutoAtivo(p)}
+          <button key={`${p.tipo ?? 'produto'}-${p.id}`} onClick={() => setProdutoAtivo(p)}
             className="w-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-2.5 flex items-center gap-3 text-left active:scale-[0.98] transition-transform">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
               {p.image_url
                 ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
+                : <div className="w-full h-full flex items-center justify-center"><Icon name={p.tipo === 'combo' ? 'Package' : 'UtensilsCrossed'} size={18} className="text-[#A1A1AA]" /></div>}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
+              <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">
+                {p.tipo === 'combo' && <span className="text-[10px] font-bold text-[#FF441F] mr-1">COMBO</span>}
+                {p.name}
+              </p>
               <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                {fmt(p.price)}
+                {p.preco_promo != null && (
+                  <span className="line-through text-[#A1A1AA] mr-1">{fmt(p.price)}</span>
+                )}
+                {fmt(p.preco_promo ?? p.price)}
                 {p.quantidade_estoque != null && <span className="text-[#A1A1AA]"> · estoque: {p.quantidade_estoque}</span>}
               </p>
             </div>
@@ -604,9 +621,14 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [dividindo, setDividindo] = useState(false);
 
   const carregar = useCallback(async () => {
-    const [c, p] = await Promise.all([getComanda(comandaId), getProdutos()]);
+    const [c, p, combos] = await Promise.all([getComanda(comandaId), getProdutos(), getCombos()]);
     setComanda(c);
-    setProdutos(p);
+    // Combo entra na mesma lista do picker, numa categoria própria — reusa toda a UI
+    // de busca/categoria/quantidade que já existe pra produto normal.
+    setProdutos([
+      ...p,
+      ...(combos ?? []).map((c2) => ({ ...c2, tipo: 'combo', category_name: 'Combos' })),
+    ]);
   }, [comandaId]);
 
   useEffect(() => { carregar(); }, [carregar]);
@@ -711,6 +733,64 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     }
   };
 
+  const renderItemCard = (item, { ocultarComboLabel = false } = {}) => (
+    <div key={item.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+      <div className="flex justify-between items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
+            {item.products?.image_url
+              ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              {fmt(item.unit_price)} un.
+              {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
+            </p>
+          </div>
+        </div>
+        {item.status === 'pendente' ? (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
+            <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
+            <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
+              <Icon name="X" size={12} />
+            </button>
+          </div>
+        ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
+          <button onClick={() => confirmarEntrega(item)}
+            className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
+            <Icon name="Check" size={12} /> Entregar
+          </button>
+        ) : (
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+            item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
+          }`}>
+            {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
+          </span>
+        )}
+      </div>
+
+      {observacaoEditandoId === item.id ? (
+        <div className="flex items-center gap-1.5 mt-2">
+          <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
+            placeholder="Observação..." className="flex-1 text-xs bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FF441F]" />
+          <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
+          <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
+        </div>
+      ) : (
+        <button onClick={() => abrirEdicaoObservacao(item)}
+          className="flex items-center gap-1 mt-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded px-1.5 py-0.5">
+          <Icon name="MessageSquare" size={11} />
+          {item.observacao || 'Adicionar observação'}
+        </button>
+      )}
+    </div>
+  );
+
+  const gruposItens = agruparItensComanda(comanda?.itens);
+
   if (!comanda) return <div className="p-6 text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</div>;
 
   const total = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
@@ -795,58 +875,17 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
       </div>
 
       <div className="p-4 space-y-2">
-        {(comanda.itens ?? []).map((item) => (
-          <div key={item.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
-            <div className="flex justify-between items-center gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
-                  {item.products?.image_url
-                    ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</p>
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.unit_price)} un.</p>
-                </div>
-              </div>
-              {item.status === 'pendente' ? (
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
-                  <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
-                  <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
-                    <Icon name="X" size={12} />
-                  </button>
-                </div>
-              ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
-                <button onClick={() => confirmarEntrega(item)}
-                  className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
-                  <Icon name="Check" size={12} /> Entregar
-                </button>
-              ) : (
-                <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
-                  item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
-                }`}>
-                  {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
-                </span>
-              )}
+        {gruposItens.map((grupo, gi) => grupo.tipo === 'combo' ? (
+          <div key={`combo-${grupo.nome}-${gi}`} className="rounded-xl border-2 border-[#FF441F]/30 dark:border-[#FF441F]/40 overflow-hidden">
+            <div className="bg-[#FF441F]/10 px-3 py-1.5 flex items-center gap-1.5">
+              <Icon name="Package" size={14} className="text-[#FF441F]" />
+              <span className="text-xs font-bold text-[#FF441F]">{quantidadeGrupoCombo(grupo)}x {grupo.nome}</span>
             </div>
-
-            {observacaoEditandoId === item.id ? (
-              <div className="flex items-center gap-1.5 mt-2">
-                <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
-                  placeholder="Observação..." className="flex-1 text-xs bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FF441F]" />
-                <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
-                <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
-              </div>
-            ) : (
-              <button onClick={() => abrirEdicaoObservacao(item)}
-                className="flex items-center gap-1 mt-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded px-1.5 py-0.5">
-                <Icon name="MessageSquare" size={11} />
-                {item.observacao || 'Adicionar observação'}
-              </button>
-            )}
+            <div className="p-2 space-y-2 bg-[#F4F4F5]/50 dark:bg-[#18181B]/40">
+              {grupo.itens.map((item) => renderItemCard(item, { ocultarComboLabel: true }))}
+            </div>
           </div>
-        ))}
+        ) : renderItemCard(grupo.item))}
         {(comanda.itens ?? []).length === 0 && (
           <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhum item ainda.</p>
         )}

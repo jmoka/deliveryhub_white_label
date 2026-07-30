@@ -438,7 +438,7 @@ const SingleCartCheckout = () => {
           restaurant_id: restauranteId,
           payment_method: paymentMethod,
           troco_para: paymentMethod === 'cash' && trocoParsed > 0 ? trocoParsed : undefined,
-          itens: itens.map((i) => ({ product_id: i.id, quantity: i.qtd })),
+          itens: itens.map((i) => (i.tipo === 'combo' ? { combo_id: i.id, quantity: i.qtd } : { product_id: i.id, quantity: i.qtd })),
         }),
       });
       const pedido = await resP.json();

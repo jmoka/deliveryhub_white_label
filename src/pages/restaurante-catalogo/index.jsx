@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCardapioPorSlug } from '../../services/restauranteService';
@@ -94,6 +94,61 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
         </div>
       )}
     </motion.div>
+  );
+};
+
+/* ── Carrossel de combos ativos (topo da loja) ────────────────────── */
+const ComboCarrosselCard = ({ combo, onAdicionar, restauranteFechado }) => {
+  const temPromo = combo.preco_promo != null;
+  const precoFinal = temPromo ? combo.preco_promo : combo.price;
+
+  return (
+    <button
+      onClick={() => !restauranteFechado && onAdicionar(combo, precoFinal)}
+      disabled={restauranteFechado}
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
+        restauranteFechado ? 'border-[#E4E4E7] opacity-60' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      }`}
+    >
+      <div className="relative h-28 bg-[#F4F4F5]">
+        {combo.image_url
+          ? <img src={combo.image_url} alt={combo.name} className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="Package" size={28} className="text-[#E4E4E7]" /></div>}
+        <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">COMBO</span>
+      </div>
+      <div className="p-2.5">
+        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{combo.name}</p>
+        <div className="mt-1.5">
+          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(combo.price)}</p>}
+          <p className={`text-sm font-black ${temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>{fmt(precoFinal)}</p>
+        </div>
+      </div>
+    </button>
+  );
+};
+
+const ComboCarrossel = ({ combos, onAdicionar, restauranteFechado }) => {
+  const scrollRef = useRef(null);
+  const scroll = (dir) => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={() => scroll(-1)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
+        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+      </button>
+      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        {combos.map((c) => (
+          <ComboCarrosselCard key={c.id} combo={c} onAdicionar={onAdicionar} restauranteFechado={restauranteFechado} />
+        ))}
+      </div>
+      <button onClick={() => scroll(1)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
+        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+      </button>
+    </div>
   );
 };
 
@@ -220,9 +275,14 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   // quando a loja foi aberta pelo domínio customizado (sem slug na URL).
   const slug = slugParam ?? data?.restaurante?.slug;
 
+  // Combo e produto têm sequências de id independentes — pode colidir (combo #5 e
+  // produto #5), então a chave do carrinho precisa considerar o tipo junto do id.
+  const chaveCarrinho = (item) => `${item.tipo === 'combo' ? 'combo' : 'produto'}-${item.id}`;
+
   const altCarrinho = (produto, preco, delta = 1) => {
     setCarrinho((prev) => {
-      const idx = prev.findIndex((i) => i.id === produto.id);
+      const chave = chaveCarrinho(produto);
+      const idx = prev.findIndex((i) => chaveCarrinho(i) === chave);
       if (idx >= 0) {
         const novo = [...prev];
         const novaQtd = novo[idx].qtd + delta;
@@ -235,7 +295,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     });
   };
 
-  const qtdNoCarrinho = (id) => carrinho.find((i) => i.id === id)?.qtd ?? 0;
+  const qtdNoCarrinho = (produto) => carrinho.find((i) => chaveCarrinho(i) === chaveCarrinho(produto))?.qtd ?? 0;
   const totalItens = carrinho.reduce((acc, i) => acc + i.qtd, 0);
   const totalValor = carrinho.reduce((acc, i) => acc + i.price * i.qtd, 0);
 
@@ -448,6 +508,17 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
         </div>
       )}
 
+      {/* ── Carrossel de combos ativos ───────────────────────────────── */}
+      {combos?.length > 0 && (
+        <div className="max-w-screen-xl mx-auto px-4 pt-4">
+          <p className="text-sm font-bold text-[#18181B] mb-3 flex items-center gap-2">
+            <Icon name="Package" size={15} className="text-[#FF441F]" />
+            Combos em destaque
+          </p>
+          <ComboCarrossel combos={combos} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} />
+        </div>
+      )}
+
       {/* ── Nav categorias sticky ───────────────────────────────────── */}
       <div className="sticky top-14 z-20 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7]">
         <div className="max-w-screen-xl mx-auto px-4">
@@ -493,7 +564,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
                 {produtosDaTab().map((p, i) => (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04, duration: 0.2 }}>
-                    <ProdutoCard produto={p} qtd={qtdNoCarrinho(p.id)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} />
+                    <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} />
                   </motion.div>
                 ))}
               </motion.div>

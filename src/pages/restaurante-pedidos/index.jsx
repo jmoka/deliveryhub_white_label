@@ -16,6 +16,10 @@ const STATUS_LABELS = {
   out_for_delivery:   { label: 'Em entrega',     color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
   delivered:          { label: 'Entregue',       color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
   canceled:           { label: 'Cancelado',      color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
+  // Status do módulo Salão — comanda de mesa/balcão também aparece nessa listagem.
+  aberta:             { label: 'Aberta',         color: 'bg-teal-100 dark:bg-teal-950/40 text-teal-800 dark:text-teal-400' },
+  fechada_garcom:     { label: 'Aguardando caixa', color: 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400' },
+  paga:               { label: 'Paga',           color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
 };
 
 const PROXIMOS_STATUS = {
@@ -25,7 +29,7 @@ const PROXIMOS_STATUS = {
   out_for_delivery: 'delivered',
 };
 
-const FILTROS = ['', 'pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered', 'canceled'];
+const FILTROS = ['', 'pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered', 'canceled', 'aberta', 'fechada_garcom', 'paga'];
 
 const RestaurantePedidos = () => {
   const navigate = useNavigate();

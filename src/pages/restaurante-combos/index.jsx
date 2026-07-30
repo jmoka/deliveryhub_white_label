@@ -9,7 +9,7 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', destaque: false, items: [] };
+const EMPTY_FORM = { name: '', description: '', image_url: '', destaque: false, items: [] };
 
 const RestauranteCombos = () => {
   const navigate = useNavigate();
@@ -22,6 +22,7 @@ const RestauranteCombos = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
   const [deletando, setDeletando] = useState(null);
+  const [alternando, setAlternando] = useState(null);
 
   const carregar = () => {
     setLoading(true);
@@ -49,11 +50,13 @@ const RestauranteCombos = () => {
       setForm({
         name: detalhe.name ?? '',
         description: detalhe.description ?? '',
-        price: detalhe.price != null ? String(detalhe.price) : '',
-        preco_promo: detalhe.preco_promo != null ? String(detalhe.preco_promo) : '',
         image_url: detalhe.image_url ?? '',
         destaque: detalhe.destaque ?? false,
-        items: (detalhe.items ?? []).map((i) => ({ product_id: i.product_id, quantity: i.quantity })),
+        items: (detalhe.items ?? []).map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          preco_no_combo: i.preco_no_combo ?? i.products?.price ?? 0,
+        })),
       });
       setShowModal(true);
     } catch (e) {
@@ -70,9 +73,11 @@ const RestauranteCombos = () => {
   const addItem = (product_id) => {
     const id = parseInt(product_id);
     if (!id) return;
+    const prod = prodMap[id];
     setForm((f) => {
       if (f.items.some((i) => i.product_id === id)) return f;
-      return { ...f, items: [...f.items, { product_id: id, quantity: 1 }] };
+      // Preço no combo começa igual ao preço real — o dono abaixa se quiser dar desconto.
+      return { ...f, items: [...f.items, { product_id: id, quantity: 1, preco_no_combo: prod?.price ?? 0 }] };
     });
   };
 
@@ -87,16 +92,21 @@ const RestauranteCombos = () => {
     }));
   };
 
+  const setPrecoNoCombo = (product_id, valor) => {
+    setForm((f) => ({
+      ...f,
+      items: f.items.map((i) => i.product_id === product_id ? { ...i, preco_no_combo: Math.max(0, parseFloat(valor) || 0) } : i),
+    }));
+  };
+
   const handleSalvar = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.price) { alert('Nome e preço são obrigatórios'); return; }
+    if (!form.name) { alert('Nome é obrigatório'); return; }
     if (form.items.length === 0) { alert('Adicione pelo menos 1 produto ao combo'); return; }
     setSalvando(true);
     const payload = {
       name: form.name,
       description: form.description || null,
-      price: parseFloat(form.price),
-      preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : null,
       image_url: form.image_url || null,
       destaque: form.destaque,
       items: form.items,
@@ -117,6 +127,18 @@ const RestauranteCombos = () => {
     }
   };
 
+  const toggleAtivo = async (combo) => {
+    setAlternando(combo.id);
+    try {
+      const atualizado = await editarCombo(combo.id, { is_active: !combo.is_active });
+      setCombos((prev) => prev.map((c) => (c.id === combo.id ? { ...c, ...atualizado } : c)));
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAlternando(null);
+    }
+  };
+
   const handleDeletar = async (combo) => {
     if (!window.confirm(`Deletar combo "${combo.name}"?`)) return;
     setDeletando(combo.id);
@@ -133,6 +155,12 @@ const RestauranteCombos = () => {
   const prodMap = Object.fromEntries(produtos.map((p) => [p.id, p]));
   const produtosSelecionados = new Set(form.items.map((i) => i.product_id));
   const produtosDisponiveis = produtos.filter((p) => !produtosSelecionados.has(p.id));
+
+  // Preço (R$) = soma do preço real de tabela; Preço promo (R$) = soma do que o
+  // dono decidiu cobrar por cada produto dentro do combo — nenhum dos dois é
+  // digitado direto, os dois vêm 100% dos itens selecionados.
+  const precoTotalCalculado = form.items.reduce((acc, i) => acc + (prodMap[i.product_id]?.price ?? 0) * i.quantity, 0);
+  const precoPromoCalculado = form.items.reduce((acc, i) => acc + (i.preco_no_combo ?? 0) * i.quantity, 0);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
@@ -173,16 +201,28 @@ const RestauranteCombos = () => {
                     <p className="font-medium text-gray-900 dark:text-gray-400 truncate">
                       {c.destaque && '⭐ '}{c.name}
                     </p>
-                    <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 flex-shrink-0">COMBO</span>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-xs px-1.5 py-0.5 rounded font-bold bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">COMBO</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${c.is_active ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
+                        {c.is_active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
                   </div>
                   {c.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{c.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-semibold text-[#FF441F]">{fmt(c.price)}</p>
-                    {c.preco_promo && (
+                    {c.preco_promo != null && c.preco_promo !== c.price && (
                       <p className="text-xs text-green-600 dark:text-green-400 font-semibold">{fmt(c.preco_promo)} promo</p>
                     )}
                   </div>
                   <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => toggleAtivo(c)}
+                      disabled={alternando === c.id}
+                      className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-50"
+                    >
+                      {alternando === c.id ? '...' : c.is_active ? 'Desativar' : 'Ativar'}
+                    </button>
                     <button
                       onClick={() => abrirEditar(c)}
                       className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]"
@@ -234,25 +274,18 @@ const RestauranteCombos = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço (R$) *</label>
-                  <input
-                    type="number" min="0" step="0.01"
-                    value={form.price}
-                    onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
-                    placeholder="0,00"
-                    required
-                  />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço (R$)</label>
+                  <div className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm font-semibold">
+                    {fmt(precoTotalCalculado)}
+                  </div>
+                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">Soma do preço real dos produtos</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço promo (R$)</label>
-                  <input
-                    type="number" min="0" step="0.01"
-                    value={form.preco_promo}
-                    onChange={(e) => setForm((f) => ({ ...f, preco_promo: e.target.value }))}
-                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
-                    placeholder="Opcional"
-                  />
+                  <div className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-[#F4F4F5] dark:bg-[#3F3F46] text-green-600 dark:text-green-400 rounded-lg px-3 py-2 text-sm font-semibold">
+                    {fmt(precoPromoCalculado)}
+                  </div>
+                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">Soma do valor por produto abaixo</p>
                 </div>
               </div>
               <div>
@@ -278,23 +311,41 @@ const RestauranteCombos = () => {
                     {form.items.map((item) => {
                       const prod = prodMap[item.product_id];
                       return (
-                        <div key={item.product_id} className="flex items-center gap-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg px-3 py-2">
-                          <p className="flex-1 text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{prod?.name ?? `Produto #${item.product_id}`}</p>
-                          <div className="flex items-center gap-1">
-                            <button type="button" onClick={() => setQty(item.product_id, item.quantity - 1)}
-                              className="w-6 h-6 rounded-full bg-white dark:bg-[#27272A] border text-sm font-bold flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-950/40">
-                              -
-                            </button>
-                            <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
-                            <button type="button" onClick={() => setQty(item.product_id, item.quantity + 1)}
-                              className="w-6 h-6 rounded-full bg-white dark:bg-[#27272A] border text-sm font-bold flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-950/40">
-                              +
+                        <div key={item.product_id} className="bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg px-3 py-2 space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <p className="flex-1 text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{prod?.name ?? `Produto #${item.product_id}`}</p>
+                            <div className="flex items-center gap-1">
+                              <button type="button" onClick={() => setQty(item.product_id, item.quantity - 1)}
+                                className="w-6 h-6 rounded-full bg-white dark:bg-[#27272A] border text-sm font-bold flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-950/40">
+                                -
+                              </button>
+                              <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
+                              <button type="button" onClick={() => setQty(item.product_id, item.quantity + 1)}
+                                className="w-6 h-6 rounded-full bg-white dark:bg-[#27272A] border text-sm font-bold flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-950/40">
+                                +
+                              </button>
+                            </div>
+                            <button type="button" onClick={() => removeItem(item.product_id)}
+                              className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 text-sm font-bold ml-1">
+                              ×
                             </button>
                           </div>
-                          <button type="button" onClick={() => removeItem(item.product_id)}
-                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-400 text-sm font-bold ml-1">
-                            ×
-                          </button>
+                          <div className="flex items-center gap-2 pl-0.5">
+                            <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">
+                              Preço real: {fmt(prod?.price)} un.
+                            </span>
+                            <span className="text-[#71717A] dark:text-[#A1A1AA]">·</span>
+                            <label className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 flex-shrink-0">
+                              Cobrar no combo:
+                              <input
+                                type="number" min="0" step="0.01"
+                                value={item.preco_no_combo}
+                                onChange={(e) => setPrecoNoCombo(item.product_id, e.target.value)}
+                                className="w-20 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded px-1.5 py-0.5 text-xs"
+                              />
+                              un.
+                            </label>
+                          </div>
                         </div>
                       );
                     })}
