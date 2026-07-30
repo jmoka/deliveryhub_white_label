@@ -727,7 +727,12 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   return (
     <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!fechada ? 'pb-44' : 'pb-6'}`}>
       <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4 sticky top-0 z-10">
-        <button onClick={onVoltar} className="flex items-center gap-1 text-sm text-[#71717A] dark:text-[#A1A1AA] mb-2">
+        <button
+          onClick={() => {
+            if (temEntregaPendente) { window.alert('Confirme a entrega dos itens pendentes antes de voltar.'); return; }
+            onVoltar();
+          }}
+          className="flex items-center gap-1 text-sm text-[#71717A] dark:text-[#A1A1AA] mb-2">
           <Icon name="ArrowLeft" size={16} /> Voltar
         </button>
         <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
