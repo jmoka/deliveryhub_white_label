@@ -367,7 +367,7 @@ const RestauranteDashboard = () => {
                 <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Nome do operador *</label>
                 <input value={nomeOperador} onChange={(e) => setNomeOperador(e.target.value)}
                   placeholder="Ex: João"
-                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
@@ -379,7 +379,7 @@ const RestauranteDashboard = () => {
                     value={valorInicial !== '' ? valorInicial : (caixa?.saldo_caixa ?? '')}
                     onChange={(e) => setValorInicial(e.target.value)}
                     placeholder={caixa?.saldo_caixa > 0 ? String(caixa.saldo_caixa) : '0,00'}
-                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
                 </div>
                 <div className="flex items-end">
                   <button onClick={handleAbrirCaixa}
