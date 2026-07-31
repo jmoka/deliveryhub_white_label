@@ -672,6 +672,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const taxaCartaoTotalExibida = taxaCartaoValorFinal + taxaCartaoRegistrada;
   const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
+  const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
+  const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
+  const totalTrocoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.troco || 0), 0);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
@@ -1063,6 +1066,18 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                   <span className="text-[#71717A] dark:text-[#A1A1AA]">Já pago</span>
                   <span className="text-emerald-700 dark:text-emerald-400">- {fmt(comanda.saldo.total_pago)}</span>
                 </div>
+                {totalRecebidoDinheiro > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#71717A] dark:text-[#A1A1AA]">Dinheiro recebido</span>
+                      <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalRecebidoDinheiro)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco</span>
+                      <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalTrocoDinheiro)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                   <span>Falta pagar (com gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
                   <span>{fmt(valorACobrarFinal)}</span>
