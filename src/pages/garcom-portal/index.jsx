@@ -809,6 +809,9 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   // cobrar tudo do cliente na mesa, dinheiro/pix/cartão já lançados como pagamento parcial.
   const faltaPagar = (comanda.saldo?.saldo ?? total) + (gorjetaConfirmada ? 0 : gorjetaExibida);
   const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
+  const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
+  const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
+  const totalTrocoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.troco || 0), 0);
 
   return (
     <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!fechada ? 'pb-44' : 'pb-6'}`}>
@@ -942,6 +945,18 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                     <span className="text-[#71717A] dark:text-[#A1A1AA]">Já pago</span>
                     <span className="text-emerald-700 dark:text-emerald-400">- {fmt(comanda.saldo.total_pago)}</span>
                   </div>
+                  {totalRecebidoDinheiro > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#71717A] dark:text-[#A1A1AA]">Dinheiro recebido</span>
+                        <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalRecebidoDinheiro)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco</span>
+                        <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalTrocoDinheiro)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                     <span>Falta pagar (com gorjeta)</span>
                     <span>{fmt(faltaPagar)}</span>
