@@ -25,7 +25,7 @@ const CANAL_LABELS  = { delivery: 'Delivery', presencial: 'Salão', balcao: 'Bal
 
 const MEIO_LABELS = { dinheiro: 'Dinheiro', pix: 'PIX', transferencia: 'Transferência', cartao: 'Cartão' };
 const PRINT_STYLE = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16px;max-width:800px;margin:0 auto}h1{font-size:18px;font-weight:900;margin-bottom:2px}h2{font-size:13px;font-weight:700;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}.sub{font-size:11px;color:#555;margin-bottom:12px}table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}th{background:#f0f0f0;padding:6px 8px;text-align:left;font-weight:700;border:1px solid #ddd}td{padding:5px 8px;border:1px solid #ddd;vertical-align:top}.right{text-align:right}.bold{font-weight:700}.green{color:#166534}.red{color:#991b1b}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}.kpi{border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center}.kpi .val{font-size:18px;font-weight:900;display:block;margin:2px 0}.kpi .lbl{font-size:10px;color:#555}footer{margin-top:16px;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:6px}@media print{button{display:none!important}}`;
-const buildPrint = (dados, nome, label, caixa, taxaPagbank) => {
+const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) => {
   const r = dados.resumo;
   const pedidos = dados.pedidos ?? [];
   const naoCancelados = pedidos.filter((p) => p.status !== 'canceled');
@@ -76,13 +76,36 @@ const buildPrint = (dados, nome, label, caixa, taxaPagbank) => {
 <table><tr><th>Hora</th><th>Meio</th><th>Descrição</th><th class="right">Valor</th></tr>${sangriasRows || '<tr><td colspan="4">Nenhuma sangria registrada.</td></tr>'}</table>
 <h2>Adições ao Caixa (${(caixa.entradas ?? []).length})</h2>
 <table><tr><th>Hora</th><th>Meio</th><th>Descrição</th><th class="right">Valor</th></tr>${adicoesRows || '<tr><td colspan="4">Nenhuma adição registrada.</td></tr>'}</table>
-` : '<h2>Fechamento de Caixa</h2><div class="sub">Nenhum caixa aberto no momento.</div>';
+` : '';
+
+  const deD = de ? new Date(de) : null;
+  const ateD = ate ? new Date(ate) : null;
+  const fechadosPeriodo = (historico ?? []).filter((c) => {
+    if (c.status !== 'fechado' || !c.fechado_em) return false;
+    if (!deD || !ateD) return true;
+    const f = new Date(c.fechado_em);
+    return f >= deD && f <= ateD;
+  });
+  const fechadosRows = fechadosPeriodo.map((c) => {
+    const cr = c.resumo ?? {};
+    const dc = c.destinacao_fechamento ?? {};
+    const dif = dc.diferenca ?? 0;
+    const difClass = dif < 0 ? 'red' : dif > 0 ? '' : 'green';
+    const conf = dc.conferencia_aprovada === true ? 'Aprovada' : dc.conferencia_aprovada === false ? 'Pendente' : '—';
+    return `<tr><td>#${c.id} ${c.nome_operador}</td><td>${fmtDate(c.aberto_em)} → ${fmtDate(c.fechado_em)}</td><td class="right">${fmt(c.valor_inicial)}</td><td class="right">${fmt(cr.total_vendas)}</td><td class="right">${fmt(cr.saldo)}</td><td class="right">${dc.dinheiro_contado !== undefined ? fmt(dc.dinheiro_contado) : '—'}</td><td class="right bold ${difClass}">${dif !== 0 ? (dif > 0 ? '+' : '') + fmt(dif) : fmt(0)}</td><td>${conf}</td></tr>`;
+  }).join('');
+
+  const historicoHtml = fechadosPeriodo.length > 0 || (historico && historico.length >= 0 && de && ate) ? `
+<h2>Sessões de Caixa Fechadas no Período (${fechadosPeriodo.length})</h2>
+<table><tr><th>Operador</th><th>Aberto → Fechado</th><th class="right">Fundo Inicial</th><th class="right">Vendas (Sistema)</th><th class="right">Saldo (Sistema)</th><th class="right">Contado</th><th class="right">Diferença</th><th>Conferência</th></tr>${fechadosRows || '<tr><td colspan="8">Nenhuma sessão fechada no período.</td></tr>'}</table>
+` : '';
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Financeiro</title><style>${PRINT_STYLE}</style></head><body>
 <h1>${nome ?? 'RESTAURANTE'}</h1>
 <div class="sub">Relatório Financeiro Analítico — ${label}</div>
 
-${fechamentoCaixaHtml}
+${fechamentoCaixaHtml || '<h2>Fechamento de Caixa</h2><div class="sub">Nenhum caixa aberto no momento.</div>'}
+${historicoHtml}
 
 <h2>Resumo Geral do Período</h2>
 <div class="kpi-grid">
@@ -150,6 +173,7 @@ const RestauranteFinanceiro = () => {
   const [fim, setFim]   = useState(today());
   const [dados, setDados]     = useState(null);
   const [label, setLabel]     = useState('');
+  const [rangeAtual, setRangeAtual] = useState(null);
   const [loading, setLoading] = useState(false);
   const [erro, setErro]       = useState(null);
   const [abaAtiva, setAbaAtiva] = useState('resumo');
@@ -179,7 +203,7 @@ const RestauranteFinanceiro = () => {
     const range = buildRange(modo, dia, mes, ano, ini, fim);
     if (!range) return;
     setLoading(true); setErro(null);
-    try { const d = await getRelatorio(range.de, range.ate); setDados(d); setLabel(range.label); }
+    try { const d = await getRelatorio(range.de, range.ate); setDados(d); setLabel(range.label); setRangeAtual(range); }
     catch (e) { setErro(e.message); }
     finally { setLoading(false); }
   };
@@ -279,7 +303,7 @@ const RestauranteFinanceiro = () => {
               Buscar
             </button>
             {dados && (
-              <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label, caixa, taxaPagbank))}
+              <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label, caixa, taxaPagbank, historico, rangeAtual?.de, rangeAtual?.ate))}
                 className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                 <Icon name="Printer" size={14} /> Imprimir
               </button>
