@@ -27,13 +27,13 @@ ip_version = "IPv6"
 max_header_length = 4096
 
 [studio]
-enabled = true
+enabled = false
 port = 54333
 api_url = "http://127.0.0.1"
 openai_api_key = "env(OPENAI_API_KEY)"
 
 [inbucket]
-enabled = true
+enabled = false
 port = 54334
 smtp_port = 54335
 pop3_port = 54336
@@ -77,7 +77,7 @@ max_frequency = "5s"
 enabled = false
 
 [edge_runtime]
-enabled = true
+enabled = false
 policy = "oneshot"
 inspector_port = 8084
 
