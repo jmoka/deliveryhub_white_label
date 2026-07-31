@@ -23,7 +23,6 @@ const RestauranteCombos = () => {
   const [salvando, setSalvando] = useState(false);
   const [deletando, setDeletando] = useState(null);
   const [alternando, setAlternando] = useState(null);
-  const [buscaProduto, setBuscaProduto] = useState('');
 
   const carregar = () => {
     setLoading(true);
@@ -41,7 +40,6 @@ const RestauranteCombos = () => {
   const abrirNovo = () => {
     setEditando(null);
     setForm(EMPTY_FORM);
-    setBuscaProduto('');
     setShowModal(true);
   };
 
@@ -60,7 +58,6 @@ const RestauranteCombos = () => {
           preco_no_combo: i.preco_no_combo ?? i.products?.price ?? 0,
         })),
       });
-      setBuscaProduto('');
       setShowModal(true);
     } catch (e) {
       alert(e.message);
@@ -71,7 +68,6 @@ const RestauranteCombos = () => {
     setShowModal(false);
     setEditando(null);
     setForm(EMPTY_FORM);
-    setBuscaProduto('');
   };
 
   const addItem = (product_id) => {
@@ -83,7 +79,6 @@ const RestauranteCombos = () => {
       // Preço no combo começa igual ao preço real — o dono abaixa se quiser dar desconto.
       return { ...f, items: [...f.items, { product_id: id, quantity: 1, preco_no_combo: prod?.price ?? 0 }] };
     });
-    setBuscaProduto('');
   };
 
   const removeItem = (product_id) => {
@@ -160,9 +155,6 @@ const RestauranteCombos = () => {
   const prodMap = Object.fromEntries(produtos.map((p) => [p.id, p]));
   const produtosSelecionados = new Set(form.items.map((i) => i.product_id));
   const produtosDisponiveis = produtos.filter((p) => !produtosSelecionados.has(p.id));
-  const produtosFiltrados = produtosDisponiveis.filter((p) =>
-    p.name.toLowerCase().includes(buscaProduto.trim().toLowerCase())
-  );
 
   // Preço (R$) = soma do preço real de tabela; Preço promo (R$) = soma do que o
   // dono decidiu cobrar por cada produto dentro do combo — nenhum dos dois é
@@ -362,32 +354,16 @@ const RestauranteCombos = () => {
 
                 {/* Adicionar produto */}
                 {produtosDisponiveis.length > 0 ? (
-                  <div className="relative">
-                    <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
-                    <input
-                      type="text"
-                      value={buscaProduto}
-                      onChange={(e) => setBuscaProduto(e.target.value)}
-                      placeholder="Buscar produto para adicionar..."
-                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] rounded-lg pl-9 pr-3 py-2 text-sm text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:border-[#FF441F]"
-                    />
-                    {buscaProduto.trim() && (
-                      <div className="mt-1 max-h-48 overflow-y-auto border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg bg-white dark:bg-[#18181B] divide-y divide-[#E4E4E7] dark:divide-[#3F3F46]">
-                        {produtosFiltrados.length > 0 ? produtosFiltrados.map((p) => (
-                          <button
-                            type="button"
-                            key={p.id}
-                            onClick={() => addItem(p.id)}
-                            className="w-full text-left px-3 py-2 text-sm text-[#18181B] dark:text-[#F4F4F5] hover:bg-gray-50 dark:hover:bg-gray-950/40"
-                          >
-                            {p.name} — {fmt(p.price)}
-                          </button>
-                        )) : (
-                          <p className="px-3 py-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhum produto encontrado</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <select
+                    onChange={(e) => { addItem(e.target.value); e.target.value = ''; }}
+                    defaultValue=""
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] rounded-lg px-3 py-2 text-sm text-[#71717A] dark:text-[#A1A1AA]"
+                  >
+                    <option value="" disabled>+ Adicionar produto...</option>
+                    {produtosDisponiveis.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} — {fmt(p.price)}</option>
+                    ))}
+                  </select>
                 ) : (
                   <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Todos os produtos já foram adicionados</p>
                 )}
