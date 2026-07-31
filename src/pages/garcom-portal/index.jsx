@@ -474,25 +474,32 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
                 <button onClick={() => setEditandoId(null)} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">Cancelar</button>
               </div>
             ) : (
-              <p key={p.id} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
-                <span>
-                  {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
-                  {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
-                </span>
-                <span className="flex items-center gap-1.5 flex-shrink-0">
-                  {fmt(p.valor + (p.taxa_cartao_valor || 0))}
-                  {podeMexer && podePagamentoParcial && p.origem === 'garcom' && (
-                    <>
-                      <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
-                        <Icon name="Pencil" size={13} strokeWidth={2.5} />
-                      </button>
-                      <button onClick={() => remover(p)} className="w-6 h-6 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/60 flex-shrink-0">
-                        <Icon name="X" size={14} strokeWidth={2.5} />
-                      </button>
-                    </>
-                  )}
-                </span>
-              </p>
+              <div key={p.id}>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
+                  <span>
+                    {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
+                    {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
+                  </span>
+                  <span className="flex items-center gap-1.5 flex-shrink-0">
+                    {fmt(p.valor + (p.taxa_cartao_valor || 0))}
+                    {podeMexer && podePagamentoParcial && p.origem === 'garcom' && (
+                      <>
+                        <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                          <Icon name="Pencil" size={13} strokeWidth={2.5} />
+                        </button>
+                        <button onClick={() => remover(p)} className="w-6 h-6 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/60 flex-shrink-0">
+                          <Icon name="X" size={14} strokeWidth={2.5} />
+                        </button>
+                      </>
+                    )}
+                  </span>
+                </p>
+                {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
+                  <p className="text-[10px] text-[#A1A1AA] pl-0.5">
+                    Dinheiro: {fmt(p.valor_recebido)} · Troco: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
+                  </p>
+                )}
+              </div>
             )
           ))}
         </div>

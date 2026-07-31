@@ -933,7 +933,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                       className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">Cancelar</button>
                   </div>
                 ) : (
-                  <div key={p.id} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
+                  <div key={p.id}>
+                  <div className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
                     <span>
                       {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
                       {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
@@ -952,6 +953,12 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                         </button>
                       )}
                     </div>
+                  </div>
+                  {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
+                    <p className="text-[10px] text-[#A1A1AA] pl-0.5">
+                      Dinheiro: {fmt(p.valor_recebido)} · Troco: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
+                    </p>
+                  )}
                   </div>
                 )
               ))}
@@ -1389,7 +1396,8 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             {(comanda.pagamentos ?? []).length > 0 && (
               <div className="space-y-1">
                 {comanda.pagamentos.map((p) => (
-                  <div key={p.id} className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
+                  <div key={p.id}>
+                  <div className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
                     <span>
                       {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}
                       {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
@@ -1400,6 +1408,12 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
                         <Icon name="X" size={11} />
                       </button>
                     </div>
+                  </div>
+                  {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
+                    <p className="text-[10px] text-[#A1A1AA] pl-0.5">
+                      Dinheiro: {fmt(p.valor_recebido)} · Troco: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
+                    </p>
+                  )}
                   </div>
                 ))}
               </div>

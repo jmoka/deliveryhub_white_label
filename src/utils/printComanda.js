@@ -292,7 +292,7 @@ ${taxaCartao > 0 ? `<div class="linha"><span>Taxa cartão</span><span>+ ${fmt(ta
 ${pagamentos.length > 0 ? `
 <hr/>
 <div class="center" style="font-size:11px;font-weight:bold">PAGAMENTOS</div>
-${pagamentos.map((p) => `<div class="linha"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>`).join('')}
+${pagamentos.map((p) => `<div class="linha"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>${p.forma_pagamento === 'cash' && p.valor_recebido != null ? `<div class="linha" style="font-size:11px;color:#444"><span>Dinheiro: ${fmt(p.valor_recebido)} · Troco: ${fmt(p.troco || 0)}</span><span></span></div>` : ''}`).join('')}
 ` : `
 <div class="linha"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>
 `}
