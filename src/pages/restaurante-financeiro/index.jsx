@@ -20,13 +20,109 @@ const PAYMENT_ICONS  = { pix: 'QrCode', credit_card: 'CreditCard', debit_card: '
 const PAYMENT_COLORS = { pix: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', credit_card: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', debit_card: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', cash: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-400' };
 const STATUS_LABELS  = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', motoboy_collecting: 'Motoboy', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
 const STATUS_COLORS  = { pending: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400', confirmed: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', preparing: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400', ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', motoboy_collecting: 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400', out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', delivered: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400', canceled: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' };
+const ORIGEM_LABELS = { garcom: 'Garçom', estabelecimento: 'Caixa', delivery: 'Delivery' };
+const CANAL_LABELS  = { delivery: 'Delivery', presencial: 'Salão', balcao: 'Balcão', marketplace: 'Marketplace' };
 
-const PRINT_STYLE = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16px;max-width:800px;margin:0 auto}h1{font-size:18px;font-weight:900;margin-bottom:2px}h2{font-size:13px;font-weight:700;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}.sub{font-size:11px;color:#555;margin-bottom:12px}table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}th{background:#f0f0f0;padding:6px 8px;text-align:left;font-weight:700;border:1px solid #ddd}td{padding:5px 8px;border:1px solid #ddd}.right{text-align:right}.bold{font-weight:700}.green{color:#166534}.red{color:#991b1b}.kpi{display:inline-block;border:1px solid #ddd;border-radius:6px;padding:8px 14px;margin:4px;text-align:center;min-width:120px}.kpi .val{font-size:18px;font-weight:900;display:block}.kpi .lbl{font-size:10px;color:#555}@media print{button{display:none!important}}`;
-const buildPrint = (dados, nome, label) => {
+const MEIO_LABELS = { dinheiro: 'Dinheiro', pix: 'PIX', transferencia: 'Transferência', cartao: 'Cartão' };
+const PRINT_STYLE = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16px;max-width:800px;margin:0 auto}h1{font-size:18px;font-weight:900;margin-bottom:2px}h2{font-size:13px;font-weight:700;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}.sub{font-size:11px;color:#555;margin-bottom:12px}table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}th{background:#f0f0f0;padding:6px 8px;text-align:left;font-weight:700;border:1px solid #ddd}td{padding:5px 8px;border:1px solid #ddd;vertical-align:top}.right{text-align:right}.bold{font-weight:700}.green{color:#166534}.red{color:#991b1b}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}.kpi{border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center}.kpi .val{font-size:18px;font-weight:900;display:block;margin:2px 0}.kpi .lbl{font-size:10px;color:#555}footer{margin-top:16px;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:6px}@media print{button{display:none!important}}`;
+const buildPrint = (dados, nome, label, caixa, taxaPagbank) => {
   const r = dados.resumo;
+  const pedidos = dados.pedidos ?? [];
+  const naoCancelados = pedidos.filter((p) => p.status !== 'canceled');
+
   const pgto = Object.entries(r.por_pagamento ?? {}).map(([k, v]) => `<tr><td>${PAYMENT_LABELS[k] ?? k}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`).join('');
+
+  const porCanal = naoCancelados.reduce((acc, p) => {
+    const c = p.canal ?? 'outro';
+    if (!acc[c]) acc[c] = { count: 0, total: 0 };
+    acc[c].count++; acc[c].total += p.total ?? 0;
+    return acc;
+  }, {});
+  const canalRows = Object.entries(porCanal).map(([k, v]) => `<tr><td>${CANAL_LABELS[k] ?? k}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`).join('');
+
   const saidasRows = (dados.saidas ?? []).map((s) => `<tr><td>${fmtDate(s.criado_em)}</td><td>${s.descricao}</td><td class="right bold red">- ${fmt(s.valor)}</td></tr>`).join('');
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Financeiro</title><style>${PRINT_STYLE}</style></head><body><h1>${nome ?? 'RESTAURANTE'}</h1><div class="sub">Relatório Financeiro — ${label}</div><div><div class="kpi"><span class="val green">${fmt(r.total_vendas)}</span><span class="lbl">Faturamento</span></div><div class="kpi"><span class="val red">- ${fmt(r.total_saidas)}</span><span class="lbl">Saídas</span></div><div class="kpi"><span class="val">${fmt(r.saldo_liquido)}</span><span class="lbl">Saldo Líquido</span></div><div class="kpi"><span class="val">${r.total_pedidos}</span><span class="lbl">Pedidos</span></div></div><h2>Por Forma de Pagamento</h2><table><tr><th>Método</th><th class="right">Qtd</th><th class="right">Total</th></tr>${pgto}</table>${(dados.saidas ?? []).length > 0 ? `<h2>Saídas</h2><table><tr><th>Data</th><th>Descrição</th><th class="right">Valor</th></tr>${saidasRows}</table>` : ''}<footer>Emitido em: ${new Date().toLocaleString('pt-BR')}</footer><script>window.print();setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000)</script></body></html>`;
+
+  const fluxoRows = (dados.fluxo_caixa ?? []).map((f) => `<tr><td>${fmtDate(f.criado_em)}</td><td>#${f.order_id}</td><td>${PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td><td>${ORIGEM_LABELS[f.origem] ?? f.origem}</td><td class="right bold green">${fmt(f.valor)}</td><td class="right">${f.troco > 0 ? fmt(f.troco) : '—'}</td></tr>`).join('');
+
+  const pedidosRows = pedidos.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((p) => {
+    const itens = (p.itens ?? []).map((i) => `${i.quantity}x ${i.product_name}`).join(', ') || '—';
+    return `<tr><td>#${p.id}</td><td>${fmtDate(p.created_at)}</td><td>${p.customers?.name ?? '—'}</td><td>${CANAL_LABELS[p.canal] ?? p.canal ?? '—'}</td><td class="${p.status === 'canceled' ? 'red' : 'green'}">${STATUS_LABELS[p.status] ?? p.status}</td><td>${itens}</td><td class="right bold">${fmt(p.total)}</td></tr>`;
+  }).join('');
+
+  const caixaAberto = caixa?.aberto;
+  const rc = caixaAberto ? (caixa.resumo ?? {}) : null;
+  const porC = rc?.por_pagamento ?? {};
+  const digitalCaixa = Object.entries(porC).filter(([k]) => k !== 'cash').reduce((s, [, v]) => s + v, 0);
+  const taxaEstCaixa = taxaPagbank > 0 ? digitalCaixa * (taxaPagbank / 100) : 0;
+  const sangriasRows = (caixa?.saidas ?? []).map((s) => `<tr><td>${fmtDate(s.criado_em)}</td><td>${MEIO_LABELS[s.meio] ?? s.meio ?? '—'}</td><td>${s.descricao}${s.tipo ? ` (${s.tipo})` : ''}</td><td class="right bold red">- ${fmt(s.valor)}</td></tr>`).join('');
+  const adicoesRows = (caixa?.entradas ?? []).map((e) => `<tr><td>${fmtDate(e.criado_em)}</td><td>${MEIO_LABELS[e.meio] ?? e.meio ?? '—'}</td><td>${e.descricao}</td><td class="right bold green">+ ${fmt(e.valor)}</td></tr>`).join('');
+
+  const fechamentoCaixaHtml = caixaAberto ? `
+<h2>Fechamento de Caixa — Sessão Atual</h2>
+<div class="sub">Operador: ${caixa.nome_operador ?? '—'} · Aberto às: ${fmtDate(caixa.aberto_em)} · Fundo inicial: ${fmt(caixa.valor_inicial)}</div>
+<div class="kpi-grid">
+  <div class="kpi"><span class="val green">${fmt(rc.especie_calculada)}</span><span class="lbl">Espécie Esperada (Dinheiro)</span></div>
+  <div class="kpi"><span class="val">${fmt(digitalCaixa)}</span><span class="lbl">Digital (PagBank)</span></div>
+  <div class="kpi"><span class="val red">${fmt(taxaEstCaixa)}</span><span class="lbl">Taxa Estimada (${taxaPagbank}%)</span></div>
+  <div class="kpi"><span class="val">${fmt((digitalCaixa - taxaEstCaixa))}</span><span class="lbl">Líquido Digital Esperado</span></div>
+</div>
+<table><tr><th></th><th class="right">Valor</th></tr>
+<tr><td>Fundo Inicial</td><td class="right">${fmt(caixa.valor_inicial)}</td></tr>
+<tr><td>+ Adições</td><td class="right bold green">+ ${fmt(rc.total_entradas)}</td></tr>
+<tr><td>- Sangrias / Saídas</td><td class="right bold red">- ${fmt(rc.total_saidas)}</td></tr>
+<tr><td class="bold">= Espécie Esperada em Caixa</td><td class="right bold">${fmt(rc.especie_calculada)}</td></tr>
+</table>
+<h2>Sangrias / Saídas do Caixa (${(caixa.saidas ?? []).length})</h2>
+<table><tr><th>Hora</th><th>Meio</th><th>Descrição</th><th class="right">Valor</th></tr>${sangriasRows || '<tr><td colspan="4">Nenhuma sangria registrada.</td></tr>'}</table>
+<h2>Adições ao Caixa (${(caixa.entradas ?? []).length})</h2>
+<table><tr><th>Hora</th><th>Meio</th><th>Descrição</th><th class="right">Valor</th></tr>${adicoesRows || '<tr><td colspan="4">Nenhuma adição registrada.</td></tr>'}</table>
+` : '<h2>Fechamento de Caixa</h2><div class="sub">Nenhum caixa aberto no momento.</div>';
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Financeiro</title><style>${PRINT_STYLE}</style></head><body>
+<h1>${nome ?? 'RESTAURANTE'}</h1>
+<div class="sub">Relatório Financeiro Analítico — ${label}</div>
+
+${fechamentoCaixaHtml}
+
+<h2>Resumo Geral do Período</h2>
+<div class="kpi-grid">
+  <div class="kpi"><span class="val green">${fmt(r.total_vendas)}</span><span class="lbl">Faturamento</span></div>
+  <div class="kpi"><span class="val red">- ${fmt(r.total_saidas)}</span><span class="lbl">Saídas</span></div>
+  <div class="kpi"><span class="val">${fmt(r.saldo_liquido)}</span><span class="lbl">Saldo Líquido</span></div>
+  <div class="kpi"><span class="val">${fmt(r.ticket_medio)}</span><span class="lbl">Ticket Médio</span></div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi"><span class="val">${r.total_pedidos}</span><span class="lbl">Total Pedidos</span></div>
+  <div class="kpi"><span class="val green">${r.entregues}</span><span class="lbl">Finalizados</span></div>
+  <div class="kpi"><span class="val">${r.em_andamento}</span><span class="lbl">Em Andamento</span></div>
+  <div class="kpi"><span class="val red">${r.cancelados}</span><span class="lbl">Cancelados</span></div>
+</div>
+
+<h2>Comissões e Gorjetas</h2>
+<table><tr><th></th><th class="right">Gerado no Período</th><th class="right">Pago no Período</th></tr>
+<tr><td>Comissão Garçom</td><td class="right">${fmt(r.total_comissao)}</td><td class="right bold">${fmt(r.total_comissoes_pagas)}</td></tr>
+<tr><td>Gorjeta</td><td class="right">${fmt(r.total_gorjeta)}</td><td class="right bold">${fmt(r.total_gorjetas_pagas)}</td></tr>
+<tr><td>Troco</td><td class="right" colspan="2">${fmt(r.total_troco)}</td></tr>
+</table>
+
+<h2>Por Forma de Pagamento</h2>
+<table><tr><th>Método</th><th class="right">Qtd</th><th class="right">Total</th></tr>${pgto || '<tr><td colspan="3">Sem dados no período.</td></tr>'}</table>
+
+<h2>Por Canal de Venda</h2>
+<table><tr><th>Canal</th><th class="right">Pedidos</th><th class="right">Total</th></tr>${canalRows || '<tr><td colspan="3">Sem dados no período.</td></tr>'}</table>
+
+<h2>Saídas (${(dados.saidas ?? []).length})</h2>
+<table><tr><th>Data</th><th>Descrição</th><th class="right">Valor</th></tr>${saidasRows || '<tr><td colspan="3">Nenhuma saída no período.</td></tr>'}</table>
+
+<h2>Fluxo de Caixa Detalhado (${(dados.fluxo_caixa ?? []).length})</h2>
+<table><tr><th>Hora</th><th>Pedido</th><th>Forma</th><th>Origem</th><th class="right">Valor</th><th class="right">Troco</th></tr>${fluxoRows || '<tr><td colspan="6">Sem movimento no período.</td></tr>'}</table>
+
+<h2>Todos os Pedidos (${pedidos.length})</h2>
+<table><tr><th>Pedido</th><th>Data/Hora</th><th>Cliente</th><th>Canal</th><th>Status</th><th>Itens</th><th class="right">Total</th></tr>${pedidosRows || '<tr><td colspan="7">Nenhum pedido no período.</td></tr>'}</table>
+
+<footer>Emitido em: ${new Date().toLocaleString('pt-BR')}</footer>
+<script>window.print();setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000)</script>
+</body></html>`;
 };
 const printIframe = (html) => {
   const f = document.createElement('iframe');
@@ -183,7 +279,7 @@ const RestauranteFinanceiro = () => {
               Buscar
             </button>
             {dados && (
-              <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label))}
+              <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label, caixa, taxaPagbank))}
                 className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                 <Icon name="Printer" size={14} /> Imprimir
               </button>
