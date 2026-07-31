@@ -4,7 +4,7 @@ import {
   login, logout, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getCombos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
-  registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda, excluirComanda,
+  registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda,
   confirmarEntregaItem, dividirComanda, editarObservacaoItem,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
@@ -374,6 +374,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   const [editandoId, setEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
+  const emAndamentoRef = useRef(false);
 
   const saldo = comanda.saldo?.saldo ?? 0;
   // Falta pagar já soma gorjeta/acréscimo (calculado pelo componente pai) — o campo de
@@ -388,22 +389,29 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   const taxaCartaoValorParcial = isCartao ? parseFloat((Number(valor || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
 
   const registrar = async () => {
+    // Guard síncrono — clique duplo rápido pode passar 2x antes do disabled={salvando}
+    // re-renderizar, duplicando o lançamento (mesmo bug já visto no fechamento do dono).
+    if (emAndamentoRef.current) return;
     const v = Number(valor);
     if (!v || v <= 0) return;
     if (forma === 'cash' && valorRecebido && Number(valorRecebido) < v) {
       setErro('Valor recebido não pode ser menor que o valor a pagar.');
       return;
     }
+    emAndamentoRef.current = true;
     setErro(null);
     setSalvando(true);
     try {
-      await registrarPagamento(comanda.id, v, forma, forma === 'cash' && valorRecebido ? Number(valorRecebido) : undefined);
+      // Sem valor recebido digitado (pagamento exato, sem troco), manda o próprio valor
+      // pago — senão o backend não credita a venda no caixa físico (fica só o fundo).
+      await registrarPagamento(comanda.id, v, forma, forma === 'cash' ? Number(valorRecebido || v) : undefined);
       setValor('');
       setValorRecebido('');
       await onRegistrado();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível registrar o pagamento.');
     } finally {
+      emAndamentoRef.current = false;
       setSalvando(false);
     }
   };
@@ -616,7 +624,6 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
   const [observacaoEditandoId, setObservacaoEditandoId] = useState(null);
   const [observacaoInput, setObservacaoInput] = useState('');
-  const [excluindo, setExcluindo] = useState(false);
   const [mostrarDividir, setMostrarDividir] = useState(false);
   const [dividindo, setDividindo] = useState(false);
 
@@ -632,19 +639,6 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   }, [comandaId]);
 
   useEffect(() => { carregar(); }, [carregar]);
-
-  const excluir = async () => {
-    if (!window.confirm('Excluir esta comanda? Essa ação não pode ser desfeita.')) return;
-    setErro(null);
-    setExcluindo(true);
-    try {
-      await excluirComanda(comandaId);
-      onVoltar();
-    } catch (err) {
-      setErro(err.message ?? 'Não foi possível excluir a comanda.');
-      setExcluindo(false);
-    }
-  };
 
   const adicionarProduto = async (item) => {
     setErro(null);
@@ -797,9 +791,6 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
   const temEntregaPendente = (comanda.itens ?? []).some((i) => (i.status === 'preparando' || i.status === 'pronto') && !i.entregue_garcom);
   const fechada = comanda.status === 'fechada_garcom';
-  // Só dá pra excluir enquanto nada foi mandado pra cozinha ainda — depois disso quem
-  // decide é o estabelecimento (cancelar via PDV), pra não sumir pedido em preparo.
-  const podeExcluir = (comanda.itens ?? []).every((i) => i.status === 'pendente');
 
   // Gorjeta só vira valor definitivo quando o caixa fecha a conta (orders.gorjeta_valor).
   // Antes disso é só estimativa (gorjeta_sugestao) — não soma junto do saldo real do
@@ -953,12 +944,6 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
             </div>
           );
         })()}
-        {!fechada && podeExcluir && (
-          <button onClick={excluir} disabled={excluindo}
-            className="w-full mt-2 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40 rounded-xl disabled:opacity-50">
-            {excluindo ? 'Excluindo...' : 'Excluir comanda'}
-          </button>
-        )}
       </div>
 
       {!fechada && (

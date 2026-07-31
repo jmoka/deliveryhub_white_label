@@ -82,9 +82,6 @@ export const confirmarEntregaItem = (comandaId, itemId) =>
 export const editarClienteComanda = (comandaId, cliente_nome, cliente_telefone) =>
   garcomFetch(`/comandas/${comandaId}/cliente`, { method: 'PATCH', body: JSON.stringify({ cliente_nome, cliente_telefone }) });
 
-export const excluirComanda = (comandaId) =>
-  garcomFetch(`/comandas/${comandaId}`, { method: 'DELETE' });
-
 export const registrarPagamento = (comandaId, valor, forma_pagamento, valor_recebido) =>
   garcomFetch(`/comandas/${comandaId}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento, valor_recebido }) });
 

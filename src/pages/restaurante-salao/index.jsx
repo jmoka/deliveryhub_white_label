@@ -355,6 +355,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [acrescimoInput, setAcrescimoInput] = useState('');
   const [forma, setForma] = useState('pix');
   const formaTocada = useRef(false);
+  const emAndamentoRef = useRef(false);
   const [gorjeta, setGorjeta] = useState('');
   const [gorjetaPercentual, setGorjetaPercentual] = useState(0);
   const [erro, setErro] = useState(null);
@@ -371,7 +372,6 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
-  const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
   const [mesaDestino, setMesaDestino] = useState('');
   const [mostrarQr, setMostrarQr] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
@@ -380,6 +380,10 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [formaEdicao, setFormaEdicao] = useState('pix');
   const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
   const [semGorjeta, setSemGorjeta] = useState(false);
+  // 'comanda' = cobra a gorjeta junto no fechamento (padrão); 'pix'/'dinheiro' = cliente
+  // já pagou a gorjeta direto pro garçom, por fora — não cobra na comanda nem conta pro
+  // repasse do garçom (ver salao-pdv.service.ts pagar()).
+  const [formaGorjeta, setFormaGorjeta] = useState('comanda');
   const [observacaoEditandoId, setObservacaoEditandoId] = useState(null);
   const [observacaoInput, setObservacaoInput] = useState('');
 
@@ -418,6 +422,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 
   const acao = async (fn) => {
+    // Guard síncrono (ref, não state) — clique duplo muito rápido pode disparar 2x
+    // antes do `disabled={salvando}` re-renderizar, duplicando lançamento financeiro
+    // (foi o caso real: 2 entradas de dinheiro idênticas pra mesma comanda).
+    if (emAndamentoRef.current) return;
+    emAndamentoRef.current = true;
     setErro(null);
     setSalvando(true);
     try {
@@ -427,6 +436,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     } catch (err) {
       setErro(err.message);
     } finally {
+      emAndamentoRef.current = false;
       setSalvando(false);
     }
   };
@@ -475,15 +485,10 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   };
 
   const pagar = () => {
-    if (forma === 'cash' && valorRecebidoFinal && Number(valorRecebidoFinal) < valorACobrarFinal) {
-      setErro('Valor recebido não pode ser menor que o valor a pagar.');
-      return;
-    }
     acao(async () => {
-      const res = await pagarComandaSalao(
-        comandaId, forma, gorjetaEfetiva,
-        forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
-      );
+      // Itens já pagos via "Pagar parcial" antes de chegar aqui (saldo obrigatoriamente
+      // zerado) — esse passo só cobra a gorjeta, se houver, e só quando "na comanda".
+      const res = await pagarComandaSalao(comandaId, forma, gorjetaEfetiva, undefined, formaGorjetaAtiva !== 'comanda');
       if (res?.recibo?.via !== 'agente') {
         printReciboCliente(comanda, comanda.itens ?? [], {
           subtotal,
@@ -583,7 +588,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     acao(async () => {
       await registrarPagamentoParcialSalao(
         comandaId, v, formaPagamentoParcial,
-        formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) : undefined,
+        // Sem valor recebido digitado, manda o próprio valor pago — senão não credita
+        // a venda em dinheiro no caixa físico.
+        formaPagamentoParcial === 'cash' ? Number(valorRecebidoParcial || v) : undefined,
       );
       setValorPagamento('');
       setValorRecebidoParcial('');
@@ -636,10 +643,16 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   // se o caixa dessa comanda já tiver sido fechado (resumo já foi gravado e congelado).
   const podeCorrigirFormaPagamento = podeEditar || comanda.status === 'paga';
   const gorjetaEfetiva = semGorjeta ? 0 : Number(gorjeta || 0);
+  // Ignora a escolha "direto" se a gorjeta zerou depois (evita ficar preso escondendo o
+  // select principal por engano — mesmo bug que já rolou antes com essa tela).
+  const formaGorjetaAtiva = gorjetaEfetiva > 0 ? formaGorjeta : 'comanda';
+  // Gorjeta paga direto pro garçom (pix/dinheiro, por fora) não entra no valor cobrado
+  // pela comanda — só a opção "na comanda" cobra junto no fechamento.
+  const gorjetaCobrancaComanda = formaGorjetaAtiva === 'comanda' ? gorjetaEfetiva : 0;
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
   const saldoDevedor = comanda.saldo?.saldo ?? totalFinal;
-  const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + gorjetaEfetiva).toFixed(2));
+  const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + gorjetaCobrancaComanda).toFixed(2));
   const taxaCartaoValorFinal = isCartao(forma) ? parseFloat((valorACobrarFinalBase * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const valorACobrarFinal = parseFloat((valorACobrarFinalBase + taxaCartaoValorFinal).toFixed(2));
   // Taxa de cartão de pagamentos parciais já registrados (ex: garçom cobrou parte no cartão
@@ -647,7 +660,6 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   // que antes só contavam a taxa da forma de pagamento selecionada agora pro fechamento.
   const taxaCartaoRegistrada = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor || 0), 0);
   const taxaCartaoTotalExibida = taxaCartaoValorFinal + taxaCartaoRegistrada;
-  const trocoFinal = forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) - valorACobrarFinal : null;
   const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
 
@@ -973,13 +985,6 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
         {podeEditar && (
         <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
-          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento</label>
-          <select value={forma} onChange={(e) => { formaTocada.current = true; setForma(e.target.value); }} className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
-            <option value="pix">PIX</option>
-            <option value="credit_card">Cartão de crédito</option>
-            <option value="debit_card">Cartão de débito</option>
-            <option value="cash">Dinheiro</option>
-          </select>
           <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
             Gorjeta {gorjetaPercentual > 0 ? `(sugerida ${gorjetaPercentual}% — ajustável)` : '(opcional)'}
           </label>
@@ -989,13 +994,40 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             <input type="checkbox" checked={semGorjeta} onChange={(e) => setSemGorjeta(e.target.checked)} className="rounded" />
             Não cobrar gorjeta
           </label>
+
+          {!semGorjeta && gorjetaEfetiva > 0 && (
+            <>
+              <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento da gorjeta</label>
+              <select
+                value={formaGorjeta}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setFormaGorjeta(v);
+                  // forma continua existindo só como valor técnico (payment_method aceita
+                  // só pix/credit_card/debit_card/cash no banco) — não aparece mais pro
+                  // usuário escolher, é derivado direto dessa mesma escolha.
+                  formaTocada.current = true;
+                  setForma(v === 'dinheiro' ? 'cash' : 'pix');
+                }}
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
+                <option value="comanda">Na comanda</option>
+                <option value="pix">Pix direto</option>
+                <option value="dinheiro">Dinheiro direto</option>
+              </select>
+              {formaGorjetaAtiva !== 'comanda' && (
+                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                  Não entra no valor cobrado da comanda nem no repasse do garçom — ele já ficou com o dinheiro.
+                </p>
+              )}
+            </>
+          )}
           <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl px-3 py-2 space-y-1 mt-1">
             <div className="flex justify-between text-sm">
               <span className="text-[#71717A] dark:text-[#A1A1AA]">Valor da comanda</span>
               <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalFinal)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta</span>
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta{formaGorjetaAtiva !== 'comanda' ? ' (direto ao garçom)' : ''}</span>
               <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(gorjetaEfetiva)}</span>
             </div>
             {taxaCartaoTotalExibida > 0 && (
@@ -1006,7 +1038,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             )}
             <div className="flex justify-between text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
               <span>Total (comanda + gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
-              <span>{fmt(totalFinal + gorjetaEfetiva + taxaCartaoTotalExibida)}</span>
+              <span>{fmt(totalFinal + gorjetaCobrancaComanda + taxaCartaoTotalExibida)}</span>
             </div>
             {(comanda.saldo?.total_pago ?? 0) > 0.01 && (
               <>
@@ -1021,18 +1053,6 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               </>
             )}
           </div>
-          {forma === 'cash' && (
-            <div className="flex items-center gap-1.5">
-              <input type="number" value={valorRecebidoFinal} onChange={(e) => setValorRecebidoFinal(e.target.value)}
-                placeholder="Valor recebido do cliente"
-                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
-              {trocoFinal !== null && (
-                <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                  Troco: {fmt(Math.max(trocoFinal, 0))}
-                </span>
-              )}
-            </div>
-          )}
         </div>
         )}
 
@@ -1084,6 +1104,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
 
   const [forma, setForma] = useState('pix');
   const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
+  const emAndamentoRef = useRef(false);
 
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
@@ -1113,6 +1134,11 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
   const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 
   const acao = async (fn) => {
+    // Guard síncrono (ref, não state) — clique duplo muito rápido pode disparar 2x
+    // antes do `disabled={salvando}` re-renderizar, duplicando lançamento financeiro
+    // (foi o caso real: 2 entradas de dinheiro idênticas pra mesma comanda).
+    if (emAndamentoRef.current) return;
+    emAndamentoRef.current = true;
     setErro(null);
     setSalvando(true);
     try {
@@ -1122,6 +1148,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
     } catch (err) {
       setErro(err.message);
     } finally {
+      emAndamentoRef.current = false;
       setSalvando(false);
     }
   };
@@ -1152,7 +1179,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
     acao(async () => {
       await registrarPagamentoParcialSalao(
         comandaId, v, formaPagamentoParcial,
-        formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) : undefined,
+        // Sem valor recebido digitado, manda o próprio valor pago — senão não credita
+        // a venda em dinheiro no caixa físico.
+        formaPagamentoParcial === 'cash' ? Number(valorRecebidoParcial || v) : undefined,
       );
       setValorPagamento('');
       setValorRecebidoParcial('');
@@ -1177,7 +1206,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
     acao(async () => {
       const res = await pagarComandaSalao(
         comandaId, forma, undefined,
-        forma === 'cash' && valorRecebidoFinal ? Number(valorRecebidoFinal) : undefined,
+        // Idem: sem isso, pagamento em dinheiro exato (sem digitar valor recebido) nunca
+        // credita a venda no caixa físico.
+        forma === 'cash' ? Number(valorRecebidoFinal || valorACobrarFinal) : undefined,
       );
       if (res?.recibo?.via !== 'agente') {
         printReciboCliente(comanda, comanda.itens ?? [], {
@@ -1387,35 +1418,13 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
             )}
           </div>
 
-          <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
-            <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento (fechamento)</label>
-            <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm">
-              <option value="pix">PIX</option>
-              <option value="credit_card">Cartão de crédito</option>
-              <option value="debit_card">Cartão de débito</option>
-              <option value="cash">Dinheiro</option>
-            </select>
-            {taxaCartaoValorFinal > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão ({taxaCartaoPercentual}%)</span>
-                <span className="text-[#FF441F]">+ {fmt(taxaCartaoValorFinal)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
-              <span>Falta pagar</span><span>{fmt(valorACobrarFinal)}</span>
-            </div>
-            {forma === 'cash' && (
-              <div className="flex items-center gap-1.5">
-                <input type="number" value={valorRecebidoFinal} onChange={(e) => setValorRecebidoFinal(e.target.value)}
-                  placeholder="Valor recebido do cliente"
-                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
-                {trocoFinal !== null && (
-                  <span className={`text-sm font-bold flex-shrink-0 ${trocoFinal < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                    Troco: {fmt(Math.max(trocoFinal, 0))}
-                  </span>
-                )}
-              </div>
-            )}
+          {/* Venda balcão não tem gorjeta e o botão Finalizar só habilita com saldo
+              zerado (tudo já pago via "Pagar parcial") — não sobra nada pra cobrar
+              aqui, então não faz sentido pedir forma de pagamento de novo. */}
+          <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3">
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+              <Icon name="CheckCircle2" size={16} /> Tudo pago — pronto pra finalizar
+            </p>
           </div>
 
           {erro && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erro}</p>}
