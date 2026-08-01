@@ -309,10 +309,20 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
           <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="ArrowLeft" size={20} /></button>
           <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Adicionar produto</h2>
         </div>
-        <div className="relative">
-          <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..." autoFocus
-            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
+            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto..." autoFocus
+              className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          </div>
+          {categorias.includes('Combos') && (
+            <button type="button" onClick={() => setCategoria((c) => (c === 'Combos' ? 'todas' : 'Combos'))}
+              className={`flex items-center gap-1 px-3 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap flex-shrink-0 ${
+                categoria === 'Combos' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#18181B] dark:text-[#F4F4F5]'
+              }`}>
+              <Icon name="Package" size={15} /> Combos
+            </button>
+          )}
         </div>
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1">
           {categorias.map((c) => (
@@ -347,6 +357,9 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
                 {fmt(p.preco_promo ?? p.price)}
                 {p.quantidade_estoque != null && <span className="text-[#A1A1AA]"> · estoque: {p.quantidade_estoque}</span>}
               </p>
+              {p.tipo === 'combo' && p.description && (
+                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] italic mt-0.5">{p.description}</p>
+              )}
             </div>
             <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
