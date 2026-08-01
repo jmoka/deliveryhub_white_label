@@ -357,6 +357,9 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
                 {fmt(p.preco_promo ?? p.price)}
                 {p.quantidade_estoque != null && <span className="text-[#A1A1AA]"> · estoque: {p.quantidade_estoque}</span>}
               </p>
+              {p.tipo === 'combo' && p.description && (
+                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] italic mt-0.5">{p.description}</p>
+              )}
             </div>
             <Icon name="Plus" size={18} className="text-[#FF441F] flex-shrink-0" />
           </button>
