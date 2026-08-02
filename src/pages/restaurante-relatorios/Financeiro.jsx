@@ -35,7 +35,7 @@ const buildPrintHtml = (dados, restauranteNome, label) => {
     .join('');
 
   const fluxoRows = (dados.fluxo_caixa ?? [])
-    .map((f) => `<tr><td>${new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td><td>#${f.order_id}</td><td>${PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td><td>${ORIGEM_LABELS[f.origem] ?? f.origem}</td><td class="right bold green">${fmt(f.valor)}</td>${f.troco > 0 ? `<td class="right">${fmt(f.troco)}</td>` : '<td class="right">—</td>'}</tr>`)
+    .map((f) => `<tr><td>${new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td><td>#${f.order_id}</td><td>${f.cliente_nome ?? '—'}</td><td>${f.atendente_nome ?? '—'}</td><td>${PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td><td>${ORIGEM_LABELS[f.origem] ?? f.origem}</td><td class="right bold green">${fmt(f.valor)}</td><td class="right">${(f.taxa_cartao_valor ?? 0) > 0 ? fmt(f.taxa_cartao_valor) : '—'}</td><td class="right bold">${fmt((f.valor ?? 0) + (f.taxa_cartao_valor ?? 0))}</td>${f.troco > 0 ? `<td class="right">${fmt(f.troco)}</td>` : '<td class="right">—</td>'}</tr>`)
     .join('');
 
   const pedidosRows = pedidos
@@ -83,7 +83,7 @@ const buildPrintHtml = (dados, restauranteNome, label) => {
 <table><tr><th>Hora</th><th>Descrição</th><th class="right">Valor</th></tr>${saidasRows || '<tr><td colspan="3">Nenhuma saída no período.</td></tr>'}</table>
 
 <h2>Fluxo de Caixa Detalhado (${(dados.fluxo_caixa ?? []).length})</h2>
-<table><tr><th>Hora</th><th>Pedido</th><th>Forma</th><th>Origem</th><th class="right">Valor</th><th class="right">Troco</th></tr>${fluxoRows || '<tr><td colspan="6">Sem movimento no período.</td></tr>'}</table>
+<table><tr><th>Hora</th><th>Pedido</th><th>Cliente</th><th>Atendente</th><th>Forma</th><th>Origem</th><th class="right">Valor</th><th class="right">Taxa Cartão</th><th class="right">Valor Total</th><th class="right">Troco</th></tr>${fluxoRows || '<tr><td colspan="10">Sem movimento no período.</td></tr>'}</table>
 
 <h2>Todos os Pedidos (${pedidos.length})</h2>
 <table><tr><th>Pedido</th><th>Data/Hora</th><th>Cliente</th><th>Canal</th><th>Status</th><th>Itens</th><th class="right">Total</th></tr>${pedidosRows || '<tr><td colspan="7">Nenhum pedido no período.</td></tr>'}</table>
@@ -100,6 +100,7 @@ const RelatorioFinanceiro = () => {
   const [label, setLabel] = useState('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
+  const [filtroForma, setFiltroForma] = useState(null);
 
   useEffect(() => {
     getMinhaEmpresa().then((d) => setRestauranteNome(d.empresa?.name ?? '')).catch(() => {});
@@ -108,7 +109,7 @@ const RelatorioFinanceiro = () => {
   const buscar = async () => {
     const range = buildRange(filtro.modo, filtro.dia, filtro.mes, filtro.ano, filtro.periodoIni, filtro.periodoFim);
     if (!range) return;
-    setLoading(true); setErro(null);
+    setLoading(true); setErro(null); setFiltroForma(null);
     try {
       const d = await getRelatorio(range.de, range.ate);
       setDados(d);
@@ -121,6 +122,12 @@ const RelatorioFinanceiro = () => {
 
   const r = dados?.resumo;
   const fluxo = (dados?.fluxo_caixa ?? []).slice().sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+  const fluxoFiltrado = !filtroForma
+    ? fluxo
+    : filtroForma === 'taxa_cartao'
+      ? fluxo.filter((f) => (f.taxa_cartao_valor ?? 0) > 0)
+      : fluxo.filter((f) => f.forma_pagamento === filtroForma);
+  const resumoFiltro = filtroForma ? r?.por_pagamento?.[filtroForma] : null;
   const maioresVendas = useMemo(() =>
     (dados?.pedidos ?? [])
       .filter((p) => p.status !== 'canceled')
@@ -204,21 +211,40 @@ const RelatorioFinanceiro = () => {
                 {Object.entries(r.por_pagamento ?? {}).length === 0 ? (
                   <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] col-span-4 text-center py-4">Sem dados no período.</p>
                 ) : Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
-                  <div key={k} className="border border-[#F4F4F5] dark:border-[#3F3F46] rounded-xl p-3">
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setFiltroForma((atual) => (atual === k ? null : k))}
+                    className={`text-left border rounded-xl p-3 transition-colors ${filtroForma === k ? 'border-green-500 bg-green-50 dark:bg-green-950/30 dark:border-green-600' : 'border-[#F4F4F5] dark:border-[#3F3F46] hover:border-green-300 dark:hover:border-green-800'}`}
+                  >
                     <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1">{PAYMENT_LABELS[k] ?? k}</p>
                     <p className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(v.total)}</p>
                     <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{v.count} pagamento{v.count !== 1 ? 's' : ''}</p>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
 
             <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
-              <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46]">
-                <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Fluxo de Caixa Detalhado ({fluxo.length})</p>
+              <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
+                  Fluxo de Caixa Detalhado ({fluxoFiltrado.length}{filtroForma ? ` de ${fluxo.length}` : ''})
+                </p>
+                {filtroForma && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+                      Filtro: {PAYMENT_LABELS[filtroForma] ?? filtroForma} — Total {fmt(resumoFiltro?.total ?? 0)} ({resumoFiltro?.count ?? 0} pagamento{(resumoFiltro?.count ?? 0) !== 1 ? 's' : ''})
+                    </span>
+                    <button type="button" onClick={() => setFiltroForma(null)} className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 underline">
+                      Limpar
+                    </button>
+                  </div>
+                )}
               </div>
-              {fluxo.length === 0 ? (
-                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhum pagamento registrado no período.</p>
+              {fluxoFiltrado.length === 0 ? (
+                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">
+                  {filtroForma ? 'Nenhum pagamento para esse filtro.' : 'Nenhum pagamento registrado no período.'}
+                </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -226,19 +252,27 @@ const RelatorioFinanceiro = () => {
                       <tr className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">
                         <th className="text-left px-5 py-2">Hora</th>
                         <th className="text-left px-5 py-2">Pedido</th>
+                        <th className="text-left px-5 py-2">Cliente</th>
+                        <th className="text-left px-5 py-2">Atendente</th>
                         <th className="text-left px-5 py-2">Forma</th>
                         <th className="text-left px-5 py-2">Origem</th>
                         <th className="text-right px-5 py-2">Valor</th>
+                        <th className="text-right px-5 py-2">Taxa Cartão</th>
+                        <th className="text-right px-5 py-2">Valor Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
-                      {fluxo.map((f, i) => (
+                      {fluxoFiltrado.map((f, i) => (
                         <tr key={i} className="hover:bg-[#FAFAFA] dark:hover:bg-[#18181B]">
                           <td className="px-5 py-2.5 text-xs text-[#71717A] dark:text-[#A1A1AA]">{new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
                           <td className="px-5 py-2.5 font-semibold">#{f.order_id}</td>
+                          <td className="px-5 py-2.5 text-[#71717A] dark:text-[#A1A1AA]">{f.cliente_nome ?? '—'}</td>
+                          <td className="px-5 py-2.5 text-[#71717A] dark:text-[#A1A1AA]">{f.atendente_nome ?? '—'}</td>
                           <td className="px-5 py-2.5">{PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td>
                           <td className="px-5 py-2.5 text-[#71717A] dark:text-[#A1A1AA]">{ORIGEM_LABELS[f.origem] ?? f.origem}</td>
                           <td className="px-5 py-2.5 text-right font-bold text-green-700 dark:text-green-400">{fmt(f.valor)}</td>
+                          <td className="px-5 py-2.5 text-right text-[#71717A] dark:text-[#A1A1AA]">{(f.taxa_cartao_valor ?? 0) > 0 ? fmt(f.taxa_cartao_valor) : '—'}</td>
+                          <td className="px-5 py-2.5 text-right font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt((f.valor ?? 0) + (f.taxa_cartao_valor ?? 0))}</td>
                         </tr>
                       ))}
                     </tbody>
