@@ -277,7 +277,21 @@ const RestauranteFinanceiro = () => {
 
         {/* Análise por Período */}
         <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
-          <p className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest mb-3">Análise por Período</p>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <p className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest">Análise por Período</p>
+            {dados && (
+              <div className="flex gap-2">
+                <button onClick={() => setAbaAtiva('saidas')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${abaAtiva === 'saidas' ? 'bg-red-600 border-red-600 text-white' : 'border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40'}`}>
+                  Sangria ({(dados.saidas ?? []).length})
+                </button>
+                <button onClick={() => setAbaAtiva('entradas')}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${abaAtiva === 'entradas' ? 'bg-green-600 border-green-600 text-white' : 'border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40'}`}>
+                  Adição ({(dados.entradas ?? []).length})
+                </button>
+              </div>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2 items-end">
             <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl">
               {MODOS.map((m) => (
@@ -338,7 +352,7 @@ const RestauranteFinanceiro = () => {
             </div>
 
             <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
-              {[{ id: 'resumo', label: 'Entradas' }, { id: 'canais', label: 'Canais' }, { id: 'saidas', label: `Saídas (${(dados.saidas ?? []).length})` }, { id: 'pedidos', label: `Pedidos (${dados.pedidos?.length ?? 0})` }].map((a) => (
+              {[{ id: 'resumo', label: 'Entradas' }, { id: 'canais', label: 'Canais' }, { id: 'saidas', label: `Sangrias (${(dados.saidas ?? []).length})` }, { id: 'entradas', label: `Adições (${(dados.entradas ?? []).length})` }, { id: 'pedidos', label: `Pedidos (${dados.pedidos?.length ?? 0})` }].map((a) => (
                 <button key={a.id} onClick={() => setAbaAtiva(a.id)}
                   className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${abaAtiva === a.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                   {a.label}
@@ -399,6 +413,27 @@ const RestauranteFinanceiro = () => {
                         ))}
                       </div>
                       <div className="px-5 py-3 bg-red-50 dark:bg-red-950/40 border-t border-red-100 dark:border-red-800 flex justify-between"><span className="text-sm font-bold text-red-700 dark:text-red-400">Total saídas</span><span className="text-sm font-black text-red-700 dark:text-red-400">- {fmt(r.total_saidas)}</span></div>
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {abaAtiva === 'entradas' && (
+              <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
+                {(dados.entradas ?? []).length === 0
+                  ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhuma adição registrada no período.</p>
+                  : (
+                    <div>
+                      <div className="px-5 py-3 bg-[#FAFAFA] dark:bg-[#18181B] border-b border-[#F4F4F5] dark:border-[#3F3F46] flex justify-between text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest"><span>Data / Descrição</span><span>Valor</span></div>
+                      <div className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46] max-h-[400px] overflow-y-auto">
+                        {(dados.entradas ?? []).sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em)).map((e, i) => (
+                          <div key={i} className="flex items-center justify-between px-5 py-3">
+                            <div><p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{e.descricao}</p><p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtDate(e.criado_em)}{e.meio && <span className="ml-1.5 px-1.5 py-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded text-[10px] capitalize">{MEIO_LABELS[e.meio] ?? e.meio}</span>}</p></div>
+                            <p className="font-bold text-green-600 dark:text-green-400 text-sm flex-shrink-0">+ {fmt(e.valor)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-5 py-3 bg-green-50 dark:bg-green-950/40 border-t border-green-100 dark:border-green-800 flex justify-between"><span className="text-sm font-bold text-green-700 dark:text-green-400">Total adições</span><span className="text-sm font-black text-green-700 dark:text-green-400">+ {fmt(r.total_entradas)}</span></div>
                     </div>
                   )}
               </div>
