@@ -157,6 +157,8 @@ export const voltarStatusItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/voltar`, { method: 'PATCH' });
 export const cancelarItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/cancelar`, { method: 'PATCH' });
+export const moverItemRestaurante = (itemId, direcao) =>
+  apiFetch(`/kds/itens/${itemId}/mover`, { method: 'PATCH', body: JSON.stringify({ direcao }) });
 export const getRelatorio = (de, ate) => apiFetch(`/relatorio?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const getRelatorioFretes = (periodo = 'hoje') => apiFetch(`/relatorio/fretes?periodo=${encodeURIComponent(periodo)}`);
 export const getRelatorioGarcom = (de, ate) => apiFetch(`/relatorio/garcom?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);

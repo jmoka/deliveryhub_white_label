@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
@@ -10,7 +10,7 @@ import Icon from '../../components/AppIcon';
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
 // pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, onAbrirComanda, onSalvarObservacao }) => {
+const ItemCard = ({ item, posicao, now, ehPrimeiro, ehUltimo, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, onMover, onAbrirComanda, onSalvarObservacao }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -43,6 +43,18 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
           <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
             {posicao}
           </span>
+          {item.status === 'enviado' && onMover && (
+            <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => onMover(item, 'cima')} disabled={ehPrimeiro} title="Adiantar — subir na fila"
+                className="w-5 h-4 flex items-center justify-center rounded text-[#71717A] enabled:hover:text-white enabled:hover:bg-[#2A2A2A] disabled:opacity-20">
+                <Icon name="ChevronUp" size={13} />
+              </button>
+              <button onClick={() => onMover(item, 'baixo')} disabled={ehUltimo} title="Atrasar — descer na fila"
+                className="w-5 h-4 flex items-center justify-center rounded text-[#71717A] enabled:hover:text-white enabled:hover:bg-[#2A2A2A] disabled:opacity-20">
+                <Icon name="ChevronDown" size={13} />
+              </button>
+            </div>
+          )}
           <div className="leading-tight">
             <p className="text-xl font-black text-white">Quantidade: {item.quantity}</p>
             <p className="text-lg font-bold text-white">Produto: {item.product_name}</p>
@@ -264,6 +276,15 @@ const RestauranteProducao = () => {
     carregar(impressoras);
   };
 
+  const moverItem = async (item, direcao) => {
+    try {
+      await moverItemRestaurante(item.id, direcao);
+      carregar(impressoras);
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   const cancelarItem = async (item) => {
     if (!confirm(`Cancelar "${item.product_name}"? Esta ação não pode ser desfeita.`)) return;
     try {
@@ -430,6 +451,7 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                              ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
                           ))}
                         </div>
