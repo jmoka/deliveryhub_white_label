@@ -35,7 +35,7 @@ const buildPrintHtml = (dados, restauranteNome, label) => {
     .join('');
 
   const fluxoRows = (dados.fluxo_caixa ?? [])
-    .map((f) => `<tr><td>${new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td><td>#${f.order_id}</td><td>${PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td><td>${ORIGEM_LABELS[f.origem] ?? f.origem}</td><td class="right bold green">${fmt(f.valor)}</td>${f.troco > 0 ? `<td class="right">${fmt(f.troco)}</td>` : '<td class="right">—</td>'}</tr>`)
+    .map((f) => `<tr><td>${new Date(f.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td><td>#${f.order_id}</td><td>${f.cliente_nome ?? '—'}</td><td>${f.atendente_nome ?? '—'}</td><td>${PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td><td>${ORIGEM_LABELS[f.origem] ?? f.origem}</td><td class="right bold green">${fmt(f.valor)}</td><td class="right">${(f.taxa_cartao_valor ?? 0) > 0 ? fmt(f.taxa_cartao_valor) : '—'}</td><td class="right bold">${fmt((f.valor ?? 0) + (f.taxa_cartao_valor ?? 0))}</td>${f.troco > 0 ? `<td class="right">${fmt(f.troco)}</td>` : '<td class="right">—</td>'}</tr>`)
     .join('');
 
   const pedidosRows = pedidos
@@ -83,7 +83,7 @@ const buildPrintHtml = (dados, restauranteNome, label) => {
 <table><tr><th>Hora</th><th>Descrição</th><th class="right">Valor</th></tr>${saidasRows || '<tr><td colspan="3">Nenhuma saída no período.</td></tr>'}</table>
 
 <h2>Fluxo de Caixa Detalhado (${(dados.fluxo_caixa ?? []).length})</h2>
-<table><tr><th>Hora</th><th>Pedido</th><th>Forma</th><th>Origem</th><th class="right">Valor</th><th class="right">Troco</th></tr>${fluxoRows || '<tr><td colspan="6">Sem movimento no período.</td></tr>'}</table>
+<table><tr><th>Hora</th><th>Pedido</th><th>Cliente</th><th>Atendente</th><th>Forma</th><th>Origem</th><th class="right">Valor</th><th class="right">Taxa Cartão</th><th class="right">Valor Total</th><th class="right">Troco</th></tr>${fluxoRows || '<tr><td colspan="10">Sem movimento no período.</td></tr>'}</table>
 
 <h2>Todos os Pedidos (${pedidos.length})</h2>
 <table><tr><th>Pedido</th><th>Data/Hora</th><th>Cliente</th><th>Canal</th><th>Status</th><th>Itens</th><th class="right">Total</th></tr>${pedidosRows || '<tr><td colspan="7">Nenhum pedido no período.</td></tr>'}</table>
