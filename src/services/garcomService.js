@@ -79,6 +79,9 @@ export const dividirComanda = (comandaId, item_ids, cliente_nome, cliente_telefo
 export const confirmarEntregaItem = (comandaId, itemId) =>
   garcomFetch(`/comandas/${comandaId}/itens/${itemId}/entregar`, { method: 'PATCH' });
 
+export const naoEntregarItem = (comandaId, itemId) =>
+  garcomFetch(`/comandas/${comandaId}/itens/${itemId}/nao-entregar`, { method: 'PATCH' });
+
 export const editarClienteComanda = (comandaId, cliente_nome, cliente_telefone) =>
   garcomFetch(`/comandas/${comandaId}/cliente`, { method: 'PATCH', body: JSON.stringify({ cliente_nome, cliente_telefone }) });
 

@@ -115,7 +115,7 @@ const RestauranteKdsSetor = () => {
       {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {itens.map((item, idx) => (
-          <div key={item.id} className={`bg-[#232323] border rounded-2xl p-4 ${idx === 0 ? 'border-yellow-400 dark:border-yellow-800/70 ring-1 ring-yellow-400/30' : 'border-[#2A2A2A]'}`}>
+          <div key={item.id} className={`bg-[#232323] border rounded-2xl p-4 ${item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : idx === 0 ? 'border-yellow-400 dark:border-yellow-800/70 ring-1 ring-yellow-400/30' : 'border-[#2A2A2A]'}`}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${idx === 0 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
@@ -129,6 +129,11 @@ const RestauranteKdsSetor = () => {
               </button>
             </div>
             {idx === 0 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
+            {item.garcom_nao_entregou && (
+              <p className="text-sm font-bold text-white bg-red-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">
+                Esse pedido não foi entregue — garçom não entregou
+              </p>
+            )}
             <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
               <Icon name="MapPin" size={12} />
               <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? 'Avulsa'}</span>
