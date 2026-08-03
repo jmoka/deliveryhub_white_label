@@ -138,7 +138,7 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
   const tempoTotal = now - enviadoEm;
 
   return (
-  <div className={`rounded-2xl border-2 overflow-hidden ${posicao === 1 ? 'border-yellow-400/70 bg-purple-950/20 ring-1 ring-yellow-400/30' : 'border-purple-300 bg-purple-950/20'}`}>
+  <div className={`rounded-2xl border-2 overflow-hidden bg-purple-950/20 ${item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : 'border-purple-300'}`}>
     {item.garcom && (
       <div className="bg-white px-4 py-2">
         <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
@@ -161,6 +161,11 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
       </button>
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
+    {item.garcom_nao_entregou && (
+      <p className="text-sm font-bold text-white bg-red-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">
+        Esse pedido não foi entregue — garçom não entregou
+      </p>
+    )}
     {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
       <Icon name="MapPin" size={14} />

@@ -48,7 +48,7 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
   const tempoTotal = now - enviadoEm;
 
   return (
-  <div className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden relative ${posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+  <div className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden relative ${item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
     {item.garcom && (
       <div className="bg-white px-4 py-2">
         <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
@@ -74,6 +74,11 @@ const ItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcar
       </div>
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
+    {item.garcom_nao_entregou && (
+      <p className="text-sm font-bold text-white bg-red-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">
+        Esse pedido não foi entregue — garçom não entregou
+      </p>
+    )}
     {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
     <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
       <Icon name="MapPin" size={14} />

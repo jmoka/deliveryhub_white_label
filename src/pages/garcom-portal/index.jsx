@@ -5,7 +5,7 @@ import {
   getMesas, getProdutos, getCombos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda,
-  confirmarEntregaItem, dividirComanda, editarObservacaoItem,
+  confirmarEntregaItem, naoEntregarItem, dividirComanda, editarObservacaoItem,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
@@ -733,6 +733,17 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     }
   };
 
+  const naoEntregou = async (item) => {
+    if (!window.confirm(`Confirma que NÃO entregou ${item.products?.name}? O item volta pra fila de preparo.`)) return;
+    setErro(null);
+    try {
+      await naoEntregarItem(comandaId, item.id);
+      await carregar();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível registrar a não entrega.');
+    }
+  };
+
   const enviar = async () => {
     setEnviando(true);
     setErro(null);
@@ -773,10 +784,18 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
             </button>
           </div>
         ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
-          <button onClick={() => confirmarEntrega(item)}
-            className="text-[10px] px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-[#FF441F] text-white flex items-center gap-1">
-            <Icon name="Check" size={12} /> Entregar
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => confirmarEntrega(item)}
+              className="text-[10px] px-2.5 py-1.5 rounded-full font-bold bg-[#FF441F] text-white flex items-center gap-1">
+              <Icon name="Check" size={12} /> Entregar
+            </button>
+            {item.status === 'pronto' && (
+              <button onClick={() => naoEntregou(item)}
+                className="text-[10px] px-2.5 py-1.5 rounded-full font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center gap-1">
+                <Icon name="X" size={12} /> Não entreguei
+              </button>
+            )}
+          </div>
         ) : (
           <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
             item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
