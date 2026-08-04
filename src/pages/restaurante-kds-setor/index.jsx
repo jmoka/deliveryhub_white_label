@@ -134,6 +134,16 @@ const RestauranteKdsSetor = () => {
                 Esse pedido não foi entregue — garçom não entregou
               </p>
             )}
+            {item.is_auto_atendimento && (
+              <p className="text-sm font-bold text-white bg-pink-600 rounded px-1.5 py-0.5 mb-1">
+                Auto Atendimento — Mesa {item.mesa_numero ?? '?'}
+              </p>
+            )}
+            {item.garcom_indo_buscar && (
+              <p className={`text-sm font-bold text-white rounded px-1.5 py-0.5 mb-1 ${item.entregue_garcom ? 'bg-emerald-600' : 'bg-blue-600'}`}>
+                {item.entregue_garcom ? 'Já entregue pelo garçom' : 'Garçom vindo buscar'}
+              </p>
+            )}
             <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
               <Icon name="MapPin" size={12} />
               <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? 'Avulsa'}</span>

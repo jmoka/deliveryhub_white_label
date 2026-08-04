@@ -79,6 +79,12 @@ export const dividirComanda = (comandaId, item_ids, cliente_nome, cliente_telefo
 export const confirmarEntregaItem = (comandaId, itemId) =>
   garcomFetch(`/comandas/${comandaId}/itens/${itemId}/entregar`, { method: 'PATCH' });
 
+export const indoBuscarItem = (comandaId, itemId) =>
+  garcomFetch(`/comandas/${comandaId}/itens/${itemId}/indo-buscar`, { method: 'PATCH' });
+
+export const marcarConferenciaVista = (comandaId) =>
+  garcomFetch(`/comandas/${comandaId}/conferencia-vista`, { method: 'PATCH' });
+
 export const naoEntregarItem = (comandaId, itemId) =>
   garcomFetch(`/comandas/${comandaId}/itens/${itemId}/nao-entregar`, { method: 'PATCH' });
 

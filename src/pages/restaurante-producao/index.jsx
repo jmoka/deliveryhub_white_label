@@ -71,6 +71,16 @@ const ItemCard = ({ item, posicao, now, ehPrimeiro, ehUltimo, onReimprimir, onIn
           Esse pedido não foi entregue — garçom não entregou
         </p>
       )}
+      {item.is_auto_atendimento && (
+        <p className="text-sm font-bold text-white bg-pink-600 rounded px-1.5 py-0.5 mb-1">
+          Auto Atendimento — Mesa {item.mesa_numero ?? '?'}
+        </p>
+      )}
+      {item.garcom_indo_buscar && (
+        <p className={`text-sm font-bold text-white rounded px-1.5 py-0.5 mb-1 ${item.entregue_garcom ? 'bg-emerald-600' : 'bg-blue-600'}`}>
+          {item.entregue_garcom ? 'Já entregue pelo garçom' : 'Garçom vindo buscar'}
+        </p>
+      )}
       {editandoObs ? (
         <div className="flex items-center gap-1.5 mb-1" onClick={(e) => e.stopPropagation()}>
           <input value={obsInput} onChange={(e) => setObsInput(e.target.value)} autoFocus

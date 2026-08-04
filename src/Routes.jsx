@@ -53,6 +53,7 @@ import RestauranteCardapioDigital from './pages/restaurante-cardapio-digital';
 import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
 import MesaAcompanhar from './pages/mesa-acompanhar';
+import AutoAtendimento from './pages/auto-atendimento';
 import HomeRouter from './pages/home-router';
 
 const Routes = () => {
@@ -129,6 +130,9 @@ const Routes = () => {
 
         {/* Acompanhamento público da mesa via QR — sem login */}
         <Route path="/mesa/acompanhar/:token" element={<MesaAcompanhar />} />
+
+        {/* Auto atendimento — cliente pede direto pela mesa via QR fixo, sem login */}
+        <Route path="/auto-atendimento/:token" element={<AutoAtendimento />} />
 
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>

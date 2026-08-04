@@ -11,9 +11,10 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda } from '../../utils/printComanda';
-import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
+import { getAcompanharUrls, getAutoAtendimentoUrls } from '../../utils/mesaAcompanharUrl';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -384,12 +385,16 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
   const [mesaDestino, setMesaDestino] = useState('');
   const [mostrarQr, setMostrarQr] = useState(false);
+  const [mostrarQrAuto, setMostrarQrAuto] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
+  const [linkCopiado, setLinkCopiado] = useState(null); // 'acompanhar' | 'auto' | null
+  const { autoAtendimentoHabilitado } = useModulosEmpresa();
   const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
   const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
   const [semGorjeta, setSemGorjeta] = useState(false);
+  const semGorjetaTocada = useRef(false);
   // 'comanda' = cobra a gorjeta junto no fechamento (padrão); 'pix'/'dinheiro' = cliente
   // já pagou a gorjeta direto pro garçom, por fora — não cobra na comanda nem conta pro
   // repasse do garçom (ver salao-pdv.service.ts pagar()).
@@ -420,6 +425,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     // primeira carga, pra não sobrescrever se o caixa já mudou manualmente.
     if (!formaTocada.current && c.payment_method) {
       setForma(c.payment_method);
+    }
+    // Respeita a preferência que o cliente já marcou no auto atendimento (checkbox de
+    // gorjeta) — só na primeira carga, sem sobrescrever se o garçom/caixa já mexeu.
+    if (!semGorjetaTocada.current) {
+      setSemGorjeta(!!c.sem_gorjeta);
     }
   }, [comandaId]);
 
@@ -473,6 +483,23 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
       const res = await imprimirConferenciaSalao(comandaId, valores);
       if (res?.via !== 'agente') printConferenciaComanda(comanda, comanda.itens ?? [], { ...valores, pagamentos: comanda.pagamentos ?? [] });
     });
+  };
+
+  // Copiar link (QR de acompanhamento ou de auto atendimento) — pro caso da câmera do
+  // cliente não conseguir ler o QR, o garçom/caixa manda o link direto (WhatsApp etc).
+  const copiarLink = async (url, chave) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = url; el.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(el); el.focus(); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      }
+      setLinkCopiado(chave);
+      setTimeout(() => setLinkCopiado(null), 2500);
+    } catch {}
   };
 
   const reimprimirRecibo = () => {
@@ -752,7 +779,51 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                       alt="QR de acompanhamento" width={150} height={150}
                     />
                     <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">Cliente escaneia pra acompanhar o preparo</p>
+                    <button onClick={() => copiarLink(urlAtiva, 'acompanhar')}
+                      className="flex items-center gap-1 text-[10px] font-bold text-[#FF441F] mt-1">
+                      <Icon name={linkCopiado === 'acompanhar' ? 'Check' : 'Copy'} size={11} />
+                      {linkCopiado === 'acompanhar' ? 'Link copiado!' : 'Copiar link (câmera com problema)'}
+                    </button>
                   </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {autoAtendimentoHabilitado && comanda.mesas?.auto_atendimento_token && (
+          <div className="mb-3">
+            <button onClick={() => setMostrarQrAuto((v) => !v)}
+              className="flex items-center gap-1 text-xs font-bold text-pink-700 dark:text-pink-400">
+              <Icon name="QrCode" size={14} /> {mostrarQrAuto ? 'Esconder QR de Auto Atendimento' : 'Mostrar QR de Auto Atendimento'}
+            </button>
+            {mostrarQrAuto && (() => {
+              const urls = getAutoAtendimentoUrls(comanda.mesas.auto_atendimento_token);
+              const urlAuto = qrModo === 'local' && urls.lan ? urls.lan : urls.principal;
+              return (
+                <div className="mt-2 bg-pink-50 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-900 rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                  {urls.lan && (
+                    <div className="flex gap-2 mb-1">
+                      <button onClick={() => setQrModo('online')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-pink-600 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                        ONLINE
+                      </button>
+                      <button onClick={() => setQrModo('local')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-pink-600 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                        LOCAL
+                      </button>
+                    </div>
+                  )}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlAuto)}`}
+                    alt="QR de auto atendimento" width={150} height={150}
+                  />
+                  <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">Cliente escaneia e faz o pedido direto, sem depender do garçom</p>
+                  <button onClick={() => copiarLink(urlAuto, 'auto')}
+                    className="flex items-center gap-1 text-[10px] font-bold text-pink-700 dark:text-pink-400 mt-1">
+                    <Icon name={linkCopiado === 'auto' ? 'Check' : 'Copy'} size={11} />
+                    {linkCopiado === 'auto' ? 'Link copiado!' : 'Copiar link (câmera com problema)'}
+                  </button>
                 </div>
               );
             })()}
@@ -1011,7 +1082,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           <input type="number" value={gorjeta} onChange={(e) => setGorjeta(e.target.value)} disabled={semGorjeta}
             className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] disabled:opacity-50 disabled:bg-[#F4F4F5] dark:disabled:bg-[#3F3F46]" />
           <label className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
-            <input type="checkbox" checked={semGorjeta} onChange={(e) => setSemGorjeta(e.target.checked)} className="rounded" />
+            <input type="checkbox" checked={semGorjeta} onChange={(e) => { semGorjetaTocada.current = true; setSemGorjeta(e.target.checked); }} className="rounded" />
             Não cobrar gorjeta
           </label>
 
@@ -1523,6 +1594,10 @@ const RestauranteSalao = () => {
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
   const [erro, setErro] = useState(null);
   const [avisoConferencia, setAvisoConferencia] = useState(null);
+  const [mesaQrAberta, setMesaQrAberta] = useState(null);
+  const [qrModoGrid, setQrModoGrid] = useState('online');
+  const [linkCopiadoGrid, setLinkCopiadoGrid] = useState(false);
+  const { autoAtendimentoHabilitado } = useModulosEmpresa();
 
   const tocarAlarmeConferencia = useNotificacaoSonora('pedido');
   const idsConferenciaVistos = useRef(new Set());
@@ -1548,6 +1623,38 @@ const RestauranteSalao = () => {
       setTimeout(() => setAvisoConferencia(null), 8000);
     }
   }, [tocarAlarmeConferencia]);
+
+  const copiarLinkGrid = async (url) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = url; el.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(el); el.focus(); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      }
+      setLinkCopiadoGrid(true);
+      setTimeout(() => setLinkCopiadoGrid(false), 2500);
+    } catch {}
+  };
+
+  // Imprime só o QR num popup próprio — não precisa abrir a comanda, mesa pode estar
+  // livre (token é fixo por mesa, pedido do usuário: colar fisicamente na mesa uma vez).
+  const imprimirQrMesa = (mesaNumero, urlQr, imgSrc) => {
+    const win = window.open('', '_blank', 'width=400,height=500');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>QR Mesa ${mesaNumero}</title></head>
+      <body style="text-align:center;font-family:sans-serif;padding:24px">
+        <h2>Mesa ${mesaNumero}</h2>
+        <img src="${imgSrc}" width="250" height="250" />
+        <p style="font-size:12px;color:#555">Escaneie e peça direto pela mesa</p>
+        <script>window.onload = () => { window.print(); }</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
 
   const acaoMesa = async (fn) => {
     setErro(null);
@@ -1645,6 +1752,12 @@ const RestauranteSalao = () => {
                       {m.status === 'livre' ? 'Bloquear' : 'Desbloquear'}
                     </button>
                   )}
+                  {autoAtendimentoHabilitado && m.auto_atendimento_token && (
+                    <button onClick={() => setMesaQrAberta(m)}
+                      className="mt-1 flex items-center justify-center gap-1 text-[9px] font-bold text-pink-600 dark:text-pink-400 underline opacity-70 hover:opacity-100 w-full">
+                      <Icon name="QrCode" size={10} /> QR da mesa
+                    </button>
+                  )}
                 </div>
               ))}
               {mesas.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">Nenhuma mesa cadastrada.</p>}
@@ -1740,6 +1853,44 @@ const RestauranteSalao = () => {
           onAberta={(comanda) => { setMesaParaAbrir(undefined); setComandaAtiva(comanda.id); carregar(); }}
         />
       )}
+
+      {mesaQrAberta && (() => {
+        const urls = getAutoAtendimentoUrls(mesaQrAberta.auto_atendimento_token);
+        const urlQr = qrModoGrid === 'local' && urls.lan ? urls.lan : urls.principal;
+        const imgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(urlQr)}`;
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl p-5 w-full max-w-xs flex flex-col items-center gap-2">
+              <p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">QR — Mesa {mesaQrAberta.numero}</p>
+              {urls.lan && (
+                <div className="flex gap-2">
+                  <button onClick={() => setQrModoGrid('online')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModoGrid === 'online' ? 'bg-pink-600 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                    ONLINE
+                  </button>
+                  <button onClick={() => setQrModoGrid('local')}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModoGrid === 'local' ? 'bg-pink-600 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                    LOCAL
+                  </button>
+                </div>
+              )}
+              <img src={imgSrc} alt="QR da mesa" width={200} height={200} />
+              <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] text-center">Cole essa mesa/imprima e deixe fixo — o cliente escaneia quando o garçom já tiver aberto a comanda</p>
+              <div className="flex gap-2 w-full mt-1">
+                <button onClick={() => copiarLinkGrid(urlQr)}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-bold bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5]">
+                  <Icon name={linkCopiadoGrid ? 'Check' : 'Copy'} size={12} /> {linkCopiadoGrid ? 'Copiado!' : 'Copiar link'}
+                </button>
+                <button onClick={() => imprimirQrMesa(mesaQrAberta.numero, urlQr, imgSrc)}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-bold bg-pink-600 text-white">
+                  <Icon name="Printer" size={12} /> Imprimir
+                </button>
+              </div>
+              <button onClick={() => setMesaQrAberta(null)} className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Fechar</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
