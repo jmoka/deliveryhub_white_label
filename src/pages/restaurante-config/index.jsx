@@ -425,6 +425,7 @@ const RestauranteConfig = () => {
     taxa_cartao_percentual: '',
     salao_modo: 'ambos',
     recibo_impressora_id: '',
+    auto_atendimento_habilitado: false,
   });
   const [impressoras, setImpressoras] = useState([]);
 
@@ -453,6 +454,7 @@ const RestauranteConfig = () => {
           taxa_cartao_percentual: d.taxa_cartao_percentual != null ? String(d.taxa_cartao_percentual) : '',
           salao_modo: d.salao_modo ?? 'ambos',
           recibo_impressora_id: d.recibo_impressora_id != null ? String(d.recibo_impressora_id) : '',
+          auto_atendimento_habilitado: d.auto_atendimento_habilitado ?? false,
         }));
       })
       .catch((e) => setErro(e.message))
@@ -482,6 +484,7 @@ const RestauranteConfig = () => {
         taxa_cartao_percentual: form.taxa_cartao_percentual !== '' ? parseFloat(form.taxa_cartao_percentual) : 0,
         salao_modo: form.salao_modo,
         recibo_impressora_id: form.recibo_impressora_id !== '' ? Number(form.recibo_impressora_id) : null,
+        auto_atendimento_habilitado: form.auto_atendimento_habilitado,
       };
       if (form.pagbank_token.trim()) {
         payload.pagbank_token = form.pagbank_token.trim();
@@ -768,6 +771,29 @@ const RestauranteConfig = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Controla o que o garçom pode abrir no portal dele.
                     </p>
+                  </div>
+                )}
+
+                {tipoRestaurante && (
+                  <div className="border-t pt-4 mt-2">
+                    <label className="flex items-center justify-between gap-3 cursor-pointer">
+                      <span>
+                        <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">Auto atendimento (QR da mesa)</span>
+                        <span className="block text-xs text-gray-400 mt-0.5">
+                          {form.auto_atendimento_habilitado
+                            ? 'Cliente escaneia o QR da mesa e faz o pedido direto, sem depender do garçom'
+                            : 'Desligado: só o garçom pode lançar pedido na mesa'}
+                        </span>
+                      </span>
+                      <input type="checkbox" checked={form.auto_atendimento_habilitado}
+                        onChange={(e) => setForm((f) => ({ ...f, auto_atendimento_habilitado: e.target.checked }))}
+                        className="w-5 h-5 accent-orange-500 flex-shrink-0" />
+                    </label>
+                    {form.auto_atendimento_habilitado && form.salao_modo === 'comandas' && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        Só funciona com mesas — o modo de venda do Salão está em "Somente comandas avulsas", então nenhuma mesa terá QR de auto atendimento.
+                      </p>
+                    )}
                   </div>
                 )}
 

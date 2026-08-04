@@ -4,6 +4,10 @@
 // se aplica, então só retorna a variante LAN quando o host atual é localhost/127.0.0.1.
 export const getAcompanharUrls = (token) => getLocalUrls(`/mesa/acompanhar/${token}`);
 
+// QR fixo da mesa pro auto atendimento (cliente pede direto, sem depender do garçom) —
+// token não muda a cada comanda, diferente do acompanhamento acima.
+export const getAutoAtendimentoUrls = (mesaToken) => getLocalUrls(`/auto-atendimento/${mesaToken}`);
+
 // Mesma lógica ONLINE/LOCAL, genérica pra qualquer link que o dono compartilha (QR do
 // cardápio, link do garçom, etc) — todos precisam do IP de rede quando rodando local.
 export const getLocalUrls = (path) => {

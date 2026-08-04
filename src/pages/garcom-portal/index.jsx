@@ -5,18 +5,26 @@ import {
   getMesas, getProdutos, getCombos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda,
-  confirmarEntregaItem, naoEntregarItem, dividirComanda, editarObservacaoItem,
+  confirmarEntregaItem, naoEntregarItem, indoBuscarItem, marcarConferenciaVista, dividirComanda, editarObservacaoItem,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
-import { getAcompanharUrls } from '../../utils/mesaAcompanharUrl';
+import { getAcompanharUrls, getAutoAtendimentoUrls } from '../../utils/mesaAcompanharUrl';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import { formatDuracao } from '../../utils/formatDuracao';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import Icon from '../../components/AppIcon';
 import TempoMedioTile from '../../components/TempoMedioTile';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+// Badge do garçom some quando ele clica "OK, entendi" no alerta (conferencia_vista_garcom_em) —
+// campo separado do que o caixa usa (conferencia_solicitada_em só limpa ao imprimir de
+// verdade), senão o garçom dando OK apagaria o aviso do caixa também.
+const conferenciaPendente = (comanda) =>
+  !!comanda?.conferencia_solicitada_em &&
+  (!comanda.conferencia_vista_garcom_em || new Date(comanda.conferencia_vista_garcom_em) < new Date(comanda.conferencia_solicitada_em));
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
 
 const MESA_STATUS_COR = {
@@ -641,6 +649,9 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [erro, setErro] = useState(null);
   const [mostrarQr, setMostrarQr] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
+  const [linkCopiado, setLinkCopiado] = useState(null); // 'acompanhar' | 'auto' | null
+  const [mostrarQrAuto, setMostrarQrAuto] = useState(false);
+  const { autoAtendimentoHabilitado } = useModulosEmpresa();
   const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
   const [observacaoEditandoId, setObservacaoEditandoId] = useState(null);
   const [observacaoInput, setObservacaoInput] = useState('');
@@ -733,6 +744,21 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     }
   };
 
+  const copiarLink = async (url, chave) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = url; el.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(el); el.focus(); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      }
+      setLinkCopiado(chave);
+      setTimeout(() => setLinkCopiado(null), 2500);
+    } catch {}
+  };
+
   const naoEntregou = async (item) => {
     if (!window.confirm(`Confirma que NÃO entregou ${item.products?.name}? O item volta pra fila de preparo.`)) return;
     setErro(null);
@@ -784,18 +810,9 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
             </button>
           </div>
         ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button onClick={() => confirmarEntrega(item)}
-              className="text-[10px] px-2.5 py-1.5 rounded-full font-bold bg-[#FF441F] text-white flex items-center gap-1">
-              <Icon name="Check" size={12} /> Entregar
-            </button>
-            {item.status === 'pronto' && (
-              <button onClick={() => naoEntregou(item)}
-                className="text-[10px] px-2.5 py-1.5 rounded-full font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center gap-1">
-                <Icon name="X" size={12} /> Não entreguei
-              </button>
-            )}
-          </div>
+          <span className="text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
+            {item.status === 'pronto' ? 'Pronto' : 'Em preparo'}
+          </span>
         ) : (
           <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
             item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
@@ -804,6 +821,19 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           </span>
         )}
       </div>
+
+      {(item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom && (
+        <div className="grid grid-cols-2 gap-1.5 mt-2">
+          <button onClick={() => confirmarEntrega(item)}
+            className="text-xs px-2.5 py-2 rounded-lg font-bold bg-[#FF441F] text-white flex items-center justify-center gap-1">
+            <Icon name="Check" size={12} /> Entregar
+          </button>
+          <button onClick={() => naoEntregou(item)} disabled={item.status !== 'pronto'}
+            className="text-xs px-2.5 py-2 rounded-lg font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center justify-center gap-1 disabled:opacity-30">
+            <Icon name="X" size={12} /> Não entreguei
+          </button>
+        </div>
+      )}
 
       {observacaoEditandoId === item.id ? (
         <div className="flex items-center gap-1.5 mt-2">
@@ -899,7 +929,50 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                       alt="QR de acompanhamento" width={150} height={150}
                     />
                     <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">Cliente escaneia pra acompanhar o preparo</p>
+                    <button onClick={() => copiarLink(urlAtiva, 'acompanhar')}
+                      className="flex items-center gap-1 text-[10px] font-bold text-[#FF441F] mt-1">
+                      <Icon name={linkCopiado === 'acompanhar' ? 'Check' : 'Copy'} size={11} />
+                      {linkCopiado === 'acompanhar' ? 'Link copiado!' : 'Copiar link (câmera com problema)'}
+                    </button>
                   </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+        {autoAtendimentoHabilitado && comanda.mesas?.auto_atendimento_token && (
+          <div className="mt-2">
+            <button onClick={() => setMostrarQrAuto((v) => !v)}
+              className="flex items-center gap-1 text-xs font-bold text-pink-700 dark:text-pink-400">
+              <Icon name="QrCode" size={14} /> {mostrarQrAuto ? 'Esconder QR de Auto Atendimento' : 'Mostrar QR de Auto Atendimento'}
+            </button>
+            {mostrarQrAuto && (() => {
+              const urls = getAutoAtendimentoUrls(comanda.mesas.auto_atendimento_token);
+              const urlAuto = qrModo === 'local' && urls.lan ? urls.lan : urls.principal;
+              return (
+                <div className="mt-2 bg-pink-50 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-900 rounded-xl p-3 inline-flex flex-col items-center gap-1">
+                  {urls.lan && (
+                    <div className="flex gap-2 mb-1">
+                      <button onClick={() => setQrModo('online')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-pink-600 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                        ONLINE
+                      </button>
+                      <button onClick={() => setQrModo('local')}
+                        className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-pink-600 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                        LOCAL
+                      </button>
+                    </div>
+                  )}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(urlAuto)}`}
+                    alt="QR de auto atendimento" width={150} height={150}
+                  />
+                  <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">Cliente escaneia e faz o pedido direto</p>
+                  <button onClick={() => copiarLink(urlAuto, 'auto')}
+                    className="flex items-center gap-1 text-[10px] font-bold text-pink-700 dark:text-pink-400 mt-1">
+                    <Icon name={linkCopiado === 'auto' ? 'Check' : 'Copy'} size={11} />
+                    {linkCopiado === 'auto' ? 'Link copiado!' : 'Copiar link (câmera com problema)'}
+                  </button>
                 </div>
               );
             })()}
@@ -1148,6 +1221,8 @@ const GarcomHome = () => {
   const idsProntosVistos = useRef(new Set());
   const tocarAlarmeConferencia = useNotificacaoSonora('pedido');
   const idsConferenciaVistos = useRef(new Set());
+  const pedidosClienteVistos = useRef(new Map());
+  const primeiraCargaPedidoCliente = useRef(true);
 
   useEffect(() => {
     getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); }).catch((err) => {
@@ -1169,7 +1244,28 @@ const GarcomHome = () => {
       if (novas.length > 0) {
         tocarAlarmeConferencia();
         const nc = novas[0];
-        setAvisoPronto(`${nc.cliente_mesa_nome} pediu conferência — #${nc.numero_comanda ?? nc.id}`);
+        setAvisoPronto({ texto: `${nc.cliente_mesa_nome} pediu conferência — #${nc.numero_comanda ?? nc.id}`, comandaId: nc.id });
+      }
+
+      // Cliente do auto atendimento clicou "Solicitar pedido" — avisa o garçom
+      // responsável pela mesa, igual já avisa quando um prato fica pronto. Compara
+      // timestamp (não só id) porque o mesmo cliente pode solicitar várias vezes
+      // durante a mesma comanda, cada solicitação precisa alertar de novo. Primeira
+      // carga da tela só registra o estado atual, não dispara alarme retroativo.
+      const comPedidoCliente = c.filter((comanda) => comanda.ultimo_pedido_cliente_em);
+      if (primeiraCargaPedidoCliente.current) {
+        pedidosClienteVistos.current = new Map(comPedidoCliente.map((comanda) => [comanda.id, comanda.ultimo_pedido_cliente_em]));
+        primeiraCargaPedidoCliente.current = false;
+      } else {
+        const novosPedidos = comPedidoCliente.filter(
+          (comanda) => pedidosClienteVistos.current.get(comanda.id) !== comanda.ultimo_pedido_cliente_em,
+        );
+        pedidosClienteVistos.current = new Map(comPedidoCliente.map((comanda) => [comanda.id, comanda.ultimo_pedido_cliente_em]));
+        if (novosPedidos.length > 0) {
+          tocarAlarmeConferencia();
+          const np = novosPedidos[0];
+          setAvisoPronto({ texto: `Novo pedido do cliente — Mesa/Comanda #${np.numero_comanda ?? np.id}` });
+        }
       }
     } catch (err) {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
@@ -1196,7 +1292,10 @@ const GarcomHome = () => {
           tocarAlarmePronto();
           const i = novos[0];
           const mesaLabel = i.mesa ?? `Comanda #${i.numero_comanda}`;
-          setAvisoPronto(`Seu pedido está pronto! Mesa: ${mesaLabel}${i.cliente ? ` · Cliente: ${i.cliente}` : ''} · Pedido: ${i.product_name}`);
+          setAvisoPronto({
+            texto: `Seu pedido está pronto! Mesa: ${mesaLabel}${i.cliente ? ` · Cliente: ${i.cliente}` : ''} · Pedido: ${i.product_name}`,
+            item: i,
+          });
         }
       } catch {}
       try {
@@ -1218,17 +1317,51 @@ const GarcomHome = () => {
     if (mesa.comanda && mesa.comanda.garcom_id === meuId) { setComandaAtivaId(mesa.comanda.id); }
   };
 
+  const handleIndoBuscar = async () => {
+    const item = avisoPronto?.item;
+    setAvisoPronto(null);
+    if (!item) return;
+    try { await indoBuscarItem(item.order_id, item.item_id); } catch {}
+  };
+
+  const handleJaEntreguei = async () => {
+    const item = avisoPronto?.item;
+    setAvisoPronto(null);
+    if (!item) return;
+    try { await confirmarEntregaItem(item.order_id, item.item_id); await carregar(); } catch {}
+  };
+
+  const handleOkAviso = async () => {
+    const comandaId = avisoPronto?.comandaId;
+    setAvisoPronto(null);
+    if (!comandaId) return;
+    try { await marcarConferenciaVista(comandaId); await carregar(); } catch {}
+  };
+
   if (bloqueado) return <RestauranteFechado />;
 
   const avisoProntoToast = avisoPronto && (
     <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#27272A] rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
         <Icon name="BellRing" size={40} className="mx-auto text-[#FF441F] mb-3 animate-pulse" />
-        <p className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-5">{avisoPronto}</p>
-        <button onClick={() => setAvisoPronto(null)}
-          className="w-full py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F]">
-          OK, entendi
-        </button>
+        <p className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-5">{avisoPronto.texto}</p>
+        {avisoPronto.item ? (
+          <div className="flex gap-2">
+            <button onClick={handleIndoBuscar}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-[#FF441F] border border-[#FF441F]">
+              Indo buscar
+            </button>
+            <button onClick={handleJaEntreguei}
+              className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F]">
+              Já entreguei
+            </button>
+          </div>
+        ) : (
+          <button onClick={handleOkAviso}
+            className="w-full py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F]">
+            OK, entendi
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1298,7 +1431,7 @@ const GarcomHome = () => {
                   <>
                     <p className="text-[10px] truncate">{responsavelMesa(mesa.comanda) ?? '—'}</p>
                     <p className="text-[10px] truncate">{mesa.comanda.cliente_mesa_nome}</p>
-                    {mesa.comanda.conferencia_solicitada_em && (
+                    {conferenciaPendente(mesa.comanda) && (
                       <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
                         <Icon name="BellRing" size={9} /> Conferência
                       </p>
@@ -1327,7 +1460,7 @@ const GarcomHome = () => {
                   #{c.numero_comanda ?? c.id}{c.mesa_id ? ` — Mesa ${c.mesa_id}` : ''} — {c.cliente_mesa_nome}
                 </p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
-                {c.conferencia_solicitada_em && (
+                {conferenciaPendente(c) && (
                   <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
                     <Icon name="BellRing" size={9} /> Pediu conferência
                   </p>
