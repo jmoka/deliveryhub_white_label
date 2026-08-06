@@ -1,29 +1,50 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getEmpresas } from '../services/adminService';
+import { getEmpresas, getPlataformaConfig } from '../services/adminService';
+import { useAuth } from './AuthContext';
 
 const LocalModeContext = createContext(null);
 
-// Lê VITE_LOCAL_RESTAURANT_ID do .env
-// Se definido, o admin opera em "Modo Local" — restrito a 1 restaurante
-const LOCAL_ID = import.meta.env.VITE_LOCAL_RESTAURANT_ID
+// Modo individual (mono-estabelecimento) restringe o admin a 1 restaurante.
+// Duas fontes possíveis: VITE_LOCAL_RESTAURANT_ID no .env (override fixo de build,
+// self-hosted) ou o checkbox "Instalação individual" em Admin > Configurações
+// (salvo no banco, ajustável sem rebuild). O .env, quando definido, tem prioridade.
+const ENV_LOCAL_ID = import.meta.env.VITE_LOCAL_RESTAURANT_ID
   ? parseInt(import.meta.env.VITE_LOCAL_RESTAURANT_ID, 10)
   : null;
 
 export const LocalModeProvider = ({ children }) => {
+  const { loading, userProfile } = useAuth() ?? {};
+  const [dbLocalId, setDbLocalId] = useState(null);
   const [restauranteNome, setRestauranteNome] = useState(null);
 
+  const localId = ENV_LOCAL_ID ?? dbLocalId;
+
   useEffect(() => {
-    if (!LOCAL_ID) return;
+    if (ENV_LOCAL_ID) return; // .env já resolve, não precisa consultar o banco
+    if (loading || userProfile?.role !== 'admin') return;
+    getPlataformaConfig()
+      .then((cfg) => {
+        if (cfg.modo_individual && cfg.modo_individual_restaurant_id) {
+          setDbLocalId(cfg.modo_individual_restaurant_id);
+        } else {
+          setDbLocalId(null);
+        }
+      })
+      .catch(() => {});
+  }, [loading, userProfile?.role]);
+
+  useEffect(() => {
+    if (!localId) return;
     getEmpresas()
       .then((d) => {
-        const found = (d.empresas ?? []).find((e) => e.id === LOCAL_ID);
+        const found = (d.empresas ?? []).find((e) => e.id === localId);
         if (found) setRestauranteNome(found.name);
       })
       .catch(() => {});
-  }, []);
+  }, [localId]);
 
   return (
-    <LocalModeContext.Provider value={{ isLocalMode: !!LOCAL_ID, localRestaurantId: LOCAL_ID, restauranteNome }}>
+    <LocalModeContext.Provider value={{ isLocalMode: !!localId, localRestaurantId: localId, restauranteNome }}>
       {children}
     </LocalModeContext.Provider>
   );
@@ -36,7 +57,7 @@ export const LocalModeBanner = () => {
   const { isLocalMode, restauranteNome, localRestaurantId } = useLocalMode() ?? {};
   if (!isLocalMode) return null;
   return (
-    <div className="bg-amber-50 border-b border-amber-300 px-6 py-2 flex items-center gap-2 text-amber-800 text-xs font-semibold">
+    <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-300 dark:border-amber-900 px-6 py-2 flex items-center gap-2 text-amber-800 dark:text-amber-300 text-xs font-semibold">
       <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
       Modo Local — {restauranteNome ? `Restaurante: ${restauranteNome}` : `ID #${localRestaurantId}`}
       <span className="ml-auto font-normal opacity-70">Acesso restrito a 1 restaurante</span>

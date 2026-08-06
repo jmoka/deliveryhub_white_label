@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlataformaConfig, updatePlataformaConfig, getRedeInfo } from '../../services/adminService';
+import { getPlataformaConfig, updatePlataformaConfig, getRedeInfo, getEmpresas } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import { ThemeToggle } from '../../contexts/ThemeContext';
@@ -26,6 +26,13 @@ const AdminConfiguracoes = () => {
   const [erroCf, setErroCf] = useState(null);
   const [redeInfo, setRedeInfo] = useState(null);
 
+  const [modoIndividual, setModoIndividual] = useState(false);
+  const [modoIndividualRestauranteId, setModoIndividualRestauranteId] = useState('');
+  const [empresas, setEmpresas] = useState([]);
+  const [salvandoModo, setSalvandoModo] = useState(false);
+  const [sucessoModo, setSucessoModo] = useState(false);
+  const [erroModo, setErroModo] = useState(null);
+
   useEffect(() => {
     getPlataformaConfig()
       .then((d) => {
@@ -36,11 +43,37 @@ const AdminConfiguracoes = () => {
           pagbank_sandbox: d.pagbank_sandbox ?? true,
           cloudflare_domain: d.cloudflare_domain ?? '',
         }));
+        setModoIndividual(d.modo_individual ?? false);
+        setModoIndividualRestauranteId(d.modo_individual_restaurant_id ?? '');
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
     getRedeInfo().then(setRedeInfo).catch(() => {});
+    getEmpresas().then((d) => setEmpresas(d.empresas ?? [])).catch(() => {});
   }, []);
+
+  const handleSalvarModoIndividual = async (e) => {
+    e.preventDefault();
+    setSalvandoModo(true);
+    setErroModo(null);
+    setSucessoModo(false);
+    try {
+      const payload = {
+        modo_individual: modoIndividual,
+        modo_individual_restaurant_id: modoIndividual && modoIndividualRestauranteId
+          ? parseInt(modoIndividualRestauranteId, 10)
+          : null,
+      };
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setSucessoModo(true);
+      setTimeout(() => setSucessoModo(false), 3000);
+    } catch (err) {
+      setErroModo(err.message);
+    } finally {
+      setSalvandoModo(false);
+    }
+  };
 
   const handleSalvar = async (e) => {
     e.preventDefault();
@@ -278,6 +311,78 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+            {/* ── Modo de instalação ──────────────────────────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Modo de instalação</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Marque se este sistema roda para um único estabelecimento, sem outras empresas na plataforma.
+              </p>
+
+              <form onSubmit={handleSalvarModoIndividual} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setModoIndividual((v) => !v)}
+                    className={`relative w-10 h-6 rounded-full transition-colors ${
+                      modoIndividual ? 'bg-orange-500' : 'bg-gray-300 dark:bg-zinc-600'
+                    }`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      modoIndividual ? 'left-5' : 'left-1'
+                    }`} />
+                  </button>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                      Instalação individual (mono-estabelecimento)
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">
+                      {modoIndividual
+                        ? 'Painel admin restrito a 1 restaurante — sem cadastro de novas empresas'
+                        : 'Desligado — plataforma multi-empresa normal'}
+                    </p>
+                  </div>
+                </div>
+
+                {modoIndividual && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                      Estabelecimento
+                    </label>
+                    <select
+                      value={modoIndividualRestauranteId}
+                      onChange={(e) => setModoIndividualRestauranteId(e.target.value)}
+                      className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      <option value="">Selecione o restaurante...</option>
+                      {empresas.map((e) => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                      Restaurante que ficará visível no painel admin. Não afeta o login do dono, que já acessa direto o painel da loja.
+                    </p>
+                  </div>
+                )}
+
+                {erroModo && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroModo}</div>
+                )}
+                {sucessoModo && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoModo || (modoIndividual && !modoIndividualRestauranteId)}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoModo ? 'Salvando...' : 'Salvar modo de instalação'}
+                </button>
+              </form>
+            </div>
+
             {/* ── Acesso via Rede Local (WiFi) ──────────────────── */}
             <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Acesso via Rede Local (WiFi)</h2>
