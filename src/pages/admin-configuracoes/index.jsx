@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getPlataformaConfig, updatePlataformaConfig, getRedeInfo } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import { ThemeToggle } from '../../contexts/ThemeContext';
 
 const AdminConfiguracoes = () => {
   const navigate = useNavigate();
@@ -103,14 +104,15 @@ const AdminConfiguracoes = () => {
           className={`px-3 py-2 text-sm font-medium rounded-lg ${
             l.path === '/admin/configuracoes'
               ? 'text-white bg-orange-500'
-              : 'text-gray-700 hover:bg-gray-100'
+              : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
           }`}>
           {l.label}
         </button>
       ))}
+      <ThemeToggle inline />
       <button
         onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+        className="px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
       >
         Sair
       </button>
@@ -118,11 +120,11 @@ const AdminConfiguracoes = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
+      <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Configurações da Plataforma</h1>
-          <p className="text-sm text-gray-500">Integração PagBank Marketplace (Split Payment)</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Configurações da Plataforma</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Integração PagBank Marketplace (Split Payment)</p>
         </div>
         <NavAdmin />
       </header>
@@ -137,23 +139,23 @@ const AdminConfiguracoes = () => {
 
             {/* Status */}
             <div className={`rounded-xl border p-4 flex items-start gap-3 ${
-              config?.configurado ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+              config?.configurado ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900'
             }`}>
               <Icon
                 name={config?.configurado ? 'CheckCircle' : 'AlertCircle'}
                 size={20}
-                className={`mt-0.5 flex-shrink-0 ${config?.configurado ? 'text-green-600' : 'text-yellow-600'}`}
+                className={`mt-0.5 flex-shrink-0 ${config?.configurado ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}
               />
               <div>
-                <p className={`text-sm font-semibold ${config?.configurado ? 'text-green-800' : 'text-yellow-800'}`}>
+                <p className={`text-sm font-semibold ${config?.configurado ? 'text-green-800 dark:text-green-300' : 'text-yellow-800 dark:text-yellow-300'}`}>
                   {config?.configurado ? 'Split Payment configurado e ativo' : 'Split Payment não configurado'}
                 </p>
                 {config?.configurado ? (
-                  <p className="text-xs text-green-600 mt-0.5">
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
                     Token: {config.pagbank_platform_token_masked} · Account: {config.pagbank_platform_account_id} · {config.pagbank_sandbox ? 'Sandbox' : 'Produção'}
                   </p>
                 ) : (
-                  <p className="text-xs text-yellow-700 mt-0.5">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-0.5">
                     Configure o token e account ID abaixo para ativar o repasse automático aos restaurantes.
                   </p>
                 )}
@@ -161,34 +163,34 @@ const AdminConfiguracoes = () => {
             </div>
 
             {/* Explicação do fluxo */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
-              <h2 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-5">
+              <h2 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2">
                 <Icon name="Info" size={16} /> Como funciona o Split Payment
               </h2>
-              <ol className="text-xs text-blue-700 space-y-2 list-decimal list-inside">
+              <ol className="text-xs text-blue-700 dark:text-blue-400 space-y-2 list-decimal list-inside">
                 <li>Cliente paga → dinheiro vai para a <strong>conta da plataforma</strong> (seu token abaixo)</li>
                 <li>PagBank divide automaticamente: restaurante recebe a parte dele, você recebe a comissão</li>
                 <li>Nenhum dinheiro transita manualmente — tudo automático no momento do pagamento</li>
               </ol>
-              <div className="mt-3 text-xs text-blue-600 bg-blue-100 rounded-lg p-2">
+              <div className="mt-3 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 rounded-lg p-2">
                 <strong>Restaurante precisa:</strong> informar o ID da conta deles em /restaurante/config → "ID da conta PagBank"
               </div>
             </div>
 
             {/* Formulário */}
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-gray-900 mb-1">Conta PagBank Marketplace</h2>
-              <p className="text-sm text-gray-500 mb-5">
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Conta PagBank Marketplace</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
                 Obtenha o token e account ID na sua conta PagBank tipo Marketplace/Facilitador.
               </p>
 
               <form onSubmit={handleSalvar} className="space-y-4">
                 {/* Token da plataforma */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
                     Token da Plataforma (Marketplace)
                     {config?.configurado && (
-                      <span className="text-xs text-gray-400 ml-2">(deixe vazio para manter atual)</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter atual)</span>
                     )}
                   </label>
                   <input
@@ -200,16 +202,16 @@ const AdminConfiguracoes = () => {
                         ? config.pagbank_platform_token_masked
                         : 'Token da conta Marketplace PagBank'
                     }
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                     Usado para processar TODOS os pagamentos dos restaurantes da plataforma
                   </p>
                 </div>
 
                 {/* Account ID da plataforma */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
                     Account ID da Plataforma
                   </label>
                   <input
@@ -217,9 +219,9 @@ const AdminConfiguracoes = () => {
                     value={form.pagbank_platform_account_id}
                     onChange={(e) => setForm((f) => ({ ...f, pagbank_platform_account_id: e.target.value }))}
                     placeholder="Ex: ACCT_XXXXXXXXXXXX"
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                     Conta onde a comissão de cada venda será depositada automaticamente
                   </p>
                 </div>
@@ -238,10 +240,10 @@ const AdminConfiguracoes = () => {
                     }`} />
                   </button>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">
+                    <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">
                       {form.pagbank_sandbox ? 'Sandbox (testes)' : 'Produção (cobranças reais)'}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">
                       {form.pagbank_sandbox
                         ? 'Pagamentos não são reais — para testes'
                         : 'Atenção: pagamentos reais serão processados'}
@@ -250,19 +252,19 @@ const AdminConfiguracoes = () => {
                 </div>
 
                 {/* Comissão info */}
-                <div className="bg-gray-50 border rounded-xl p-4">
-                  <p className="text-xs font-semibold text-gray-700 mb-1">Comissão por restaurante</p>
-                  <p className="text-xs text-gray-500">
+                <div className="bg-gray-50 dark:bg-zinc-900 border dark:border-zinc-700 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">Comissão por restaurante</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">
                     Cada restaurante tem sua própria taxa configurada em <strong>Empresas → editar</strong>.
-                    O campo <code className="bg-gray-100 px-1 rounded">comissao_pct</code> define o % descontado automaticamente no split.
+                    O campo <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">comissao_pct</code> define o % descontado automaticamente no split.
                   </p>
                 </div>
 
                 {erro && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{erro}</div>
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erro}</div>
                 )}
                 {sucesso && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
                     Configuração salva!
                   </div>
                 )}
@@ -277,15 +279,15 @@ const AdminConfiguracoes = () => {
               </form>
             </div>
             {/* ── Acesso via Rede Local (WiFi) ──────────────────── */}
-            <div className="bg-white rounded-xl border p-6">
-              <h2 className="font-semibold text-gray-900 mb-1">Acesso via Rede Local (WiFi)</h2>
-              <p className="text-sm text-gray-500 mb-4">
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Acesso via Rede Local (WiFi)</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
                 Outros dispositivos na mesma rede (celulares, tablets, outros PCs) podem acessar o sistema pelo IP abaixo.
               </p>
               {redeInfo ? (
                 <div className="space-y-3">
                   {redeInfo.ips.length === 0 ? (
-                    <p className="text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-sm text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-900 rounded-lg p-3">
                       Nenhum IP de rede local detectado. Verifique se o PC está conectado ao WiFi ou rede cabeada.
                     </p>
                   ) : (
@@ -307,71 +309,71 @@ const AdminConfiguracoes = () => {
                       </div>
                     ))
                   )}
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">
                     O celular e o PC devem estar na mesma rede WiFi. Para acesso externo (fora da rede), use o Cloudflare Tunnel abaixo.
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-zinc-500">
+                  <div className="w-4 h-4 border-2 border-gray-300 dark:border-zinc-600 border-t-transparent rounded-full animate-spin" />
                   Detectando IP...
                 </div>
               )}
             </div>
 
             {/* ── Cloudflare Tunnel ───────────────────────────────── */}
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="font-semibold text-gray-900">Acesso via Cloudflare Tunnel</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-zinc-100">Acesso via Cloudflare Tunnel</h2>
                 {config?.cloudflare_configurado ? (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 px-2.5 py-1 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-1 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Não configurado
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-500 mb-5">
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
                 Permite que clientes externos acessem o sistema via domínio público seguro (HTTPS), mesmo sem IP fixo ou servidor.
               </p>
 
               {/* Passo a passo de configuração */}
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-5 space-y-4">
-                <h3 className="text-sm font-bold text-blue-800 flex items-center gap-2">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-5 mb-5 space-y-4">
+                <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
                   <Icon name="Info" size={15} /> Como configurar (faça uma vez)
                 </h3>
-                <ol className="space-y-3 text-xs text-blue-800">
+                <ol className="space-y-3 text-xs text-blue-800 dark:text-blue-300">
                   <li className="flex gap-3">
                     <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">1</span>
                     <div>
                       <p className="font-semibold">Crie uma conta Cloudflare (gratuito)</p>
-                      <p className="text-blue-600 mt-0.5">Acesse <strong>one.dash.cloudflare.com</strong> e crie ou entre na sua conta</p>
+                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Acesse <strong>one.dash.cloudflare.com</strong> e crie ou entre na sua conta</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
                     <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
                     <div>
                       <p className="font-semibold">Crie o Tunnel</p>
-                      <p className="text-blue-600 mt-0.5">No painel Cloudflare: <strong>Zero Trust → Networks → Tunnels → Create a tunnel</strong></p>
-                      <p className="text-blue-600">Escolha "Cloudflared" → dê um nome → clique em Next</p>
+                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">No painel Cloudflare: <strong>Zero Trust → Networks → Tunnels → Create a tunnel</strong></p>
+                      <p className="text-blue-600 dark:text-blue-400">Escolha "Cloudflared" → dê um nome → clique em Next</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
                     <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">3</span>
                     <div>
                       <p className="font-semibold">Copie o token</p>
-                      <p className="text-blue-600 mt-0.5">Na tela de instalação, copie o token longo que aparece após <code className="bg-blue-100 px-1 rounded">--token</code></p>
-                      <p className="text-blue-600">Cole no campo abaixo e salve</p>
+                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Na tela de instalação, copie o token longo que aparece após <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">--token</code></p>
+                      <p className="text-blue-600 dark:text-blue-400">Cole no campo abaixo e salve</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
                     <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">4</span>
                     <div>
                       <p className="font-semibold">Configure o domínio público no Tunnel</p>
-                      <p className="text-blue-600 mt-0.5">Em "Public Hostname": subdomínio → seu domínio → Service: <code className="bg-blue-100 px-1 rounded">HTTP · localhost:4028</code></p>
-                      <p className="text-blue-600">Coloque o mesmo domínio no campo abaixo</p>
+                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Em "Public Hostname": subdomínio → seu domínio → Service: <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">HTTP · localhost:4028</code></p>
+                      <p className="text-blue-600 dark:text-blue-400">Coloque o mesmo domínio no campo abaixo</p>
                     </div>
                   </li>
                   <li className="flex gap-3">
@@ -393,12 +395,12 @@ const AdminConfiguracoes = () => {
                     <li className="flex gap-3">
                       <span className="w-5 h-5 rounded-full bg-green-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">✓</span>
                       <div>
-                        <p className="font-semibold text-green-800">Acesse via domínio público</p>
+                        <p className="font-semibold text-green-800 dark:text-green-300">Acesse via domínio público</p>
                         <a
                           href={`https://${config.cloudflare_domain}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 underline font-mono text-[11px]"
+                          className="text-blue-600 dark:text-blue-400 underline font-mono text-[11px]"
                         >
                           https://{config.cloudflare_domain}
                         </a>
@@ -410,10 +412,10 @@ const AdminConfiguracoes = () => {
 
               <form onSubmit={handleSalvarCloudflare} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
                     Token do Tunnel
                     {config?.cloudflare_configurado && (
-                      <span className="text-xs text-gray-400 ml-2">(deixe vazio para manter atual: {config.cloudflare_tunnel_token_masked})</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter atual: {config.cloudflare_tunnel_token_masked})</span>
                     )}
                   </label>
                   <input
@@ -421,32 +423,32 @@ const AdminConfiguracoes = () => {
                     value={form.cloudflare_tunnel_token}
                     onChange={(e) => setForm((f) => ({ ...f, cloudflare_tunnel_token: e.target.value }))}
                     placeholder="eyJhIjoiXXX... (obtido no Cloudflare Zero Trust)"
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                     Cloudflare Zero Trust → Tunnels → criar tunnel → copiar token
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Domínio público</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Domínio público</label>
                   <input
                     type="text"
                     value={form.cloudflare_domain}
                     onChange={(e) => setForm((f) => ({ ...f, cloudflare_domain: e.target.value }))}
                     placeholder="delivery.seudominio.com"
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                     Apenas letras, números, pontos e hífens. Ex: pedidos.seusite.com.br
                   </p>
                 </div>
 
                 {erroCf && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{erroCf}</div>
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroCf}</div>
                 )}
                 {sucessoCf && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
                     Configuração Cloudflare salva!
                   </div>
                 )}

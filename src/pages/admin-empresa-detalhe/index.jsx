@@ -6,6 +6,7 @@ import {
   getComissoesPorEmpresa,
 } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
+import { ThemeToggle } from '../../contexts/ThemeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -27,7 +28,7 @@ const AdminNav = ({ active }) => {
           key={l.path}
           onClick={() => navigate(l.path)}
           className={`px-4 py-2 text-sm font-medium rounded-lg ${
-            active === l.path ? 'text-white bg-blue-600' : 'text-gray-700 hover:bg-gray-100'
+            active === l.path ? 'text-white bg-blue-600' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
           }`}
         >
           {l.label}
@@ -35,10 +36,11 @@ const AdminNav = ({ active }) => {
       ))}
       <button
         onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+        className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
       >
         Sair
       </button>
+      <ThemeToggle inline />
     </nav>
   );
 };
@@ -74,42 +76,42 @@ const TabDados = ({ empresa, onAtualizar }) => {
   return (
     <form onSubmit={handleSalvar} className="space-y-4 max-w-lg">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Nome</label>
         <input
           required
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-full border rounded-lg px-3 py-2 text-sm"
+          className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Endereço</label>
         <input
           value={form.address}
           onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-          className="w-full border rounded-lg px-3 py-2 text-sm"
+          className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Comissão plataforma (%)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Comissão plataforma (%)</label>
         <input
           type="number" min="0" max="100" step="0.5"
           value={form.comissao_pct}
           onChange={(e) => setForm((f) => ({ ...f, comissao_pct: parseFloat(e.target.value) }))}
-          className="w-full border rounded-lg px-3 py-2 text-sm"
+          className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">UUID do dono (restaurant_owner)</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">UUID do dono (restaurant_owner)</label>
         <input
           value={form.user_id}
           onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value.trim() }))}
-          className="w-full border rounded-lg px-3 py-2 text-sm font-mono text-xs"
+          className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono text-xs bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         />
       </div>
-      {erro && <p className="text-sm text-red-600">{erro}</p>}
-      {sucesso && <p className="text-sm text-green-600">Dados atualizados!</p>}
+      {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+      {sucesso && <p className="text-sm text-green-600 dark:text-green-400">Dados atualizados!</p>}
       <button
         type="submit"
         disabled={salvando}
@@ -169,44 +171,44 @@ const TabPagBank = ({ empresaId }) => {
 
   return (
     <div className="max-w-lg space-y-5">
-      <div className={`rounded-xl border p-4 flex items-center gap-3 ${config?.configurado ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+      <div className={`rounded-xl border p-4 flex items-center gap-3 ${config?.configurado ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900'}`}>
         <div>
-          <p className={`text-sm font-semibold ${config?.configurado ? 'text-green-800' : 'text-yellow-800'}`}>
+          <p className={`text-sm font-semibold ${config?.configurado ? 'text-green-800 dark:text-green-300' : 'text-yellow-800 dark:text-yellow-300'}`}>
             {config?.configurado ? 'PagBank configurado' : 'Sem credenciais próprias'}
           </p>
           {config?.configurado && (
-            <p className="text-xs text-green-600 mt-0.5">
+            <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
               Token: {config.pagbank_token_masked} · {config.pagbank_sandbox ? 'Sandbox' : 'Produção'}
             </p>
           )}
           {!config?.configurado && (
-            <p className="text-xs text-yellow-600 mt-0.5">Usando credenciais globais da plataforma</p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">Usando credenciais globais da plataforma</p>
           )}
         </div>
       </div>
 
       <form onSubmit={handleSalvar} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
             Token PagBank
-            {config?.configurado && <span className="text-xs text-gray-400 ml-2">(deixe vazio para manter)</span>}
+            {config?.configurado && <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter)</span>}
           </label>
           <input
             type="password"
             value={form.pagbank_token}
             onChange={(e) => setForm((f) => ({ ...f, pagbank_token: e.target.value }))}
             placeholder={config?.configurado ? config.pagbank_token_masked : 'Token do restaurante'}
-            className="w-full border rounded-lg px-3 py-2 text-sm font-mono"
+            className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">URL Webhook</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">URL Webhook</label>
           <input
             type="url"
             value={form.pagbank_webhook_url}
             onChange={(e) => setForm((f) => ({ ...f, pagbank_webhook_url: e.target.value }))}
             placeholder="https://seudominio.com/api/pagamentos/webhook"
-            className="w-full border rounded-lg px-3 py-2 text-sm"
+            className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
           />
         </div>
         <div className="flex items-center gap-3">
@@ -217,12 +219,12 @@ const TabPagBank = ({ empresaId }) => {
           >
             <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.pagbank_sandbox ? 'left-1' : 'left-5'}`} />
           </button>
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700 dark:text-zinc-300">
             {form.pagbank_sandbox ? 'Sandbox (testes)' : 'Produção (cobranças reais)'}
           </span>
         </div>
-        {erro && <p className="text-sm text-red-600">{erro}</p>}
-        {sucesso && <p className="text-sm text-green-600">Configuração salva!</p>}
+        {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+        {sucesso && <p className="text-sm text-green-600 dark:text-green-400">Configuração salva!</p>}
         <button
           type="submit"
           disabled={salvando}
@@ -254,32 +256,32 @@ const TabComissoes = ({ empresaId }) => {
 
   return (
     <div>
-      <div className="bg-orange-50 border border-orange-200 rounded-xl px-5 py-3 mb-5 flex items-center justify-between">
-        <p className="text-sm font-medium text-orange-700">Total acumulado</p>
-        <p className="text-xl font-bold text-orange-700">{fmt(total)}</p>
+      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900 rounded-xl px-5 py-3 mb-5 flex items-center justify-between">
+        <p className="text-sm font-medium text-orange-700 dark:text-orange-400">Total acumulado</p>
+        <p className="text-xl font-bold text-orange-700 dark:text-orange-400">{fmt(total)}</p>
       </div>
       {comissoes.length === 0 ? (
-        <p className="text-gray-400 text-sm">Nenhuma comissão registrada</p>
+        <p className="text-gray-400 dark:text-zinc-500 text-sm">Nenhuma comissão registrada</p>
       ) : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Pedido</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">Venda</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">Taxa</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">Comissão</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600">Data</th>
+              <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50">
+                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Pedido</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Venda</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Taxa</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Comissão</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Data</th>
               </tr>
             </thead>
             <tbody>
               {comissoes.map((c) => (
-                <tr key={c.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-500">#{c.pedido_id}</td>
-                  <td className="px-4 py-3 text-right">{fmt(c.valor_venda)}</td>
-                  <td className="px-4 py-3 text-right"><span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{c.comissao_pct}%</span></td>
-                  <td className="px-4 py-3 text-right font-semibold text-orange-700">{fmt(c.comissao_valor)}</td>
-                  <td className="px-4 py-3 text-right text-gray-400 text-xs">{new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
+                <tr key={c.id} className="border-b border-gray-200 dark:border-zinc-700 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+                  <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">#{c.pedido_id}</td>
+                  <td className="px-4 py-3 text-right text-gray-900 dark:text-zinc-100">{fmt(c.valor_venda)}</td>
+                  <td className="px-4 py-3 text-right"><span className="text-xs bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">{c.comissao_pct}%</span></td>
+                  <td className="px-4 py-3 text-right font-semibold text-orange-700 dark:text-orange-400">{fmt(c.comissao_valor)}</td>
+                  <td className="px-4 py-3 text-right text-gray-400 dark:text-zinc-500 text-xs">{new Date(c.criado_em).toLocaleDateString('pt-BR')}</td>
                 </tr>
               ))}
             </tbody>
@@ -318,17 +320,17 @@ const AdminEmpresaDetalhe = () => {
   useEffect(() => { carregar(); }, [id]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
+      <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <button onClick={() => navigate('/admin/empresas')} className="text-sm text-blue-600 hover:underline">
+            <button onClick={() => navigate('/admin/empresas')} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               ← Empresas
             </button>
-            {empresa && <span className="text-gray-300">/</span>}
-            {empresa && <span className="text-sm font-medium text-gray-700">{empresa.name}</span>}
+            {empresa && <span className="text-gray-300 dark:text-zinc-600">/</span>}
+            {empresa && <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{empresa.name}</span>}
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mt-1">Painel Dev-Admin</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-1">Painel Dev-Admin</h1>
         </div>
         <AdminNav active="/admin/empresas" />
       </header>
@@ -339,7 +341,7 @@ const AdminEmpresaDetalhe = () => {
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : erro ? (
-          <p className="text-red-600">{erro}</p>
+          <p className="text-red-600 dark:text-red-400">{erro}</p>
         ) : (
           <>
             {/* Métricas */}
@@ -350,23 +352,23 @@ const AdminEmpresaDetalhe = () => {
                 { label: 'Faturamento', value: fmt(metricas?.faturamento) },
                 { label: 'Comissão Acumulada', value: fmt(metricas?.comissao_acumulada) },
               ].map((m) => (
-                <div key={m.label} className="bg-white rounded-xl border p-4">
-                  <p className="text-xs text-gray-500">{m.label}</p>
-                  <p className="text-xl font-bold text-gray-900 mt-1">{m.value}</p>
+                <div key={m.label} className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4">
+                  <p className="text-xs text-gray-500 dark:text-zinc-400">{m.label}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{m.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b mb-6">
+            <div className="flex border-b border-gray-200 dark:border-zinc-700 mb-6">
               {TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setTabAtiva(t.id)}
                   className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                     tabAtiva === t.id
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                      ? 'border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100'
                   }`}
                 >
                   {t.label}
@@ -374,7 +376,7 @@ const AdminEmpresaDetalhe = () => {
               ))}
             </div>
 
-            <div className="bg-white rounded-xl border p-6">
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-6">
               {tabAtiva === 'dados' && <TabDados empresa={empresa} onAtualizar={carregar} />}
               {tabAtiva === 'pagbank' && <TabPagBank empresaId={empresa.id} />}
               {tabAtiva === 'comissoes' && <TabComissoes empresaId={empresa.id} />}

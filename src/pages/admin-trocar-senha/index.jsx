@@ -49,41 +49,41 @@ const AdminTrocarSenha = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-sm bg-white rounded-xl border p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-900 p-4">
+      <div className="w-full max-w-sm bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
         <div className="flex items-center gap-2 mb-1">
           <Icon name="ShieldAlert" size={20} className="text-orange-500" />
-          <h1 className="font-semibold text-gray-900">Troca de senha obrigatória</h1>
+          <h1 className="font-semibold text-gray-900 dark:text-zinc-100">Troca de senha obrigatória</h1>
         </div>
-        <p className="text-sm text-gray-500 mb-5">
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
           Esta é uma conta de administrador com senha padrão. Defina uma nova senha para continuar.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nova senha</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Nova senha</label>
             <input
               type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               minLength={8}
               required
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full border dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar nova senha</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Confirmar nova senha</label>
             <input
               type="password"
               value={confirmar}
               onChange={(e) => setConfirmar(e.target.value)}
               minLength={8}
               required
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full border dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
 
-          {erro && <p className="text-sm text-red-600">{erro}</p>}
+          {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
 
           <button
             type="submit"
@@ -96,7 +96,7 @@ const AdminTrocarSenha = () => {
           <button
             type="button"
             onClick={signOut}
-            className="w-full text-xs text-gray-400 hover:text-gray-600"
+            className="w-full text-xs text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300"
           >
             Sair
           </button>

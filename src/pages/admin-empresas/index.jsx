@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
+import { ThemeToggle } from '../../contexts/ThemeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -25,7 +26,7 @@ const AdminNav = ({ active }) => {
           key={l.path}
           onClick={() => navigate(l.path)}
           className={`px-4 py-2 text-sm font-medium rounded-lg ${
-            active === l.path ? 'text-white bg-blue-600' : 'text-gray-700 hover:bg-gray-100'
+            active === l.path ? 'text-white bg-blue-600' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
           }`}
         >
           {l.label}
@@ -33,10 +34,11 @@ const AdminNav = ({ active }) => {
       ))}
       <button
         onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+        className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
       >
         Sair
       </button>
+      <ThemeToggle inline />
     </nav>
   );
 };
@@ -71,56 +73,56 @@ const Modal = ({ empresa, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold mb-4">{empresa ? 'Editar Empresa' : 'Nova Empresa'}</h3>
+      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-zinc-100">{empresa ? 'Editar Empresa' : 'Nova Empresa'}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Nome *</label>
             <input
               required
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Endereço</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Endereço</label>
             <input
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Comissão plataforma (%)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Comissão plataforma (%)</label>
             <input
               type="number"
               min="0"
               max="100"
               step="0.5"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={form.comissao_pct}
               onChange={(e) => setForm({ ...form, comissao_pct: parseFloat(e.target.value) })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
               UUID do dono (restaurant_owner)
             </label>
             <input
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               value={form.user_id}
               onChange={(e) => setForm({ ...form, user_id: e.target.value.trim() })}
             />
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
               UUID do usuário cadastrado como restaurant_owner. Deixe vazio se não houver dono ainda.
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Módulos liberados</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">Módulos liberados</label>
             <div className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
                   checked={form.modulo_delivery}
@@ -128,7 +130,7 @@ const Modal = ({ empresa, onClose, onSave }) => {
                 />
                 Delivery
               </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
                   checked={form.modulo_salao}
@@ -142,7 +144,7 @@ const Modal = ({ empresa, onClose, onSave }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700"
             >
               Cancelar
             </button>
@@ -232,22 +234,22 @@ const AdminEmpresas = () => {
   const solicitacoesDominio = empresas.filter((e) => e.custom_domain_status === 'pendente');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       <LocalModeBanner />
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Painel Dev-Admin</h1>
-          <p className="text-sm text-gray-500">Gestão de Empresas</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Painel Dev-Admin</h1>
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Gestão de Empresas</p>
         </div>
         <AdminNav active="/admin/empresas" />
       </header>
 
       <main className="p-6 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Empresas <span className="text-gray-400 font-normal text-sm">({empresas.length})</span>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+            Empresas <span className="text-gray-400 dark:text-zinc-500 font-normal text-sm">({empresas.length})</span>
             {solicitacoesDominio.length > 0 && (
-              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 align-middle">
+              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 align-middle">
                 {solicitacoesDominio.length} solicitação(ões) de domínio pendente(s)
               </span>
             )}
@@ -263,16 +265,16 @@ const AdminEmpresas = () => {
         </div>
 
         {solicitacoesDominio.length > 0 && (
-          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-amber-800 mb-3">Solicitações de domínio personalizado</h3>
+          <div className="mb-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-3">Solicitações de domínio personalizado</h3>
             <div className="space-y-2">
               {solicitacoesDominio.map((e) => (
-                <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white rounded-lg border border-amber-200 px-3 py-2.5">
+                <div key={e.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white dark:bg-zinc-800 rounded-lg border border-amber-200 dark:border-amber-900 px-3 py-2.5">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{e.name}</p>
-                    <p className="text-xs font-mono text-amber-700">{e.custom_domain}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100">{e.name}</p>
+                    <p className="text-xs font-mono text-amber-700 dark:text-amber-400">{e.custom_domain}</p>
                     {e.custom_domain_solicitado_em && (
-                      <p className="text-[11px] text-gray-400">
+                      <p className="text-[11px] text-gray-400 dark:text-zinc-500">
                         Solicitado em {new Date(e.custom_domain_solicitado_em).toLocaleString('pt-BR')}
                       </p>
                     )}
@@ -280,19 +282,19 @@ const AdminEmpresas = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => navigate(`/admin/empresas/${e.id}`)}
-                      className="px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200"
+                      className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900"
                     >
                       Ver empresa
                     </button>
                     <button
                       onClick={() => handleAtenderDominio(e)}
-                      className="px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50 rounded-lg border border-green-200"
+                      className="px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 rounded-lg border border-green-200 dark:border-green-900"
                     >
                       Aprovar
                     </button>
                     <button
                       onClick={() => handleRecusarDominio(e)}
-                      className="px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+                      className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
                     >
                       Recusar
                     </button>
@@ -304,7 +306,7 @@ const AdminEmpresas = () => {
         )}
 
         {erro && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-red-700 dark:text-red-400 text-sm">
             {erro} — verifique se o backend está rodando.
           </div>
         )}
@@ -314,13 +316,13 @@ const AdminEmpresas = () => {
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-x-auto">
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 overflow-x-auto">
             {empresas.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
+              <div className="p-12 text-center text-gray-400 dark:text-zinc-500">
                 <p className="text-lg">Nenhuma empresa cadastrada</p>
                 <button
                   onClick={() => setModal('novo')}
-                  className="mt-3 text-blue-600 text-sm hover:underline"
+                  className="mt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline"
                 >
                   Cadastrar primeira empresa
                 </button>
@@ -328,48 +330,48 @@ const AdminEmpresas = () => {
             ) : (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-gray-50">
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden sm:table-cell">ID</th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600">Nome</th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Slug / Link</th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden md:table-cell">Endereço</th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600">Status</th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Módulos</th>
-                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 hidden lg:table-cell">Domínio</th>
-                    <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden md:table-cell">Comissão</th>
-                    <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 hidden lg:table-cell">Cadastro</th>
+                  <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50">
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden sm:table-cell">ID</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Nome</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Slug / Link</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden md:table-cell">Endereço</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Status</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Módulos</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Domínio</th>
+                    <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400 hidden md:table-cell">Comissão</th>
+                    <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Cadastro</th>
                     <th className="px-2 sm:px-4 py-3 w-px whitespace-nowrap"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {empresas.map((e) => (
-                    <tr key={e.id} className="border-b last:border-0 hover:bg-gray-50">
-                      <td className="px-2 sm:px-4 py-3 text-gray-400 hidden sm:table-cell">#{e.id}</td>
-                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 max-w-[120px] sm:max-w-none truncate">{e.name}</td>
+                    <tr key={e.id} className="border-b border-gray-200 dark:border-zinc-700 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+                      <td className="px-2 sm:px-4 py-3 text-gray-400 dark:text-zinc-500 hidden sm:table-cell">#{e.id}</td>
+                      <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 dark:text-zinc-100 max-w-[120px] sm:max-w-none truncate">{e.name}</td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         {e.slug ? (
                           <a
                             href={`/r/${e.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline font-mono"
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-mono"
                           >
                             /r/{e.slug}
                           </a>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
                         )}
                       </td>
-                      <td className="px-2 sm:px-4 py-3 text-gray-500 hidden md:table-cell max-w-xs truncate">
+                      <td className="px-2 sm:px-4 py-3 text-gray-500 dark:text-zinc-400 hidden md:table-cell max-w-xs truncate">
                         {e.address ?? '—'}
                       </td>
                       <td className="px-2 sm:px-4 py-3">
                         {e.bloqueado ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Bloqueado
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
                           </span>
                         )}
@@ -377,50 +379,50 @@ const AdminEmpresas = () => {
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         <div className="flex gap-1">
                           {e.modulo_delivery && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Delivery</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">Delivery</span>
                           )}
                           {e.modulo_salao && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Salão</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">Salão</span>
                           )}
                           {!e.modulo_delivery && !e.modulo_salao && (
-                            <span className="text-xs text-gray-400">—</span>
+                            <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
                           )}
                         </div>
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         {e.custom_domain_status === 'pendente' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 font-mono">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-mono">
                             {e.custom_domain} (pendente)
                           </span>
                         ) : e.custom_domain_status === 'recusado' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 font-mono">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-mono">
                             {e.custom_domain} (recusado)
                           </span>
                         ) : e.custom_domain ? (
-                          <span className="text-xs text-gray-500 font-mono">{e.custom_domain}</span>
+                          <span className="text-xs text-gray-500 dark:text-zinc-400 font-mono">{e.custom_domain}</span>
                         ) : (
-                          <span className="text-xs text-gray-400">—</span>
+                          <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
                         )}
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
                           {e.comissao_pct ?? 5}%
                         </span>
                       </td>
-                      <td className="px-2 sm:px-4 py-3 text-right text-gray-400 text-xs hidden lg:table-cell">
+                      <td className="px-2 sm:px-4 py-3 text-right text-gray-400 dark:text-zinc-500 text-xs hidden lg:table-cell">
                         {new Date(e.created_at).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-2 sm:px-4 py-3 w-px whitespace-nowrap">
                         <div className="flex gap-1 sm:gap-2 justify-end">
                           <button
                             onClick={() => navigate(`/admin/empresas/${e.id}`)}
-                            className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg"
+                            className="px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
                           >
                             Ver
                           </button>
                           <button
                             onClick={() => setModal(e)}
-                            className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg"
+                            className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg"
                           >
                             Editar
                           </button>
@@ -428,8 +430,8 @@ const AdminEmpresas = () => {
                             onClick={() => handleBloquear(e)}
                             className={`px-3 py-1 text-xs font-medium rounded-lg ${
                               e.bloqueado
-                                ? 'text-green-700 hover:bg-green-50'
-                                : 'text-red-600 hover:bg-red-50'
+                                ? 'text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40'
+                                : 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40'
                             }`}
                           >
                             {e.bloqueado ? 'Desbloquear' : 'Bloquear'}
@@ -437,7 +439,7 @@ const AdminEmpresas = () => {
                           {!isLocalMode && (
                             <button
                               onClick={() => handleRemover(e)}
-                              className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg"
+                              className="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
                             >
                               Remover
                             </button>

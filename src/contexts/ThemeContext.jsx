@@ -45,6 +45,7 @@ export const ThemeToggle = ({ inline = false }) => {
   if (!alternarTema) return null;
   if (!inline && (
     location.pathname.startsWith('/restaurante') ||
+    location.pathname.startsWith('/admin') ||
     location.pathname === '/' ||
     location.pathname === '/menu-catalog-product-browse'
   )) return null;
