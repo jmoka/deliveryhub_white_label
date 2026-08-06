@@ -85,6 +85,17 @@ export const authService = {
     }
   },
 
+  // Update password of the currently authenticated user
+  async updatePassword(newPassword) {
+    try {
+      const { error } = await supabase?.auth?.updateUser({ password: newPassword })
+      if (error) return { success: false, error: error?.message };
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: 'Password update failed' }
+    }
+  },
+
   // Reset password
   async resetPassword(email) {
     try {

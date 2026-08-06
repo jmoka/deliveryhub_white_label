@@ -237,33 +237,6 @@ CREATE POLICY "admin_gerir_itens" ON public.order_items
 CREATE POLICY "admin_ver_comissoes" ON public.plataforma_comissoes
     FOR ALL TO authenticated USING (public.is_admin());
 
--- =============================================
--- DADOS DE TESTE
--- =============================================
-DO $$
-DECLARE
-    r_id BIGINT;
-    c_id BIGINT;
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM public.restaurants LIMIT 1) THEN
-        INSERT INTO public.restaurants (name, address, comissao_pct)
-        VALUES ('Restaurante Demo', 'Rua Exemplo, 123 - São Paulo/SP', 5.00)
-        RETURNING id INTO r_id;
-
-        INSERT INTO public.categories (name, restaurant_id)
-        VALUES ('Lanches', r_id);
-
-        INSERT INTO public.categories (name, restaurant_id)
-        VALUES ('Bebidas', r_id);
-
-        SELECT id INTO c_id FROM public.categories WHERE restaurant_id = r_id LIMIT 1;
-
-        INSERT INTO public.products (name, description, price, category_id)
-        VALUES ('X-Burguer', 'Hambúrguer artesanal com queijo', 25.90, c_id);
-
-        INSERT INTO public.products (name, description, price, category_id)
-        VALUES ('Batata Frita', 'Porção individual crocante', 12.00, c_id);
-
-        RAISE NOTICE 'Dados de teste criados: restaurante_id=%', r_id;
-    END IF;
-END $$;
+-- Dados de teste (restaurante/produtos/admin/etc.) são criados pelo script
+-- server_delivery/scripts/seed-primeiro-boot.ts, não aqui — evita duplicar
+-- restaurante em toda instalação nova.

@@ -16,24 +16,68 @@ A modern React-based project utilizing the latest frontend technologies and tool
 
 ## 📋 Prerequisites
 
-- Node.js (v14.x or higher)
-- npm or yarn
+- Node.js (v18.x or higher)
+- Docker Desktop (rodando) — necessário pro Supabase local
+- [Supabase CLI](https://supabase.com/docs/guides/cli) (`npx supabase`)
 
-## 🛠️ Installation
+## 🛠️ Instalação local (DeliveryHub)
 
-1. Install dependencies:
+1. Clonar o repositório e inicializar o submódulo do backend:
+   ```bash
+   git clone <repo-url>
+   git submodule update --init --recursive
+   ```
+
+2. Garantir que o Docker Desktop está aberto.
+
+3. Configurar o `.env` do backend:
+   ```bash
+   cd server_delivery
+   copy .env.example .env
+   ```
+   Preencher `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` com os valores impressos pelo `supabase start` (passo 5).
+
+4. Instalar dependências (raiz e backend):
    ```bash
    npm install
-   # or
-   yarn install
+   cd server_delivery && npm install && cd ..
    ```
-   
-2. Start the development server:
+
+5. Subir o Supabase local (banco + auth + storage + migrations):
    ```bash
-   npm start
-   # or
-   yarn start
+   npx supabase start
    ```
+   Numa instalação nova não precisa de `supabase db reset` — isso só serve pra zerar um banco local já sujo.
+
+6. Rodar o seed de dados iniciais (dentro de `server_delivery`) — cria admin, dono de restaurante, cliente, restaurante teste, produtos, impressora e garçom:
+   ```bash
+   npm run seed:primeiro-boot
+   ```
+
+7. Subir o backend (dentro de `server_delivery`, porta 3002):
+   ```bash
+   npm run start:dev
+   ```
+
+8. Subir o frontend (raiz do projeto, porta 4028):
+   ```bash
+   npm run dev
+   ```
+
+9. Acessar:
+   - App: http://localhost:4028
+   - Supabase Studio (visualizar banco): http://127.0.0.1:54333 — desligado por padrão, ligar em `supabase/config.toml` (`[studio] enabled = true`) e reiniciar (`npx supabase start`, use `--ignore-health-check` se o start travar em "unhealthy" nos containers `studio`/`storage`/`realtime`/`pg_meta` — health check dessas imagens costuma dar falso-negativo no Windows).
+
+### Credenciais de teste (criadas pelo seed)
+
+| Papel | Login | Senha |
+|---|---|---|
+| Admin | admin@delivery.com | senha padrão — troca obrigatória no 1º login |
+| Dono de restaurante | resto@delivery.com | 1234567 |
+| Cliente | usuario@delivery.com | 123456 |
+| Garçom | login `TESTE001` | 123456 |
+
+O seed é idempotente — rodar `npm run seed:primeiro-boot` de novo com dados já existentes não faz nada.
 
 ## 📁 Project Structure
 

@@ -14,6 +14,7 @@ import AdminDashboard from './pages/admin-dashboard';
 import AdminEmpresas from './pages/admin-empresas';
 import AdminComissoes from './pages/admin-comissoes';
 import AdminGuard from './components/AdminGuard';
+import AdminTrocarSenha from './pages/admin-trocar-senha';
 import AdminConfiguracoes from './pages/admin-configuracoes';
 import AdminEmpresaDetalhe from './pages/admin-empresa-detalhe';
 import AdminCategorias from './pages/admin-categorias';
@@ -72,6 +73,7 @@ const Routes = () => {
         <Route path="/order-tracking-status" element={<OrderTrackingStatus />} />
 
         {/* Admin — requer role=admin */}
+        <Route path="/admin/trocar-senha" element={<AdminGuard><AdminTrocarSenha /></AdminGuard>} />
         <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
         <Route path="/admin/empresas" element={<AdminGuard><AdminEmpresas /></AdminGuard>} />
         <Route path="/admin/empresas/:id" element={<AdminGuard><AdminEmpresaDetalhe /></AdminGuard>} />

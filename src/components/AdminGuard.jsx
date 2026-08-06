@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const AdminGuard = ({ children }) => {
-  const { loading, isAuthenticated, isAdmin } = useAuth();
+  const { loading, isAuthenticated, isAdmin, userProfile } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -18,6 +18,9 @@ const AdminGuard = ({ children }) => {
     return <Navigate to="/customer-registration-login" state={{ from: location.pathname }} replace />;
   }
   if (!isAdmin()) return <Navigate to="/" replace />;
+  if (userProfile?.must_change_password && location.pathname !== '/admin/trocar-senha') {
+    return <Navigate to="/admin/trocar-senha" replace />;
+  }
 
   return children;
 };
