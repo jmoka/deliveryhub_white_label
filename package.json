@@ -65,7 +65,8 @@
     "dev": "vite",
     "build": "vite build",
     "start": "serve -s build -l ${PORT:-4028}",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "claudf-start": "docker compose up -d cloudflared"
   },
   "eslintConfig": {
     "extends": [

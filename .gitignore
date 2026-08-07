@@ -7,3 +7,4 @@ node_modules
 vite.config.*s.*
 supabase/.branches/
 supabase/.temp/
+.env.docker

@@ -18,12 +18,7 @@ const AdminConfiguracoes = () => {
     pagbank_platform_token: '',
     pagbank_platform_account_id: '',
     pagbank_sandbox: true,
-    cloudflare_tunnel_token: '',
-    cloudflare_domain: '',
   });
-  const [salvandoCf, setSalvandoCf] = useState(false);
-  const [sucessoCf, setSucessoCf] = useState(false);
-  const [erroCf, setErroCf] = useState(null);
   const [redeInfo, setRedeInfo] = useState(null);
 
   const [modoIndividual, setModoIndividual] = useState(false);
@@ -47,7 +42,6 @@ const AdminConfiguracoes = () => {
           ...f,
           pagbank_platform_account_id: d.pagbank_platform_account_id ?? '',
           pagbank_sandbox: d.pagbank_sandbox ?? true,
-          cloudflare_domain: d.cloudflare_domain ?? '',
         }));
         setModoIndividual(d.modo_individual ?? false);
         setModoIndividualRestauranteId(d.modo_individual_restaurant_id ?? '');
@@ -126,28 +120,6 @@ const AdminConfiguracoes = () => {
       setErro(err.message);
     } finally {
       setSalvando(false);
-    }
-  };
-
-  const handleSalvarCloudflare = async (e) => {
-    e.preventDefault();
-    setSalvandoCf(true);
-    setErroCf(null);
-    setSucessoCf(false);
-    try {
-      const payload = { cloudflare_domain: form.cloudflare_domain.trim() };
-      if (form.cloudflare_tunnel_token.trim()) {
-        payload.cloudflare_tunnel_token = form.cloudflare_tunnel_token.trim();
-      }
-      const updated = await updatePlataformaConfig(payload);
-      setConfig(updated);
-      setForm((f) => ({ ...f, cloudflare_tunnel_token: '' }));
-      setSucessoCf(true);
-      setTimeout(() => setSucessoCf(false), 3000);
-    } catch (err) {
-      setErroCf(err.message);
-    } finally {
-      setSalvandoCf(false);
     }
   };
 
@@ -502,7 +474,7 @@ const AdminConfiguracoes = () => {
                     ))
                   )}
                   <p className="text-xs text-gray-400 dark:text-zinc-500">
-                    O celular e o PC devem estar na mesma rede WiFi. Para acesso externo (fora da rede), use o Cloudflare Tunnel abaixo.
+                    O celular e o PC devem estar na mesma rede WiFi.
                   </p>
                 </div>
               ) : (
@@ -511,148 +483,6 @@ const AdminConfiguracoes = () => {
                   Detectando IP...
                 </div>
               )}
-            </div>
-
-            {/* ── Cloudflare Tunnel ───────────────────────────────── */}
-            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
-              <div className="flex items-center justify-between mb-1">
-                <h2 className="font-semibold text-gray-900 dark:text-zinc-100">Acesso via Cloudflare Tunnel</h2>
-                {config?.cloudflare_configurado ? (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 px-2.5 py-1 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-zinc-400 bg-gray-100 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 px-2.5 py-1 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Não configurado
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
-                Permite que clientes externos acessem o sistema via domínio público seguro (HTTPS), mesmo sem IP fixo ou servidor.
-              </p>
-
-              {/* Passo a passo de configuração */}
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-5 mb-5 space-y-4">
-                <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                  <Icon name="Info" size={15} /> Como configurar (faça uma vez)
-                </h3>
-                <ol className="space-y-3 text-xs text-blue-800 dark:text-blue-300">
-                  <li className="flex gap-3">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">1</span>
-                    <div>
-                      <p className="font-semibold">Crie uma conta Cloudflare (gratuito)</p>
-                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Acesse <strong>one.dash.cloudflare.com</strong> e crie ou entre na sua conta</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">2</span>
-                    <div>
-                      <p className="font-semibold">Crie o Tunnel</p>
-                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">No painel Cloudflare: <strong>Zero Trust → Networks → Tunnels → Create a tunnel</strong></p>
-                      <p className="text-blue-600 dark:text-blue-400">Escolha "Cloudflared" → dê um nome → clique em Next</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">3</span>
-                    <div>
-                      <p className="font-semibold">Copie o token</p>
-                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Na tela de instalação, copie o token longo que aparece após <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">--token</code></p>
-                      <p className="text-blue-600 dark:text-blue-400">Cole no campo abaixo e salve</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">4</span>
-                    <div>
-                      <p className="font-semibold">Configure o domínio público no Tunnel</p>
-                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Em "Public Hostname": subdomínio → seu domínio → Service: <code className="bg-blue-100 dark:bg-blue-900/40 px-1 rounded">HTTP · localhost:4028</code></p>
-                      <p className="text-blue-600 dark:text-blue-400">Coloque o mesmo domínio no campo abaixo</p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">5</span>
-                    <div>
-                      <p className="font-semibold">Instale e rode o cloudflared no PC</p>
-                      <div className="bg-gray-900 rounded-lg p-2 mt-1 space-y-1 font-mono">
-                        <p className="text-gray-400 text-[10px]"># instalar (só 1x, Windows)</p>
-                        <p className="text-green-400 text-[10px] select-all">winget install Cloudflare.cloudflared</p>
-                        <p className="text-gray-400 text-[10px] mt-1"># rodar sempre que ligar o PC</p>
-                        <p className="text-yellow-300 text-[10px] break-all select-all">
-                          cloudflared tunnel run --token{' '}
-                          <span className="text-white">{config?.cloudflare_tunnel_token_masked ?? '<COLE O TOKEN AQUI>'}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                  {config?.cloudflare_domain && (
-                    <li className="flex gap-3">
-                      <span className="w-5 h-5 rounded-full bg-green-600 text-white font-bold flex items-center justify-center flex-shrink-0 text-[10px]">✓</span>
-                      <div>
-                        <p className="font-semibold text-green-800 dark:text-green-300">Acesse via domínio público</p>
-                        <a
-                          href={`https://${config.cloudflare_domain}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 underline font-mono text-[11px]"
-                        >
-                          https://{config.cloudflare_domain}
-                        </a>
-                      </div>
-                    </li>
-                  )}
-                </ol>
-              </div>
-
-              <form onSubmit={handleSalvarCloudflare} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
-                    Token do Tunnel
-                    {config?.cloudflare_configurado && (
-                      <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter atual: {config.cloudflare_tunnel_token_masked})</span>
-                    )}
-                  </label>
-                  <input
-                    type="password"
-                    value={form.cloudflare_tunnel_token}
-                    onChange={(e) => setForm((f) => ({ ...f, cloudflare_tunnel_token: e.target.value }))}
-                    placeholder="eyJhIjoiXXX... (obtido no Cloudflare Zero Trust)"
-                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                    Cloudflare Zero Trust → Tunnels → criar tunnel → copiar token
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Domínio público</label>
-                  <input
-                    type="text"
-                    value={form.cloudflare_domain}
-                    onChange={(e) => setForm((f) => ({ ...f, cloudflare_domain: e.target.value }))}
-                    placeholder="delivery.seudominio.com"
-                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
-                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                    Apenas letras, números, pontos e hífens. Ex: pedidos.seusite.com.br
-                  </p>
-                </div>
-
-                {erroCf && (
-                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroCf}</div>
-                )}
-                {sucessoCf && (
-                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
-                    Configuração Cloudflare salva!
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={salvandoCf}
-                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
-                >
-                  {salvandoCf ? 'Salvando...' : 'Salvar configuração Cloudflare'}
-                </button>
-              </form>
             </div>
 
           </div>
