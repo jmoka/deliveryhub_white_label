@@ -355,3 +355,7 @@ export const getFaturaDetalhe = (id) => apiFetch(`/plano/faturas/${id}`);
 export const pagarFatura = (id, data) =>
   apiFetch(`/plano/faturas/${id}/pagar`, { method: 'POST', body: JSON.stringify(data) });
 export const renovarPlanoAgora = () => apiFetch('/plano/renovar', { method: 'POST' });
+export const getPlanosDisponiveis = () => apiFetch('/plano/disponiveis');
+export const getPagBankChavePublica = () => apiFetch('/plano/pagbank-chave-publica');
+export const assinarPlano = (planoId) =>
+  apiFetch('/plano/assinar', { method: 'POST', body: JSON.stringify({ plano_id: planoId }) });
