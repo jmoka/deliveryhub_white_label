@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { getMeuPlanoStatus } from '../services/restauranteService';
 
 const AuthContext = createContext({})
 
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
+  const [planoStatus, setPlanoStatus] = useState(null)
 
   useEffect(() => {
     // Get initial session - Use Promise chain
@@ -47,6 +49,21 @@ export const AuthProvider = ({ children }) => {
 
     return () => subscription?.unsubscribe()
   }, [])
+
+  // Status da assinatura do plano — só relevante pro dono, carregado 1x por
+  // sessão (RestauranteGuard usa isso pra bloquear o painel se estiver vencido).
+  const refreshPlanoStatus = () => {
+    if (userProfile?.role !== 'restaurant_owner') return;
+    getMeuPlanoStatus().then(setPlanoStatus).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (userProfile?.role === 'restaurant_owner') {
+      getMeuPlanoStatus().then(setPlanoStatus).catch(() => {});
+    } else {
+      setPlanoStatus(null);
+    }
+  }, [userProfile?.role])
 
   const fetchUserProfile = (userId) => {
     supabase?.from('user_profiles')?.select('*')?.eq('id', userId)?.single()?.then(({ data, error }) => {
@@ -134,6 +151,7 @@ export const AuthProvider = ({ children }) => {
       }
       setUser(null)
       setUserProfile(null)
+      setPlanoStatus(null)
     } catch (error) {
       setAuthError('Failed to sign out')
     } finally {
@@ -173,7 +191,9 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     isRestaurantOwner,
     isAuthenticated,
-    refreshUserProfile
+    refreshUserProfile,
+    planoStatus,
+    refreshPlanoStatus
   }
 
   return (

@@ -346,3 +346,12 @@ export const removerMesa = (id) =>
   apiFetch(`/mesas-cadastro/${id}`, { method: 'DELETE' });
 export const criarMesasEmLote = (de, ate) =>
   apiFetch('/mesas-cadastro/lote', { method: 'POST', body: JSON.stringify({ de, ate }) });
+
+// Plano de assinatura
+export const getMeuPlanoStatus = () => apiFetch('/plano/status');
+export const getMeuPlano = () => apiFetch('/plano');
+export const getMinhasFaturas = () => apiFetch('/plano/faturas');
+export const getFaturaDetalhe = (id) => apiFetch(`/plano/faturas/${id}`);
+export const pagarFatura = (id, data) =>
+  apiFetch(`/plano/faturas/${id}/pagar`, { method: 'POST', body: JSON.stringify(data) });
+export const renovarPlanoAgora = () => apiFetch('/plano/renovar', { method: 'POST' });

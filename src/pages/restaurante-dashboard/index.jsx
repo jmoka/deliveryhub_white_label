@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { useAuth } from '../../contexts/AuthContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -23,6 +24,7 @@ const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_
 
 const RestauranteDashboard = () => {
   const navigate = useNavigate();
+  const { planoStatus } = useAuth();
 
   const [empresa, setEmpresa] = useState(null);
   const [statusAberto, setStatusAberto] = useState(false);
@@ -308,7 +310,11 @@ const RestauranteDashboard = () => {
 
       <AlertasToast alertas={alertas} onDismiss={(id) => setAlertas((prev) => prev.filter((a) => a.id !== id))} />
 
-      <RestauranteHeader active="/restaurante" title={empresa?.name ?? 'Meu Restaurante'} subtitle="Painel Operacional" />
+      <RestauranteHeader
+        active="/restaurante"
+        title={empresa?.name ?? 'Meu Restaurante'}
+        subtitle={`Painel Operacional${planoStatus?.plano_nome ? ` · ${planoStatus.plano_nome}` : ''}`}
+      />
 
       <main className="p-6 w-[95%] mx-auto space-y-5">
 

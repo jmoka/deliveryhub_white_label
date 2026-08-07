@@ -20,12 +20,14 @@ import AdminEmpresaDetalhe from './pages/admin-empresa-detalhe';
 import AdminCategorias from './pages/admin-categorias';
 import AdminTiposEstabelecimento from './pages/admin-tipos-estabelecimento';
 import AdminTags from './pages/admin-tags';
+import AdminPlanos from './pages/admin-planos';
 import RestauranteGuard from './components/RestauranteGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
 import RestauranteProdutos from './pages/restaurante-produtos';
 import RestaurantePedidos from './pages/restaurante-pedidos';
 import RestauranteCatalogo from './pages/restaurante-catalogo';
 import RestauranteConfig from './pages/restaurante-config';
+import RestaurantePlano from './pages/restaurante-plano';
 import RestauranteClientes from './pages/restaurante-clientes';
 import RestauranteAparencia from './pages/restaurante-aparencia';
 import RestauranteMotoboys from './pages/restaurante-motoboys';
@@ -81,6 +83,7 @@ const Routes = () => {
         <Route path="/admin/categorias" element={<AdminGuard><AdminCategorias /></AdminGuard>} />
         <Route path="/admin/tipos-estabelecimento" element={<AdminGuard><AdminTiposEstabelecimento /></AdminGuard>} />
         <Route path="/admin/tags" element={<AdminGuard><AdminTags /></AdminGuard>} />
+        <Route path="/admin/planos" element={<AdminGuard><AdminPlanos /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
 
         {/* Cardápio público por slug — sem auth */}
@@ -94,6 +97,7 @@ const Routes = () => {
         <Route path="/restaurante/produtos" element={<RestauranteGuard><RestauranteProdutos /></RestauranteGuard>} />
         <Route path="/restaurante/pedidos" element={<RestauranteGuard><RestaurantePedidos /></RestauranteGuard>} />
         <Route path="/restaurante/config" element={<RestauranteGuard><RestauranteConfig /></RestauranteGuard>} />
+        <Route path="/restaurante/plano" element={<RestauranteGuard><RestaurantePlano /></RestauranteGuard>} />
         <Route path="/restaurante/clientes" element={<RestauranteGuard><RestauranteClientes /></RestauranteGuard>} />
         <Route path="/restaurante/aparencia" element={<RestauranteGuard><RestauranteAparencia /></RestauranteGuard>} />
         <Route path="/restaurante/motoboys" element={<RestauranteGuard><RestauranteMotoboys /></RestauranteGuard>} />

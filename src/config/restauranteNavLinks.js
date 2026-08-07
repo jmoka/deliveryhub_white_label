@@ -8,6 +8,7 @@ const BASE_LINKS = [
   { label: 'Designer', path: '/restaurante/aparencia', icon: 'Paintbrush' },
   { label: 'Cardápio Digital', path: '/restaurante/cardapio-digital', icon: 'BookOpen' },
   { label: 'Config', path: '/restaurante/config', icon: 'Settings' },
+  { label: 'Plano', path: '/restaurante/plano', icon: 'CreditCard' },
   { label: 'Sessão', path: '/restaurante/sessao', icon: 'Clock' },
 ];
 

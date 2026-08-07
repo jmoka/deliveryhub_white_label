@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const RestauranteGuard = ({ children }) => {
-  const { loading, isAuthenticated, isRestaurantOwner } = useAuth();
+  const { loading, isAuthenticated, isRestaurantOwner, planoStatus } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -18,6 +18,11 @@ const RestauranteGuard = ({ children }) => {
     return <Navigate to="/customer-registration-login" state={{ from: location.pathname }} replace />;
   }
   if (!isRestaurantOwner()) return <Navigate to="/" replace />;
+
+  // Assinatura vencida além da tolerância — só a própria tela do plano continua acessível
+  if (planoStatus?.bloqueado && location.pathname !== '/restaurante/plano') {
+    return <Navigate to="/restaurante/plano" replace />;
+  }
 
   return children;
 };

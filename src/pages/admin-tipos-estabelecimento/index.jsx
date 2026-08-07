@@ -24,6 +24,7 @@ const AdminNav = ({ active }) => {
     { label: 'Tipos',        path: '/admin/tipos-estabelecimento' },
     { label: 'Tags',         path: '/admin/tags' },
     { label: 'Comissões',    path: '/admin/comissoes' },
+    { label: 'Planos',       path: '/admin/planos' },
     { label: 'Configurações',path: '/admin/configuracoes' },
   ];
   return (

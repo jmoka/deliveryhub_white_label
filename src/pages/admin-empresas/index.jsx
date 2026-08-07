@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio } from '../../services/adminService';
+import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig } from '../../services/adminService';
+import { getAssinaturas } from '../../services/planosService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
 import { ThemeToggle } from '../../contexts/ThemeContext';
@@ -17,6 +18,7 @@ const AdminNav = ({ active }) => {
     { label: 'Tipos',      path: '/admin/tipos-estabelecimento' },
     { label: 'Tags',       path: '/admin/tags' },
     { label: 'Comissões', path: '/admin/comissoes' },
+    { label: 'Planos', path: '/admin/planos' },
     { label: 'Configurações', path: '/admin/configuracoes' },
   ];
   return (
@@ -43,16 +45,17 @@ const AdminNav = ({ active }) => {
   );
 };
 
-const Modal = ({ empresa, onClose, onSave }) => {
+const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
   const [form, setForm] = useState({
     name: empresa?.name ?? '',
     address: empresa?.address ?? '',
-    comissao_pct: empresa?.comissao_pct ?? 5,
+    comissao_pct: empresa?.comissao_pct ?? null,
     user_id: empresa?.user_id ?? '',
     modulo_delivery: empresa?.modulo_delivery ?? true,
     modulo_salao: empresa?.modulo_salao ?? false,
   });
   const [salvando, setSalvando] = useState(false);
+  const usaPadraoGlobal = form.comissao_pct === null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -100,10 +103,23 @@ const Modal = ({ empresa, onClose, onSave }) => {
               min="0"
               max="100"
               step="0.5"
-              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={form.comissao_pct}
+              disabled={usaPadraoGlobal}
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-zinc-800 disabled:text-gray-400 dark:disabled:text-zinc-500"
+              value={usaPadraoGlobal ? '' : form.comissao_pct}
+              placeholder={usaPadraoGlobal ? `${comissaoPadrao}%` : ''}
               onChange={(e) => setForm({ ...form, comissao_pct: parseFloat(e.target.value) })}
             />
+            <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={usaPadraoGlobal}
+                onChange={(e) => setForm({ ...form, comissao_pct: e.target.checked ? null : comissaoPadrao })}
+                className="w-4 h-4 rounded accent-blue-600"
+              />
+              <span className="text-xs text-gray-500 dark:text-zinc-400">
+                Usar padrão global da plataforma ({comissaoPadrao}%)
+              </span>
+            </label>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
@@ -169,6 +185,8 @@ const AdminEmpresas = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [modal, setModal] = useState(null); // null | 'novo' | empresa_obj
+  const [comissaoPadrao, setComissaoPadrao] = useState(5);
+  const [assinaturas, setAssinaturas] = useState([]);
 
   const carregar = async () => {
     setLoading(true);
@@ -187,7 +205,11 @@ const AdminEmpresas = () => {
     }
   };
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => {
+    carregar();
+    getPlataformaConfig().then((d) => setComissaoPadrao(d.comissao_padrao_pct ?? 5)).catch(() => {});
+    getAssinaturas().then((d) => setAssinaturas(d.assinaturas ?? [])).catch(() => {});
+  }, []);
 
   const handleRemover = async (empresa) => {
     if (!confirm(`Remover "${empresa.name}"? Esta ação não pode ser desfeita.`)) return;
@@ -338,6 +360,7 @@ const AdminEmpresas = () => {
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Status</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Módulos</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Domínio</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Plano</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400 hidden md:table-cell">Comissão</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Cadastro</th>
                     <th className="px-2 sm:px-4 py-3 w-px whitespace-nowrap"></th>
@@ -404,9 +427,27 @@ const AdminEmpresas = () => {
                           <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
                         )}
                       </td>
+                      <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
+                        {(() => {
+                          const assinatura = assinaturas.find((a) => a.restaurant_id === e.id);
+                          if (!assinatura) return <span className="text-xs text-gray-400 dark:text-zinc-500">Sem plano</span>;
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{assinatura.planos?.nome}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                assinatura.status === 'ativa' ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400'
+                                : assinatura.status === 'trial' ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
+                                : 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400'
+                              }`}>
+                                {assinatura.status === 'ativa' ? 'Ativa' : assinatura.status === 'trial' ? 'Trial' : 'Cancelada'}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
-                          {e.comissao_pct ?? 5}%
+                          {e.comissao_pct ?? comissaoPadrao}%{e.comissao_pct == null && <span className="opacity-60"> (padrão)</span>}
                         </span>
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-right text-gray-400 dark:text-zinc-500 text-xs hidden lg:table-cell">
@@ -458,6 +499,7 @@ const AdminEmpresas = () => {
       {modal && (
         <Modal
           empresa={modal === 'novo' ? null : modal}
+          comissaoPadrao={comissaoPadrao}
           onClose={() => setModal(null)}
           onSave={() => { setModal(null); carregar(); }}
         />

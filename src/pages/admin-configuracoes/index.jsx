@@ -33,6 +33,12 @@ const AdminConfiguracoes = () => {
   const [sucessoModo, setSucessoModo] = useState(false);
   const [erroModo, setErroModo] = useState(null);
 
+  const [comissaoPadrao, setComissaoPadrao] = useState('5');
+  const [diasTolerancia, setDiasTolerancia] = useState('3');
+  const [salvandoComissao, setSalvandoComissao] = useState(false);
+  const [sucessoComissao, setSucessoComissao] = useState(false);
+  const [erroComissao, setErroComissao] = useState(null);
+
   useEffect(() => {
     getPlataformaConfig()
       .then((d) => {
@@ -45,6 +51,8 @@ const AdminConfiguracoes = () => {
         }));
         setModoIndividual(d.modo_individual ?? false);
         setModoIndividualRestauranteId(d.modo_individual_restaurant_id ?? '');
+        setComissaoPadrao(String(d.comissao_padrao_pct ?? 5));
+        setDiasTolerancia(String(d.plano_dias_tolerancia ?? 3));
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -72,6 +80,27 @@ const AdminConfiguracoes = () => {
       setErroModo(err.message);
     } finally {
       setSalvandoModo(false);
+    }
+  };
+
+  const handleSalvarComissao = async (e) => {
+    e.preventDefault();
+    setSalvandoComissao(true);
+    setErroComissao(null);
+    setSucessoComissao(false);
+    try {
+      const payload = {
+        comissao_padrao_pct: parseFloat(comissaoPadrao),
+        plano_dias_tolerancia: parseInt(diasTolerancia, 10),
+      };
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setSucessoComissao(true);
+      setTimeout(() => setSucessoComissao(false), 3000);
+    } catch (err) {
+      setErroComissao(err.message);
+    } finally {
+      setSalvandoComissao(false);
     }
   };
 
@@ -131,6 +160,7 @@ const AdminConfiguracoes = () => {
         { label: 'Tipos',      path: '/admin/tipos-estabelecimento' },
         { label: 'Tags',       path: '/admin/tags' },
         { label: 'Comissões', path: '/admin/comissoes' },
+        { label: 'Planos', path: '/admin/planos' },
         { label: 'Configurações', path: '/admin/configuracoes' },
       ].map((l) => (
         <button key={l.path} onClick={() => navigate(l.path)}
@@ -379,6 +409,63 @@ const AdminConfiguracoes = () => {
                   className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
                 >
                   {salvandoModo ? 'Salvando...' : 'Salvar modo de instalação'}
+                </button>
+              </form>
+            </div>
+
+            {/* ── Comissão e Inadimplência ─────────────────────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Comissão e Inadimplência</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Valores padrão aplicados quando a loja não tem configuração própria.
+              </p>
+
+              <form onSubmit={handleSalvarComissao} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                    Comissão padrão por venda (%)
+                  </label>
+                  <input
+                    type="number" min="0" step="0.1"
+                    value={comissaoPadrao}
+                    onChange={(e) => setComissaoPadrao(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Aplicada em lojas sem % própria definida (campo em branco em Empresas → editar).
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                    Dias de tolerância antes de bloquear painel do dono
+                  </label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={diasTolerancia}
+                    onChange={(e) => setDiasTolerancia(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Dias após o vencimento de uma fatura de plano até o painel do dono ser bloqueado.
+                  </p>
+                </div>
+
+                {erroComissao && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroComissao}</div>
+                )}
+                {sucessoComissao && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoComissao}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoComissao ? 'Salvando...' : 'Salvar comissão e tolerância'}
                 </button>
               </form>
             </div>

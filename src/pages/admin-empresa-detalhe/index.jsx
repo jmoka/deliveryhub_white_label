@@ -20,6 +20,7 @@ const AdminNav = ({ active }) => {
     { label: 'Tipos',      path: '/admin/tipos-estabelecimento' },
     { label: 'Tags',       path: '/admin/tags' },
     { label: 'Comissões', path: '/admin/comissoes' },
+    { label: 'Planos', path: '/admin/planos' },
   ];
   return (
     <nav className="flex gap-3 items-center">
