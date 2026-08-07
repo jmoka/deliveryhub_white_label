@@ -98,9 +98,16 @@ const PagamentoModal = ({ fatura, onClose, onPago }) => {
     try {
       if (!window.PagSeguro) throw new Error('PagBank ainda carregando, tente de novo em instantes.');
 
+      const digitos = cartao.validade.replace(/\D/g, '');
+      const mes = digitos.slice(0, 2);
+      const ano = digitos.slice(2, 4);
+      const mesNum = Number(mes);
+      if (digitos.length !== 4 || mesNum < 1 || mesNum > 12) {
+        throw new Error('Validade inválida — use o formato MM/AA');
+      }
+      const anoCompleto = `20${ano}`;
+
       const { public_key } = await getPagBankChavePublica();
-      const [mes, ano] = cartao.validade.split('/').map((v) => v.trim());
-      const anoCompleto = ano?.length === 2 ? `20${ano}` : ano;
 
       const card = window.PagSeguro.encryptCard({
         publicKey: public_key,
@@ -195,12 +202,16 @@ const PagamentoModal = ({ fatura, onClose, onPago }) => {
                     onChange={(e) => setCartao((c) => ({ ...c, numero: e.target.value }))}
                     className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
                   <div className="flex gap-2">
-                    <input required placeholder="MM/AA" maxLength={5} value={cartao.validade}
-                      onChange={(e) => setCartao((c) => ({ ...c, validade: e.target.value }))}
-                      className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                    <input required placeholder="MM/AA" inputMode="numeric" maxLength={5} value={cartao.validade}
+                      onChange={(e) => {
+                        const digitos = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        const formatado = digitos.length > 2 ? `${digitos.slice(0, 2)}/${digitos.slice(2)}` : digitos;
+                        setCartao((c) => ({ ...c, validade: formatado }));
+                      }}
+                      className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
                     <input required placeholder="CVV" inputMode="numeric" maxLength={4} value={cartao.cvv}
                       onChange={(e) => setCartao((c) => ({ ...c, cvv: e.target.value }))}
-                      className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                      className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
                   </div>
                   {metodo === 'credit_card' && (
                     <select value={cartao.parcelas}
