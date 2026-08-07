@@ -258,12 +258,12 @@ const PlanosDisponiveisModal = ({ planoAtualId, onClose, onEscolher }) => {
 
   const handleEscolher = async (plano) => {
     if (plano.id === planoAtualId) return;
-    if (!window.confirm(`Trocar para o plano "${plano.nome}" (${fmt(plano.valor)}/${plano.periodicidade})?`)) return;
+    if (!window.confirm(`Pagar ${fmt(plano.valor)} pra trocar pro plano "${plano.nome}"? A troca só vale depois do pagamento confirmado.`)) return;
     setEscolhendoId(plano.id);
     setErro(null);
     try {
-      await assinarPlano(plano.id);
-      onEscolher();
+      const fatura = await assinarPlano(plano.id);
+      onEscolher(fatura);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -311,7 +311,7 @@ const PlanosDisponiveisModal = ({ planoAtualId, onClose, onEscolher }) => {
                       disabled={escolhendoId === p.id}
                       className="w-full py-2 bg-[#FF441F] hover:bg-[#E63A19] text-white rounded-lg text-sm font-semibold disabled:opacity-50"
                     >
-                      {escolhendoId === p.id ? 'Trocando...' : 'Escolher este plano'}
+                      {escolhendoId === p.id ? 'Gerando cobrança...' : `Assinar — pagar ${fmt(p.valor)}`}
                     </button>
                   )}
                 </div>
@@ -518,7 +518,7 @@ const RestaurantePlano = () => {
         <PlanosDisponiveisModal
           planoAtualId={dados?.assinatura?.plano_id}
           onClose={() => setMostrarPlanos(false)}
-          onEscolher={() => { setMostrarPlanos(false); carregar(); refreshPlanoStatus?.(); }}
+          onEscolher={(fatura) => { setMostrarPlanos(false); setFaturaPagando(fatura); }}
         />
       )}
     </div>
