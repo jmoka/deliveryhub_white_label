@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTiposEstabelecimento, criarTipoEstabelecimento, atualizarTipoEstabelecimento, removerTipoEstabelecimento } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
-import { ThemeToggle } from '../../contexts/ThemeContext';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 /* ── Ícones disponíveis para tipos de estabelecimento ───────────── */
 const ICONES = [
@@ -13,40 +11,6 @@ const ICONES = [
   'Smartphone', 'Gift', 'Package', 'Truck', 'Building2', 'Tag',
 ];
 
-/* ── Nav admin ──────────────────────────────────────────────────── */
-const AdminNav = ({ active }) => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const links = [
-    { label: 'Dashboard',    path: '/admin' },
-    { label: 'Empresas',     path: '/admin/empresas' },
-    { label: 'Categorias',   path: '/admin/categorias' },
-    { label: 'Tipos',        path: '/admin/tipos-estabelecimento' },
-    { label: 'Tags',         path: '/admin/tags' },
-    { label: 'Comissões',    path: '/admin/comissoes' },
-    { label: 'Planos',       path: '/admin/planos' },
-    { label: 'Configurações',path: '/admin/configuracoes' },
-  ];
-  return (
-    <nav className="flex gap-1.5 flex-wrap items-center">
-      {links.map((l) => (
-        <button key={l.path} onClick={() => navigate(l.path)}
-          className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            active === l.path
-              ? 'text-white bg-blue-600 shadow-sm'
-              : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}>
-          {l.label}
-        </button>
-      ))}
-      <ThemeToggle inline />
-      <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900">
-        Sair
-      </button>
-    </nav>
-  );
-};
 
 /* ── Modal criar/editar tipo ─────────────────────────────────────── */
 const EMPTY = { name: '', icon_name: 'Store' };
@@ -197,13 +161,7 @@ const AdminTiposEstabelecimento = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
-      <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Tipos de Estabelecimento</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Restaurante, farmácia, material de construção...</p>
-        </div>
-        <AdminNav active="/admin/tipos-estabelecimento" />
-      </header>
+      <AdminHeader active="/admin/tipos-estabelecimento" title="Tipos de Estabelecimento" subtitle="Restaurante, farmácia, material de construção..." />
 
       <main className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">

@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getPlataformaConfig, updatePlataformaConfig, getRedeInfo, getEmpresas } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
-import { ThemeToggle } from '../../contexts/ThemeContext';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const AdminConfiguracoes = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -123,46 +119,9 @@ const AdminConfiguracoes = () => {
     }
   };
 
-  const NavAdmin = () => (
-    <nav className="flex gap-2 flex-wrap justify-end">
-      {[
-        { label: 'Dashboard', path: '/admin' },
-        { label: 'Empresas', path: '/admin/empresas' },
-        { label: 'Categorias', path: '/admin/categorias' },
-        { label: 'Tipos',      path: '/admin/tipos-estabelecimento' },
-        { label: 'Tags',       path: '/admin/tags' },
-        { label: 'Comissões', path: '/admin/comissoes' },
-        { label: 'Planos', path: '/admin/planos' },
-        { label: 'Configurações', path: '/admin/configuracoes' },
-      ].map((l) => (
-        <button key={l.path} onClick={() => navigate(l.path)}
-          className={`px-3 py-2 text-sm font-medium rounded-lg ${
-            l.path === '/admin/configuracoes'
-              ? 'text-white bg-orange-500'
-              : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}>
-          {l.label}
-        </button>
-      ))}
-      <ThemeToggle inline />
-      <button
-        onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
-      >
-        Sair
-      </button>
-    </nav>
-  );
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
-      <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Configurações da Plataforma</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Integração PagBank Marketplace (Split Payment)</p>
-        </div>
-        <NavAdmin />
-      </header>
+      <AdminHeader active="/admin/configuracoes" title="Configurações da Plataforma" subtitle="Integração PagBank Marketplace (Split Payment)" />
 
       <main className="p-6 max-w-2xl mx-auto">
         {loading ? (

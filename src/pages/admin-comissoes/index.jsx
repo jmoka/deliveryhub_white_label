@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getComissoes, getEmpresas } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
-import { ThemeToggle } from '../../contexts/ThemeContext';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const AdminComissoes = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [comissoes, setComissoes] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [total, setTotal] = useState(0);
@@ -40,43 +36,7 @@ const AdminComissoes = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
-      <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Painel Dev-Admin</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Comissões da Plataforma</p>
-        </div>
-        <nav className="flex gap-3 items-center">
-          {[
-            { label: 'Dashboard', path: '/admin' },
-            { label: 'Empresas', path: '/admin/empresas' },
-            { label: 'Categorias', path: '/admin/categorias' },
-            { label: 'Tipos',      path: '/admin/tipos-estabelecimento' },
-            { label: 'Tags',       path: '/admin/tags' },
-            { label: 'Comissões', path: '/admin/comissoes' },
-            { label: 'Planos', path: '/admin/planos' },
-            { label: 'Configurações', path: '/admin/configuracoes' },
-          ].map((l) => (
-            <button
-              key={l.path}
-              onClick={() => navigate(l.path)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg ${
-                l.path === '/admin/comissoes'
-                  ? 'text-white bg-blue-600'
-                  : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-          <button
-            onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-            className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
-          >
-            Sair
-          </button>
-          <ThemeToggle inline />
-        </nav>
-      </header>
+      <AdminHeader active="/admin/comissoes" title="Painel Dev-Admin" subtitle="Comissões da Plataforma" />
 
       <main className="p-6 max-w-6xl mx-auto">
         {/* Filtros */}

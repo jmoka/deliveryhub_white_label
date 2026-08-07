@@ -19,19 +19,32 @@ export const LocalModeProvider = ({ children }) => {
   const [dbLocalId, setDbLocalId] = useState(null);
   const [restauranteNome, setRestauranteNome] = useState(null);
   const [licenca, setLicenca] = useState(null);
+  const [verificandoLicenca, setVerificandoLicenca] = useState(false);
 
   const localId = ENV_LOCAL_ID ?? dbLocalId;
+
+  const buscarLicencaStatus = () =>
+    fetch(apiPath('/api/licenca/status')).then((r) => r.json()).then(setLicenca).catch(() => {});
+
+  // Força o checkin na hora (não espera o ciclo automático de N minutos) —
+  // usado depois que o admin troca plano/revoga, pra confirmar na hora.
+  const verificarLicencaAgora = async () => {
+    setVerificandoLicenca(true);
+    try {
+      const r = await fetch(apiPath('/api/licenca/checkin-agora'), { method: 'POST' });
+      setLicenca(await r.json());
+    } catch {
+      // mantém último status conhecido
+    } finally {
+      setVerificandoLicenca(false);
+    }
+  };
 
   // Instalação licenciada (LICENCA_SERIAL setado no backend) — consulta o status
   // já calculado pelo checkin periódico do backend contra a central. Endpoint
   // público (sem guard), seguro de chamar sempre — se não for instalação
   // licenciada, o backend só devolve { ativo: false }.
-  useEffect(() => {
-    fetch(apiPath('/api/licenca/status'))
-      .then((r) => r.json())
-      .then(setLicenca)
-      .catch(() => {});
-  }, []);
+  useEffect(() => { buscarLicencaStatus(); }, []);
 
   useEffect(() => {
     if (ENV_LOCAL_ID) return; // .env já resolve, não precisa consultar o banco
@@ -63,7 +76,10 @@ export const LocalModeProvider = ({ children }) => {
       localRestaurantId: localId,
       restauranteNome,
       licencaBloqueada: !!(licenca?.ativo && licenca?.bloqueado),
+      licencaRevogada: !!(licenca?.ativo && licenca?.revogado),
       licencaDiasAtraso: licenca?.dias_atraso ?? 0,
+      verificarLicencaAgora,
+      verificandoLicenca,
     }}>
       {children}
     </LocalModeContext.Provider>
@@ -85,14 +101,19 @@ export const LocalModeBanner = () => {
   );
 };
 
-// Bloqueio da licença da instalação local — fatura vencida além da tolerância
+// Bloqueio da licença da instalação local — fatura vencida ou serial revogado
 export const LicencaBloqueadaBanner = () => {
-  const { licencaBloqueada, licencaDiasAtraso } = useLocalMode() ?? {};
+  const { licencaBloqueada, licencaRevogada, licencaDiasAtraso, verificarLicencaAgora, verificandoLicenca } = useLocalMode() ?? {};
   if (!licencaBloqueada) return null;
   return (
     <div className="bg-red-50 dark:bg-red-950/30 border-b border-red-300 dark:border-red-900 px-6 py-2 flex items-center gap-2 text-red-800 dark:text-red-300 text-xs font-semibold">
       <Icon name="AlertTriangle" size={14} className="flex-shrink-0" />
-      Licença desta instalação vencida há {licencaDiasAtraso} dia(s) — regularize o pagamento pra continuar usando.
+      {licencaRevogada
+        ? 'Licença desta instalação foi revogada — fale com o suporte.'
+        : `Licença desta instalação vencida há ${licencaDiasAtraso} dia(s) — regularize o pagamento pra continuar usando.`}
+      <button onClick={verificarLicencaAgora} disabled={verificandoLicenca} className="ml-auto font-semibold underline disabled:opacity-50">
+        {verificandoLicenca ? 'Verificando...' : 'Verificar agora'}
+      </button>
     </div>
   );
 };

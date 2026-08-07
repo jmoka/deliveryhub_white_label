@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getMetricas, getComissoes } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
-import { ThemeToggle } from '../../contexts/ThemeContext';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtNum = (v) => new Intl.NumberFormat('pt-BR').format(v ?? 0);
@@ -26,7 +26,7 @@ const Card = ({ label, value, sub, color = 'blue' }) => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { signOut, userProfile } = useAuth();
+  const { userProfile } = useAuth();
   const { isLocalMode, localRestaurantId } = useLocalMode() ?? {};
   const [metricas, setMetricas] = useState(null);
   const [comissoes, setComissoes] = useState([]);
@@ -71,45 +71,7 @@ const AdminDashboard = () => {
       <LocalModeBanner />
       <LicencaBloqueadaBanner />
       {/* Header */}
-      <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Painel Dev-Admin</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">{userProfile?.name || 'Plataforma Delivery'}</p>
-        </div>
-        <nav className="flex gap-3 items-center">
-          <button onClick={() => navigate('/admin')} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">
-            Dashboard
-          </button>
-          <button onClick={() => navigate('/admin/empresas')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Empresas
-          </button>
-          <button onClick={() => navigate('/admin/categorias')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Categorias
-          </button>
-          <button onClick={() => navigate('/admin/tipos-estabelecimento')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Tipos
-          </button>
-          <button onClick={() => navigate('/admin/tags')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Tags
-          </button>
-          <button onClick={() => navigate('/admin/comissoes')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Comissões
-          </button>
-          <button onClick={() => navigate('/admin/planos')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Planos
-          </button>
-          <button onClick={() => navigate('/admin/configuracoes')} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg">
-            Configurações
-          </button>
-          <ThemeToggle inline />
-          <button
-            onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-            className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
-          >
-            Sair
-          </button>
-        </nav>
-      </header>
+      <AdminHeader active="/admin" title="Painel Dev-Admin" subtitle={userProfile?.name || 'Plataforma Delivery'} />
 
       <main className="p-6 max-w-6xl mx-auto">
         {/* Cards de métricas */}

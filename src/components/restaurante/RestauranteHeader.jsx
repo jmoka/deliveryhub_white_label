@@ -16,9 +16,41 @@ import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
 // Header compartilhado de toda a área /restaurante/*. Substitui o header
 // duplicado (e divergente) que cada página tinha antes — ver plano
 // "Layout compartilhado + favoritos na topbar".
+// Bolinha de status do plano na barra superior — verde (em dia), laranja
+// (vencendo em breve ou vencida mas dentro da tolerância), vermelha (bloqueado).
+const DIAS_ALERTA_VENCIMENTO = 5;
+
+const PlanoStatusDot = ({ planoStatus, onClick }) => {
+  if (!planoStatus || !planoStatus.plano_nome) return null;
+
+  const diasAteVencer = planoStatus.proxima_cobranca
+    ? Math.ceil((new Date(planoStatus.proxima_cobranca) - new Date()) / 86400000)
+    : null;
+
+  let cor = 'bg-green-500';
+  let texto = 'Plano em dia';
+  if (planoStatus.bloqueado) {
+    cor = 'bg-red-500';
+    texto = `Painel bloqueado — fatura vencida há ${planoStatus.dias_atraso} dia(s)`;
+  } else if (planoStatus.dias_atraso > 0) {
+    cor = 'bg-orange-500';
+    texto = `Fatura vencida há ${planoStatus.dias_atraso} dia(s) — regularize`;
+  } else if (diasAteVencer != null && diasAteVencer <= DIAS_ALERTA_VENCIMENTO) {
+    cor = 'bg-orange-500';
+    texto = `Próxima cobrança em ${diasAteVencer} dia(s)`;
+  }
+
+  return (
+    <button onClick={onClick} title={texto}
+      className="p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] flex-shrink-0">
+      <span className={`block w-2.5 h-2.5 rounded-full ${cor} ${planoStatus.bloqueado ? 'animate-pulse' : ''}`} />
+    </button>
+  );
+};
+
 const RestauranteHeader = ({ active, title, subtitle }) => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, planoStatus } = useAuth();
   const slugLoja = useMinhaLojaSlug();
   const logoUrl = useMinhaLojaLogo();
   const { moduloDelivery, moduloSalao } = useModulosEmpresa();
@@ -57,6 +89,7 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
         )}
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          <PlanoStatusDot planoStatus={planoStatus} onClick={() => navigate('/restaurante/plano')} />
           <ThemeToggle inline />
           <button onClick={() => setSidebarAberto(true)}
             className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">

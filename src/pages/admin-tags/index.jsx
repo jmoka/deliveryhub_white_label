@@ -1,43 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTags, criarTag, atualizarTag, removerTag } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
-import { ThemeToggle } from '../../contexts/ThemeContext';
 import Icon from '../../components/AppIcon';
-
-const AdminNav = ({ active }) => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const links = [
-    { label: 'Dashboard',    path: '/admin' },
-    { label: 'Empresas',     path: '/admin/empresas' },
-    { label: 'Categorias',   path: '/admin/categorias' },
-    { label: 'Tipos',        path: '/admin/tipos-estabelecimento' },
-    { label: 'Tags',         path: '/admin/tags' },
-    { label: 'Comissões',    path: '/admin/comissoes' },
-    { label: 'Configurações',path: '/admin/configuracoes' },
-  ];
-  return (
-    <nav className="flex gap-1.5 flex-wrap items-center">
-      {links.map((l) => (
-        <button key={l.path} onClick={() => navigate(l.path)}
-          className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors ${
-            active === l.path
-              ? 'text-white bg-blue-600 shadow-sm'
-              : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}>
-          {l.label}
-        </button>
-      ))}
-      <button onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900">
-        Sair
-      </button>
-      <ThemeToggle inline />
-    </nav>
-  );
-};
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const slugify = (text) =>
   text.toLowerCase().trim()
@@ -213,13 +178,7 @@ const AdminTags = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
-      <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Tags do Catálogo</h1>
-          <p className="text-sm text-gray-500 dark:text-zinc-400">Cada tag ativa gera um carrossel no catálogo do restaurante</p>
-        </div>
-        <AdminNav active="/admin/tags" />
-      </header>
+      <AdminHeader active="/admin/tags" title="Tags do Catálogo" subtitle="Cada tag ativa gera um carrossel no catálogo do restaurante" />
 
       <main className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">

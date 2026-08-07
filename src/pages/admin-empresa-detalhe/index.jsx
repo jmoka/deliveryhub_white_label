@@ -5,46 +5,9 @@ import {
   getEmpresaConfig, updateEmpresaConfig,
   getComissoesPorEmpresa,
 } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
-import { ThemeToggle } from '../../contexts/ThemeContext';
+import AdminHeader from '../../components/admin/AdminHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-
-const AdminNav = ({ active }) => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const links = [
-    { label: 'Dashboard', path: '/admin' },
-    { label: 'Empresas', path: '/admin/empresas' },
-    { label: 'Categorias', path: '/admin/categorias' },
-    { label: 'Tipos',      path: '/admin/tipos-estabelecimento' },
-    { label: 'Tags',       path: '/admin/tags' },
-    { label: 'Comissões', path: '/admin/comissoes' },
-    { label: 'Planos', path: '/admin/planos' },
-  ];
-  return (
-    <nav className="flex gap-3 items-center">
-      {links.map((l) => (
-        <button
-          key={l.path}
-          onClick={() => navigate(l.path)}
-          className={`px-4 py-2 text-sm font-medium rounded-lg ${
-            active === l.path ? 'text-white bg-blue-600' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-          }`}
-        >
-          {l.label}
-        </button>
-      ))}
-      <button
-        onClick={async () => { await signOut(); navigate('/customer-registration-login'); }}
-        className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900"
-      >
-        Sair
-      </button>
-      <ThemeToggle inline />
-    </nav>
-  );
-};
 
 // Tab: Dados gerais
 const TabDados = ({ empresa, onAtualizar }) => {
@@ -322,8 +285,10 @@ const AdminEmpresaDetalhe = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
-      <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
-        <div>
+      <AdminHeader
+        active="/admin/empresas"
+        title="Painel Dev-Admin"
+        beforeTitle={
           <div className="flex items-center gap-2">
             <button onClick={() => navigate('/admin/empresas')} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               ← Empresas
@@ -331,10 +296,8 @@ const AdminEmpresaDetalhe = () => {
             {empresa && <span className="text-gray-300 dark:text-zinc-600">/</span>}
             {empresa && <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">{empresa.name}</span>}
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-1">Painel Dev-Admin</h1>
-        </div>
-        <AdminNav active="/admin/empresas" />
-      </header>
+        }
+      />
 
       <main className="p-6 max-w-5xl mx-auto">
         {loading ? (
