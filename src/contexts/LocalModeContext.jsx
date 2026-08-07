@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getEmpresas, getPlataformaConfig } from '../services/adminService';
 import { useAuth } from './AuthContext';
+import { apiPath } from '../lib/apiUrl';
+import Icon from '../components/AppIcon';
 
 const LocalModeContext = createContext(null);
 
@@ -16,8 +18,20 @@ export const LocalModeProvider = ({ children }) => {
   const { loading, userProfile } = useAuth() ?? {};
   const [dbLocalId, setDbLocalId] = useState(null);
   const [restauranteNome, setRestauranteNome] = useState(null);
+  const [licenca, setLicenca] = useState(null);
 
   const localId = ENV_LOCAL_ID ?? dbLocalId;
+
+  // Instalação licenciada (LICENCA_SERIAL setado no backend) — consulta o status
+  // já calculado pelo checkin periódico do backend contra a central. Endpoint
+  // público (sem guard), seguro de chamar sempre — se não for instalação
+  // licenciada, o backend só devolve { ativo: false }.
+  useEffect(() => {
+    fetch(apiPath('/api/licenca/status'))
+      .then((r) => r.json())
+      .then(setLicenca)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (ENV_LOCAL_ID) return; // .env já resolve, não precisa consultar o banco
@@ -44,7 +58,13 @@ export const LocalModeProvider = ({ children }) => {
   }, [localId]);
 
   return (
-    <LocalModeContext.Provider value={{ isLocalMode: !!localId, localRestaurantId: localId, restauranteNome }}>
+    <LocalModeContext.Provider value={{
+      isLocalMode: !!localId,
+      localRestaurantId: localId,
+      restauranteNome,
+      licencaBloqueada: !!(licenca?.ativo && licenca?.bloqueado),
+      licencaDiasAtraso: licenca?.dias_atraso ?? 0,
+    }}>
       {children}
     </LocalModeContext.Provider>
   );
@@ -61,6 +81,18 @@ export const LocalModeBanner = () => {
       <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
       Modo Local — {restauranteNome ? `Restaurante: ${restauranteNome}` : `ID #${localRestaurantId}`}
       <span className="ml-auto font-normal opacity-70">Acesso restrito a 1 restaurante</span>
+    </div>
+  );
+};
+
+// Bloqueio da licença da instalação local — fatura vencida além da tolerância
+export const LicencaBloqueadaBanner = () => {
+  const { licencaBloqueada, licencaDiasAtraso } = useLocalMode() ?? {};
+  if (!licencaBloqueada) return null;
+  return (
+    <div className="bg-red-50 dark:bg-red-950/30 border-b border-red-300 dark:border-red-900 px-6 py-2 flex items-center gap-2 text-red-800 dark:text-red-300 text-xs font-semibold">
+      <Icon name="AlertTriangle" size={14} className="flex-shrink-0" />
+      Licença desta instalação vencida há {licencaDiasAtraso} dia(s) — regularize o pagamento pra continuar usando.
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig } from '../../services/adminService';
 import { getAssinaturas } from '../../services/planosService';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
+import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -258,6 +258,7 @@ const AdminEmpresas = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       <LocalModeBanner />
+      <LicencaBloqueadaBanner />
       <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100">Painel Dev-Admin</h1>

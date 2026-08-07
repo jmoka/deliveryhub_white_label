@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMetricas, getComissoes } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLocalMode, LocalModeBanner } from '../../contexts/LocalModeContext';
+import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -69,6 +69,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       <LocalModeBanner />
+      <LicencaBloqueadaBanner />
       {/* Header */}
       <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 px-6 py-4 flex items-center justify-between">
         <div>
