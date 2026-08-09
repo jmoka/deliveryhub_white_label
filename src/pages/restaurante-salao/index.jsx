@@ -1142,8 +1142,20 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl px-3 py-2 space-y-1 mt-1">
             <div className="flex justify-between text-sm">
               <span className="text-[#71717A] dark:text-[#A1A1AA]">Valor da comanda</span>
-              <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalFinal)}</span>
+              <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(subtotal)}</span>
             </div>
+            {Number(descontoInput || 0) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Desconto</span>
+                <span className="text-emerald-700 dark:text-emerald-400">- {fmt(Number(descontoInput))}</span>
+              </div>
+            )}
+            {Number(acrescimoInput || 0) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Acréscimo</span>
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">+ {fmt(Number(acrescimoInput))}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta{formaGorjetaAtiva !== 'comanda' ? ' (direto ao garçom)' : ''}</span>
               <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(gorjetaEfetiva)}</span>
