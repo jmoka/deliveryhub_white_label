@@ -1200,6 +1200,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
   const [descontoInput, setDescontoInput] = useState('');
   const [acrescimoInput, setAcrescimoInput] = useState('');
   const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
+  const [nomeCliente, setNomeCliente] = useState('');
 
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
@@ -1221,6 +1222,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
     setComanda(c);
     setDescontoInput(String(c.desconto_valor ?? 0));
     setAcrescimoInput(String(c.acrescimo_valor ?? 0));
+    setNomeCliente((atual) => (atual ? atual : (c.cliente_mesa_nome === 'Venda balcão' ? '' : (c.cliente_mesa_nome ?? ''))));
     // Refaz a lista de produtos toda vez que a comanda recarrega — senão a quantidade
     // em estoque mostrada no picker fica desatualizada depois de incluir/editar item.
     setProdutos([
@@ -1271,6 +1273,8 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
 
   const aplicarDesconto = () => acao(() => aplicarDescontoComanda(comandaId, Number(descontoInput || 0)));
   const aplicarAcrescimo = () => acao(() => aplicarAcrescimoComanda(comandaId, Number(acrescimoInput || 0)));
+
+  const salvarNomeCliente = () => acao(() => editarClienteComandaSalao(comandaId, nomeCliente.trim() || 'Venda balcão'));
 
   const registrarPagamento = () => {
     const v = Number(valorPagamento);
@@ -1355,6 +1359,18 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
         <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Venda balcão</h2>
         <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="X" size={22} /></button>
+      </div>
+
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
+        <Icon name="User" size={15} className="text-[#A1A1AA] flex-shrink-0" />
+        <input
+          value={nomeCliente}
+          onChange={(e) => setNomeCliente(e.target.value)}
+          onBlur={salvarNomeCliente}
+          placeholder="Nome do cliente (opcional)"
+          disabled={salvando}
+          className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
+        />
       </div>
 
       <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">
