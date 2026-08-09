@@ -23,11 +23,11 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
 
   return (
     <>
-      <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
-        <div className="min-w-0">
+      <header className="bg-white dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700 px-6 py-4 flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
           {beforeTitle}
           <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-100 truncate">{title}</h1>
-          {subtitle && <p className="text-sm text-gray-500 dark:text-zinc-400 truncate">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-gray-500 dark:text-zinc-400 sm:truncate">{subtitle}</p>}
         </div>
 
         <nav className="hidden lg:flex gap-1.5 items-center flex-wrap justify-end">

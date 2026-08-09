@@ -37,9 +37,13 @@ const Badge = ({ status }) => {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>;
 };
 
+/* ── Normaliza nome pra comparar sem acento/maiúscula ───────────── */
+const normalizarNome = (s) =>
+  (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+
 const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false };
 
-const Modal = ({ plano, onClose, onSave }) => {
+const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
     plano
       ? {
@@ -66,6 +70,16 @@ const Modal = ({ plano, onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nome.trim() || !form.valor) return;
+
+    const nomeNormalizado = normalizarNome(form.nome);
+    const duplicado = (planosExistentes ?? []).find(
+      (p) => p.id !== plano?.id && normalizarNome(p.nome) === nomeNormalizado
+    );
+    if (duplicado) {
+      setErro(`Já existe um plano chamado "${duplicado.nome}"`);
+      return;
+    }
+
     setSalvando(true);
     setErro(null);
     try {
@@ -226,6 +240,9 @@ const TabPlanos = () => {
   const [erro, setErro] = useState(null);
   const [modal, setModal] = useState(null); // null | 'novo' | plano_obj
   const [removendo, setRemovendo] = useState(null);
+  const [busca, setBusca] = useState('');
+
+  const planosFiltrados = planos.filter((p) => normalizarNome(p.nome).includes(normalizarNome(busca)));
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -269,6 +286,16 @@ const TabPlanos = () => {
         </button>
       </div>
 
+      <div className="relative mb-6">
+        <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
+        <input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar plano já cadastrado..."
+          className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {erro && <p className="text-red-600 dark:text-red-400 text-sm mb-4 bg-red-50 dark:bg-red-950/30 rounded-lg px-4 py-3">{erro}</p>}
 
       {loading ? (
@@ -284,10 +311,15 @@ const TabPlanos = () => {
             Criar primeiro plano
           </button>
         </div>
+      ) : planosFiltrados.length === 0 ? (
+        <div className="bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 p-10 text-center">
+          <Icon name="SearchX" size={36} className="text-gray-200 dark:text-zinc-600 mx-auto mb-3" />
+          <p className="text-gray-400 dark:text-zinc-500">Nenhum plano encontrado para "{busca}"</p>
+        </div>
       ) : (
         <div className="space-y-3">
           <AnimatePresence>
-            {planos.map((plano) => (
+            {planosFiltrados.map((plano) => (
               <motion.div key={plano.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -363,6 +395,7 @@ const TabPlanos = () => {
       {modal && (
         <Modal
           plano={modal === 'novo' ? null : modal}
+          planosExistentes={planos}
           onClose={() => setModal(null)}
           onSave={() => { setModal(null); carregar(); }}
         />
