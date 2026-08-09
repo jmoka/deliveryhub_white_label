@@ -227,7 +227,7 @@ const RestauranteFinanceiro = () => {
 
         {/* Caixa Atual */}
         {caixa?.aberto
-          ? <CaixaAtualPanel caixa={caixa} taxaPagbank={taxaPagbank} onRefresh={carregarDados} />
+          ? <CaixaAtualPanel caixa={caixa} taxaPagbank={taxaPagbank} onRefresh={carregarDados} restauranteNome={restauranteNome} />
           : caixa && (
             <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[#F4F4F5] dark:bg-[#3F3F46] flex items-center justify-center flex-shrink-0">

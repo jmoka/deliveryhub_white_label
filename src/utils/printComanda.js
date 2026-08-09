@@ -451,3 +451,59 @@ try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
     if (w) { w.document.write(html); w.document.close(); }
   }
 };
+
+// Fallback do navegador pro recibo de Sangria/Adição — só chamado quando o backend
+// não tem impressora dedicada configurada (ver Config > "Impressora de sangria/adição").
+const MEIO_LABEL_MOVIMENTO = { dinheiro: 'Dinheiro', pix: 'PIX', transferencia: 'Transferência', cartao: 'Cartão' };
+export const printReciboMovimentoCaixa = (tipo, movimento, restauranteNome) => {
+  const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+  const hora = new Date().toLocaleString('pt-BR');
+
+  const escapado = (movimento.descricao ?? '').replace(/</g, '&lt;');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de ${tipo}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;width:100%;max-width:300px;margin:0 auto}
+.center{text-align:center;display:block}
+.rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
+hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.campo{margin:8px 0}
+.rotulo{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#333;margin-bottom:2px}
+.valor-campo{display:block;font-size:14px;word-break:break-word;white-space:pre-wrap}
+.total{padding:4px 0}
+.total .rotulo{font-size:12px}
+.total .valor-campo{font-size:24px;font-weight:900}
+@media print{button{display:none!important}}
+</style></head><body>
+<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
+<div class="center" style="font-size:11px;letter-spacing:1px">RECIBO DE ${tipo.toUpperCase()}</div>
+<hr/>
+<div class="center" style="font-size:11px">${hora}</div>
+<hr/>
+<div class="campo"><span class="rotulo">Descrição</span><span class="valor-campo">${escapado}</span></div>
+<div class="campo"><span class="rotulo">Meio</span><span class="valor-campo">${MEIO_LABEL_MOVIMENTO[movimento.meio] ?? movimento.meio ?? 'Dinheiro'}</span></div>
+<hr/>
+<div class="campo total"><span class="rotulo">Valor</span><span class="valor-campo">${fmt(movimento.valor)}</span></div>
+<hr/>
+<script>
+window.print();
+try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
+</script>
+</body></html>`;
+
+  const iframe2 = document.createElement('iframe');
+  iframe2.id = `movimento-caixa-frame-${Date.now()}`;
+  iframe2.style.cssText = 'position:fixed;bottom:-1px;left:-1px;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe2);
+
+  try {
+    iframe2.contentDocument.open();
+    iframe2.contentDocument.write(html);
+    iframe2.contentDocument.close();
+  } catch {
+    iframe2.remove();
+    const w = window.open('', '_blank', 'width=440,height=680');
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+};

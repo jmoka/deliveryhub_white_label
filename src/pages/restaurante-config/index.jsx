@@ -425,6 +425,7 @@ const RestauranteConfig = () => {
     taxa_cartao_percentual: '',
     salao_modo: 'ambos',
     recibo_impressora_id: '',
+    sangria_acrescimo_impressora_id: '',
     auto_atendimento_habilitado: false,
   });
   const [impressoras, setImpressoras] = useState([]);
@@ -454,6 +455,7 @@ const RestauranteConfig = () => {
           taxa_cartao_percentual: d.taxa_cartao_percentual != null ? String(d.taxa_cartao_percentual) : '',
           salao_modo: d.salao_modo ?? 'ambos',
           recibo_impressora_id: d.recibo_impressora_id != null ? String(d.recibo_impressora_id) : '',
+          sangria_acrescimo_impressora_id: d.sangria_acrescimo_impressora_id != null ? String(d.sangria_acrescimo_impressora_id) : '',
           auto_atendimento_habilitado: d.auto_atendimento_habilitado ?? false,
         }));
       })
@@ -484,6 +486,7 @@ const RestauranteConfig = () => {
         taxa_cartao_percentual: form.taxa_cartao_percentual !== '' ? parseFloat(form.taxa_cartao_percentual) : 0,
         salao_modo: form.salao_modo,
         recibo_impressora_id: form.recibo_impressora_id !== '' ? Number(form.recibo_impressora_id) : null,
+        sangria_acrescimo_impressora_id: form.sangria_acrescimo_impressora_id !== '' ? Number(form.sangria_acrescimo_impressora_id) : null,
         auto_atendimento_habilitado: form.auto_atendimento_habilitado,
       };
       if (form.pagbank_token.trim()) {
@@ -814,6 +817,27 @@ const RestauranteConfig = () => {
                     </select>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Recibo de venda (pagamento final e venda direta) sai direto nessa impressora se ela tiver o agente local pareado — senão cai no navegador.
+                    </p>
+                  </div>
+                )}
+
+                {tipoRestaurante && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
+                      Impressora de sangria/adição
+                    </label>
+                    <select
+                      value={form.sangria_acrescimo_impressora_id}
+                      onChange={(e) => setForm((f) => ({ ...f, sangria_acrescimo_impressora_id: e.target.value }))}
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    >
+                      <option value="">Nenhuma — imprimir pelo navegador</option>
+                      {impressoras.map((imp) => (
+                        <option key={imp.id} value={imp.id}>{imp.nome} ({imp.setor})</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Toda Sangria ou Adição registrada no caixa sai um recibo nessa impressora se ela tiver o agente local pareado — senão cai no navegador.
                     </p>
                   </div>
                 )}

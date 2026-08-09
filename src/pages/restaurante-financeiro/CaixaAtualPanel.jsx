@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
 import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa } from '../../services/restauranteService';
 import FecharCaixaModal from '../restaurante-dashboard/FecharCaixaModal';
+import { printReciboMovimentoCaixa } from '../../utils/printComanda';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtHora = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -84,7 +85,7 @@ const MovimentoModal = ({ tipo, onSalvar, onCancelar, salvando }) => {
   );
 };
 
-const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] }) => {
+const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], restauranteNome }) => {
   const [modal, setModal] = useState(null); // 'sangria' | 'adicao' | 'fechar' | null
   const [salvando, setSalvando] = useState(false);
   const [fechando, setFechando] = useState(false);
@@ -105,8 +106,11 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
   const handleMovimento = async (body) => {
     setSalvando(true);
     try {
-      if (modal === 'sangria') await adicionarSaida(body);
-      else await adicionarEntrada(body);
+      const isSaida = modal === 'sangria';
+      const res = isSaida ? await adicionarSaida(body) : await adicionarEntrada(body);
+      if (res?.recibo?.via !== 'agente') {
+        printReciboMovimentoCaixa(isSaida ? 'Sangria' : 'Adição', body, restauranteNome);
+      }
       await onRefresh();
       setModal(null);
     } catch (e) { alert(e.message); }
