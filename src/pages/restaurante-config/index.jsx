@@ -223,13 +223,13 @@ const EnderecoCard = ({ geocodeFalhou }) => {
               <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Logradouro (rua/av.)</label>
               <input value={form.logradouro} onChange={(e) => setForm((f) => ({ ...f, logradouro: e.target.value }))}
                 placeholder="Rua Exemplo"
-                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
             <div>
               <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Número</label>
               <input value={form.numero} onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
                 placeholder="123"
-                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -237,26 +237,26 @@ const EnderecoCard = ({ geocodeFalhou }) => {
               <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">CEP</label>
               <input value={form.cep} onChange={handleCepChange}
                 placeholder="00000-000" maxLength={9}
-                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
               {buscandoCep && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-1">Buscando endereço...</p>}
             </div>
             <div>
               <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Bairro</label>
               <input value={form.neighborhood} onChange={(e) => setForm((f) => ({ ...f, neighborhood: e.target.value }))}
                 placeholder="Centro"
-                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
             <div>
               <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Cidade</label>
               <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                 placeholder="São Paulo"
-                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
             <div>
               <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Estado (UF)</label>
               <input value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value.toUpperCase() }))}
                 placeholder="SP" maxLength={2}
-                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+                className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
           </div>
           {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
