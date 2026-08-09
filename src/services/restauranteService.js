@@ -314,8 +314,8 @@ export const imprimirConferenciaSalao = (id, valores) =>
   apiFetch(`/salao/comandas/${id}/imprimir-conferencia`, { method: 'POST', body: JSON.stringify(valores ?? {}) });
 export const reimprimirReciboSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reimprimir-recibo`, { method: 'POST' });
-export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta) =>
-  apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta }) });
+export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix) =>
+  apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix }) });
 export const adicionarItensComandaSalao = (id, itens) =>
   apiFetch(`/salao/comandas/${id}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
 export const editarItemComandaSalao = (id, itemId, body) =>
@@ -324,10 +324,12 @@ export const removerItemComandaSalao = (id, itemId) =>
   apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'DELETE' });
 export const transferirGarcomComanda = (id, garcom_id) =>
   apiFetch(`/salao/comandas/${id}/transferir-garcom`, { method: 'PATCH', body: JSON.stringify({ garcom_id }) });
-export const registrarPagamentoParcialSalao = (id, valor, forma_pagamento, valor_recebido) =>
-  apiFetch(`/salao/comandas/${id}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento, valor_recebido }) });
+export const registrarPagamentoParcialSalao = (id, valor, forma_pagamento, valor_recebido, troco_via_pix) =>
+  apiFetch(`/salao/comandas/${id}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento, valor_recebido, troco_via_pix }) });
 export const editarPagamentoParcialSalao = (id, pagamentoId, valor, forma_pagamento) =>
   apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}`, { method: 'PATCH', body: JSON.stringify({ valor, forma_pagamento }) });
+export const alterarTrocoPixComandaSalao = (id, pagamentoId, troco_via_pix) =>
+  apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}/troco-pix`, { method: 'PATCH', body: JSON.stringify({ troco_via_pix }) });
 export const removerPagamentoParcialSalao = (id, pagamentoId) =>
   apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}`, { method: 'DELETE' });
 export const transferirComandaSalao = (id, { mesa_id, comanda_destino_id }) =>

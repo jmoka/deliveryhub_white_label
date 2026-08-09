@@ -95,7 +95,9 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
 
   const r = caixa.resumo ?? {};
   const por = r.por_pagamento ?? {};
-  const digitalTotal = Object.entries(por).filter(([k]) => k !== 'cash').reduce((s, [, v]) => s + v, 0);
+  // Troco devolvido via Pix (ver troco_via_pix) sai do Pix do estabelecimento — desconta
+  // do total digital, senão o card mostra dinheiro que já foi embora.
+  const digitalTotal = Object.entries(por).filter(([k]) => k !== 'cash').reduce((s, [, v]) => s + v, 0) + (r.pix_calculado ?? 0);
   const taxaEst = taxaPagbank > 0 ? digitalTotal * (taxaPagbank / 100) : 0;
   const saidas = caixa.saidas ?? [];
   const entradas = caixa.entradas ?? [];
@@ -179,17 +181,29 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [] })
         <Kpi icon="ArrowDownLeft" label="Sangrias / Saídas"    value={fmt(r.total_saidas)}     color="red"   sub={`${saidas.length} registros`} />
       </div>
 
-      {/* Vendas por método */}
+      {/* Vendas por método — cash/pix aqui mostram o caixa de fato (valor recebido do
+          cliente / líquido de troco via Pix), não o valor da venda. */}
       {Object.keys(por).length > 0 && (
         <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl p-3 mb-3">
-          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas por método de pagamento</p>
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(por).map(([k, v]) => (
-              <div key={k} className="text-sm">
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">{PL[k] ?? k}: </span>
-                <span className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(v)}</span>
-              </div>
-            ))}
+          <p className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest mb-2">Vendas por método de pagamento</p>
+          <div className="flex flex-wrap gap-4">
+            {Object.entries(por).map(([k, v]) => {
+              // Troco físico já deixa o valor da venda correto sozinho (cliente devolveu em
+              // dinheiro) — só troco via Pix precisa desse ajuste (fica no caixa em espécie,
+              // mas sai do Pix).
+              const valorExibido = k === 'cash' ? v - (r.pix_calculado ?? 0)
+                : k === 'pix' ? v + (r.pix_calculado ?? 0)
+                : v;
+              return (
+                <div key={k} className="text-base">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">{k === 'pix' ? 'Saldo Pix' : (PL[k] ?? k)}: </span>
+                  <span className="font-bold text-lg text-[#18181B] dark:text-[#F4F4F5]">{fmt(valorExibido)}</span>
+                  {k === 'pix' && (r.pix_calculado ?? 0) !== 0 && (
+                    <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]"> (recebido: {fmt(v)})</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
           {taxaEst > 0 && (
             <div className="mt-2 pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex justify-between text-xs">

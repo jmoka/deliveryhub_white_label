@@ -5,7 +5,7 @@ import {
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, getMeusCombos, registrarPagamentoParcialSalao, transferirComandaSalao,
-  editarPagamentoParcialSalao, removerPagamentoParcialSalao, abrirVendaBalcao, reabrirComandaSalao,
+  editarPagamentoParcialSalao, removerPagamentoParcialSalao, alterarTrocoPixComandaSalao, abrirVendaBalcao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
   reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao,
 } from '../../services/restauranteService';
@@ -383,6 +383,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
+  const [trocoViaPixParcial, setTrocoViaPixParcial] = useState(false);
   const [mesaDestino, setMesaDestino] = useState('');
   const [mostrarQr, setMostrarQr] = useState(false);
   const [mostrarQrAuto, setMostrarQrAuto] = useState(false);
@@ -572,45 +573,45 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   };
 
   const renderItemLinha = (item, { ocultarComboLabel = false } = {}) => (
-    <div key={item.id} className="py-0.5">
-      <div className="flex justify-between items-center text-sm gap-2">
+    <div key={item.id} className="py-1">
+      <div className="flex justify-between items-center text-base gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
+          <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
             {item.products?.image_url
               ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={14} className="text-[#A1A1AA]" /></div>}
+              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={15} className="text-[#A1A1AA]" /></div>}
           </div>
-          <span className="truncate">
+          <span className="truncate font-medium">
             {item.quantity}x {item.products?.name}
-            {item.combo_nome && !ocultarComboLabel && <span className="text-[10px] text-[#FF441F] block leading-tight">combo: {item.combo_nome}</span>}
+            {item.combo_nome && !ocultarComboLabel && <span className="text-xs text-[#FF441F] block leading-tight">combo: {item.combo_nome}</span>}
           </span>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span>{fmt(item.quantity * item.unit_price)}</span>
+          <span className="font-semibold">{fmt(item.quantity * item.unit_price)}</span>
           {['aberta', 'fechada_garcom'].includes(comanda.status) && (
             <>
-              <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] flex items-center justify-center">
-                <Icon name="MessageSquare" size={11} />
+              <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] flex items-center justify-center">
+                <Icon name="MessageSquare" size={13} />
               </button>
-              <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-xs font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">−</button>
-              <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-5 h-5 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-xs font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">+</button>
-              <button onClick={() => removerItem(item)} className="w-5 h-5 rounded-md border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
-                <Icon name="X" size={11} />
+              <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">−</button>
+              <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">+</button>
+              <button onClick={() => removerItem(item)} className="w-7 h-7 rounded-md border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
+                <Icon name="X" size={13} />
               </button>
             </>
           )}
         </div>
       </div>
       {observacaoEditandoId === item.id ? (
-        <div className="flex items-center gap-1.5 mt-1 pl-10">
+        <div className="flex items-center gap-1.5 mt-1 pl-11">
           <input value={observacaoInput} onChange={(e) => setObservacaoInput(e.target.value)} autoFocus
-            placeholder="Observação..." className="flex-1 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1 focus:outline-none focus:border-[#FF441F]" />
-          <button onClick={() => salvarObservacao(item)} className="text-xs font-bold text-[#FF441F]">Salvar</button>
-          <button onClick={() => setObservacaoEditandoId(null)} className="text-xs text-[#A1A1AA]">Cancelar</button>
+            placeholder="Observação..." className="flex-1 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 focus:outline-none focus:border-[#FF441F]" />
+          <button onClick={() => salvarObservacao(item)} className="text-sm font-bold text-[#FF441F]">Salvar</button>
+          <button onClick={() => setObservacaoEditandoId(null)} className="text-sm text-[#A1A1AA]">Cancelar</button>
         </div>
       ) : item.observacao ? (
         <p onClick={() => ['aberta', 'fechada_garcom'].includes(comanda.status) && abrirEdicaoObservacao(item)}
-          className="text-xs text-blue-600 dark:text-blue-400 pl-10 cursor-pointer">Obs: {item.observacao}</p>
+          className="text-sm text-blue-600 dark:text-blue-400 pl-11 cursor-pointer">Obs: {item.observacao}</p>
       ) : null}
     </div>
   );
@@ -628,10 +629,16 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         // Sem valor recebido digitado, manda o próprio valor pago — senão não credita
         // a venda em dinheiro no caixa físico.
         formaPagamentoParcial === 'cash' ? Number(valorRecebidoParcial || v) : undefined,
+        formaPagamentoParcial === 'cash' && trocoParcial > 0 ? trocoViaPixParcial : undefined,
       );
       setValorPagamento('');
       setValorRecebidoParcial('');
+      setTrocoViaPixParcial(false);
     });
+  };
+
+  const alterarTrocoPix = (p) => {
+    acao(() => alterarTrocoPixComandaSalao(comandaId, p.id, !p.troco_via_pix));
   };
 
   const iniciarEdicaoPagamento = (p) => {
@@ -701,7 +708,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
   const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
   const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
-  const totalTrocoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.troco || 0), 0);
+  const totalTrocoEspecie = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? 0 : Number(p.troco || 0)), 0);
+  const totalTrocoPix = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? Number(p.troco || 0) : 0), 0);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
@@ -980,9 +988,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         )}
 
         <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-[#71717A] dark:text-[#A1A1AA]">Saldo devedor</span>
-            <strong className={(comanda.saldo?.saldo ?? 0) > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}>
+          <div className="flex justify-between items-center text-base">
+            <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">Saldo devedor</span>
+            <strong className={`text-lg ${(comanda.saldo?.saldo ?? 0) > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>
               {fmt(comanda.saldo?.saldo ?? totalFinal)}
             </strong>
           </div>
@@ -1015,6 +1023,16 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
+                      {podeCorrigirFormaPagamento && p.forma_pagamento === 'cash' && (p.troco ?? 0) > 0 && (
+                        <button onClick={() => alterarTrocoPix(p)} title={p.troco_via_pix ? 'Voltar troco pra espécie' : 'Marcar troco como pago via Pix'}
+                          className={`px-1.5 h-6 rounded-md border text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${
+                            p.troco_via_pix
+                              ? 'border-[#FF441F]/40 bg-[#FF441F]/10 text-[#FF441F]'
+                              : 'border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-950/40'
+                          }`}>
+                          Troco Pix
+                        </button>
+                      )}
                       {podeCorrigirFormaPagamento && (
                         <button onClick={() => iniciarEdicaoPagamento(p)} title="Corrigir forma de pagamento"
                           className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-950/40 flex-shrink-0">
@@ -1030,7 +1048,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                   </div>
                   {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
                     <p className="text-[10px] text-[#A1A1AA] pl-0.5">
-                      Dinheiro: {fmt(p.valor_recebido)} · Troco: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
+                      Dinheiro: {fmt(p.valor_recebido)} · Troco{p.troco_via_pix ? ' (Pix)' : ''}: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
                     </p>
                   )}
                   </div>
@@ -1061,14 +1079,23 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             </p>
           )}
           {podeEditar && formaPagamentoParcial === 'cash' && (
-            <div className="flex items-center gap-1.5">
-              <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
-                placeholder="Valor recebido do cliente"
-                className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
-              {trocoParcial !== null && (
-                <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                  Troco: {fmt(Math.max(trocoParcial, 0))}
-                </span>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
+                  placeholder="Valor recebido do cliente"
+                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
+                {trocoParcial !== null && (
+                  <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                    Troco: {fmt(Math.max(trocoParcial, 0))}
+                  </span>
+                )}
+              </div>
+              {trocoParcial > 0 && (
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input type="checkbox" checked={trocoViaPixParcial} onChange={(e) => setTrocoViaPixParcial(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded accent-[#FF441F]" />
+                  <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix (não sai do caixa em espécie)</span>
+                </label>
               )}
             </div>
           )}
@@ -1143,10 +1170,18 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                       <span className="text-[#71717A] dark:text-[#A1A1AA]">Dinheiro recebido</span>
                       <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalRecebidoDinheiro)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco</span>
-                      <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalTrocoDinheiro)}</span>
-                    </div>
+                    {totalTrocoEspecie > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco</span>
+                        <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalTrocoEspecie)}</span>
+                      </div>
+                    )}
+                    {totalTrocoPix > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix</span>
+                        <span className="text-[#FF441F]">{fmt(totalTrocoPix)}</span>
+                      </div>
+                    )}
                   </>
                 )}
                 <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
@@ -1205,6 +1240,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
+  const [trocoViaPixParcial, setTrocoViaPixParcial] = useState(false);
 
   const [forma, setForma] = useState('pix');
   const [valorRecebidoFinal, setValorRecebidoFinal] = useState('');
@@ -1289,10 +1325,16 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
         // Sem valor recebido digitado, manda o próprio valor pago — senão não credita
         // a venda em dinheiro no caixa físico.
         formaPagamentoParcial === 'cash' ? Number(valorRecebidoParcial || v) : undefined,
+        formaPagamentoParcial === 'cash' && trocoParcial > 0 ? trocoViaPixParcial : undefined,
       );
       setValorPagamento('');
       setValorRecebidoParcial('');
+      setTrocoViaPixParcial(false);
     });
+  };
+
+  const alterarTrocoPix = (p) => {
+    acao(() => alterarTrocoPixComandaSalao(comandaId, p.id, !p.troco_via_pix));
   };
 
   const removerPagamento = (p) => {
@@ -1491,9 +1533,9 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
           </div>
 
           <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-[#71717A] dark:text-[#A1A1AA]">Saldo devedor</span>
-              <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}>{fmt(saldo)}</strong>
+            <div className="flex justify-between items-center text-base">
+              <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">Saldo devedor</span>
+              <strong className={`text-lg ${saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmt(saldo)}</strong>
             </div>
             {(comanda.pagamentos ?? []).length > 0 && (
               <div className="space-y-1">
@@ -1506,6 +1548,16 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
+                      {p.forma_pagamento === 'cash' && (p.troco ?? 0) > 0 && (
+                        <button onClick={() => alterarTrocoPix(p)} title={p.troco_via_pix ? 'Voltar troco pra espécie' : 'Marcar troco como pago via Pix'}
+                          className={`px-1.5 h-5 rounded-md border text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${
+                            p.troco_via_pix
+                              ? 'border-[#FF441F]/40 bg-[#FF441F]/10 text-[#FF441F]'
+                              : 'border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+                          }`}>
+                          Troco Pix
+                        </button>
+                      )}
                       <button onClick={() => removerPagamento(p)} className="w-5 h-5 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center">
                         <Icon name="X" size={11} />
                       </button>
@@ -1513,7 +1565,7 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
                   </div>
                   {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
                     <p className="text-[10px] text-[#A1A1AA] pl-0.5">
-                      Dinheiro: {fmt(p.valor_recebido)} · Troco: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
+                      Dinheiro: {fmt(p.valor_recebido)} · Troco{p.troco_via_pix ? ' (Pix)' : ''}: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
                     </p>
                   )}
                   </div>
@@ -1541,14 +1593,23 @@ const VendaBalcaoModal = ({ comandaId, onFechar, onMudou }) => {
               </p>
             )}
             {formaPagamentoParcial === 'cash' && (
-              <div className="flex items-center gap-1.5">
-                <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
-                  placeholder="Valor recebido do cliente"
-                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
-                {trocoParcial !== null && (
-                  <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                    Troco: {fmt(Math.max(trocoParcial, 0))}
-                  </span>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
+                    placeholder="Valor recebido do cliente"
+                    className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
+                  {trocoParcial !== null && (
+                    <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                      Troco: {fmt(Math.max(trocoParcial, 0))}
+                    </span>
+                  )}
+                </div>
+                {trocoParcial > 0 && (
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input type="checkbox" checked={trocoViaPixParcial} onChange={(e) => setTrocoViaPixParcial(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded accent-[#FF441F]" />
+                    <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix (não sai do caixa em espécie)</span>
+                  </label>
                 )}
               </div>
             )}

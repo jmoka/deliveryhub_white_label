@@ -514,7 +514,12 @@ const RestauranteDashboard = () => {
             {(() => {
               const vendasCash   = r?.por_pagamento?.cash ?? 0;
               const saldoEspecie = r?.especie_calculada ?? caixa.valor_inicial ?? 0;
-              const saldoDigital = (r?.total_vendas ?? 0) - vendasCash;
+              const pixCalculado = r?.pix_calculado ?? 0;
+              // Troco devolvido via Pix (ver troco_via_pix) sai do Pix do estabelecimento
+              // sem passar pela gaveta física — desconta do digital, senão o card mostra
+              // dinheiro que já foi embora.
+              const saldoDigital = (r?.total_vendas ?? 0) - vendasCash + pixCalculado;
+              const temMovimentoPix = (r?.entradas_pix ?? 0) > 0 || (r?.saidas_pix ?? 0) > 0;
               return (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center">
@@ -552,22 +557,44 @@ const RestauranteDashboard = () => {
                     <p className="text-lg font-black text-blue-700 dark:text-blue-400">{fmt(saldoDigital)}</p>
                     <p className="text-[10px] text-blue-600 dark:text-blue-400">PIX / cartão</p>
                   </button>
+                  {temMovimentoPix && (
+                    <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl p-3 text-center">
+                      <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1">📲 Troco pago via Pix</p>
+                      <p className="text-lg font-black text-purple-700 dark:text-purple-400">{fmt(-pixCalculado)}</p>
+                      <p className="text-[10px] text-purple-600 dark:text-purple-400">saiu do seu Pix, não do caixa</p>
+                    </div>
+                  )}
                 </div>
               );
             })()}
 
-            {/* Recebido por forma de pagamento (delivery + salão combinados) */}
+            {/* Recebido por forma de pagamento (delivery + salão combinados) — cash/pix aqui
+                mostram o caixa de fato (valor recebido do cliente / líquido de troco via Pix),
+                não o valor da venda — os outros métodos (cartão) continuam pelo valor vendido. */}
             {Object.keys(r?.por_pagamento ?? {}).length > 0 && (
               <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
-                <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-3">Recebido por forma de pagamento</p>
+                <p className="text-xs font-black text-[#A1A1AA] uppercase tracking-widest mb-3">Recebido por forma de pagamento</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {Object.entries(r.por_pagamento).map(([metodo, valor]) => (
-                    <div key={metodo} className="bg-[#FAFAFA] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center">
-                      <p className="text-lg">{PAGAMENTO_ICONE[metodo] ?? '💰'}</p>
-                      <p className="text-base font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(valor)}</p>
-                      <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{PAGAMENTO_LABEL[metodo] ?? metodo}</p>
-                    </div>
-                  ))}
+                  {Object.entries(r.por_pagamento).map(([metodo, valor]) => {
+                    // Troco físico já deixa o valor da venda correto sozinho (cliente devolveu
+                    // em dinheiro) — só troco via Pix precisa desse ajuste (fica no bolso do
+                    // caixa em espécie, mas sai do Pix).
+                    const valorExibido = metodo === 'cash' ? valor - (r.pix_calculado ?? 0)
+                      : metodo === 'pix' ? valor + (r.pix_calculado ?? 0)
+                      : valor;
+                    return (
+                      <div key={metodo} className="bg-[#FAFAFA] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center">
+                        <p className="text-2xl">{PAGAMENTO_ICONE[metodo] ?? '💰'}</p>
+                        <p className="text-xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(valorExibido)}</p>
+                        <p className="text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA]">{metodo === 'pix' ? 'Saldo Pix' : (PAGAMENTO_LABEL[metodo] ?? metodo)}</p>
+                        {metodo === 'pix' && (r.pix_calculado ?? 0) !== 0 && (
+                          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1 pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+                            Recebido: {fmt(valor)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -675,9 +702,12 @@ const RestauranteDashboard = () => {
           subtitulo="Estimativa do dinheiro físico na gaveta agora"
           linhas={[
             { label: 'Fundo inicial', value: fmt(caixa?.valor_inicial) },
-            { label: 'Vendas em dinheiro', value: fmt(r?.por_pagamento?.cash), sinal: '+ ' },
-            { label: 'Adições', value: fmt(r?.total_entradas), sinal: '+ ' },
-            { label: 'Sangrias / saídas', value: fmt(r?.total_saidas), sinal: '− ' },
+            // entradas_especie/saidas_especie já filtram só meio 'dinheiro' — usar
+            // por_pagamento.cash (valor da venda) e total_saidas (todas as saídas,
+            // inclusive troco devolvido via Pix) aqui inflava/desinflava a composição
+            // sem bater com o total calculado ao lado.
+            { label: 'Entradas em dinheiro', value: fmt(r?.entradas_especie), sinal: '+ ' },
+            { label: 'Saídas em dinheiro', value: fmt(r?.saidas_especie), sinal: '− ' },
           ]}
           totalLabel="Espécie no caixa"
           totalValue={fmt(r?.especie_calculada ?? caixa?.valor_inicial)}

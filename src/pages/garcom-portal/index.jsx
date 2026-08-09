@@ -390,6 +390,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   const [valor, setValor] = useState('');
   const [forma, setForma] = useState('pix');
   const [valorRecebido, setValorRecebido] = useState('');
+  const [trocoViaPix, setTrocoViaPix] = useState(false);
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -425,9 +426,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
     try {
       // Sem valor recebido digitado (pagamento exato, sem troco), manda o próprio valor
       // pago — senão o backend não credita a venda no caixa físico (fica só o fundo).
-      await registrarPagamento(comanda.id, v, forma, forma === 'cash' ? Number(valorRecebido || v) : undefined);
+      await registrarPagamento(comanda.id, v, forma, forma === 'cash' ? Number(valorRecebido || v) : undefined, forma === 'cash' && troco > 0 ? trocoViaPix : undefined);
       setValor('');
       setValorRecebido('');
+      setTrocoViaPix(false);
       await onRegistrado();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível registrar o pagamento.');
@@ -472,9 +474,9 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
 
   return (
     <div className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="text-[#71717A] dark:text-[#A1A1AA]">Saldo devedor</span>
-        <strong className={saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}>{fmt(saldo)}</strong>
+      <div className="flex justify-between items-center text-base">
+        <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">Saldo devedor</span>
+        <strong className={`text-lg ${saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmt(saldo)}</strong>
       </div>
       {(comanda.pagamentos ?? []).length > 0 && (
         <div className="space-y-1">
@@ -496,28 +498,28 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
               </div>
             ) : (
               <div key={p.id}>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
+                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
                   <span>
                     {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
                     {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
                   </span>
-                  <span className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="flex items-center gap-1.5 flex-shrink-0 font-semibold text-[#18181B] dark:text-[#F4F4F5]">
                     {fmt(p.valor + (p.taxa_cartao_valor || 0))}
                     {podeMexer && podePagamentoParcial && p.origem === 'garcom' && (
                       <>
-                        <button onClick={() => iniciarEdicao(p)} className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
-                          <Icon name="Pencil" size={13} strokeWidth={2.5} />
+                        <button onClick={() => iniciarEdicao(p)} className="w-7 h-7 rounded-md border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 flex-shrink-0">
+                          <Icon name="Pencil" size={14} strokeWidth={2.5} />
                         </button>
-                        <button onClick={() => remover(p)} className="w-6 h-6 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/60 flex-shrink-0">
-                          <Icon name="X" size={14} strokeWidth={2.5} />
+                        <button onClick={() => remover(p)} className="w-7 h-7 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/60 flex-shrink-0">
+                          <Icon name="X" size={15} strokeWidth={2.5} />
                         </button>
                       </>
                     )}
                   </span>
                 </p>
                 {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
-                  <p className="text-[10px] text-[#A1A1AA] pl-0.5">
-                    Dinheiro: {fmt(p.valor_recebido)} · Troco: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
+                  <p className="text-xs text-[#A1A1AA] pl-0.5">
+                    Dinheiro: {fmt(p.valor_recebido)} · Troco{p.troco_via_pix ? ' (Pix)' : ''}: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
                   </p>
                 )}
               </div>
@@ -548,14 +550,23 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
             </p>
           )}
           {forma === 'cash' && (
-            <div className="flex items-center gap-1.5">
-              <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
-                placeholder="Valor recebido do cliente"
-                className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs" />
-              {troco !== null && (
-                <span className={`text-xs font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                  Troco: {fmt(Math.max(troco, 0))}
-                </span>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
+                  placeholder="Valor recebido do cliente"
+                  className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs" />
+                {troco !== null && (
+                  <span className={`text-xs font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                    Troco: {fmt(Math.max(troco, 0))}
+                  </span>
+                )}
+              </div>
+              {troco > 0 && (
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input type="checkbox" checked={trocoViaPix} onChange={(e) => setTrocoViaPix(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded accent-[#FF441F]" />
+                  <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix (não sai do caixa em espécie)</span>
+                </label>
               )}
             </div>
           )}
@@ -788,14 +799,14 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
     <div key={item.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
       <div className="flex justify-between items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
+          <div className="w-11 h-11 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
             {item.products?.image_url
               ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={16} className="text-[#A1A1AA]" /></div>}
+              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</p>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+            <p className="text-base font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
               {fmt(item.unit_price)} un.
               {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
             </p>
@@ -803,18 +814,18 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         </div>
         {item.status === 'pendente' ? (
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button onClick={() => alterarQuantidade(item, -1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
-            <button onClick={() => alterarQuantidade(item, 1)} className="w-6 h-6 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
-            <button onClick={() => removerItemComanda(item)} className="w-6 h-6 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
-              <Icon name="X" size={12} />
+            <button onClick={() => alterarQuantidade(item, -1)} className="w-8 h-8 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-base font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>
+            <button onClick={() => alterarQuantidade(item, 1)} className="w-8 h-8 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-base font-bold text-[#27272A] dark:text-[#F4F4F5]">+</button>
+            <button onClick={() => removerItemComanda(item)} className="w-8 h-8 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
+              <Icon name="X" size={14} />
             </button>
           </div>
         ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
-          <span className="text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
+          <span className="text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
             {item.status === 'pronto' ? 'Pronto' : 'Em preparo'}
           </span>
         ) : (
-          <span className={`text-[10px] px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+          <span className={`text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 ${
             item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
           }`}>
             {item.status === 'enviado' ? 'Enviado' : 'Entregue'}
@@ -825,12 +836,12 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
       {(item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom && (
         <div className="grid grid-cols-2 gap-1.5 mt-2">
           <button onClick={() => confirmarEntrega(item)}
-            className="text-xs px-2.5 py-2 rounded-lg font-bold bg-[#FF441F] text-white flex items-center justify-center gap-1">
-            <Icon name="Check" size={12} /> Entregar
+            className="text-sm px-2.5 py-2.5 rounded-lg font-bold bg-[#FF441F] text-white flex items-center justify-center gap-1">
+            <Icon name="Check" size={14} /> Entregar
           </button>
           <button onClick={() => naoEntregou(item)} disabled={item.status !== 'pronto'}
-            className="text-xs px-2.5 py-2 rounded-lg font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center justify-center gap-1 disabled:opacity-30">
-            <Icon name="X" size={12} /> Não entreguei
+            className="text-sm px-2.5 py-2.5 rounded-lg font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center justify-center gap-1 disabled:opacity-30">
+            <Icon name="X" size={14} /> Não entreguei
           </button>
         </div>
       )}
@@ -873,7 +884,8 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
   const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
   const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
-  const totalTrocoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.troco || 0), 0);
+  const totalTrocoEspecie = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? 0 : Number(p.troco || 0)), 0);
+  const totalTrocoPix = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? Number(p.troco || 0) : 0), 0);
 
   return (
     <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!fechada ? 'pb-44' : 'pb-6'}`}>
@@ -886,13 +898,13 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           className="flex items-center gap-1 text-sm text-[#71717A] dark:text-[#A1A1AA] mb-2">
           <Icon name="ArrowLeft" size={16} /> Voltar
         </button>
-        <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
+        <h1 className="text-xl font-black text-[#18181B] dark:text-[#F4F4F5]">
           #{comanda.numero_comanda ?? comanda.id}{comanda.mesa_id ? ` — Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : ''}
         </h1>
         <div className="flex items-center gap-1.5">
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
+          <p className="text-sm font-medium text-[#71717A] dark:text-[#A1A1AA]">{comanda.cliente_mesa_nome} · {comanda.cliente_mesa_telefone}</p>
           <button onClick={() => setMostrarEditarCliente(true)} className="text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] flex-shrink-0" title="Editar dados do cliente">
-            <Icon name="Pencil" size={12} />
+            <Icon name="Pencil" size={14} />
           </button>
         </div>
         {fechada && (
@@ -1056,10 +1068,18 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                         <span className="text-[#71717A] dark:text-[#A1A1AA]">Dinheiro recebido</span>
                         <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalRecebidoDinheiro)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco</span>
-                        <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalTrocoDinheiro)}</span>
-                      </div>
+                      {totalTrocoEspecie > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco</span>
+                          <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalTrocoEspecie)}</span>
+                        </div>
+                      )}
+                      {totalTrocoPix > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix</span>
+                          <span className="text-[#FF441F]">{fmt(totalTrocoPix)}</span>
+                        </div>
+                      )}
                     </>
                   )}
                   <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
