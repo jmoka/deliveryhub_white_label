@@ -47,7 +47,8 @@ export const ThemeToggle = ({ inline = false }) => {
     location.pathname.startsWith('/restaurante') ||
     location.pathname.startsWith('/admin') ||
     location.pathname === '/' ||
-    location.pathname === '/menu-catalog-product-browse'
+    location.pathname === '/menu-catalog-product-browse' ||
+    location.pathname === '/customer-account-order-history'
   )) return null;
 
   const posicao = inline ? '' : 'fixed top-3 right-3 z-[100]';

@@ -12,7 +12,7 @@ const formatCEP = (v) => {
 
 const Campo = ({ label, value, onChange, placeholder, required, type = 'text', readOnly }) => (
   <div>
-    <label className="block text-xs font-medium text-[#71717A] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+    <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
     <input
       type={type}
       value={value}
@@ -21,8 +21,8 @@ const Campo = ({ label, value, onChange, placeholder, required, type = 'text', r
       placeholder={placeholder}
       className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none ${
         readOnly
-          ? 'border-[#F4F4F5] bg-[#FAFAFA] text-[#71717A] cursor-default'
-          : 'border-[#E4E4E7] focus:border-[#FF441F]'
+          ? 'border-[#F4F4F5] dark:border-[#3F3F46] bg-[#FAFAFA] dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] cursor-default'
+          : 'border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] focus:border-[#FF441F]'
       }`}
     />
   </div>
@@ -144,38 +144,38 @@ const CustomerProfile = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#18181B]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <header className="bg-white border-b px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-gray-100">
-          <Icon name="ArrowLeft" size={20} className="text-gray-600" />
+    <div className="min-h-screen bg-gray-50 dark:bg-[#18181B] pb-10">
+      <header className="bg-white dark:bg-[#18181B] border-b dark:border-[#3F3F46] px-4 py-4 flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-[#27272A]">
+          <Icon name="ArrowLeft" size={20} className="text-gray-600 dark:text-[#A1A1AA]" />
         </button>
         <div>
-          <h1 className="text-base font-bold text-[#18181B]">Meu Perfil</h1>
-          <p className="text-xs text-[#71717A]">Dados e endereço de entrega</p>
+          <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Meu Perfil</h1>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Dados e endereço de entrega</p>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto p-4">
         <form onSubmit={handleSalvar} className="space-y-4">
           {/* Foto de perfil */}
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 flex items-center gap-4">
+          <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 flex items-center gap-4">
             <button type="button" onClick={() => fileInputRef.current?.click()} disabled={enviandoFoto}
-              className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-[#E4E4E7]">
+              className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-[#27272A] flex-shrink-0 border border-[#E4E4E7] dark:border-[#3F3F46]">
               {fotoUrl
                 ? <img src={fotoUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center"><Icon name="User" size={24} className="text-gray-400" /></div>}
+                : <div className="w-full h-full flex items-center justify-center"><Icon name="User" size={24} className="text-gray-400 dark:text-[#71717A]" /></div>}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                 <Icon name="Camera" size={16} className="text-white" />
               </div>
             </button>
             <div>
-              <p className="text-sm font-semibold text-[#18181B]">Foto de perfil</p>
+              <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">Foto de perfil</p>
               <button type="button" onClick={() => fileInputRef.current?.click()} disabled={enviandoFoto}
                 className="text-xs text-[#FF441F] font-semibold hover:underline disabled:opacity-50">
                 {enviandoFoto ? 'Enviando...' : 'Trocar foto'}
@@ -185,8 +185,8 @@ const CustomerProfile = () => {
           </div>
 
           {/* Conta */}
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
-            <p className="text-sm font-semibold text-[#18181B] flex items-center gap-2">
+          <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
+            <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
               <Icon name="User" size={14} className="text-[#FF441F]" /> Dados pessoais
             </p>
             <Campo label="E-mail (não editável)" value={user?.email ?? ''} readOnly />
@@ -195,8 +195,8 @@ const CustomerProfile = () => {
           </div>
 
           {/* Endereço */}
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
-            <p className="text-sm font-semibold text-[#18181B] flex items-center gap-2">
+          <div className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
+            <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
               <Icon name="MapPin" size={14} className="text-[#FF441F]" /> Endereço de entrega
             </p>
             <Campo label="Logradouro (Rua / Av.)" value={form.logradouro} onChange={set('logradouro')} placeholder="Rua das Flores" />
@@ -218,13 +218,15 @@ const CustomerProfile = () => {
               </div>
             </div>
             <Campo label="CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
-            {buscandoCep && <p className="text-[11px] text-[#71717A] -mt-2">Buscando endereço...</p>}
+            {buscandoCep && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Buscando endereço...</p>}
             <Campo label="Ponto de referência" value={form.referencia} onChange={set('referencia')} placeholder="Próximo ao mercado..." />
           </div>
 
           {msg && (
             <div className={`text-sm rounded-xl px-4 py-3 ${
-              msg.tipo === 'ok' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'
+              msg.tipo === 'ok'
+                ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+                : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'
             }`}>
               {msg.texto}
             </div>
