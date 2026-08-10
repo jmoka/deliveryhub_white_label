@@ -56,6 +56,11 @@ const MotoboyCadastro = () => {
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-6 w-full max-w-md shadow-lg my-8">
+        <button type="button" onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 text-sm text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5] mb-4">
+          <Icon name="ArrowLeft" size={16} />
+          Voltar
+        </button>
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Icon name="Bike" size={28} className="text-[#FF441F]" />
