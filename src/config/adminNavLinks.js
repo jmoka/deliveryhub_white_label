@@ -5,6 +5,7 @@ export const ADMIN_NAV_LINKS = [
   { label: 'Tipos', path: '/admin/tipos-estabelecimento' },
   { label: 'Tags', path: '/admin/tags' },
   { label: 'Comissões', path: '/admin/comissoes' },
+  { label: 'Motoboys', path: '/admin/motoboys' },
   { label: 'Planos', path: '/admin/planos' },
   { label: 'Configurações', path: '/admin/configuracoes' },
 ];

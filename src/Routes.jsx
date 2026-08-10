@@ -20,6 +20,7 @@ import AdminEmpresaDetalhe from './pages/admin-empresa-detalhe';
 import AdminCategorias from './pages/admin-categorias';
 import AdminTiposEstabelecimento from './pages/admin-tipos-estabelecimento';
 import AdminTags from './pages/admin-tags';
+import AdminMotoboys from './pages/admin-motoboys';
 import AdminPlanos from './pages/admin-planos';
 import RestauranteGuard from './components/RestauranteGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
@@ -83,6 +84,7 @@ const Routes = () => {
         <Route path="/admin/categorias" element={<AdminGuard><AdminCategorias /></AdminGuard>} />
         <Route path="/admin/tipos-estabelecimento" element={<AdminGuard><AdminTiposEstabelecimento /></AdminGuard>} />
         <Route path="/admin/tags" element={<AdminGuard><AdminTags /></AdminGuard>} />
+        <Route path="/admin/motoboys" element={<AdminGuard><AdminMotoboys /></AdminGuard>} />
         <Route path="/admin/planos" element={<AdminGuard><AdminPlanos /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
 

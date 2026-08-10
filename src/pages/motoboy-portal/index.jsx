@@ -4,7 +4,7 @@ import {
   getMe, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
   getPedidosDisponiveis, pegarPedido,
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
-  getGanhosResumo, getGanhosHistorico,
+  getGanhosResumo, getGanhosHistorico, solicitarRevisaoPlataforma,
 } from '../../services/motoboyService';
 import { login, logout, completarCadastro, arquivoParaBase64, getMotoboyToken, setMotoboyToken, clearMotoboyToken } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -237,11 +237,32 @@ const STATUS_AFILIACAO_LABEL = {
   recusado: { label: 'Recusado', color: 'bg-red-100 text-red-700' },
 };
 
-const AbaEstabelecimentos = ({ afiliacoes, recarregarAfiliacoes }) => {
+const AbaEstabelecimentos = ({
+  afiliacoes, recarregarAfiliacoes, statusPlataforma, motivoRecusaPlataforma,
+  revisoesSolicitadas, limiteRevisoes, recarregarMe,
+}) => {
   const [busca, setBusca] = useState('');
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
   const [solicitando, setSolicitando] = useState(null);
+  const [pedindoRevisao, setPedindoRevisao] = useState(false);
+  const [erroRevisao, setErroRevisao] = useState(null);
+
+  const aprovado = statusPlataforma === 'aprovado';
+  const revisoesEsgotadas = (revisoesSolicitadas ?? 0) >= (limiteRevisoes ?? 2);
+
+  const handlePedirRevisao = async () => {
+    setPedindoRevisao(true);
+    setErroRevisao(null);
+    try {
+      await solicitarRevisaoPlataforma();
+      await recarregarMe();
+    } catch (e) {
+      setErroRevisao(e.message);
+    } finally {
+      setPedindoRevisao(false);
+    }
+  };
 
   const buscar = useCallback(async (termo) => {
     setBuscando(true);
@@ -253,7 +274,7 @@ const AbaEstabelecimentos = ({ afiliacoes, recarregarAfiliacoes }) => {
     }
   }, []);
 
-  useEffect(() => { buscar(''); }, [buscar]);
+  useEffect(() => { if (aprovado) buscar(''); }, [aprovado, buscar]);
 
   const handleSolicitar = async (restaurantId) => {
     setSolicitando(restaurantId);
@@ -286,39 +307,81 @@ const AbaEstabelecimentos = ({ afiliacoes, recarregarAfiliacoes }) => {
         </div>
       )}
 
-      <div>
-        <p className="text-xs font-bold text-[#71717A] uppercase mb-2">Buscar estabelecimentos</p>
-        <div className="flex items-center gap-2 bg-white border border-[#E4E4E7] rounded-xl px-3 py-2 mb-3">
-          <Icon name="Search" size={15} className="text-[#71717A]" />
-          <input value={busca} onChange={(e) => { setBusca(e.target.value); buscar(e.target.value); }}
-            placeholder="Nome do estabelecimento..."
-            className="flex-1 text-sm outline-none bg-transparent" />
-        </div>
-        {buscando ? (
-          <p className="text-xs text-[#A1A1AA] text-center py-4">Buscando...</p>
-        ) : (
-          <div className="space-y-2">
-            {resultados.map((r) => (
-              <div key={r.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#18181B] truncate">{r.name}</p>
-                  {r.address && <p className="text-xs text-[#71717A] truncate">{r.address}</p>}
-                </div>
-                {r.status_afiliacao ? (
-                  <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_AFILIACAO_LABEL[r.status_afiliacao]?.color}`}>
-                    {STATUS_AFILIACAO_LABEL[r.status_afiliacao]?.label ?? r.status_afiliacao}
-                  </span>
+      {!aprovado ? (
+        <div className={`rounded-xl border p-4 flex items-start gap-3 ${
+          statusPlataforma === 'recusado'
+            ? 'bg-red-50 border-red-200'
+            : 'bg-amber-50 border-amber-200'
+        }`}>
+          <Icon name={statusPlataforma === 'recusado' ? 'XCircle' : 'Clock'} size={18}
+            className={`flex-shrink-0 mt-0.5 ${statusPlataforma === 'recusado' ? 'text-red-600' : 'text-amber-600'}`} />
+          <div>
+            <p className={`text-sm font-semibold ${statusPlataforma === 'recusado' ? 'text-red-800' : 'text-amber-800'}`}>
+              {statusPlataforma === 'recusado' ? 'Cadastro recusado' : 'Cadastro em análise'}
+            </p>
+            <p className={`text-xs mt-0.5 ${statusPlataforma === 'recusado' ? 'text-red-600' : 'text-amber-600'}`}>
+              {statusPlataforma === 'recusado'
+                ? (motivoRecusaPlataforma || 'A plataforma recusou seu cadastro.')
+                : 'A plataforma ainda está revisando seus documentos. Assim que aprovado, você poderá ver e solicitar vaga nos estabelecimentos.'}
+            </p>
+
+            {statusPlataforma === 'recusado' && (
+              <div className="mt-3">
+                {revisoesEsgotadas ? (
+                  <p className="text-xs text-red-700 font-semibold">
+                    Limite de pedidos de revisão atingido. Entre em contato com o suporte.
+                  </p>
                 ) : (
-                  <button onClick={() => handleSolicitar(r.id)} disabled={solicitando === r.id}
-                    className="flex-shrink-0 px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-50">
-                    {solicitando === r.id ? '...' : 'Solicitar'}
-                  </button>
+                  <>
+                    <button onClick={handlePedirRevisao} disabled={pedindoRevisao}
+                      className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 disabled:opacity-50">
+                      {pedindoRevisao ? 'Enviando...' : 'Solicitar revisão'}
+                    </button>
+                    <p className="text-[10px] text-red-500 mt-1">
+                      {revisoesSolicitadas ?? 0} de {limiteRevisoes ?? 2} revisões usadas
+                    </p>
+                  </>
                 )}
+                {erroRevisao && <p className="text-xs text-red-700 mt-1">{erroRevisao}</p>}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div>
+          <p className="text-xs font-bold text-[#71717A] uppercase mb-2">Buscar estabelecimentos</p>
+          <div className="flex items-center gap-2 bg-white border border-[#E4E4E7] rounded-xl px-3 py-2 mb-3">
+            <Icon name="Search" size={15} className="text-[#71717A]" />
+            <input value={busca} onChange={(e) => { setBusca(e.target.value); buscar(e.target.value); }}
+              placeholder="Nome do estabelecimento..."
+              className="flex-1 text-sm outline-none bg-transparent" />
+          </div>
+          {buscando ? (
+            <p className="text-xs text-[#A1A1AA] text-center py-4">Buscando...</p>
+          ) : (
+            <div className="space-y-2">
+              {resultados.map((r) => (
+                <div key={r.id} className="bg-white rounded-xl border border-[#E4E4E7] p-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#18181B] truncate">{r.name}</p>
+                    {r.address && <p className="text-xs text-[#71717A] truncate">{r.address}</p>}
+                  </div>
+                  {r.status_afiliacao ? (
+                    <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_AFILIACAO_LABEL[r.status_afiliacao]?.color}`}>
+                      {STATUS_AFILIACAO_LABEL[r.status_afiliacao]?.label ?? r.status_afiliacao}
+                    </span>
+                  ) : (
+                    <button onClick={() => handleSolicitar(r.id)} disabled={solicitando === r.id}
+                      className="flex-shrink-0 px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-50">
+                      {solicitando === r.id ? '...' : 'Solicitar'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -602,7 +665,15 @@ const MotoboyPortal = () => {
 
       <main className="max-w-lg mx-auto p-4 space-y-4">
         {aba === 'estabelecimentos' && (
-          <AbaEstabelecimentos afiliacoes={afiliacoes} recarregarAfiliacoes={carregarAfiliacoes} />
+          <AbaEstabelecimentos
+            afiliacoes={afiliacoes}
+            recarregarAfiliacoes={carregarAfiliacoes}
+            statusPlataforma={me?.status_plataforma}
+            motivoRecusaPlataforma={me?.motivo_recusa_plataforma}
+            revisoesSolicitadas={me?.revisoes_solicitadas}
+            limiteRevisoes={me?.limite_revisoes_plataforma}
+            recarregarMe={carregarDados}
+          />
         )}
 
         {aba === 'ganhos' && <AbaGanhos />}

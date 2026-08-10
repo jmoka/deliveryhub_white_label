@@ -87,6 +87,13 @@ export const criarTag = (data) => apiFetch('/admin/tags', { method: 'POST', body
 export const atualizarTag = (id, data) => apiFetch(`/admin/tags/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerTag = (id) => apiFetch(`/admin/tags/${id}`, { method: 'DELETE' });
 
+// Motoboys — aprovação de cadastro pela plataforma
+export const getMotoboysAdmin = (status) => apiFetch(`/admin/motoboys${status ? `?status=${status}` : ''}`);
+export const getMotoboyDetalheAdmin = (id) => apiFetch(`/admin/motoboys/${id}`);
+export const aprovarMotoboyAdmin = (id) => apiFetch(`/admin/motoboys/${id}/aprovar`, { method: 'PATCH' });
+export const recusarMotoboyAdmin = (id, motivo) =>
+  apiFetch(`/admin/motoboys/${id}/recusar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
+
 // Categorias globais (plataforma) — admin
 export const getCategoriasGlobais = () => apiFetch('/categorias/globais');
 export const criarCategoriaGlobal = (data) =>

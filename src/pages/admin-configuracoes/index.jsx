@@ -26,6 +26,7 @@ const AdminConfiguracoes = () => {
 
   const [comissaoPadrao, setComissaoPadrao] = useState('5');
   const [diasTolerancia, setDiasTolerancia] = useState('3');
+  const [limiteRevisoesMotoboy, setLimiteRevisoesMotoboy] = useState('2');
   const [salvandoComissao, setSalvandoComissao] = useState(false);
   const [sucessoComissao, setSucessoComissao] = useState(false);
   const [erroComissao, setErroComissao] = useState(null);
@@ -43,6 +44,7 @@ const AdminConfiguracoes = () => {
         setModoIndividualRestauranteId(d.modo_individual_restaurant_id ?? '');
         setComissaoPadrao(String(d.comissao_padrao_pct ?? 5));
         setDiasTolerancia(String(d.plano_dias_tolerancia ?? 3));
+        setLimiteRevisoesMotoboy(String(d.motoboy_limite_revisoes ?? 2));
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -82,6 +84,7 @@ const AdminConfiguracoes = () => {
       const payload = {
         comissao_padrao_pct: parseFloat(comissaoPadrao),
         plano_dias_tolerancia: parseInt(diasTolerancia, 10),
+        motoboy_limite_revisoes: parseInt(limiteRevisoesMotoboy, 10),
       };
       const updated = await updatePlataformaConfig(payload);
       setConfig(updated);
@@ -379,6 +382,21 @@ const AdminConfiguracoes = () => {
                   />
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
                     Dias após o vencimento de uma fatura de plano até o painel do dono ser bloqueado.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                    Limite de pedidos de revisão (motoboy recusado)
+                  </label>
+                  <input
+                    type="number" min="0" step="1"
+                    value={limiteRevisoesMotoboy}
+                    onChange={(e) => setLimiteRevisoesMotoboy(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Quantas vezes um motoboy com cadastro recusado pode pedir reavaliação antes de travar o botão.
                   </p>
                 </div>
 

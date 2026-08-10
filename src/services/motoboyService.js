@@ -30,6 +30,7 @@ async function motoboyFetch(path, options = {}) {
 }
 
 export const getMe = () => motoboyFetch('/me');
+export const solicitarRevisaoPlataforma = () => motoboyFetch('/solicitar-revisao', { method: 'POST' });
 export const getMeusPedidos = () => motoboyFetch('/pedidos');
 export const atualizarLocalizacao = (pedidoId, lat, lng) =>
   motoboyFetch(`/pedidos/${pedidoId}/localizacao`, {
