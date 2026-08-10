@@ -33,8 +33,11 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
-export const registrarRestaurante = (data) =>
-  apiFetch('/registrar', { method: 'POST', body: JSON.stringify(data) });
+export const registrarRestauranteInicial = (data) =>
+  apiFetch('/registrar-inicial', { method: 'POST', body: JSON.stringify(data) });
+
+export const finalizarCadastroRestaurante = (data) =>
+  apiFetch('/finalizar', { method: 'POST', body: JSON.stringify(data) });
 
 export const getMinhaEmpresa = () => apiFetch('/minha-empresa');
 
@@ -75,6 +78,11 @@ export const getCategoriasGlobais = () =>
 // Tipos de estabelecimento (restaurante, farmácia, mat. construção...) — sem auth
 export const getTiposEstabelecimento = () =>
   fetch(apiPath('/api/establishment-types')).then((r) => r.json());
+
+// Planos disponíveis pra escolher no cadastro de restaurante — sem auth (a wizard
+// mostra os planos antes do usuário logar/criar conta)
+export const getPlanosDisponiveisCadastro = () =>
+  fetch(apiPath('/api/restaurante/planos-disponiveis')).then((r) => r.json());
 
 export const getMinhasCategorias = () => apiFetch('/categorias');
 

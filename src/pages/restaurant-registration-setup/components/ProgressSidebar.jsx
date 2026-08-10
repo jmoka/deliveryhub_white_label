@@ -9,6 +9,12 @@ const ProgressSidebar = ({
 }) => {
   const steps = [
     {
+      id: 'plano',
+      title: 'Escolha seu Plano',
+      description: 'Selecione o plano da sua loja',
+      icon: 'CreditCard'
+    },
+    {
       id: 'business',
       title: 'Informações do Negócio',
       description: 'Nome, tipo de estabelecimento e dados básicos',

@@ -6,19 +6,28 @@ import BusinessInformationForm from './components/BusinessInformationForm';
 import ContactDetailsForm from './components/ContactDetailsForm';
 import OperatingHoursForm from './components/OperatingHoursForm';
 import BrandingForm from './components/BrandingForm';
+import PlanSelectionForm from './components/PlanSelectionForm';
 import ProgressSidebar from './components/ProgressSidebar';
-import { registrarRestaurante, getTiposEstabelecimento } from '../../services/restauranteService';
+import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaModal';
+import { registrarRestauranteInicial, finalizarCadastroRestaurante, getTiposEstabelecimento, getPlanosDisponiveisCadastro } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const RestaurantRegistrationSetup = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const [currentStep, setCurrentStep] = useState('business');
+  const [currentStep, setCurrentStep] = useState('plano');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [tiposEstabelecimento, setTiposEstabelecimento] = useState([]);
+  const [planos, setPlanos] = useState([]);
+  const [loadingPlanos, setLoadingPlanos] = useState(true);
+  const [confirmandoPlano, setConfirmandoPlano] = useState(false);
+  const [faturaPendente, setFaturaPendente] = useState(null);
   const [formData, setFormData] = useState({
+    // Plano
+    planoId: '',
+
     // Business Information
     restaurantName: '',
     establishmentTypeId: '',
@@ -76,6 +85,11 @@ const RestaurantRegistrationSetup = () => {
     getTiposEstabelecimento()
       .then((d) => setTiposEstabelecimento(d.tipos ?? []))
       .catch(() => setTiposEstabelecimento([]));
+
+    getPlanosDisponiveisCadastro()
+      .then((d) => setPlanos(d.planos ?? []))
+      .catch(() => setPlanos([]))
+      .finally(() => setLoadingPlanos(false));
   }, []);
 
   // Save data to localStorage whenever formData changes
@@ -186,7 +200,7 @@ const RestaurantRegistrationSetup = () => {
     }
 
     // Move to next step
-    const steps = ['business', 'contact', 'hours', 'branding'];
+    const steps = ['plano', 'business', 'contact', 'hours', 'branding'];
     const currentIndex = steps?.indexOf(currentStep);
     if (currentIndex < steps?.length - 1) {
       setCurrentStep(steps?.[currentIndex + 1]);
@@ -194,7 +208,7 @@ const RestaurantRegistrationSetup = () => {
   };
 
   const handlePrevious = () => {
-    const steps = ['business', 'contact', 'hours', 'branding'];
+    const steps = ['plano', 'business', 'contact', 'hours', 'branding'];
     const currentIndex = steps?.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps?.[currentIndex - 1]);
@@ -203,6 +217,55 @@ const RestaurantRegistrationSetup = () => {
 
   const handleStepClick = (stepId) => {
     setCurrentStep(stepId);
+  };
+
+  // Avança do passo "plano" pro "business" — chamada tanto quando não precisa
+  // pagamento (plano com trial) quanto quando o PagamentoFaturaModal confirma
+  // o pagamento (onPago).
+  const avancarDePlano = () => {
+    setFaturaPendente(null);
+    if (!completedSteps?.includes('plano')) {
+      setCompletedSteps((prev) => [...prev, 'plano']);
+    }
+    setCurrentStep('business');
+  };
+
+  // Cria a loja (só com nome) + assinatura do plano escolhido e, se o plano
+  // não tiver trial, cobra a fatura do período atual antes de liberar o
+  // resto do formulário. Idempotente: se a loja já existe (voltou nesse
+  // passo, ou recarregou a página), só recalcula o status de pagamento.
+  const handleConfirmarPlano = async () => {
+    const newErrors = {};
+    if (!formData?.restaurantName?.trim()) newErrors.restaurantName = 'Nome do estabelecimento é obrigatório';
+    if (!formData?.planoId) newErrors.planoId = 'Selecione um plano para continuar';
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      navigate('/customer-registration-login', { state: { from: '/restaurant-registration-setup' } });
+      return;
+    }
+
+    setConfirmandoPlano(true);
+    setErrors({});
+    try {
+      const r = await registrarRestauranteInicial({
+        name: formData.restaurantName.trim(),
+        plano_id: Number(formData.planoId),
+      });
+
+      if (r.precisa_pagamento) {
+        setFaturaPendente(r.fatura);
+      } else {
+        avancarDePlano();
+      }
+    } catch (error) {
+      setErrors({ planoId: error?.message || 'Erro ao confirmar o plano. Tente novamente.' });
+    } finally {
+      setConfirmandoPlano(false);
+    }
   };
 
   const handleSaveDraft = async () => {
@@ -239,7 +302,7 @@ const RestaurantRegistrationSetup = () => {
         formData.city, formData.state,
       ].filter(Boolean).join(', ');
 
-      await registrarRestaurante({
+      await finalizarCadastroRestaurante({
         name: formData.restaurantName,
         address: address || undefined,
         state: formData.state || undefined,
@@ -265,6 +328,22 @@ const RestaurantRegistrationSetup = () => {
 
   const renderCurrentForm = () => {
     switch (currentStep) {
+      case 'plano':
+        return (
+          <PlanSelectionForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            errors={errors}
+            planos={planos}
+            loadingPlanos={loadingPlanos}
+            onSelectPlano={(planoId) => {
+              setFormData((prev) => ({ ...prev, planoId }));
+              if (errors?.planoId) setErrors((prev) => ({ ...prev, planoId: '' }));
+            }}
+            onConfirmar={handleConfirmarPlano}
+            confirmando={confirmandoPlano}
+          />
+        );
       case 'business':
         return (
           <BusinessInformationForm
@@ -305,6 +384,8 @@ const RestaurantRegistrationSetup = () => {
 
   const getStepTitle = () => {
     switch (currentStep) {
+      case 'plano':
+        return 'Escolha seu Plano';
       case 'business':
         return 'Informações do Negócio';
       case 'contact':
@@ -319,10 +400,18 @@ const RestaurantRegistrationSetup = () => {
   };
 
   const isLastStep = currentStep === 'branding';
-  const isFirstStep = currentStep === 'business';
+  const isFirstStep = currentStep === 'plano';
 
   return (
     <div className="min-h-screen bg-background">
+      {faturaPendente && (
+        <PagamentoFaturaModal
+          fatura={faturaPendente}
+          onClose={() => setFaturaPendente(null)}
+          onPago={avancarDePlano}
+        />
+      )}
+
       {/* Header */}
       <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -375,14 +464,14 @@ const RestaurantRegistrationSetup = () => {
                     {getStepTitle()}
                   </h2>
                   <span className="text-sm text-muted-foreground">
-                    {completedSteps?.length + 1}/4
+                    {completedSteps?.length + 1}/5
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ 
-                      width: `${((completedSteps?.length + 1) / 4) * 100}%` 
+                    style={{
+                      width: `${((completedSteps?.length + 1) / 5) * 100}%`
                     }}
                   ></div>
                 </div>
@@ -412,53 +501,56 @@ const RestaurantRegistrationSetup = () => {
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row justify-between items-center mt-8 pt-6 border-t border-border space-y-4 sm:space-y-0">
-                  <div className="flex space-x-3">
-                    {!isFirstStep && (
-                      <Button
-                        variant="outline"
-                        onClick={handlePrevious}
-                        iconName="ArrowLeft"
-                        iconPosition="left"
-                      >
-                        Anterior
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="ghost"
-                      onClick={handleSaveDraft}
-                      loading={loading}
-                      iconName="Save"
-                      iconPosition="left"
-                    >
-                      Salvar Rascunho
-                    </Button>
-                  </div>
+                {/* Action Buttons — passo "plano" tem seu próprio botão de ação (Continuar),
+                    que cria a loja e cobra a fatura antes de liberar o resto da wizard */}
+                {currentStep !== 'plano' && (
+                  <div className="flex flex-col sm:flex-row justify-between items-center mt-8 pt-6 border-t border-border space-y-4 sm:space-y-0">
+                    <div className="flex space-x-3">
+                      {!isFirstStep && (
+                        <Button
+                          variant="outline"
+                          onClick={handlePrevious}
+                          iconName="ArrowLeft"
+                          iconPosition="left"
+                        >
+                          Anterior
+                        </Button>
+                      )}
 
-                  <div className="flex space-x-3">
-                    {!isLastStep ? (
                       <Button
-                        onClick={handleNext}
-                        iconName="ArrowRight"
-                        iconPosition="right"
-                      >
-                        Próximo
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleCompleteSetup}
+                        variant="ghost"
+                        onClick={handleSaveDraft}
                         loading={loading}
-                        iconName="Check"
+                        iconName="Save"
                         iconPosition="left"
-                        className="bg-success hover:bg-success/90"
                       >
-                        Finalizar Cadastro
+                        Salvar Rascunho
                       </Button>
-                    )}
+                    </div>
+
+                    <div className="flex space-x-3">
+                      {!isLastStep ? (
+                        <Button
+                          onClick={handleNext}
+                          iconName="ArrowRight"
+                          iconPosition="right"
+                        >
+                          Próximo
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={handleCompleteSetup}
+                          loading={loading}
+                          iconName="Check"
+                          iconPosition="left"
+                          className="bg-success hover:bg-success/90"
+                        >
+                          Finalizar Cadastro
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
