@@ -152,7 +152,7 @@ const CustomerProfile = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18181B] pb-10">
       <header className="bg-white dark:bg-[#18181B] border-b dark:border-[#3F3F46] px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-[#27272A]">
+        <button onClick={() => navigate('/customer-account-order-history')} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-[#27272A]">
           <Icon name="ArrowLeft" size={20} className="text-gray-600 dark:text-[#A1A1AA]" />
         </button>
         <div>
