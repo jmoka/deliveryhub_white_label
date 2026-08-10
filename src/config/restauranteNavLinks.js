@@ -39,7 +39,7 @@ const SALAO_LINKS = [
 
 export const getRestauranteNavLinks = (moduloDelivery, moduloSalao) => {
   const temAlgumModulo = moduloDelivery || moduloSalao;
-  return [
+  const links = [
     ...BASE_LINKS.slice(0, 2), // Dashboard, Relatórios
     ...(moduloDelivery ? DELIVERY_LINKS.slice(0, 1) : []), // Delivery
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(0, 1) : []), // Cozinha
@@ -50,4 +50,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao) => {
     ...BASE_LINKS.slice(3), // Clientes...Sessão
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
   ];
+  // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só
+  // controla quais links entram conforme os módulos ativos.
+  return links.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 };

@@ -76,6 +76,7 @@ const LoginForm = ({
         label="Senha"
         type="password"
         name="password"
+        autoComplete="current-password"
         value={formData?.password}
         onChange={handleInputChange}
         placeholder="Digite sua senha"
