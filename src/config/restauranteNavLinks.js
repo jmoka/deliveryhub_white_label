@@ -51,6 +51,9 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao) => {
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
   ];
   // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só
-  // controla quais links entram conforme os módulos ativos.
-  return links.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  // controla quais links entram conforme os módulos ativos. Dashboard fica
+  // fixo no topo, fora da ordenação.
+  const [dashboard, resto] = [links.find((l) => l.path === '/restaurante'), links.filter((l) => l.path !== '/restaurante')];
+  resto.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  return dashboard ? [dashboard, ...resto] : resto;
 };
