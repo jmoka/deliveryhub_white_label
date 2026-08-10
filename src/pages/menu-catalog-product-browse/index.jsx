@@ -11,7 +11,14 @@ import { getPerfil } from '../../services/perfilService';
 import { supabase } from '../../lib/supabase';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-const RAIO_OPCOES = [5, 10, 15, 25, 50, 0]; // 0 = sem limite (só ordena por distância)
+// Raios pequenos em km (20m a 2km) na frente dos já existentes — permite achar
+// fornecedor bem pertinho, não só por cidade/bairro. 0 = sem limite.
+const RAIO_OPCOES = [0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 25, 50, 0];
+const fmtRaioLabel = (km) => {
+  if (km === 0) return 'Sem limite';
+  return km < 1 ? `Até ${Math.round(km * 1000)} m` : `Até ${km} km`;
+};
+const fmtDistancia = (km) => (km < 1 ? `${Math.round(km * 1000)} m` : `${Math.round(km * 10) / 10} km`);
 
 /* ── Fallback local (usado até a API responder) ─────────────────── */
 const CATEGORIAS_FALLBACK = [
@@ -75,7 +82,7 @@ const RestCardGrid = ({ r, i }) => {
           <p className="font-bold text-[#18181B] text-sm leading-tight">{r.name}</p>
           {r.distancia_km != null && (
             <span className="flex-shrink-0 text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-1.5 py-0.5 rounded-full">
-              {r.distancia_km} km
+              {fmtDistancia(r.distancia_km)}
             </span>
           )}
         </div>
@@ -136,7 +143,7 @@ const RestCardList = ({ r, i }) => {
           </span>
           {gratis && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Frete grátis</span>}
           {r.distancia_km != null && (
-            <span className="text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-2 py-0.5 rounded-full">{r.distancia_km} km</span>
+            <span className="text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-2 py-0.5 rounded-full">{fmtDistancia(r.distancia_km)}</span>
           )}
         </div>
       </div>
@@ -948,7 +955,7 @@ const MenuCatalogProductBrowse = () => {
             <select value={raioKm} onChange={(e) => setRaioKm(Number(e.target.value))}
               className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0">
               {RAIO_OPCOES.map((km) => (
-                <option key={km} value={km}>{km === 0 ? 'Sem limite' : `Até ${km} km`}</option>
+                <option key={km} value={km}>{fmtRaioLabel(km)}</option>
               ))}
             </select>
           )}
