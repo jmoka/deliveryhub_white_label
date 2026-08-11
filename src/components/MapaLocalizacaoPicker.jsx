@@ -29,6 +29,9 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
   );
   const [zoom, setZoom] = useState(lat != null && lng != null ? 17 : 4);
   const [buscandoGps, setBuscandoGps] = useState(false);
+  const [buscaTexto, setBuscaTexto] = useState('');
+  const [buscaResultados, setBuscaResultados] = useState([]);
+  const [buscandoEndereco, setBuscandoEndereco] = useState(false);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -59,11 +62,41 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
     );
   };
 
+  // Busca por texto (Nominatim) — só um jeito rápido de pular perto do endereço; a
+  // precisão de verdade continua sendo o dono arrastar o pino depois. limit=5 e
+  // countrycodes=br pra não gastar a cota gratuita com resultado irrelevante.
+  const buscarEndereco = async (e) => {
+    e.preventDefault();
+    if (!buscaTexto.trim()) return;
+    setBuscandoEndereco(true);
+    setBuscaResultados([]);
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(buscaTexto)}&format=json&limit=5&countrycodes=br`;
+      const res = await fetch(url);
+      const dados = await res.json();
+      setBuscaResultados(dados ?? []);
+    } catch {
+      setBuscaResultados([]);
+    } finally {
+      setBuscandoEndereco(false);
+    }
+  };
+
+  const escolherResultado = (r) => {
+    const novoLat = parseFloat(r.lat);
+    const novoLng = parseFloat(r.lon);
+    mover(novoLat, novoLng);
+    setZoom(18);
+    mapRef.current?.flyTo([novoLat, novoLng], 18);
+    setBuscaResultados([]);
+    setBuscaTexto(r.display_name);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-          Arraste o pino até a porta do estabelecimento — quanto mais perto o zoom, mais preciso.
+          Busque o endereço pra pular perto, depois arraste o pino até a porta certa.
         </p>
         <button type="button" onClick={usarGpsAtual} disabled={buscandoGps}
           className="flex items-center gap-1 text-xs font-semibold text-[#FF441F] whitespace-nowrap ml-2 disabled:opacity-50">
@@ -71,6 +104,31 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
           {buscandoGps ? 'Localizando...' : 'Usar GPS agora'}
         </button>
       </div>
+
+      <form onSubmit={buscarEndereco} className="relative mb-2">
+        <div className="flex gap-2">
+          <input value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)}
+            placeholder="Rua, número, bairro, cidade..."
+            className="flex-1 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 outline-none focus:border-[#FF441F]" />
+          <button type="submit" disabled={buscandoEndereco || !buscaTexto.trim()}
+            className="px-3 py-2 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-lg disabled:opacity-40 flex-shrink-0">
+            <Icon name={buscandoEndereco ? 'Loader2' : 'Search'} size={16} className={buscandoEndereco ? 'animate-spin' : ''} />
+          </button>
+        </div>
+
+        {buscaResultados.length > 0 && (
+          <ul className="absolute z-[1000] left-0 right-0 mt-1 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg shadow-lg max-h-52 overflow-y-auto">
+            {buscaResultados.map((r) => (
+              <li key={`${r.place_id}`}>
+                <button type="button" onClick={() => escolherResultado(r)}
+                  className="w-full text-left px-3 py-2 text-xs text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+                  {r.display_name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </form>
 
       <div className="rounded-xl overflow-hidden border border-[#E4E4E7] dark:border-[#3F3F46]" style={{ height: 280 }}>
         <MapContainer center={[posicao.lat, posicao.lng]} zoom={zoom} style={{ height: '100%', width: '100%' }}
