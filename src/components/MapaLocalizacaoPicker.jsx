@@ -24,6 +24,10 @@ const CAMADAS = {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Tiles &copy; Esri',
     maxZoom: 19,
+    // Esri não tem imagem em alta resolução em toda área — acima do zoom nativo o
+    // servidor retorna "Map data not yet available". Trava a tile aqui e deixa o
+    // Leaflet fazer upscale visual em vez de pedir uma tile inexistente.
+    maxNativeZoom: 17,
   },
 };
 
@@ -159,7 +163,7 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
         <MapContainer center={[posicao.lat, posicao.lng]} zoom={zoom} maxZoom={CAMADAS[camada].maxZoom}
           style={{ height: '100%', width: '100%' }} ref={mapRef}>
           <TileLayer key={camada} attribution={CAMADAS[camada].attribution} url={CAMADAS[camada].url}
-            maxZoom={CAMADAS[camada].maxZoom} />
+            maxZoom={CAMADAS[camada].maxZoom} maxNativeZoom={CAMADAS[camada].maxNativeZoom} />
           <Marker
             position={[posicao.lat, posicao.lng]}
             draggable
