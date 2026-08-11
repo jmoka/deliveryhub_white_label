@@ -14,6 +14,19 @@ L.Icon.Default.mergeOptions({ iconRetinaUrl: markerIcon2x, iconUrl: markerIcon, 
 
 const BRASIL_CENTRO = { lat: -14.235, lng: -51.9253 };
 
+const CAMADAS = {
+  ruas: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  },
+  satelite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri',
+    maxZoom: 19,
+  },
+};
+
 const ClickHandler = ({ onPick }) => {
   useMapEvents({ click(e) { onPick(e.latlng.lat, e.latlng.lng); } });
   return null;
@@ -27,17 +40,18 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
   const [posicao, setPosicao] = useState(
     lat != null && lng != null ? { lat, lng } : BRASIL_CENTRO,
   );
-  const [zoom, setZoom] = useState(lat != null && lng != null ? 17 : 4);
+  const [zoom, setZoom] = useState(lat != null && lng != null ? 18 : 4);
   const [buscandoGps, setBuscandoGps] = useState(false);
   const [buscaTexto, setBuscaTexto] = useState('');
   const [buscaResultados, setBuscaResultados] = useState([]);
   const [buscandoEndereco, setBuscandoEndereco] = useState(false);
+  const [camada, setCamada] = useState('ruas');
   const mapRef = useRef(null);
 
   useEffect(() => {
     if (lat != null && lng != null) {
       setPosicao({ lat, lng });
-      setZoom((z) => (z < 15 ? 17 : z));
+      setZoom((z) => (z < 15 ? 18 : z));
     }
   }, [lat, lng]);
 
@@ -130,12 +144,22 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
         )}
       </form>
 
-      <div className="rounded-xl overflow-hidden border border-[#E4E4E7] dark:border-[#3F3F46]" style={{ height: 280 }}>
-        <MapContainer center={[posicao.lat, posicao.lng]} zoom={zoom} style={{ height: '100%', width: '100%' }}
-          ref={mapRef}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <div className="relative rounded-xl overflow-hidden border border-[#E4E4E7] dark:border-[#3F3F46]" style={{ height: 320 }}>
+        <div className="absolute z-[1000] top-2 right-2 bg-white dark:bg-[#27272A] rounded-lg shadow-lg overflow-hidden flex text-xs font-semibold">
+          <button type="button" onClick={() => setCamada('ruas')}
+            className={`px-2.5 py-1.5 ${camada === 'ruas' ? 'bg-[#FF441F] text-white' : 'text-[#27272A] dark:text-[#F4F4F5]'}`}>
+            Mapa
+          </button>
+          <button type="button" onClick={() => setCamada('satelite')}
+            className={`px-2.5 py-1.5 ${camada === 'satelite' ? 'bg-[#FF441F] text-white' : 'text-[#27272A] dark:text-[#F4F4F5]'}`}>
+            Satélite
+          </button>
+        </div>
+
+        <MapContainer center={[posicao.lat, posicao.lng]} zoom={zoom} maxZoom={CAMADAS[camada].maxZoom}
+          style={{ height: '100%', width: '100%' }} ref={mapRef}>
+          <TileLayer key={camada} attribution={CAMADAS[camada].attribution} url={CAMADAS[camada].url}
+            maxZoom={CAMADAS[camada].maxZoom} />
           <Marker
             position={[posicao.lat, posicao.lng]}
             draggable
