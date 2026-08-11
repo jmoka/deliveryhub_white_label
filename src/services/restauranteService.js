@@ -106,6 +106,9 @@ export const atualizarCliente = (id, data) =>
 export const updateEmpresa = (data) =>
   apiFetch('/minha-empresa', { method: 'PATCH', body: JSON.stringify(data) });
 
+export const atualizarLocalizacaoManual = (lat, lng) =>
+  apiFetch('/minha-empresa/localizacao', { method: 'PATCH', body: JSON.stringify({ lat, lng }) });
+
 export const getAparencia = () => apiFetch('/aparencia');
 export const updateAparencia = (data) =>
   apiFetch('/aparencia', { method: 'PATCH', body: JSON.stringify(data) });

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa,
+  atualizarLocalizacaoManual,
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
 } from '../../services/restauranteService';
 import { buscarCep } from '../../utils/viaCep';
 import Icon from '../../components/AppIcon';
 import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
 
 // URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento
 const WEBHOOK_URL = `${window.location.origin}/api/pagamentos/webhook`;
@@ -132,6 +134,11 @@ const EnderecoCard = ({ geocodeFalhou }) => {
   const [sucesso, setSucesso] = useState(false);
   const [erro, setErro] = useState(null);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [localizacao, setLocalizacao] = useState({ lat: null, lng: null });
+  const [ajustadoManualmente, setAjustadoManualmente] = useState(false);
+  const [salvandoLocalizacao, setSalvandoLocalizacao] = useState(false);
+  const [sucessoLocalizacao, setSucessoLocalizacao] = useState(false);
+  const [erroLocalizacao, setErroLocalizacao] = useState(null);
 
   const formatCEP = (v) => {
     const n = v.replace(/\D/g, '');
@@ -170,10 +177,29 @@ const EnderecoCard = ({ geocodeFalhou }) => {
           city: e.city ?? '',
           state: e.state ?? '',
         });
+        setLocalizacao({ lat: e.lat ?? null, lng: e.lng ?? null });
+        setAjustadoManualmente(!!e.lat_ajustado_manualmente);
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const salvarLocalizacao = async () => {
+    if (localizacao.lat == null || localizacao.lng == null) return;
+    setSalvandoLocalizacao(true);
+    setErroLocalizacao(null);
+    setSucessoLocalizacao(false);
+    try {
+      await atualizarLocalizacaoManual(localizacao.lat, localizacao.lng);
+      setAjustadoManualmente(true);
+      setSucessoLocalizacao(true);
+      setTimeout(() => setSucessoLocalizacao(false), 2500);
+    } catch (err) {
+      setErroLocalizacao(err.message);
+    } finally {
+      setSalvandoLocalizacao(false);
+    }
+  };
 
   const salvar = async (e) => {
     e.preventDefault();
@@ -268,6 +294,39 @@ const EnderecoCard = ({ geocodeFalhou }) => {
             {sucesso && <span className="text-xs font-semibold text-green-600 dark:text-green-400 flex items-center gap-1"><Icon name="Check" size={14} /> Salvo</span>}
           </div>
         </form>
+      )}
+
+      {!loading && (
+        <div className="mt-6 pt-5 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-sm text-[#18181B] dark:text-[#F4F4F5]">Localização exata no mapa</h3>
+            {ajustadoManualmente && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 rounded-full px-2 py-0.5">
+                <Icon name="Check" size={10} /> Calibrado manualmente
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
+            O endereço acima é convertido em coordenadas automaticamente, mas pode errar
+            algumas centenas de metros. Ajuste o pino aqui pra garantir que o filtro
+            "restaurantes perto de mim" (mesmo em raios pequenos, tipo 20-50m) funcione certinho.
+          </p>
+
+          <MapaLocalizacaoPicker
+            lat={localizacao.lat}
+            lng={localizacao.lng}
+            onChange={(lat, lng) => setLocalizacao({ lat, lng })}
+          />
+
+          {erroLocalizacao && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erroLocalizacao}</p>}
+          <div className="flex items-center gap-3 pt-3">
+            <button type="button" onClick={salvarLocalizacao} disabled={salvandoLocalizacao || localizacao.lat == null}
+              className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-50">
+              {salvandoLocalizacao ? 'Salvando...' : 'Salvar localização precisa'}
+            </button>
+            {sucessoLocalizacao && <span className="text-xs font-semibold text-green-600 dark:text-green-400 flex items-center gap-1"><Icon name="Check" size={14} /> Salvo</span>}
+          </div>
+        </div>
       )}
     </div>
   );
