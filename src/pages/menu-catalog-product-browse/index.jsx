@@ -656,7 +656,7 @@ const MenuCatalogProductBrowse = () => {
   // Filtro geográfico — localização automática (GPS do navegador) + filtros manuais
   // de Estado/Cidade/Bairro/CEP. Sem filtro manual ativo, a localização já limita a
   // lista ao raio escolhido automaticamente (cliente não precisa mexer em nada).
-  const [localizacao, setLocalizacao]     = useState(null); // { lat, lng } | null
+  const [localizacao, setLocalizacao]     = useState(null); // { lat, lng, accuracy } | null
   const [statusLocalizacao, setStatusLocalizacao] = useState('pedindo'); // pedindo|ok|negado|indisponivel
   const [raioKm, setRaioKm]               = useState(15);
   const [locaisFiltro, setLocaisFiltro]   = useState([]);
@@ -669,9 +669,12 @@ const MenuCatalogProductBrowse = () => {
     if (!navigator.geolocation) { setStatusLocalizacao('indisponivel'); return; }
     setStatusLocalizacao('pedindo');
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setLocalizacao({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setStatusLocalizacao('ok'); },
+      (pos) => {
+        setLocalizacao({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        setStatusLocalizacao('ok');
+      },
       () => setStatusLocalizacao('negado'),
-      { timeout: 8000 },
+      { timeout: 8000, enableHighAccuracy: true, maximumAge: 0 },
     );
   };
 
@@ -680,6 +683,11 @@ const MenuCatalogProductBrowse = () => {
   };
 
   const temFiltroManual = !!(filtroEstado || filtroCidade || filtroBairro || filtroCep);
+  // Esconde raios menores que a precisão real do GPS (localizacao.accuracy, em metros) —
+  // uma opção de 20m/50m com GPS impreciso (rede/wifi) nunca bateria com nada, ilusória.
+  const raioOpcoesDisponiveis = localizacao?.accuracy
+    ? RAIO_OPCOES.filter((km) => km === 0 || km * 1000 >= localizacao.accuracy)
+    : RAIO_OPCOES;
   const estadosDisponiveis = [...new Set(locaisFiltro.map((l) => l.state).filter(Boolean))].sort();
   const cidadesDisponiveis = [...new Set(
     locaisFiltro.filter((l) => !filtroEstado || l.state === filtroEstado).map((l) => l.city).filter(Boolean),
@@ -750,6 +758,15 @@ const MenuCatalogProductBrowse = () => {
     if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) { setPerfilCliente(null); return; }
     getPerfil().then(setPerfilCliente).catch(() => {});
   }, [userProfile?.id, userProfile?.role]);
+
+  // Se a precisão do GPS piorar (ou não vier mais tão boa) e o raio selecionado sumir
+  // da lista disponível, sobe pro menor raio que ainda é real — nunca deixa um valor
+  // inválido/ilusório selecionado.
+  useEffect(() => {
+    if (!raioOpcoesDisponiveis.includes(raioKm)) {
+      setRaioKm(raioOpcoesDisponiveis.find((km) => km !== 0) ?? raioOpcoesDisponiveis[0]);
+    }
+  }, [raioOpcoesDisponiveis]);
 
   // Busca restaurantes toda vez que localização/raio/filtros geográficos mudam — o
   // servidor já filtra/ordena por distância, sem filtro manual ativo o raio entra
@@ -954,7 +971,7 @@ const MenuCatalogProductBrowse = () => {
           {localizacao && !temFiltroManual && (
             <select value={raioKm} onChange={(e) => setRaioKm(Number(e.target.value))}
               className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0">
-              {RAIO_OPCOES.map((km) => (
+              {raioOpcoesDisponiveis.map((km) => (
                 <option key={km} value={km}>{fmtRaioLabel(km)}</option>
               ))}
             </select>
