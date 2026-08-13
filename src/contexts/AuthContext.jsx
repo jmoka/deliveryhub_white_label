@@ -59,7 +59,12 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (userProfile?.role === 'restaurant_owner') {
-      getMeuPlanoStatus().then(setPlanoStatus).catch(() => {});
+      getMeuPlanoStatus().then(setPlanoStatus).catch((error) => {
+        if (error?.message === 'Essas credenciais não pertencem a esta loja') {
+          setAuthError('Este acesso não pertence a esta loja. Faça login pelo domínio correto do seu restaurante.');
+          signOut();
+        }
+      });
     } else {
       setPlanoStatus(null);
     }
