@@ -109,8 +109,8 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
             {isEdicao ? 'Editar Plano' : 'Novo Plano'}
           </h3>
@@ -120,7 +120,8 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+        <div className="space-y-4 overflow-y-auto px-6 flex-1">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Nome *</label>
             <input required value={form.nome} onChange={(e) => set('nome', e.target.value)}
@@ -216,17 +217,18 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           </div>
 
           {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
+        </div>
 
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
-              Cancelar
-            </button>
-            <button type="submit" disabled={salvando}
-              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
-              {salvando ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
+        <div className="flex gap-3 px-6 py-4 flex-shrink-0 border-t border-gray-100 dark:border-zinc-700">
+          <button type="button" onClick={onClose}
+            className="flex-1 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+            Cancelar
+          </button>
+          <button type="submit" disabled={salvando}
+            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+            {salvando ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
         </form>
       </div>
     </div>
@@ -708,7 +710,7 @@ const ModalNovaInstalacao = ({ planosLocais, onClose, onCriada }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-md p-6">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
         {criada ? (
           <div className="text-center">
             <Icon name="CheckCircle2" size={40} className="text-green-500 mx-auto mb-3" />
@@ -802,7 +804,7 @@ const ModalTrocarPlanoInstalacao = ({ instalacao, planosLocais, onClose, onSalvo
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm p-6">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6">
         <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100 mb-4">Plano — {instalacao.nome_cliente}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <select value={planoId} onChange={(e) => setPlanoId(e.target.value)} required

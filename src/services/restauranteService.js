@@ -39,6 +39,9 @@ export const registrarRestauranteInicial = (data) =>
 export const finalizarCadastroRestaurante = (data) =>
   apiFetch('/finalizar', { method: 'POST', body: JSON.stringify(data) });
 
+export const verificarDisponibilidadeCadastro = (data) =>
+  apiFetch('/verificar-disponibilidade', { method: 'POST', body: JSON.stringify(data) });
+
 export const getMinhaEmpresa = () => apiFetch('/minha-empresa');
 
 export const getMeusPedidos = (params = {}) => {

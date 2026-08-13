@@ -9,12 +9,13 @@ import BrandingForm from './components/BrandingForm';
 import PlanSelectionForm from './components/PlanSelectionForm';
 import ProgressSidebar from './components/ProgressSidebar';
 import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaModal';
-import { registrarRestauranteInicial, finalizarCadastroRestaurante, getTiposEstabelecimento, getPlanosDisponiveisCadastro } from '../../services/restauranteService';
+import AvisoTrialModal from './components/AvisoTrialModal';
+import { registrarRestauranteInicial, finalizarCadastroRestaurante, getTiposEstabelecimento, getPlanosDisponiveisCadastro, verificarDisponibilidadeCadastro } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const RestaurantRegistrationSetup = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, refreshUserProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState('plano');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,8 @@ const RestaurantRegistrationSetup = () => {
   const [loadingPlanos, setLoadingPlanos] = useState(true);
   const [confirmandoPlano, setConfirmandoPlano] = useState(false);
   const [faturaPendente, setFaturaPendente] = useState(null);
+  const [avisoTrial, setAvisoTrial] = useState(null);
+  const [checandoDisponibilidade, setCheckandoDisponibilidade] = useState(false);
   const [formData, setFormData] = useState({
     // Plano
     planoId: '',
@@ -191,8 +194,41 @@ const RestaurantRegistrationSetup = () => {
     return Object.keys(newErrors)?.length === 0;
   };
 
-  const handleNext = () => {
+  // Checa CNPJ/WhatsApp/email duplicados assim que o usuário tenta sair dos
+  // passos que os coletam — sem isso, só descobriria no último passo da
+  // wizard (finalizar), bem tarde pra corrigir um dado preenchido há 3 passos.
+  const checarDuplicidade = async () => {
+    const payload = {};
+    if (currentStep === 'business' && formData?.cnpj?.trim()) payload.cnpj = formData.cnpj;
+    if (currentStep === 'contact') {
+      payload.whatsapp = formData?.whatsapp;
+      payload.email = formData?.email;
+    }
+    if (Object.keys(payload).length === 0) return true;
+
+    setCheckandoDisponibilidade(true);
+    try {
+      const r = await verificarDisponibilidadeCadastro(payload);
+      const novosErros = {};
+      if (payload.cnpj && !r.cnpj_disponivel) novosErros.cnpj = 'Este CNPJ já está cadastrado em outro estabelecimento.';
+      if (payload.whatsapp && !r.whatsapp_disponivel) novosErros.whatsapp = 'Este WhatsApp já está cadastrado em outro estabelecimento.';
+      if (payload.email && !r.email_disponivel) novosErros.email = 'Este email já está cadastrado em outro estabelecimento.';
+      if (Object.keys(novosErros).length > 0) {
+        setErrors((prev) => ({ ...prev, ...novosErros }));
+        return false;
+      }
+      return true;
+    } catch (error) {
+      setErrors((prev) => ({ ...prev, submit: error?.message || 'Erro ao validar dados. Tente novamente.' }));
+      return false;
+    } finally {
+      setCheckandoDisponibilidade(false);
+    }
+  };
+
+  const handleNext = async () => {
     if (!validateCurrentStep()) return;
+    if (!(await checarDuplicidade())) return;
 
     // Mark current step as completed
     if (!completedSteps?.includes(currentStep)) {
@@ -259,7 +295,12 @@ const RestaurantRegistrationSetup = () => {
       if (r.precisa_pagamento) {
         setFaturaPendente(r.fatura);
       } else {
-        avancarDePlano();
+        const plano = planos.find((p) => String(p.id) === String(formData.planoId));
+        if (plano?.trial_dias > 0) {
+          setAvisoTrial(plano);
+        } else {
+          avancarDePlano();
+        }
       }
     } catch (error) {
       setErrors({ planoId: error?.message || 'Erro ao confirmar o plano. Tente novamente.' });
@@ -311,11 +352,19 @@ const RestaurantRegistrationSetup = () => {
         cep: formData.cep || undefined,
         business_hours: formData.operatingHours,
         type_id: formData.establishmentTypeId ? Number(formData.establishmentTypeId) : undefined,
+        cnpj: formData.cnpj || undefined,
+        whatsapp: formData.whatsapp || undefined,
+        email: formData.email || undefined,
       });
 
       localStorage.removeItem('restaurantSetupData');
       localStorage.removeItem('restaurantSetupStep');
       localStorage.removeItem('restaurantSetupCompleted');
+
+      // Aguarda o refresh antes de navegar — sem isso o role='restaurant_owner'
+      // recém-gravado no banco ainda não chegou no estado em memória quando o
+      // RestauranteGuard avalia a rota seguinte, e ele barra a navegação.
+      await refreshUserProfile();
 
       navigate('/restaurante');
     } catch (error) {
@@ -409,6 +458,14 @@ const RestaurantRegistrationSetup = () => {
           fatura={faturaPendente}
           onClose={() => setFaturaPendente(null)}
           onPago={avancarDePlano}
+        />
+      )}
+
+      {avisoTrial && (
+        <AvisoTrialModal
+          plano={avisoTrial}
+          onClose={() => setAvisoTrial(null)}
+          onContinuar={() => { setAvisoTrial(null); avancarDePlano(); }}
         />
       )}
 
@@ -532,6 +589,7 @@ const RestaurantRegistrationSetup = () => {
                       {!isLastStep ? (
                         <Button
                           onClick={handleNext}
+                          loading={checandoDisponibilidade}
                           iconName="ArrowRight"
                           iconPosition="right"
                         >
