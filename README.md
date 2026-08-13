@@ -54,17 +54,32 @@ A modern React-based project utilizing the latest frontend technologies and tool
    npm run seed:primeiro-boot
    ```
 
-7. Subir o backend (dentro de `server_delivery`, porta 3002):
+7. Configurar o `.env` do frontend (raiz do projeto):
+   ```bash
+   copy .env_exemplo .env
+   ```
+   Preencher `VITE_API_URL` e `VITE_LAN_URL` com o **IP de rede local do PC** (não `localhost`), na porta do backend (3002) e do frontend (4028) respectivamente:
+   ```env
+   VITE_API_URL=http://<IP-da-sua-rede-local>:3002
+   VITE_LAN_URL=http://<IP-da-sua-rede-local>:4028
+   ```
+   Isso é necessário porque `localhost` só funciona pro próprio PC — celular/outro dispositivo na rede local não alcança o `localhost` da máquina que está rodando o projeto. Pra descobrir o IP:
+   ```powershell
+   ipconfig
+   ```
+   Procure o `IPv4 Address` do adaptador de rede ativo (Wi-Fi ou Ethernet). **Atenção:** esse IP pode mudar (DHCP) — se a conexão parar de funcionar com `net::ERR_CONNECTION_TIMED_OUT`, confira se o IP no `.env` ainda bate com o `ipconfig` atual.
+
+8. Subir o backend (dentro de `server_delivery`, porta 3002):
    ```bash
    npm run start:dev
    ```
 
-8. Subir o frontend (raiz do projeto, porta 4028):
+9. Subir o frontend (raiz do projeto, porta 4028):
    ```bash
    npm run dev
    ```
 
-9. Acessar:
+10. Acessar:
    - App: http://localhost:4028
    - Supabase Studio (visualizar banco): http://127.0.0.1:54333 — desligado por padrão, ligar em `supabase/config.toml` (`[studio] enabled = true`) e reiniciar (`npx supabase start`, use `--ignore-health-check` se o start travar em "unhealthy" nos containers `studio`/`storage`/`realtime`/`pg_meta` — health check dessas imagens costuma dar falso-negativo no Windows).
 
