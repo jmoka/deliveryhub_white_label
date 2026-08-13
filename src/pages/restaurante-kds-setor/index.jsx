@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken,
-  getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem,
+  getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
 import { printTicketSetor } from '../../utils/printComanda';
+import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
+import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 
 const KdsLogin = ({ onLogin }) => {
   const [token, setToken] = useState('');
@@ -60,6 +62,8 @@ const RestauranteKdsSetor = () => {
   });
   const [itens, setItens] = useState([]);
   const [erro, setErro] = useState(null);
+  const [verTodosProntos, setVerTodosProntos] = useState(false);
+  const now = useNowTick();
 
   const carregar = useCallback(async () => {
     if (!impressoraId) return;
@@ -95,6 +99,11 @@ const RestauranteKdsSetor = () => {
     carregar();
   };
 
+  const voltar = async (item) => {
+    await voltarStatusItem(item.id);
+    carregar();
+  };
+
   const reimprimir = async (item) => {
     try {
       const res = await reimprimirItem(item.id);
@@ -106,70 +115,96 @@ const RestauranteKdsSetor = () => {
     }
   };
 
+  const aguardandoPreparo = itens.filter((i) => i.status === 'enviado');
+  const emPreparo = itens.filter((i) => i.status === 'preparando');
+  const prontos = itens
+    .filter((i) => i.status === 'pronto')
+    .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
+
   return (
-    <div className="min-h-screen bg-[#1A1A1A] p-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen bg-[#1A1A1A]">
+      <div className="p-4 max-w-5xl mx-auto flex items-center justify-between">
         <h1 className="text-xl font-black text-white uppercase">{setorNome}</h1>
         <button onClick={() => { clearCozinhaToken(); setAuthed(false); }} className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sair</button>
       </div>
-      {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {itens.map((item, idx) => (
-          <div key={item.id} className={`bg-[#232323] border rounded-2xl p-4 ${item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : idx === 0 ? 'border-yellow-400 dark:border-yellow-800/70 ring-1 ring-yellow-400/30' : 'border-[#2A2A2A]'}`}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${idx === 0 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
-                  {idx + 1}
-                </span>
-                <span className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</span>
-              </div>
-              <button onClick={() => reimprimir(item)}
-                className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
-                <Icon name="Printer" size={11} /> Reimpressão
-              </button>
-            </div>
-            {idx === 0 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-            {item.garcom_nao_entregou && (
-              <p className="text-sm font-bold text-white bg-red-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">
-                Esse pedido não foi entregue — garçom não entregou
-              </p>
-            )}
-            {item.is_auto_atendimento && (
-              <p className="text-sm font-bold text-white bg-pink-600 rounded px-1.5 py-0.5 mb-1">
-                Auto Atendimento — Mesa {item.mesa_numero ?? '?'}
-              </p>
-            )}
-            {item.garcom_indo_buscar && (
-              <p className={`text-sm font-bold text-white rounded px-1.5 py-0.5 mb-1 ${item.entregue_garcom ? 'bg-emerald-600' : 'bg-blue-600'}`}>
-                {item.entregue_garcom ? 'Já entregue pelo garçom' : 'Garçom vindo buscar'}
-              </p>
-            )}
-            <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
-              <Icon name="MapPin" size={12} />
-              <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? 'Avulsa'}</span>
-              {item.garcom && (
-                <>
-                  <span className="text-[#3A3A3A]">•</span>
-                  <Icon name="User" size={12} />
-                  <span>{item.garcom}</span>
-                </>
-              )}
-            </div>
-            {item.status === 'enviado' ? (
-              <button onClick={() => iniciarPreparo(item)}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-                <Icon name="ChefHat" size={13} /> Iniciar Preparo
-              </button>
-            ) : (
-              <button onClick={() => marcarPronto(item.id)}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-                <Icon name="Check" size={13} /> Pronto
-              </button>
+      {erro && <p className="text-sm text-red-400 mb-3 px-4 max-w-5xl mx-auto">{erro}</p>}
+
+      <main className="p-5 pt-0 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-3 h-3 rounded-full bg-blue-400" />
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Preparo</h2>
+            {aguardandoPreparo.length > 0 && (
+              <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{aguardandoPreparo.length}</span>
             )}
           </div>
-        ))}
-        {itens.length === 0 && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Nenhum item pendente nesse setor.</p>}
-      </div>
+          {aguardandoPreparo.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
+              <Icon name="CheckCircle" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+              <p className="text-[#71717A] text-sm">Nenhum pedido aguardando</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {aguardandoPreparo.map((item, idx) => (
+                <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                  onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Em Preparo</h2>
+            {emPreparo.length > 0 && (
+              <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{emPreparo.length}</span>
+            )}
+          </div>
+          {emPreparo.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
+              <Icon name="ChefHat" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+              <p className="text-[#71717A] text-sm">Nenhum pedido em preparo</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {emPreparo.map((item, idx) => (
+                <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                  onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {prontos.length > 0 && (
+        <div className="px-5 pb-5 max-w-5xl mx-auto">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-3 h-3 rounded-full bg-emerald-500" />
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Prontos hoje (clicou errado? desfaz aqui)</h2>
+            <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontos.length}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(verTodosProntos ? prontos : prontos.slice(0, 5)).map((item, idx) => (
+              <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                onReimprimir={reimprimir} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} />
+            ))}
+          </div>
+          {prontos.length > 5 && (
+            <button onClick={() => setVerTodosProntos((v) => !v)}
+              className="mt-3 w-full py-2 text-xs font-bold text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10">
+              {verTodosProntos ? 'Mostrar menos' : `Ver todos (${prontos.length})`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {itens.length === 0 && (
+        <div className="text-center py-20">
+          <Icon name="UtensilsCrossed" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
+          <p className="text-[#71717A] text-lg font-semibold">Nenhum item pendente nesse setor</p>
+        </div>
+      )}
     </div>
   );
 };
