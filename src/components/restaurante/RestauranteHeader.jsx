@@ -90,6 +90,10 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <PlanoStatusDot planoStatus={planoStatus} onClick={() => navigate('/restaurante/plano')} />
+          <button onClick={() => navigate('/restaurante/meu-perfil')} title="Meu perfil"
+            className="hidden md:flex p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5]">
+            <Icon name="UserCircle" size={18} />
+          </button>
           <ThemeToggle inline />
           <button onClick={() => setSidebarAberto(true)}
             className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
@@ -109,6 +113,7 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
             pendentesMotoboy={pendentesMotoboy}
             slugLoja={slugLoja}
             onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
+            onMeuPerfil={() => { navigate('/restaurante/meu-perfil'); setMenuAberto(false); }}
             onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
           />
         )}
@@ -122,6 +127,7 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
         pendentesMotoboy={pendentesMotoboy}
         slugLoja={slugLoja}
         onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
+        onMeuPerfil={() => { navigate('/restaurante/meu-perfil'); setSidebarAberto(false); }}
         isFavorito={isFavorito}
         onToggleFavorito={toggleFavorito}
       />

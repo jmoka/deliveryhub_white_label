@@ -111,3 +111,13 @@ export const atualizarTipoEstabelecimento = (id, data) =>
   apiFetch(`/establishment-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerTipoEstabelecimento = (id) =>
   apiFetch(`/establishment-types/${id}`, { method: 'DELETE' });
+
+// Usuários — listagem, vínculo com restaurante e troca de email/senha pelo admin
+export const getUsuarios = (params = {}) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return apiFetch(`/admin/usuarios${qs ? `?${qs}` : ''}`);
+};
+export const trocarCredenciaisUsuario = (id, data) =>
+  apiFetch(`/admin/usuarios/${id}/credenciais`, { method: 'PATCH', body: JSON.stringify(data) });
+export const getAuditoriaUsuario = (usuarioId) =>
+  apiFetch(`/admin/usuarios/auditoria?usuario_id=${usuarioId}`);

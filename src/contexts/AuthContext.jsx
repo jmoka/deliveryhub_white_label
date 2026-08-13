@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
   }, [userProfile?.role])
 
   const fetchUserProfile = (userId) => {
-    supabase?.from('user_profiles')?.select('*')?.eq('id', userId)?.single()?.then(({ data, error }) => {
+    return supabase?.from('user_profiles')?.select('*')?.eq('id', userId)?.single()?.then(({ data, error }) => {
         if (error) {
           setAuthError(`Failed to fetch user profile: ${error?.message}`)
           return
@@ -164,7 +164,8 @@ export const AuthProvider = ({ children }) => {
   // Recarrega o perfil do banco — usado quando algo fora do fluxo normal de
   // login muda o role da conta (ex: cadastro de motoboy promove pra 'motoboy').
   const refreshUserProfile = () => {
-    if (user?.id) fetchUserProfile(user.id)
+    if (user?.id) return fetchUserProfile(user.id)
+    return Promise.resolve()
   }
 
   const isAdmin = () => {

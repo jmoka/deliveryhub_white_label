@@ -4,6 +4,7 @@ import { getPerfil, updatePerfil, uploadFoto } from '../../services/perfilServic
 import { buscarCep } from '../../utils/viaCep';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
+import CredenciaisForm from '../../components/perfil/CredenciaisForm';
 
 const formatCEP = (v) => {
   const n = (v ?? '').replace(/\D/g, '');
@@ -189,7 +190,7 @@ const CustomerProfile = () => {
             <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
               <Icon name="User" size={14} className="text-[#FF441F]" /> Dados pessoais
             </p>
-            <Campo label="E-mail (não editável)" value={user?.email ?? ''} readOnly />
+            <Campo label="E-mail (trocar abaixo, em Segurança)" value={user?.email ?? ''} readOnly />
             <Campo label="Nome completo" value={form.name} onChange={set('name')} placeholder="João Silva" required />
             <Campo label="WhatsApp / Telefone" value={form.phone_e164} onChange={set('phone_e164')} placeholder="+55 11 99999-9999" required />
           </div>
@@ -237,6 +238,13 @@ const CustomerProfile = () => {
             {salvando ? 'Salvando...' : 'Salvar perfil'}
           </button>
         </form>
+
+        <div className="mt-6">
+          <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-3">
+            <Icon name="Lock" size={14} className="text-[#FF441F]" /> Segurança
+          </p>
+          <CredenciaisForm currentEmail={user?.email} />
+        </div>
       </main>
     </div>
   );

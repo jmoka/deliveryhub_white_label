@@ -6,7 +6,7 @@ import Icon from '../AppIcon';
 // Menu lateral só pra desktop/telas grandes (md+) — substitui a barra horizontal de
 // botões que ficava poluída com muitos links. Mobile continua com o próprio menu de cada
 // página (hamburger + lista já existente), este componente nunca renderiza abaixo de md.
-const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy = 0, slugLoja, onSair, isFavorito, onToggleFavorito }) => {
+const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy = 0, slugLoja, onSair, onMeuPerfil, isFavorito, onToggleFavorito }) => {
   const navigate = useNavigate();
   const ir = (path) => { navigate(path); onClose(); };
 
@@ -54,12 +54,18 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
                 </div>
               ))}
             </nav>
-            {(slugLoja || onSair) && (
+            {(slugLoja || onMeuPerfil || onSair) && (
               <div className="px-3 py-3 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex flex-col gap-1.5">
                 {slugLoja && (
                   <button onClick={() => window.open(`/r/${slugLoja}`, '_blank')}
                     className="w-full text-left px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 hover:bg-green-100 dark:hover:bg-green-950/60 rounded-xl border border-green-200 dark:border-green-800 flex items-center gap-2">
                     <Icon name="ExternalLink" size={14} /> Loja
+                  </button>
+                )}
+                {onMeuPerfil && (
+                  <button onClick={onMeuPerfil}
+                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center gap-2">
+                    <Icon name="UserCircle" size={14} /> Meu Perfil
                   </button>
                 )}
                 {onSair && (

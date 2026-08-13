@@ -96,6 +96,20 @@ export const authService = {
     }
   },
 
+  // Update email of the currently authenticated user — dispara a confirmação
+  // nativa do Supabase (double opt-in se "Secure email change" estiver
+  // ativo no projeto). user_profiles.email é sincronizado por trigger de
+  // banco (on_auth_user_email_updated) depois que a troca é confirmada.
+  async updateEmail(newEmail) {
+    try {
+      const { error } = await supabase?.auth?.updateUser({ email: newEmail })
+      if (error) return { success: false, error: error?.message };
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: 'Email update failed' }
+    }
+  },
+
   // Reset password
   async resetPassword(email) {
     try {
