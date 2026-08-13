@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   listarImpressoras, criarImpressora, atualizarImpressora, removerImpressora,
   getImpressorasDetectadas, gerarTokenAgente, getStatusAgente, testarImpressora,
+  renovarTokenImpressora,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
@@ -112,6 +113,26 @@ const RestauranteImpressoras = () => {
     carregar();
   };
 
+  const [gerandoToken, setGerandoToken] = useState(null);
+  const [copiadoId, setCopiadoId] = useState(null);
+  const gerarToken = async (id) => {
+    setGerandoToken(id);
+    try {
+      await renovarTokenImpressora(id);
+      carregar();
+    } catch (err) {
+      alert('Erro ao gerar token: ' + err.message);
+    } finally {
+      setGerandoToken(null);
+    }
+  };
+
+  const copiarLink = (imp) => {
+    navigator.clipboard?.writeText(linkKds(imp));
+    setCopiadoId(imp.id);
+    setTimeout(() => setCopiadoId(null), 2000);
+  };
+
   const [testando, setTestando] = useState(null);
   const testar = async (id) => {
     setTestando(id);
@@ -125,7 +146,7 @@ const RestauranteImpressoras = () => {
     }
   };
 
-  const linkKds = (imp) => `${window.location.origin}/restaurante/kds?impressora_id=${imp.id}&setor=${encodeURIComponent(imp.setor)}`;
+  const linkKds = (imp) => `${window.location.origin}/restaurante/kds?impressora_id=${imp.id}&setor=${encodeURIComponent(imp.setor)}${imp.token ? `&cozinha_token=${imp.token}` : ''}`;
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
@@ -202,10 +223,25 @@ const RestauranteImpressoras = () => {
                   </select>
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
-                <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{linkKds(imp)}</span>
-                <button onClick={() => navigator.clipboard?.writeText(linkKds(imp))} className="text-xs font-bold text-[#FF441F]">Copiar</button>
-              </div>
+              {imp.token ? (
+                <>
+                  <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+                    <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{linkKds(imp)}</span>
+                    <button onClick={() => copiarLink(imp)} className="text-xs font-bold text-[#FF441F] flex-shrink-0">
+                      {copiadoId === imp.id ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
+                  <button onClick={() => gerarToken(imp.id)} disabled={gerandoToken === imp.id}
+                    className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-1 hover:underline disabled:opacity-50">
+                    {gerandoToken === imp.id ? 'Gerando...' : 'Gerar novo token (invalida o link atual deste setor)'}
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => gerarToken(imp.id)} disabled={gerandoToken === imp.id}
+                  className="w-full mt-3 py-1.5 text-xs font-bold border border-[#FF441F] text-[#FF441F] rounded-lg hover:bg-[#FF441F]/5 disabled:opacity-50">
+                  {gerandoToken === imp.id ? 'Gerando...' : 'Gerar token de acesso (KDS)'}
+                </button>
+              )}
               {imp.nome_sistema && (
                 <button onClick={() => testar(imp.id)} disabled={testando === imp.id}
                   className="w-full mt-3 py-1.5 text-xs font-bold border border-[#FF441F] text-[#FF441F] rounded-lg hover:bg-[#FF441F]/5 disabled:opacity-50">

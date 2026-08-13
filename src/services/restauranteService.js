@@ -296,6 +296,8 @@ export const removerImpressora = (id) =>
   apiFetch(`/impressoras/${id}`, { method: 'DELETE' });
 export const testarImpressora = (id) =>
   apiFetch(`/impressoras/${id}/teste`, { method: 'POST' });
+export const renovarTokenImpressora = (id) =>
+  apiFetch(`/impressoras/${id}/token`, { method: 'PATCH' });
 
 // Agente de impressão local
 export const getImpressorasDetectadas = () => apiFetch('/impressoras/detectadas');
