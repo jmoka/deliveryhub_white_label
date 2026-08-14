@@ -22,7 +22,7 @@ const SkeletonProduto = () => (
 );
 
 /* ── Card produto ────────────────────────────────────────────────── */
-const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
+const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVitrine }) => {
   const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
   const indisponivel = produto.disponivel === false || restauranteFechado;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
@@ -60,7 +60,7 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
             </div>
           </div>
 
-          {!indisponivel ? (
+          {somenteVitrine ? null : !indisponivel ? (
             <div className="flex items-center gap-2 flex-shrink-0">
               {qtd === 0 ? (
                 <motion.button whileTap={{ scale: 0.92 }} onClick={() => onAdicionar(produto, precoFinal)}
@@ -98,16 +98,16 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado }) => {
 };
 
 /* ── Carrossel de combos ativos (topo da loja) ────────────────────── */
-const ComboCarrosselCard = ({ combo, onAdicionar, restauranteFechado }) => {
+const ComboCarrosselCard = ({ combo, onAdicionar, restauranteFechado, somenteVitrine }) => {
   const temPromo = combo.preco_promo != null;
   const precoFinal = temPromo ? combo.preco_promo : combo.price;
 
   return (
     <button
-      onClick={() => !restauranteFechado && onAdicionar(combo, precoFinal)}
-      disabled={restauranteFechado}
+      onClick={() => !restauranteFechado && !somenteVitrine && onAdicionar(combo, precoFinal)}
+      disabled={restauranteFechado || somenteVitrine}
       className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
-        restauranteFechado ? 'border-[#E4E4E7] opacity-60' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+        restauranteFechado ? 'border-[#E4E4E7] opacity-60' : somenteVitrine ? 'border-[#E4E4E7] cursor-default' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
       }`}
     >
       <div className="relative h-28 bg-[#F4F4F5]">
@@ -127,7 +127,7 @@ const ComboCarrosselCard = ({ combo, onAdicionar, restauranteFechado }) => {
   );
 };
 
-const ComboCarrossel = ({ combos, onAdicionar, restauranteFechado }) => {
+const ComboCarrossel = ({ combos, onAdicionar, restauranteFechado, somenteVitrine }) => {
   const scrollRef = useRef(null);
   const scroll = (dir) => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
@@ -141,7 +141,7 @@ const ComboCarrossel = ({ combos, onAdicionar, restauranteFechado }) => {
       </button>
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {combos.map((c) => (
-          <ComboCarrosselCard key={c.id} combo={c} onAdicionar={onAdicionar} restauranteFechado={restauranteFechado} />
+          <ComboCarrosselCard key={c.id} combo={c} onAdicionar={onAdicionar} restauranteFechado={restauranteFechado} somenteVitrine={somenteVitrine} />
         ))}
       </div>
       <button onClick={() => scroll(1)}
@@ -330,6 +330,8 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
 
   const { restaurante, cardapio, destaques, promos, combos } = data;
   const ap = restaurante.aparencia ?? {};
+  // Sem plano delivery, a loja funciona só como vitrine — sem carrinho/checkout.
+  const temDelivery = restaurante.modulo_delivery !== false;
 
   const tabs = [
     { id: 'todos', label: 'Todos' },
@@ -398,15 +400,17 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             </button>
           )}
           {/* Carrinho icon mobile */}
-          <button onClick={() => setCarrinhoAberto(true)}
-            className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
-            <Icon name="ShoppingCart" size={20} />
-            {totalItens > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF441F] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {totalItens > 9 ? '9+' : totalItens}
-              </span>
-            )}
-          </button>
+          {temDelivery && (
+            <button onClick={() => setCarrinhoAberto(true)}
+              className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
+              <Icon name="ShoppingCart" size={20} />
+              {totalItens > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF441F] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {totalItens > 9 ? '9+' : totalItens}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
@@ -508,6 +512,16 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
         </div>
       )}
 
+      {/* ── Banner vitrine (sem plano delivery) ──────────────────────── */}
+      {!temDelivery && (
+        <div className="bg-[#27272A] text-white px-4 py-3">
+          <div className="max-w-screen-xl mx-auto flex items-center gap-2">
+            <Icon name="Store" size={16} />
+            <p className="text-sm font-bold">Cardápio apenas para consulta — este estabelecimento não realiza entrega pelo site</p>
+          </div>
+        </div>
+      )}
+
       {/* ── Carrossel de combos ativos ───────────────────────────────── */}
       {combos?.length > 0 && (
         <div className="max-w-screen-xl mx-auto px-4 pt-4">
@@ -515,7 +529,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             <Icon name="Package" size={15} className="text-[#FF441F]" />
             Combos em destaque
           </p>
-          <ComboCarrossel combos={combos} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} />
+          <ComboCarrossel combos={combos} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
         </div>
       )}
 
@@ -564,7 +578,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
                 {produtosDaTab().map((p, i) => (
                   <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04, duration: 0.2 }}>
-                    <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} />
+                    <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
                   </motion.div>
                 ))}
               </motion.div>
@@ -573,12 +587,12 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
         </main>
 
         {/* Carrinho desktop (sidebar) */}
-        <CarrinhoDesktop carrinho={carrinho} onAdicionar={altCarrinho} onCheckout={irParaCheckout} />
+        {temDelivery && <CarrinhoDesktop carrinho={carrinho} onAdicionar={altCarrinho} onCheckout={irParaCheckout} />}
       </div>
 
       {/* ── Botão flutuante carrinho (mobile) ───────────────────────── */}
       <AnimatePresence>
-        {totalItens > 0 && !carrinhoAberto && ap.aberto !== false && (
+        {temDelivery && totalItens > 0 && !carrinhoAberto && ap.aberto !== false && (
           <motion.div
             initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
             className="fixed bottom-6 left-4 right-4 z-30 lg:hidden">
@@ -594,7 +608,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
 
       {/* ── Drawer carrinho (mobile) ────────────────────────────────── */}
       <AnimatePresence>
-        {carrinhoAberto && (
+        {temDelivery && carrinhoAberto && (
           <CarrinhoMobile
             carrinho={carrinho}
             onAdicionar={altCarrinho}
