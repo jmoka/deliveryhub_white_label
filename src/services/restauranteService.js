@@ -62,6 +62,9 @@ export const getMeusProdutos = () => apiFetch('/produtos');
 export const criarProduto = (data) =>
   apiFetch('/produtos', { method: 'POST', body: JSON.stringify(data) });
 
+export const importarProdutos = (produtos) =>
+  apiFetch('/produtos/importar', { method: 'POST', body: JSON.stringify({ produtos }) });
+
 export const editarProduto = (id, data) =>
   apiFetch(`/produtos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 
