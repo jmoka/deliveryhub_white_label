@@ -35,10 +35,11 @@ export const useTheme = () => useContext(ThemeContext);
 // até serem migradas — alternar o tema não quebra o visual delas.
 //
 // Por padrão fica fixo no canto superior direito (fallback pra páginas sem cabeçalho
-// próprio). Em /restaurante/* o RestauranteHeader já renderiza uma cópia `inline` dentro
-// da barra superior — nesse caso o fallback fixo se esconde sozinho pra não duplicar
-// nem sobrepor o botão do menu (ver RestauranteHeader.jsx). Também escondido na home
-// ("/") e no catálogo de produtos, onde sobrepunha o botão "Entrar" do header.
+// próprio). Em /restaurante/*, /admin/* e /r/:slug (catálogo público) o próprio
+// header da página já renderiza uma cópia `inline` dentro da barra superior — nesse
+// caso o fallback fixo se esconde sozinho pra não duplicar nem sobrepor outros botões.
+// Também escondido na home ("/") e no catálogo de produtos, onde sobrepunha o botão
+// "Entrar" do header.
 export const ThemeToggle = ({ inline = false }) => {
   const { tema, alternarTema } = useTheme() ?? {};
   const location = useLocation();
@@ -46,6 +47,7 @@ export const ThemeToggle = ({ inline = false }) => {
   if (!inline && (
     location.pathname.startsWith('/restaurante') ||
     location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/r/') ||
     location.pathname === '/' ||
     location.pathname === '/menu-catalog-product-browse' ||
     location.pathname === '/customer-account-order-history'

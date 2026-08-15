@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getCardapioPorSlug } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
+import { ThemeToggle } from '../../contexts/ThemeContext';
 import Icon from '../../components/AppIcon';
 import { imgUrl } from '../../lib/imgUrl';
 
@@ -399,18 +400,21 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
               <span className="hidden sm:inline">Entrar</span>
             </button>
           )}
-          {/* Carrinho icon mobile */}
-          {temDelivery && (
-            <button onClick={() => setCarrinhoAberto(true)}
-              className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
-              <Icon name="ShoppingCart" size={20} />
-              {totalItens > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF441F] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {totalItens > 9 ? '9+' : totalItens}
-                </span>
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-0.5">
+            <ThemeToggle inline />
+            {/* Carrinho icon mobile */}
+            {temDelivery && (
+              <button onClick={() => setCarrinhoAberto(true)}
+                className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
+                <Icon name="ShoppingCart" size={20} />
+                {totalItens > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF441F] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {totalItens > 9 ? '9+' : totalItens}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
