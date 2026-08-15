@@ -4,6 +4,7 @@ import Icon from '../../components/AppIcon';
 import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { escapeHtml as esc } from '../../utils/escapeHtml';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -30,7 +31,7 @@ const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) 
   const pedidos = dados.pedidos ?? [];
   const naoCancelados = pedidos.filter((p) => p.status !== 'canceled');
 
-  const pgto = Object.entries(r.por_pagamento ?? {}).map(([k, v]) => `<tr><td>${PAYMENT_LABELS[k] ?? k}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`).join('');
+  const pgto = Object.entries(r.por_pagamento ?? {}).map(([k, v]) => `<tr><td>${esc(PAYMENT_LABELS[k] ?? k)}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`).join('');
 
   const porCanal = naoCancelados.reduce((acc, p) => {
     const c = p.canal ?? 'outro';
@@ -38,15 +39,15 @@ const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) 
     acc[c].count++; acc[c].total += p.total ?? 0;
     return acc;
   }, {});
-  const canalRows = Object.entries(porCanal).map(([k, v]) => `<tr><td>${CANAL_LABELS[k] ?? k}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`).join('');
+  const canalRows = Object.entries(porCanal).map(([k, v]) => `<tr><td>${esc(CANAL_LABELS[k] ?? k)}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`).join('');
 
-  const saidasRows = (dados.saidas ?? []).map((s) => `<tr><td>${fmtDate(s.criado_em)}</td><td>${s.descricao}</td><td class="right bold red">- ${fmt(s.valor)}</td></tr>`).join('');
+  const saidasRows = (dados.saidas ?? []).map((s) => `<tr><td>${fmtDate(s.criado_em)}</td><td>${esc(s.descricao)}</td><td class="right bold red">- ${fmt(s.valor)}</td></tr>`).join('');
 
-  const fluxoRows = (dados.fluxo_caixa ?? []).map((f) => `<tr><td>${fmtDate(f.criado_em)}</td><td>#${f.order_id}</td><td>${PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento}</td><td>${ORIGEM_LABELS[f.origem] ?? f.origem}</td><td class="right bold green">${fmt(f.valor)}</td><td class="right">${f.troco > 0 ? fmt(f.troco) : '—'}</td></tr>`).join('');
+  const fluxoRows = (dados.fluxo_caixa ?? []).map((f) => `<tr><td>${fmtDate(f.criado_em)}</td><td>#${f.order_id}</td><td>${esc(PAYMENT_LABELS[f.forma_pagamento] ?? f.forma_pagamento)}</td><td>${esc(ORIGEM_LABELS[f.origem] ?? f.origem)}</td><td class="right bold green">${fmt(f.valor)}</td><td class="right">${f.troco > 0 ? fmt(f.troco) : '—'}</td></tr>`).join('');
 
   const pedidosRows = pedidos.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).map((p) => {
-    const itens = (p.itens ?? []).map((i) => `${i.quantity}x ${i.product_name}`).join(', ') || '—';
-    return `<tr><td>#${p.id}</td><td>${fmtDate(p.created_at)}</td><td>${p.customers?.name ?? '—'}</td><td>${CANAL_LABELS[p.canal] ?? p.canal ?? '—'}</td><td class="${p.status === 'canceled' ? 'red' : 'green'}">${STATUS_LABELS[p.status] ?? p.status}</td><td>${itens}</td><td class="right bold">${fmt(p.total)}</td></tr>`;
+    const itens = esc((p.itens ?? []).map((i) => `${i.quantity}x ${i.product_name}`).join(', ') || '—');
+    return `<tr><td>#${p.id}</td><td>${fmtDate(p.created_at)}</td><td>${esc(p.customers?.name ?? '—')}</td><td>${esc(CANAL_LABELS[p.canal] ?? p.canal ?? '—')}</td><td class="${p.status === 'canceled' ? 'red' : 'green'}">${esc(STATUS_LABELS[p.status] ?? p.status)}</td><td>${itens}</td><td class="right bold">${fmt(p.total)}</td></tr>`;
   }).join('');
 
   const caixaAberto = caixa?.aberto;
@@ -54,12 +55,12 @@ const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) 
   const porC = rc?.por_pagamento ?? {};
   const digitalCaixa = Object.entries(porC).filter(([k]) => k !== 'cash').reduce((s, [, v]) => s + v, 0);
   const taxaEstCaixa = taxaPagbank > 0 ? digitalCaixa * (taxaPagbank / 100) : 0;
-  const sangriasRows = (caixa?.saidas ?? []).map((s) => `<tr><td>${fmtDate(s.criado_em)}</td><td>${MEIO_LABELS[s.meio] ?? s.meio ?? '—'}</td><td>${s.descricao}${s.tipo ? ` (${s.tipo})` : ''}</td><td class="right bold red">- ${fmt(s.valor)}</td></tr>`).join('');
-  const adicoesRows = (caixa?.entradas ?? []).map((e) => `<tr><td>${fmtDate(e.criado_em)}</td><td>${MEIO_LABELS[e.meio] ?? e.meio ?? '—'}</td><td>${e.descricao}</td><td class="right bold green">+ ${fmt(e.valor)}</td></tr>`).join('');
+  const sangriasRows = (caixa?.saidas ?? []).map((s) => `<tr><td>${fmtDate(s.criado_em)}</td><td>${esc(MEIO_LABELS[s.meio] ?? s.meio ?? '—')}</td><td>${esc(s.descricao)}${s.tipo ? ` (${esc(s.tipo)})` : ''}</td><td class="right bold red">- ${fmt(s.valor)}</td></tr>`).join('');
+  const adicoesRows = (caixa?.entradas ?? []).map((e) => `<tr><td>${fmtDate(e.criado_em)}</td><td>${esc(MEIO_LABELS[e.meio] ?? e.meio ?? '—')}</td><td>${esc(e.descricao)}</td><td class="right bold green">+ ${fmt(e.valor)}</td></tr>`).join('');
 
   const fechamentoCaixaHtml = caixaAberto ? `
 <h2>Fechamento de Caixa — Sessão Atual</h2>
-<div class="sub">Operador: ${caixa.nome_operador ?? '—'} · Aberto às: ${fmtDate(caixa.aberto_em)} · Fundo inicial: ${fmt(caixa.valor_inicial)}</div>
+<div class="sub">Operador: ${esc(caixa.nome_operador ?? '—')} · Aberto às: ${fmtDate(caixa.aberto_em)} · Fundo inicial: ${fmt(caixa.valor_inicial)}</div>
 <div class="kpi-grid">
   <div class="kpi"><span class="val green">${fmt(rc.especie_calculada)}</span><span class="lbl">Espécie Esperada (Dinheiro)</span></div>
   <div class="kpi"><span class="val">${fmt(digitalCaixa)}</span><span class="lbl">Digital (PagBank)</span></div>
@@ -92,7 +93,7 @@ const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) 
     const dif = dc.diferenca ?? 0;
     const difClass = dif < 0 ? 'red' : dif > 0 ? '' : 'green';
     const conf = dc.conferencia_aprovada === true ? 'Aprovada' : dc.conferencia_aprovada === false ? 'Pendente' : '—';
-    return `<tr><td>#${c.id} ${c.nome_operador}</td><td>${fmtDate(c.aberto_em)} → ${fmtDate(c.fechado_em)}</td><td class="right">${fmt(c.valor_inicial)}</td><td class="right">${fmt(cr.total_vendas)}</td><td class="right">${fmt(cr.saldo)}</td><td class="right">${dc.dinheiro_contado !== undefined ? fmt(dc.dinheiro_contado) : '—'}</td><td class="right bold ${difClass}">${dif !== 0 ? (dif > 0 ? '+' : '') + fmt(dif) : fmt(0)}</td><td>${conf}</td></tr>`;
+    return `<tr><td>#${c.id} ${esc(c.nome_operador)}</td><td>${fmtDate(c.aberto_em)} → ${fmtDate(c.fechado_em)}</td><td class="right">${fmt(c.valor_inicial)}</td><td class="right">${fmt(cr.total_vendas)}</td><td class="right">${fmt(cr.saldo)}</td><td class="right">${dc.dinheiro_contado !== undefined ? fmt(dc.dinheiro_contado) : '—'}</td><td class="right bold ${difClass}">${dif !== 0 ? (dif > 0 ? '+' : '') + fmt(dif) : fmt(0)}</td><td>${conf}</td></tr>`;
   }).join('');
 
   const historicoHtml = fechadosPeriodo.length > 0 || (historico && historico.length >= 0 && de && ate) ? `
@@ -101,7 +102,7 @@ const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) 
 ` : '';
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Financeiro</title><style>${PRINT_STYLE}</style></head><body>
-<h1>${nome ?? 'RESTAURANTE'}</h1>
+<h1>${esc(nome ?? 'RESTAURANTE')}</h1>
 <div class="sub">Relatório Financeiro Analítico — ${label}</div>
 
 ${fechamentoCaixaHtml || '<h2>Fechamento de Caixa</h2><div class="sub">Nenhum caixa aberto no momento.</div>'}

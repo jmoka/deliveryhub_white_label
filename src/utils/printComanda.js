@@ -1,3 +1,5 @@
+import { escapeHtml as esc } from './escapeHtml';
+
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
 
 const printIframe = (html, id) => {
@@ -23,15 +25,15 @@ export const printFichaMotoboy = (pedido, itens, cliente, restauranteNome) => {
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}@media print{button{display:none!important}}</style>
 </head><body>
 <div class="c bold" style="font-size:11px;letter-spacing:1px">FICHA DE ENTREGA</div>
-<div class="c" style="font-size:12px">${restauranteNome ?? ''}</div>
+<div class="c" style="font-size:12px">${esc(restauranteNome ?? '')}</div>
 <div class="big">PEDIDO #${pedido.id}</div>
 <div class="c" style="font-size:11px">${hora}</div>
 <hr/>
-<div class="bold">${cliente?.name ?? 'Cliente'}</div>
-${cliente?.phone_e164 ? `<div>${cliente.phone_e164}</div>` : ''}
-<div class="addr" style="margin-top:4px">${rua ? `<div>${rua}</div>` : ''}${compl ? `<div>${compl}</div>` : ''}${cidade ? `<div>${cidade}</div>` : ''}${ref ? `<div style="font-weight:bold">Ref: ${ref}</div>` : ''}</div>
+<div class="bold">${esc(cliente?.name ?? 'Cliente')}</div>
+${cliente?.phone_e164 ? `<div>${esc(cliente.phone_e164)}</div>` : ''}
+<div class="addr" style="margin-top:4px">${rua ? `<div>${esc(rua)}</div>` : ''}${compl ? `<div>${esc(compl)}</div>` : ''}${cidade ? `<div>${esc(cidade)}</div>` : ''}${ref ? `<div style="font-weight:bold">Ref: ${esc(ref)}</div>` : ''}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name ?? `#${i.product_id}`}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>`).join('')}
 <hr/>
 <div class="c bold" style="font-size:16px">TOTAL: ${fmt(pedido.total)}</div>
 <div class="c">${isCash ? '<span style="font-size:13px;font-weight:bold">⚠ COBRAR NA ENTREGA</span>' : `Pago: ${pgto}`}</div>
@@ -59,7 +61,7 @@ document.head.appendChild(s);
 
 // Cartaz A4 pra fixar tipo poster no salão — QR grande, logo, nome e frase de chamada.
 export const printCartazCardapioDigital = (qrUrl, nomeRestaurante, logoUrl) => {
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio Digital - ${nomeRestaurante ?? ''}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio Digital - ${esc(nomeRestaurante ?? '')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 @page{size:A4;margin:0}
@@ -73,10 +75,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;width:210mm;height:297mm;display:fl
 .sub{font-size:15px;color:#71717A;margin-top:14px;text-align:center}
 @media print{button{display:none!important}}
 </style></head><body>
-${logoUrl ? `<img class="logo" src="${logoUrl}" />` : ''}
-<div class="nome">${nomeRestaurante ?? 'Nosso Restaurante'}</div>
+${logoUrl ? `<img class="logo" src="${esc(logoUrl)}" />` : ''}
+<div class="nome">${esc(nomeRestaurante ?? 'Nosso Restaurante')}</div>
 <div class="badge">Cardápio Digital</div>
-<div class="qrbox"><img src="${qrUrl}" width="340" height="340" alt="QR code cardápio" /></div>
+<div class="qrbox"><img src="${esc(qrUrl)}" width="340" height="340" alt="QR code cardápio" /></div>
 <div class="frase">Escaneie e descubra sabores que valem a viagem até a mesa.</div>
 <div class="sub">Aponte a câmera do celular para o QR code acima</div>
 <script>
@@ -119,11 +121,11 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .frase{font-size:12px;text-align:center;margin-top:8px;font-weight:600;line-height:1.4}
 @media print{button{display:none!important}}
 </style></head><body>
-${logoUrl ? `<img class="logo" src="${logoUrl}" />` : ''}
-<div class="rest">${nomeRestaurante ?? 'RESTAURANTE'}</div>
+${logoUrl ? `<img class="logo" src="${esc(logoUrl)}" />` : ''}
+<div class="rest">${esc(nomeRestaurante ?? 'RESTAURANTE')}</div>
 <div class="badge">CARDÁPIO DIGITAL</div>
 <hr/>
-<img class="qr" src="${qrUrl}" width="180" height="180" alt="QR code cardápio" />
+<img class="qr" src="${esc(qrUrl)}" width="180" height="180" alt="QR code cardápio" />
 <div class="frase">Escaneie e confira nosso cardápio completo!</div>
 <hr/>
 <div class="center" style="font-size:10px;margin-top:4px">Obrigado pela visita</div>
@@ -196,14 +198,14 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 #barcode{display:block;margin:8px auto 4px;max-width:260px}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
+<div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
 <div class="center" style="font-size:11px;letter-spacing:1px">COMANDA DE COZINHA</div>
 <hr/>
 <div class="big">PEDIDO #${pedido.id}</div>
 <div class="center" style="font-size:13px">${hora}</div>
-${clienteNome ? `<div class="center" style="font-size:12px;margin-top:2px;font-weight:bold">${clienteNome}</div>` : ''}
+${clienteNome ? `<div class="center" style="font-size:12px;margin-top:2px;font-weight:bold">${esc(clienteNome)}</div>` : ''}
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${i.product_name ?? `Produto #${i.product_id}`}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `Produto #${i.product_id}`)}</span></div>`).join('')}
 <hr/>
 <div class="center" style="font-size:13px">Pgto: <b>${pgto}</b>${isCash ? ' &nbsp;⚠ COBRAR' : ''}</div>
 <hr/>
@@ -273,14 +275,14 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
+<div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
 <div class="center" style="font-size:11px;letter-spacing:1px">RECIBO DE PAGAMENTO</div>
 <hr/>
-<div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
-${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
+<div class="center" style="font-size:13px;font-weight:bold">${esc(mesa)}</div>
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${esc(comanda.cliente_mesa_nome)}</div>` : ''}
 <div class="center" style="font-size:11px">${hora}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span class="col-qtd">${i.quantity}x</span><span class="col-desc">${i.product_name ?? i.products?.name}</span><span class="col-valor">${fmt(i.quantity * (i.unit_price ?? 0))}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="col-qtd">${i.quantity}x</span><span class="col-desc">${esc(i.product_name ?? i.products?.name)}</span><span class="col-valor">${fmt(i.quantity * (i.unit_price ?? 0))}</span></div>`).join('')}
 <hr/>
 <div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
 ${desconto > 0 ? `<div class="linha"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
@@ -292,9 +294,9 @@ ${taxaCartao > 0 ? `<div class="linha"><span>Taxa cartão</span><span>+ ${fmt(ta
 ${pagamentos.length > 0 ? `
 <hr/>
 <div class="center" style="font-size:11px;font-weight:bold">PAGAMENTOS</div>
-${pagamentos.map((p) => `<div class="linha"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>${p.forma_pagamento === 'cash' && p.valor_recebido != null ? `<div class="linha" style="font-size:11px;color:#444"><span>Dinheiro: ${fmt(p.valor_recebido)} · Troco: ${fmt(p.troco || 0)}</span><span></span></div>` : ''}`).join('')}
+${pagamentos.map((p) => `<div class="linha"><span>${esc(PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento)} (${esc(PAGAMENTO_ORIGEM[p.origem] ?? p.origem)})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>${p.forma_pagamento === 'cash' && p.valor_recebido != null ? `<div class="linha" style="font-size:11px;color:#444"><span>Dinheiro: ${fmt(p.valor_recebido)} · Troco: ${fmt(p.troco || 0)}</span><span></span></div>` : ''}`).join('')}
 ` : `
-<div class="linha"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>
+<div class="linha"><span>Forma de pagamento</span><span>${esc(PAYMENT_LABELS[formaPagamento] ?? formaPagamento)}</span></div>
 `}
 ${trocoDado > 0 ? `<div class="linha"><span>Troco</span><span>${fmt(trocoDado)}</span></div>` : ''}
 <hr/>
@@ -346,15 +348,15 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
+<div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
 <div class="center" style="font-size:11px;letter-spacing:1px">COMANDA — CONFERÊNCIA</div>
 <hr/>
-<div class="center" style="font-size:13px;font-weight:bold">${mesa}</div>
-${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${comanda.cliente_mesa_nome}</div>` : ''}
-${comanda?.garcons?.nome ? `<div class="center" style="font-size:12px">Garçom: ${comanda.garcons.nome}</div>` : ''}
+<div class="center" style="font-size:13px;font-weight:bold">${esc(mesa)}</div>
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${esc(comanda.cliente_mesa_nome)}</div>` : ''}
+${comanda?.garcons?.nome ? `<div class="center" style="font-size:12px">Garçom: ${esc(comanda.garcons.nome)}</div>` : ''}
 <div class="center" style="font-size:11px">${hora}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span>${i.quantity}x ${i.product_name ?? i.products?.name}</span><span>${fmt(i.quantity * (i.unit_price ?? i.products?.price ?? 0))}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span>${i.quantity}x ${esc(i.product_name ?? i.products?.name)}</span><span>${fmt(i.quantity * (i.unit_price ?? i.products?.price ?? 0))}</span></div>`).join('')}
 <hr/>
 <div class="item"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
 ${desconto > 0 ? `<div class="item"><span>Desconto</span><span>- ${fmt(desconto)}</span></div>` : ''}
@@ -366,8 +368,8 @@ ${taxaCartao > 0 ? `<div class="item"><span>Taxa cartão</span><span>+ ${fmt(tax
 ${pagamentos.length > 0 ? `
 <hr/>
 <div class="center" style="font-size:11px;font-weight:bold">JÁ PAGO</div>
-${pagamentos.map((p) => `<div class="item"><span>${PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento} (${PAGAMENTO_ORIGEM[p.origem] ?? p.origem})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>`).join('')}
-` : formaPagamento ? `<div class="item"><span>Forma de pagamento</span><span>${PAYMENT_LABELS[formaPagamento] ?? formaPagamento}</span></div>` : ''}
+${pagamentos.map((p) => `<div class="item"><span>${esc(PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento)} (${esc(PAGAMENTO_ORIGEM[p.origem] ?? p.origem)})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>`).join('')}
+` : formaPagamento ? `<div class="item"><span>Forma de pagamento</span><span>${esc(PAYMENT_LABELS[formaPagamento] ?? formaPagamento)}</span></div>` : ''}
 <hr/>
 <div class="foot">Confira os itens antes de fechar a conta</div>
 <script>
@@ -401,7 +403,7 @@ export const printTicketSetor = (itens, comanda, setorNome) => {
   const mesa = comanda?.mesaLabel ?? (comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : null);
   const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${setorNome}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(setorNome)}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:20px;padding:12px;color:#000;max-width:340px;margin:0 auto}
@@ -414,18 +416,18 @@ hr{border:none;border-top:2px dashed #000;margin:10px 0}
 .separador{border:none;border-top:1px dashed #000;margin:14px 0}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="big">${setorNome ?? 'Setor'}</div>
-${mesa ? `<div class="center" style="font-size:20px;font-weight:bold">${mesa}</div>` : ''}
-${comanda?.garcons?.nome ? `<div class="center" style="font-size:18px;font-weight:bold">Garçom: ${comanda.garcons.nome}</div>` : ''}
-${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">Cliente: ${comanda.cliente_mesa_nome}</div>` : ''}
-${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">Whatsapp: ${comanda.cliente_mesa_telefone}</div>` : ''}
+<div class="big">${esc(setorNome ?? 'Setor')}</div>
+${mesa ? `<div class="center" style="font-size:20px;font-weight:bold">${esc(mesa)}</div>` : ''}
+${comanda?.garcons?.nome ? `<div class="center" style="font-size:18px;font-weight:bold">Garçom: ${esc(comanda.garcons.nome)}</div>` : ''}
+${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">Cliente: ${esc(comanda.cliente_mesa_nome)}</div>` : ''}
+${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">Whatsapp: ${esc(comanda.cliente_mesa_telefone)}</div>` : ''}
 <div class="center" style="font-size:14px">${hora}</div>
 <hr/>
 ${itens.map((i, idx) => `
-<div class="item-nome">${i.product_name}</div>
+<div class="item-nome">${esc(i.product_name)}</div>
 <div class="item-qtd">Qtd: ${i.quantity}</div>
-${i.description ? `<div class="item-desc">Descrição: ${i.description}</div>` : ''}
-${i.observacao ? `<div class="item-obs">Obs: ${i.observacao}</div>` : ''}
+${i.description ? `<div class="item-desc">Descrição: ${esc(i.description)}</div>` : ''}
+${i.observacao ? `<div class="item-obs">Obs: ${esc(i.observacao)}</div>` : ''}
 ${idx < itens.length - 1 ? '<hr class="separador"/>' : ''}
 `).join('')}
 <hr/>
@@ -459,9 +461,9 @@ export const printReciboMovimentoCaixa = (tipo, movimento, restauranteNome) => {
   const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
   const hora = new Date().toLocaleString('pt-BR');
 
-  const escapado = (movimento.descricao ?? '').replace(/</g, '&lt;');
+  const escapado = esc(movimento.descricao ?? '');
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de ${tipo}</title>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo de ${esc(tipo)}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;width:100%;max-width:300px;margin:0 auto}
@@ -476,13 +478,13 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .total .valor-campo{font-size:24px;font-weight:900}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="rest">${restauranteNome ?? 'RESTAURANTE'}</div>
-<div class="center" style="font-size:11px;letter-spacing:1px">RECIBO DE ${tipo.toUpperCase()}</div>
+<div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
+<div class="center" style="font-size:11px;letter-spacing:1px">RECIBO DE ${esc(tipo.toUpperCase())}</div>
 <hr/>
 <div class="center" style="font-size:11px">${hora}</div>
 <hr/>
 <div class="campo"><span class="rotulo">Descrição</span><span class="valor-campo">${escapado}</span></div>
-<div class="campo"><span class="rotulo">Meio</span><span class="valor-campo">${MEIO_LABEL_MOVIMENTO[movimento.meio] ?? movimento.meio ?? 'Dinheiro'}</span></div>
+<div class="campo"><span class="rotulo">Meio</span><span class="valor-campo">${esc(MEIO_LABEL_MOVIMENTO[movimento.meio] ?? movimento.meio ?? 'Dinheiro')}</span></div>
 <hr/>
 <div class="campo total"><span class="rotulo">Valor</span><span class="valor-campo">${fmt(movimento.valor)}</span></div>
 <hr/>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getRelatorio } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
+import { escapeHtml as esc } from '../../utils/escapeHtml';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
@@ -62,12 +63,12 @@ footer{margin-top:16px;font-size:10px;color:#888;border-top:1px solid #ddd;paddi
 const buildSintetico = (dados, restauranteNome, label) => {
   const r = dados.resumo;
   const pgto = Object.entries(r.por_pagamento ?? {})
-    .map(([k, v]) => `<tr><td>${PAYMENT_LABELS[k] ?? k}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`)
+    .map(([k, v]) => `<tr><td>${esc(PAYMENT_LABELS[k] ?? k)}</td><td class="right">${v.count}</td><td class="right bold green">${fmt(v.total)}</td></tr>`)
     .join('');
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Sintético</title>
 <style>${reportBaseStyle}</style></head><body>
-<h1>${restauranteNome ?? 'RESTAURANTE'}</h1>
+<h1>${esc(restauranteNome ?? 'RESTAURANTE')}</h1>
 <div class="sub">Relatório Sintético — ${label}</div>
 <div class="kpi-grid">
   <div class="kpi"><span class="val">${r.total_pedidos}</span><span class="lbl">Total Pedidos</span></div>
@@ -88,14 +89,14 @@ const buildSintetico = (dados, restauranteNome, label) => {
 const buildDetalhado = (dados, restauranteNome, label) => {
   const r = dados.resumo;
   const rows = (dados.pedidos ?? []).map((p) => {
-    const itensStr = (p.itens ?? []).map((i) => `${i.quantity}x ${i.product_name ?? `#${i.product_id}`}`).join(', ');
+    const itensStr = esc((p.itens ?? []).map((i) => `${i.quantity}x ${i.product_name ?? `#${i.product_id}`}`).join(', '));
     const sc = p.status === 'delivered' ? 'green' : p.status === 'canceled' ? 'red' : '';
     return `<tr>
       <td>#${p.id}</td>
       <td>${new Date(p.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
-      <td class="${sc}">${STATUS_LABELS[p.status] ?? p.status}</td>
-      <td>${p.customers?.name ?? '—'}</td>
-      <td>${PAYMENT_LABELS[p.payment_method] ?? p.payment_method}</td>
+      <td class="${sc}">${esc(STATUS_LABELS[p.status] ?? p.status)}</td>
+      <td>${esc(p.customers?.name ?? '—')}</td>
+      <td>${esc(PAYMENT_LABELS[p.payment_method] ?? p.payment_method)}</td>
       <td>${itensStr}</td>
       <td class="right bold">${fmt(p.total)}</td>
     </tr>`;
@@ -103,7 +104,7 @@ const buildDetalhado = (dados, restauranteNome, label) => {
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Detalhado</title>
 <style>${reportBaseStyle}table{font-size:10px}</style></head><body>
-<h1>${restauranteNome ?? 'RESTAURANTE'}</h1>
+<h1>${esc(restauranteNome ?? 'RESTAURANTE')}</h1>
 <div class="sub">Relatório Detalhado — ${label}</div>
 <div class="kpi-grid">
   <div class="kpi"><span class="val">${r.total_pedidos}</span><span class="lbl">Total Pedidos</span></div>
