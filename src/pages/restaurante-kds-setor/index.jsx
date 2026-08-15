@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  getCozinhaToken, setCozinhaToken, clearCozinhaToken,
+  getCozinhaToken, setCozinhaToken, clearCozinhaToken, resgatarToken,
   getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
 import { printTicketSetor } from '../../utils/printComanda';
@@ -65,11 +65,20 @@ const RestauranteKdsSetor = () => {
   // ficar sentado no histórico do navegador / bookmarks indefinidamente. Se o
   // localStorage for limpo depois, o link original (QR/admin) ainda funciona,
   // só não fica mais exposto na barra de endereço depois do primeiro acesso.
+  //
+  // Além disso, resgata um token novo em troca do que veio na URL — o link
+  // original (QR/mensagem) passa a valer só pra esse resgate único; se alguém
+  // tiver copiado/fotografado a URL antes, não consegue mais nada com ela
+  // depois que o token já foi trocado (ver F2 da auditoria de segurança).
   useEffect(() => {
     if (!searchParams.get('cozinha_token')) return;
     const limpo = new URLSearchParams(searchParams);
     limpo.delete('cozinha_token');
     setSearchParams(limpo, { replace: true });
+
+    resgatarToken()
+      .then(({ token }) => setCozinhaToken(token))
+      .catch(() => {}); // falhou: segue com o token da URL, já persistido acima
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [itens, setItens] = useState([]);

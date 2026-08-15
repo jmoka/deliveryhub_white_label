@@ -32,6 +32,9 @@ async function cozinhaFetch(path, options = {}) {
 }
 
 export const getCozinhaMe = () => cozinhaFetch('/me');
+// Troca o token atual (tipicamente o que veio de um link/QR compartilhado)
+// por um novo, invalidando o antigo — ver F2 da auditoria de segurança.
+export const resgatarToken = () => cozinhaFetch('/resgatar-token', { method: 'POST' });
 export const getCozinhaPedidos = () => cozinhaFetch('/pedidos');
 export const atualizarStatusCozinhaPortal = (pedidoId, status) =>
   cozinhaFetch(`/pedidos/${pedidoId}/status`, {

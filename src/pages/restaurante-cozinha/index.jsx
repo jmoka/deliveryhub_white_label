@@ -5,7 +5,7 @@ import {
   listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
 } from '../../services/restauranteService';
 import {
-  getCozinhaToken, setCozinhaToken, clearCozinhaToken,
+  getCozinhaToken, setCozinhaToken, clearCozinhaToken, resgatarToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
   getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
@@ -186,15 +186,26 @@ const RestauranteCozinha = () => {
   const navigate = useNavigate();
 
   // Detecta modo token sincronamente — antes da primeira renderização
+  const vindoDeLinkRef = useRef(false);
   const [modoToken] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('cozinha_token');
     if (urlToken) {
       setCozinhaToken(urlToken);
+      vindoDeLinkRef.current = true;
       window.history.replaceState({}, '', '/restaurante/cozinha');
     }
     return !!getCozinhaToken();
   });
+
+  // Resgata um token novo em troca do que veio na URL — o link original
+  // (QR/mensagem) passa a valer só pra esse resgate único (ver F2 da
+  // auditoria de segurança).
+  useEffect(() => {
+    if (!vindoDeLinkRef.current) return;
+    vindoDeLinkRef.current = false;
+    resgatarToken().then(({ token }) => setCozinhaToken(token)).catch(() => {});
+  }, []);
   const [authed, setAuthed] = useState(() => !!getCozinhaToken());
   const [pedidos, setPedidos] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
