@@ -51,7 +51,7 @@ const KdsLogin = ({ onLogin }) => {
 };
 
 const RestauranteKdsSetor = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const impressoraId = searchParams.get('impressora_id');
   const setorNome = searchParams.get('setor') ?? 'Setor';
 
@@ -60,6 +60,18 @@ const RestauranteKdsSetor = () => {
     if (urlToken) setCozinhaToken(urlToken);
     return !!getCozinhaToken();
   });
+
+  // Token já foi salvo no localStorage acima — tira ele da URL visível pra não
+  // ficar sentado no histórico do navegador / bookmarks indefinidamente. Se o
+  // localStorage for limpo depois, o link original (QR/admin) ainda funciona,
+  // só não fica mais exposto na barra de endereço depois do primeiro acesso.
+  useEffect(() => {
+    if (!searchParams.get('cozinha_token')) return;
+    const limpo = new URLSearchParams(searchParams);
+    limpo.delete('cozinha_token');
+    setSearchParams(limpo, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [itens, setItens] = useState([]);
   const [erro, setErro] = useState(null);
   const [verTodosProntos, setVerTodosProntos] = useState(false);

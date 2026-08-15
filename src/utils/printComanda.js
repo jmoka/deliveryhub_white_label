@@ -1,6 +1,22 @@
+import JsBarcode from 'jsbarcode';
 import { escapeHtml as esc } from './escapeHtml';
 
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
+
+// Gera o SVG do código de barras aqui no app principal (onde jsbarcode já está
+// no bundle) e embute o markup pronto no HTML impresso — antes isso rodava
+// dentro do iframe em branco carregando jsbarcode via <script src="cdn...">
+// sem SRI; embutir o SVG já renderizado elimina a dependência de script
+// externo (e o risco de supply chain) nesse fluxo por completo.
+const renderBarcodeSvg = (id, value, displayText) => {
+  const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svgEl.setAttribute('id', id);
+  JsBarcode(svgEl, value, {
+    format: 'CODE128', width: 2, height: 56, displayValue: true,
+    fontSize: 13, text: displayText, margin: 6, background: '#ffffff',
+  });
+  return new XMLSerializer().serializeToString(svgEl);
+};
 
 const printIframe = (html, id) => {
   const f = document.createElement('iframe');
@@ -21,6 +37,7 @@ export const printFichaMotoboy = (pedido, itens, cliente, restauranteNome) => {
   const pgto = PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method;
   const isCash = pedido.payment_method === 'cash';
   const bc = barcodeValue(pedido.id);
+  const barcodeSvg = renderBarcodeSvg('bc', bc, `#${pedido.id}`);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha Motoboy #${pedido.id}</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}@media print{button{display:none!important}}</style>
 </head><body>
@@ -38,22 +55,12 @@ ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><sp
 <div class="c bold" style="font-size:16px">TOTAL: ${fmt(pedido.total)}</div>
 <div class="c">${isCash ? '<span style="font-size:13px;font-weight:bold">⚠ COBRAR NA ENTREGA</span>' : `Pago: ${pgto}`}</div>
 <hr/>
-<svg id="bc"></svg>
+${barcodeSvg}
 <div class="c" style="font-size:10px;letter-spacing:1px;margin-top:2px">ESCANEIE PARA CONFIRMAR COLETA</div>
 <div class="c" style="font-size:10px;margin-top:6px">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
 <script>
-function doBarcode(){
-  if(typeof JsBarcode!=='undefined'){
-    JsBarcode("#bc","${bc}",{format:"CODE128",width:2,height:56,displayValue:true,fontSize:13,text:"#${pedido.id}",margin:6,background:"#ffffff"});
-  }
-  window.print();
-  setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000);
-}
-var s=document.createElement('script');
-s.src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
-s.onload=doBarcode;
-s.onerror=function(){document.getElementById('bc').style.display='none';doBarcode()};
-document.head.appendChild(s);
+window.print();
+setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000);
 </script>
 </body></html>`;
   printIframe(html, `motoboy-frame-${pedido.id}-${Date.now()}`);
@@ -179,6 +186,7 @@ export const printComanda = (pedido, itens, restauranteNome, printerHint) => {
   if (hint) showPrinterToast(hint);
 
   const bc = barcodeValue(pedido.id);
+  const barcodeSvg = renderBarcodeSvg('barcode', bc, `#${pedido.id}`);
   const hora = new Date(pedido.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const clienteNome = pedido.customers?.name ?? (pedido.cliente?.name ?? '');
   const pgto = PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method;
@@ -209,25 +217,15 @@ ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><sp
 <hr/>
 <div class="center" style="font-size:13px">Pgto: <b>${pgto}</b>${isCash ? ' &nbsp;⚠ COBRAR' : ''}</div>
 <hr/>
-<svg id="barcode"></svg>
+${barcodeSvg}
 <div style="text-align:center;margin:6px 0 2px">
   <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${bc}&qzone=1" width="110" height="110" alt="QR #${pedido.id}" style="display:inline-block" />
   <div style="font-size:10px;letter-spacing:1px;margin-top:2px">SCAN MOTOBOY</div>
 </div>
 <div class="foot">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
 <script>
-function doBarcode(){
-  if(typeof JsBarcode!=='undefined'){
-    JsBarcode("#barcode","${bc}",{format:"CODE128",width:2,height:56,displayValue:true,fontSize:13,text:"#${pedido.id}",margin:6,background:"#ffffff"});
-  }
-  window.print();
-  try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
-}
-var s=document.createElement('script');
-s.src='https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
-s.onload=doBarcode;
-s.onerror=function(){document.getElementById('barcode').style.display='none';doBarcode()};
-document.head.appendChild(s);
+window.print();
+try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
 </script>
 </body></html>`;
 
