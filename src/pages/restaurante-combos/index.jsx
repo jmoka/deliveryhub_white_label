@@ -208,7 +208,7 @@ const RestauranteCombos = () => {
                       </span>
                     </div>
                   </div>
-                  {c.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{c.description}</p>}
+                  {c.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 break-words min-w-0">{c.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm font-semibold text-[#FF441F]">{fmt(c.price)}</p>
                     {c.preco_promo != null && c.preco_promo !== c.price && (
