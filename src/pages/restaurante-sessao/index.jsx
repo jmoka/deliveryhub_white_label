@@ -46,7 +46,7 @@ const RestauranteSessao = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/sessao" title="Pedidos da Sessão" />
+      <RestauranteHeader active="/restaurante/sessao" title="Pedidos da Sessão" onRefresh={carregar} />
 
       <div className="max-w-5xl mx-auto p-4">
         {loading ? (

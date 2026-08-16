@@ -222,7 +222,7 @@ const RestauranteFinanceiro = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/financeiro" title="Financeiro" subtitle="Gestão financeira gerencial" />
+      <RestauranteHeader active="/restaurante/financeiro" title="Financeiro" subtitle="Gestão financeira gerencial" onRefresh={() => Promise.all([carregarDados(), buscar()])} />
 
       <main className="p-6 w-[95%] mx-auto max-w-5xl space-y-5">
 

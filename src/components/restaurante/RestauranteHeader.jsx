@@ -48,7 +48,7 @@ const PlanoStatusDot = ({ planoStatus, onClick }) => {
   );
 };
 
-const RestauranteHeader = ({ active, title, subtitle }) => {
+const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
   const navigate = useNavigate();
   const { signOut, planoStatus } = useAuth();
   const slugLoja = useMinhaLojaSlug();
@@ -58,6 +58,19 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
   const { favoritos, toggleFavorito, isFavorito } = useRestauranteFavoritos();
   const [sidebarAberto, setSidebarAberto] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
+  const [atualizando, setAtualizando] = useState(false);
+
+  // Botão de atualizar dados sem recarregar a página inteira — o spin mínimo de
+  // 400ms é só feedback visual, mesmo se o onRefresh do caller for instantâneo.
+  const handleRefresh = async () => {
+    if (!onRefresh || atualizando) return;
+    setAtualizando(true);
+    try {
+      await onRefresh();
+    } finally {
+      setTimeout(() => setAtualizando(false), 400);
+    }
+  };
 
   const links = getRestauranteNavLinks(moduloDelivery, moduloSalao);
   const linksFavoritos = links.filter((l) => favoritos.includes(l.path));
@@ -90,6 +103,12 @@ const RestauranteHeader = ({ active, title, subtitle }) => {
 
         <div className="flex items-center gap-2 flex-shrink-0">
           <PlanoStatusDot planoStatus={planoStatus} onClick={() => navigate('/restaurante/plano')} />
+          {onRefresh && (
+            <button onClick={handleRefresh} disabled={atualizando} title="Atualizar dados"
+              className="p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] disabled:opacity-50">
+              <Icon name="RefreshCw" size={18} className={atualizando ? 'animate-spin' : ''} />
+            </button>
+          )}
           <button onClick={() => navigate('/restaurante/meu-perfil')} title="Meu perfil"
             className="hidden md:flex p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5]">
             <Icon name="UserCircle" size={18} />

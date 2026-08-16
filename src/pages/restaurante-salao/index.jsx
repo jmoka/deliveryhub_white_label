@@ -1784,7 +1784,7 @@ const RestauranteSalao = () => {
           <Icon name="BellRing" size={14} /> {avisoConferencia}
         </div>
       )}
-      <RestauranteHeader active="/restaurante/salao" title="Salão" />
+      <RestauranteHeader active="/restaurante/salao" title="Salão" onRefresh={carregar} />
 
       <div className="w-[90%] mx-auto p-4">
         <div className="flex justify-end mb-4">

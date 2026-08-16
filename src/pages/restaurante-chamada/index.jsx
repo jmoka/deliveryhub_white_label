@@ -109,7 +109,12 @@ const RestauranteChamada = () => {
         <h1 className="text-xl font-black text-white uppercase flex items-center gap-2">
           <Icon name="Volume2" size={22} className="text-orange-400" /> Chamada — Balcão
         </h1>
-        {naFila > 0 && <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA]">+{naFila} na fila</span>}
+        <div className="flex items-center gap-3">
+          {naFila > 0 && <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA]">+{naFila} na fila</span>}
+          <button onClick={carregar} title="Atualizar dados" className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+            <Icon name="RefreshCw" size={16} />
+          </button>
+        </div>
       </div>
       {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
 

@@ -182,7 +182,7 @@ const RestauranteEntregas = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/entregas" title="Entregas" subtitle={`${entregas.length} entrega(s) em andamento agora`} />
+      <RestauranteHeader active="/restaurante/entregas" title="Entregas" subtitle={`${entregas.length} entrega(s) em andamento agora`} onRefresh={reload} />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {erro && <div className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm">{erro}</div>}

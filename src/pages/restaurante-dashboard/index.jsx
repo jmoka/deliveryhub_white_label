@@ -314,6 +314,7 @@ const RestauranteDashboard = () => {
         active="/restaurante"
         title={empresa?.name ?? 'Meu Restaurante'}
         subtitle={`Painel Operacional${planoStatus?.plano_nome ? ` · ${planoStatus.plano_nome}` : ''}`}
+        onRefresh={carregar}
       />
 
       <main className="p-6 w-[95%] mx-auto space-y-5">

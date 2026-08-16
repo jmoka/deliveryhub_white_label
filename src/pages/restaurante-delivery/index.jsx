@@ -134,7 +134,7 @@ const RestauranteDelivery = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/delivery" title="Delivery" />
+      <RestauranteHeader active="/restaurante/delivery" title="Delivery" onRefresh={recarregarCaixa} />
 
       <main className="p-4 max-w-6xl mx-auto">
         {erro && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{erro}</p>}
