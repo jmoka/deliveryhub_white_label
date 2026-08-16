@@ -352,10 +352,10 @@ const RestauranteFinanceiro = () => {
               </div>
             </div>
 
-            <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-fit">
+            <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-full sm:w-fit overflow-x-auto scrollbar-none">
               {[{ id: 'resumo', label: 'Entradas' }, { id: 'canais', label: 'Canais' }, { id: 'saidas', label: `Sangrias (${(dados.saidas ?? []).length})` }, { id: 'entradas', label: `Adições (${(dados.entradas ?? []).length})` }, { id: 'pedidos', label: `Pedidos (${dados.pedidos?.length ?? 0})` }].map((a) => (
                 <button key={a.id} onClick={() => setAbaAtiva(a.id)}
-                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${abaAtiva === a.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
+                  className={`shrink-0 whitespace-nowrap px-4 py-2 text-xs font-bold rounded-lg transition-colors ${abaAtiva === a.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'}`}>
                   {a.label}
                 </button>
               ))}

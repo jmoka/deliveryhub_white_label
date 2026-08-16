@@ -513,8 +513,8 @@ const RestauranteProdutos = () => {
           )}
         </div>
 
-        <div className="flex items-start justify-between mb-4 gap-3">
-          <div className="flex items-center gap-3 pt-2">
+        <div className="flex items-start justify-between flex-wrap mb-4 gap-3">
+          <div className="flex items-center flex-wrap gap-3 pt-2">
             <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">
               Produtos <span className="text-gray-400 font-normal">({produtosFiltrados.length}{produtosFiltrados.length !== produtos.length ? ` de ${produtos.length}` : ''})</span>
             </h2>
@@ -536,7 +536,7 @@ const RestauranteProdutos = () => {
             </div>
           </div>
           <div className="text-right">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <button
                 onClick={abrirImportModal}
                 className="px-4 py-2 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]"

@@ -198,7 +198,7 @@ const RestauranteCombos = () => {
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-gray-900 dark:text-gray-400 truncate">
+                    <p className="font-medium text-gray-900 dark:text-gray-400 break-words min-w-0">
                       {c.destaque && '⭐ '}{c.name}
                     </p>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">

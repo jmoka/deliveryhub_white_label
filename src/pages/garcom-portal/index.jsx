@@ -529,20 +529,16 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
       )}
       {faltaPagarEfetivo > 0.01 && podePagamentoParcial && (
         <div className="space-y-1.5 pt-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <input type="number" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Valor"
               className="w-20 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs" />
             <select value={forma} onChange={(e) => setForma(e.target.value)}
-              className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs">
+              className="flex-1 min-w-[100px] bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs">
               <option value="pix">PIX</option>
               <option value="credit_card">Cartão de crédito</option>
               <option value="debit_card">Cartão de débito</option>
               <option value="cash">Dinheiro</option>
             </select>
-            <button onClick={registrar} disabled={salvando || !valor}
-              className="px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40 flex-shrink-0">
-              Pagar
-            </button>
           </div>
           {taxaCartaoValorParcial > 0 && (
             <p className="text-xs text-[#FF441F]">
@@ -553,8 +549,8 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <input type="number" value={valorRecebido} onChange={(e) => setValorRecebido(e.target.value)}
-                  placeholder="Valor recebido do cliente"
-                  className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-2 py-1.5 text-xs" />
+                  placeholder="Informe o valor pago pelo cliente"
+                  className="flex-1 bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border-2 border-red-500 dark:border-red-500 rounded-lg px-2 py-1.5 text-xs" />
                 {troco !== null && (
                   <span className={`text-xs font-bold flex-shrink-0 ${troco < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                     Troco: {fmt(Math.max(troco, 0))}
@@ -570,6 +566,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
               )}
             </div>
           )}
+          <button onClick={registrar} disabled={salvando || !valor}
+            className="w-full px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40">
+            Pagar
+          </button>
         </div>
       )}
       {faltaPagarEfetivo > 0.01 && !podePagamentoParcial && (
