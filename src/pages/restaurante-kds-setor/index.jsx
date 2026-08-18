@@ -129,7 +129,7 @@ const RestauranteKdsSetor = () => {
     try {
       const res = await reimprimirItem(item.id);
       if (res.via === 'navegador') {
-        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente }, setorNome);
+        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente, numero_comanda: item.numero_comanda }, setorNome);
       }
     } catch (err) {
       setErro(err.message);

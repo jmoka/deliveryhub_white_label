@@ -1777,6 +1777,27 @@ const RestauranteSalao = () => {
   const comandasFechadasFiltradas = useMemo(() => comandasFechadas.filter(passaNoFiltro), [comandasFechadas, filtroNome, filtroData, filtroValorMin]);
   const filtroAtivo = !!(filtroNome || filtroData || filtroValorMin);
 
+  // Leitor de código de barras digita os dígitos do código impresso na comanda (ver
+  // barcodeValue em printComanda.js) e manda Enter igual a um teclado — não precisa de
+  // integração especial, só um input que reage ao Enter.
+  const [codigoBusca, setCodigoBusca] = useState('');
+  const [erroCodigoBusca, setErroCodigoBusca] = useState(false);
+  const buscarPorCodigo = () => {
+    const codigo = codigoBusca.trim();
+    if (!codigo) return;
+    const numero = parseInt(codigo, 10);
+    const achada = [...comandas, ...comandasFechadas].find(
+      (c) => (c.numero_comanda ?? c.id) === numero,
+    );
+    if (achada) {
+      setComandaAtiva(achada.id);
+      setCodigoBusca('');
+      setErroCodigoBusca(false);
+    } else {
+      setErroCodigoBusca(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       {avisoConferencia && (
@@ -1852,6 +1873,19 @@ const RestauranteSalao = () => {
                 </div>
               ))}
               {mesas.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">Nenhuma mesa cadastrada.</p>}
+            </div>
+
+            <div className="flex items-center gap-2 mb-3">
+              <Icon name="ScanLine" size={16} className="text-[#71717A] dark:text-[#A1A1AA] shrink-0" />
+              <input
+                value={codigoBusca}
+                onChange={(e) => { setCodigoBusca(e.target.value); setErroCodigoBusca(false); }}
+                onKeyDown={(e) => e.key === 'Enter' && buscarPorCodigo()}
+                placeholder="Escaneie o código de barras da comanda ou digite o número"
+                autoFocus
+                className={`flex-1 border rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none ${erroCodigoBusca ? 'border-red-500 focus:border-red-500' : 'border-[#E4E4E7] dark:border-[#3F3F46] focus:border-[#FF441F]'}`}
+              />
+              {erroCodigoBusca && <span className="text-xs text-red-600 dark:text-red-400 shrink-0">Comanda não encontrada</span>}
             </div>
 
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">

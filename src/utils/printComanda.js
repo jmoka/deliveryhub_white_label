@@ -8,12 +8,18 @@ const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débit
 // dentro do iframe em branco carregando jsbarcode via <script src="cdn...">
 // sem SRI; embutir o SVG já renderizado elimina a dependência de script
 // externo (e o risco de supply chain) nesse fluxo por completo.
-const renderBarcodeSvg = (id, value, displayText) => {
+const renderBarcodeSvg = (id, value, displayText, opts = {}) => {
   const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svgEl.setAttribute('id', id);
   JsBarcode(svgEl, value, {
-    format: 'CODE128', width: 2, height: 56, displayValue: true,
-    fontSize: 13, text: displayText, margin: 6, background: '#ffffff',
+    format: 'CODE128',
+    width: opts.width ?? 2,
+    height: opts.height ?? 56,
+    displayValue: true,
+    fontSize: opts.fontSize ?? 13,
+    text: displayText,
+    margin: opts.margin ?? 6,
+    background: '#ffffff',
   });
   return new XMLSerializer().serializeToString(svgEl);
 };
@@ -256,14 +262,20 @@ export const printReciboCliente = (comanda, itens, valores, restauranteNome) => 
   const PAGAMENTO_ORIGEM = { garcom: 'garçom', estabelecimento: 'caixa' };
   const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
   const hora = new Date().toLocaleString('pt-BR');
+  const barcodeSvg = comanda?.numero_comanda
+    ? renderBarcodeSvg('barcode-recibo', barcodeValue(comanda.numero_comanda), `#${comanda.numero_comanda}`, { width: 1.4, height: 40, fontSize: 10, margin: 2 })
+    : null;
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Recibo</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
 .center{text-align:center;display:block}
-.rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
+.rest{font-size:16px;font-weight:bold;margin-bottom:2px}
 hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.topo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.topo-info{min-width:0}
+#barcode-recibo{display:block;max-width:120px;flex-shrink:0}
 .item{display:flex;gap:6px;padding:3px 0;font-size:14px}
 .item .col-qtd{flex-shrink:0;width:26px;font-weight:700}
 .item .col-desc{flex:1;min-width:0;word-wrap:break-word}
@@ -273,10 +285,14 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
-<div class="center" style="font-size:11px;letter-spacing:1px">RECIBO DE PAGAMENTO</div>
-<hr/>
-<div class="center" style="font-size:13px;font-weight:bold">${esc(mesa)}</div>
+<div class="topo">
+  <div class="topo-info">
+    <div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
+    <div style="font-size:11px;letter-spacing:1px">RECIBO DE PAGAMENTO</div>
+    <div style="font-size:13px;font-weight:bold;margin-top:2px">${esc(mesa)}</div>
+  </div>
+  ${barcodeSvg ?? ''}
+</div>
 ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${esc(comanda.cliente_mesa_nome)}</div>` : ''}
 <div class="center" style="font-size:11px">${hora}</div>
 <hr/>
@@ -333,23 +349,33 @@ export const printConferenciaComanda = (comanda, itens, valores = {}, restaurant
   const mesa = comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : 'Comanda avulsa';
   const hora = new Date().toLocaleString('pt-BR');
   const PAGAMENTO_ORIGEM = { garcom: 'garçom', estabelecimento: 'caixa' };
+  const barcodeSvg = comanda?.numero_comanda
+    ? renderBarcodeSvg('barcode-conferencia', barcodeValue(comanda.numero_comanda), `#${comanda.numero_comanda}`, { width: 1.4, height: 40, fontSize: 10, margin: 2 })
+    : null;
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Conferência</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;max-width:300px;margin:0 auto}
 .center{text-align:center;display:block}
-.rest{font-size:16px;font-weight:bold;text-align:center;margin-bottom:4px}
+.rest{font-size:16px;font-weight:bold;margin-bottom:2px}
 hr{border:none;border-top:1px dashed #000;margin:8px 0}
+.topo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.topo-info{min-width:0}
+#barcode-conferencia{display:block;max-width:120px;flex-shrink:0}
 .item{display:flex;gap:8px;padding:3px 0;font-size:14px;justify-content:space-between}
 .total{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding:4px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
-<div class="center" style="font-size:11px;letter-spacing:1px">COMANDA — CONFERÊNCIA</div>
-<hr/>
-<div class="center" style="font-size:13px;font-weight:bold">${esc(mesa)}</div>
+<div class="topo">
+  <div class="topo-info">
+    <div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
+    <div style="font-size:11px;letter-spacing:1px">COMANDA — CONFERÊNCIA</div>
+    <div style="font-size:13px;font-weight:bold;margin-top:2px">${esc(mesa)}</div>
+  </div>
+  ${barcodeSvg ?? ''}
+</div>
 ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:12px">${esc(comanda.cliente_mesa_nome)}</div>` : ''}
 ${comanda?.garcons?.nome ? `<div class="center" style="font-size:12px">Garçom: ${esc(comanda.garcons.nome)}</div>` : ''}
 <div class="center" style="font-size:11px">${hora}</div>
@@ -400,22 +426,36 @@ export const printTicketSetor = (itens, comanda, setorNome) => {
 
   const mesa = comanda?.mesaLabel ?? (comanda?.mesa_id ? `Mesa ${comanda.mesas?.numero ?? comanda.mesa_id}` : null);
   const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  // Só comanda do salão tem numero_comanda — item de delivery roteado pra mesma
+  // impressora de setor não passa por aqui com esse código, então não ganha barcode.
+  const barcodeSvg = comanda?.numero_comanda
+    ? renderBarcodeSvg('barcode-setor', barcodeValue(comanda.numero_comanda), `#${comanda.numero_comanda}`, { width: 1.4, height: 40, fontSize: 10, margin: 2 })
+    : null;
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(setorNome)}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:20px;padding:12px;color:#000;max-width:340px;margin:0 auto}
 .center{text-align:center;display:block}
-.big{font-size:32px;font-weight:900;text-align:center;letter-spacing:2px;margin:10px 0;text-transform:uppercase}
 hr{border:none;border-top:2px dashed #000;margin:10px 0}
+.topo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.topo-info{min-width:0}
+.titulo-setor{font-size:28px;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin:0}
+.mesa-comanda{font-size:19px;font-weight:800;margin-top:2px}
+#barcode-setor{display:block;max-width:130px;flex-shrink:0}
 .item-nome{font-size:22px;font-weight:900;margin-top:4px}
 .item-qtd{font-size:22px;font-weight:900}
 .item-desc,.item-obs{font-size:18px;font-weight:400;padding-left:4px;margin-top:2px}
 .separador{border:none;border-top:1px dashed #000;margin:14px 0}
 @media print{button{display:none!important}}
 </style></head><body>
-<div class="big">${esc(setorNome ?? 'Setor')}</div>
-${mesa ? `<div class="center" style="font-size:20px;font-weight:bold">${esc(mesa)}</div>` : ''}
+<div class="topo">
+  <div class="topo-info">
+    <div class="titulo-setor">${esc(setorNome ?? 'Setor')}</div>
+    ${mesa ? `<div class="mesa-comanda">${esc(mesa)}</div>` : ''}
+  </div>
+  ${barcodeSvg ?? ''}
+</div>
 ${comanda?.garcons?.nome ? `<div class="center" style="font-size:18px;font-weight:bold">Garçom: ${esc(comanda.garcons.nome)}</div>` : ''}
 ${comanda?.cliente_mesa_nome ? `<div class="center" style="font-size:18px">Cliente: ${esc(comanda.cliente_mesa_nome)}</div>` : ''}
 ${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">Whatsapp: ${esc(comanda.cliente_mesa_telefone)}</div>` : ''}

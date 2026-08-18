@@ -445,7 +445,7 @@ const RestauranteCozinha = () => {
     try {
       const res = modoToken ? await reimprimirItem(item.id) : await reimprimirItemRestaurante(item.id);
       if (res.via === 'navegador') {
-        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente }, 'Cozinha');
+        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente, numero_comanda: item.numero_comanda }, 'Cozinha');
       }
     } catch (e) {
       alert(e.message);
