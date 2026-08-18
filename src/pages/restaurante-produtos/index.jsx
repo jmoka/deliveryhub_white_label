@@ -7,7 +7,7 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -48,7 +48,7 @@ const RestauranteProdutos = () => {
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
   const [impressoras, setImpressoras] = useState([]);
-  const tipoRestaurante = useTipoRestaurante();
+  const { moduloSalao } = useModulosEmpresa();
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
@@ -92,7 +92,7 @@ const RestauranteProdutos = () => {
   };
 
   useEffect(() => { carregar(); }, []);
-  useEffect(() => { if (tipoRestaurante) listarImpressoras().then(setImpressoras).catch(() => {}); }, [tipoRestaurante]);
+  useEffect(() => { if (moduloSalao) listarImpressoras().then(setImpressoras).catch(() => {}); }, [moduloSalao]);
 
   const abrirNovo = () => {
     setEditando(null);
@@ -867,7 +867,7 @@ const RestauranteProdutos = () => {
                   />
                 </div>
               </div>
-              {tipoRestaurante && (
+              {moduloSalao && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Impressora / setor</label>
                   <select

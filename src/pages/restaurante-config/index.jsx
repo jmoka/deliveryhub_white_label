@@ -7,7 +7,7 @@ import {
 } from '../../services/restauranteService';
 import { buscarCep } from '../../utils/viaCep';
 import Icon from '../../components/AppIcon';
-import { useTipoRestaurante } from '../../hooks/useTipoRestaurante';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
 
@@ -460,7 +460,7 @@ const ComissoesConfig = () => {
 };
 
 const RestauranteConfig = () => {
-  const tipoRestaurante = useTipoRestaurante();
+  const { moduloSalao } = useModulosEmpresa();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -490,8 +490,8 @@ const RestauranteConfig = () => {
   const [impressoras, setImpressoras] = useState([]);
 
   useEffect(() => {
-    if (tipoRestaurante) listarImpressoras().then(setImpressoras).catch(() => {});
-  }, [tipoRestaurante]);
+    if (moduloSalao) listarImpressoras().then(setImpressoras).catch(() => {});
+  }, [moduloSalao]);
 
   useEffect(() => {
     getConfig()
@@ -771,7 +771,7 @@ const RestauranteConfig = () => {
                 </div>
                 )}
 
-                {tipoRestaurante && (
+                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Gorjeta sugerida (% sobre o subtotal da comanda)
@@ -792,7 +792,7 @@ const RestauranteConfig = () => {
                   </div>
                 )}
 
-                {tipoRestaurante && (
+                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Taxa do cartão (% sobre débito e crédito)
@@ -814,9 +814,9 @@ const RestauranteConfig = () => {
                   </div>
                 )}
 
-                {tipoRestaurante && <ComissoesConfig />}
+                {moduloSalao && <ComissoesConfig />}
 
-                {tipoRestaurante && (
+                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Modo de venda do Salão
@@ -836,7 +836,7 @@ const RestauranteConfig = () => {
                   </div>
                 )}
 
-                {tipoRestaurante && (
+                {moduloSalao && (
                   <div className="border-t pt-4 mt-2">
                     <label className="flex items-center justify-between gap-3 cursor-pointer">
                       <span>
@@ -859,7 +859,7 @@ const RestauranteConfig = () => {
                   </div>
                 )}
 
-                {tipoRestaurante && (
+                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Impressora do recibo
@@ -880,7 +880,7 @@ const RestauranteConfig = () => {
                   </div>
                 )}
 
-                {tipoRestaurante && (
+                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Impressora de sangria/adição
