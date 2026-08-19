@@ -1385,15 +1385,15 @@ const RestauranteSalao = () => {
 
   const ComandaCard = ({ c }) => (
     <button onClick={() => setComandaAtiva(c.id)}
-      className={`bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 text-left ${c.status === 'paga' ? 'opacity-80' : ''}`}>
-      <p className="text-xs font-bold text-[#FF441F]">#{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''}</p>
+      className={`w-full min-w-0 bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 text-left ${c.status === 'paga' ? 'opacity-80' : ''}`}>
+      <p className="text-xs font-bold text-[#FF441F] truncate">#{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''}</p>
       <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate mt-0.5">{c.cliente_mesa_nome}</p>
       <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] truncate">{responsavelComanda(c)}</p>
-      <div className="flex items-center justify-between mt-2 gap-1">
+      <div className="flex items-center justify-between flex-wrap mt-2 gap-x-1 gap-y-1">
         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 font-medium whitespace-nowrap">
           {statusLabelComanda(c)}
         </span>
-        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(c.total)}</span>
+        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</span>
       </div>
     </button>
   );
@@ -1404,7 +1404,7 @@ const RestauranteSalao = () => {
       {lista.length === 0 && <p className="text-sm text-[#A1A1AA]">{vazio}</p>}
     </div>
   ) : (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {lista.map((c) => <ComandaCard key={c.id} c={c} />)}
       {lista.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">{vazio}</p>}
     </div>
