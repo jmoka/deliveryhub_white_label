@@ -367,6 +367,8 @@ export const criarMesa = (data) =>
   apiFetch('/mesas-cadastro', { method: 'POST', body: JSON.stringify(data) });
 export const removerMesa = (id) =>
   apiFetch(`/mesas-cadastro/${id}`, { method: 'DELETE' });
+export const removerTodasMesas = () =>
+  apiFetch('/mesas-cadastro/todas', { method: 'DELETE' });
 export const criarMesasEmLote = (de, ate) =>
   apiFetch('/mesas-cadastro/lote', { method: 'POST', body: JSON.stringify({ de, ate }) });
 

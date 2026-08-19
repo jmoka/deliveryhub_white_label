@@ -35,6 +35,7 @@ const SALAO_LINKS = [
   { label: 'Venda Balcão', path: '/restaurante/venda-balcao', icon: 'ShoppingCart' },
   { label: 'Chamada', path: '/restaurante/chamada', icon: 'Volume2' },
   { label: 'Garçons', path: '/restaurante/garcons', icon: 'Contact' },
+  { label: 'Mesas', path: '/restaurante/mesas', icon: 'Table2' },
   { label: 'Impressoras', path: '/restaurante/impressoras', icon: 'Printer' },
 ];
 

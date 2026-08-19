@@ -54,6 +54,7 @@ import MotoboyCadastro from './pages/motoboy-cadastro';
 import CustomerProfile from './pages/customer-profile';
 import GarcomPortal from './pages/garcom-portal';
 import RestauranteGarcons from './pages/restaurante-garcons';
+import RestauranteMesas from './pages/restaurante-mesas';
 import RestauranteImpressoras from './pages/restaurante-impressoras';
 import RestauranteSalao from './pages/restaurante-salao';
 import RestauranteVendaBalcao from './pages/restaurante-venda-balcao';
@@ -134,6 +135,7 @@ const Routes = () => {
         <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />
         <Route path="/restaurante/venda-balcao" element={<RestauranteGuard><RestauranteVendaBalcao /></RestauranteGuard>} />
         <Route path="/restaurante/garcons" element={<RestauranteGuard><RestauranteGarcons /></RestauranteGuard>} />
+        <Route path="/restaurante/mesas" element={<RestauranteGuard><RestauranteMesas /></RestauranteGuard>} />
         <Route path="/restaurante/impressoras" element={<RestauranteGuard><RestauranteImpressoras /></RestauranteGuard>} />
         <Route path="/restaurante/kds" element={<RestauranteKdsSetor />} />
 
