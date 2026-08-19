@@ -505,14 +505,27 @@ const RestauranteCozinha = () => {
     ...itensSalaoPreparando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
   ].sort((a, b) => a.ts - b.ts);
 
-  // Filtro por canal (Todos/Delivery/Salão) + busca pelo leitor/campo de código, igual
-  // Produção e Bar: com código escaneado, só sobra o pedido/comanda que bateu.
+  // Filtro por canal (Todos/Delivery/Salão) + busca, igual Produção e Bar: aceita tanto
+  // código de barras/pedido exato quanto texto livre (cliente, mesa, garçom).
+  const buscaNormalizada = scanInput.trim().toLowerCase();
   const idEscaneado = /^\d+$/.test(scanInput.trim()) ? parseInt(scanInput.trim(), 10) : null;
-  const passaBuscaEntry = (e) => idEscaneado === null || (e.tipo === 'delivery' ? e.pedido.id === idEscaneado : e.item.numero_comanda === idEscaneado);
+  const passaBuscaItem = (item) => {
+    if (!buscaNormalizada) return true;
+    if (idEscaneado !== null && item.numero_comanda === idEscaneado) return true;
+    const alvo = [item.cliente, item.mesa, item.mesa_numero, item.numero_comanda, item.garcom]
+      .filter((v) => v !== null && v !== undefined).join(' ').toLowerCase();
+    return alvo.includes(buscaNormalizada);
+  };
+  const passaBuscaEntry = (e) => {
+    if (e.tipo === 'salao') return passaBuscaItem(e.item);
+    if (!buscaNormalizada) return true;
+    if (idEscaneado !== null && e.pedido.id === idEscaneado) return true;
+    return (e.pedido.customers?.name ?? '').toLowerCase().includes(buscaNormalizada);
+  };
   const passaFiltro = (e) => (filtroCanal === 'todos' || e.tipo === filtroCanal) && passaBuscaEntry(e);
   const aguardandoPreparo = filaAguardando.filter(passaFiltro);
   const emPreparo = filaEmPreparo.filter(passaFiltro);
-  const prontosSalao = filtroCanal === 'delivery' ? [] : itensSalaoProntos.filter((i) => idEscaneado === null || i.numero_comanda === idEscaneado);
+  const prontosSalao = filtroCanal === 'delivery' ? [] : itensSalaoProntos.filter(passaBuscaItem);
   const totalDelivery = filaAguardando.filter((e) => e.tipo === 'delivery').length + filaEmPreparo.filter((e) => e.tipo === 'delivery').length;
   const totalSalao = filaAguardando.filter((e) => e.tipo === 'salao').length + filaEmPreparo.filter((e) => e.tipo === 'salao').length;
 
@@ -622,7 +635,7 @@ const RestauranteCozinha = () => {
               value={scanInput}
               onChange={(e) => setScanInput(e.target.value)}
               onKeyDown={handleScanKey}
-              placeholder="Aponte o leitor ou digite o nº do pedido/comanda..."
+              placeholder="Buscar por cliente, mesa, comanda, garçom ou aponte o leitor..."
               className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3A3A3A] outline-none font-mono"
               autoFocus
             />
