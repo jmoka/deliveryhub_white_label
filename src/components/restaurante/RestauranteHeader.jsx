@@ -10,6 +10,7 @@ import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
+import { usePontosPreparoLinks } from '../../hooks/usePontosPreparoLinks';
 import { useRestauranteFavoritos } from '../../hooks/useRestauranteFavoritos';
 import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
 
@@ -55,6 +56,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
   const logoUrl = useMinhaLojaLogo();
   const { moduloDelivery, moduloSalao } = useModulosEmpresa();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
+  const pontosPreparoLinks = usePontosPreparoLinks();
   const { favoritos, toggleFavorito, isFavorito } = useRestauranteFavoritos();
   const [sidebarAberto, setSidebarAberto] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
@@ -72,7 +74,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
     }
   };
 
-  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao);
+  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, pontosPreparoLinks);
   const linksFavoritos = links.filter((l) => favoritos.includes(l.path));
 
   return (

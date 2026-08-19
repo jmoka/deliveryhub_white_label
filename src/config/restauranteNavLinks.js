@@ -38,12 +38,17 @@ const SALAO_LINKS = [
   { label: 'Impressoras', path: '/restaurante/impressoras', icon: 'Printer' },
 ];
 
-export const getRestauranteNavLinks = (moduloDelivery, moduloSalao) => {
+// Pontos de preparo customizados (Churrasqueira, Drinks...) usam o mesmo requisito de
+// visibilidade da Cozinha — precisam de algum módulo ativo pra fazer sentido no menu.
+const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurante/pontos-preparo', icon: 'LayoutGrid' };
+
+export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPreparo = []) => {
   const temAlgumModulo = moduloDelivery || moduloSalao;
   const links = [
     ...BASE_LINKS.slice(0, 2), // Dashboard, Relatórios
     ...(moduloDelivery ? DELIVERY_LINKS.slice(0, 1) : []), // Delivery
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(0, 1) : []), // Cozinha
+    ...(temAlgumModulo ? [PONTOS_PREPARO_CADASTRO, ...pontosPreparo] : []), // Cadastro + pontos criados
     ...(moduloSalao ? COPA_LINKS : []), // Produção, Bar
     ...BASE_LINKS.slice(2, 3), // Produtos
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(1) : []), // Combos, Pedidos

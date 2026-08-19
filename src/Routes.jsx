@@ -57,6 +57,8 @@ import RestauranteGarcons from './pages/restaurante-garcons';
 import RestauranteImpressoras from './pages/restaurante-impressoras';
 import RestauranteSalao from './pages/restaurante-salao';
 import RestauranteVendaBalcao from './pages/restaurante-venda-balcao';
+import RestaurantePontosPreparo from './pages/restaurante-pontos-preparo';
+import RestaurantePontoPreparo from './pages/restaurante-ponto-preparo';
 import RestauranteCardapioDigital from './pages/restaurante-cardapio-digital';
 import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
@@ -113,6 +115,8 @@ const Routes = () => {
         <Route path="/restaurante/entregas" element={<RestauranteGuard><RestauranteEntregas /></RestauranteGuard>} />
         <Route path="/restaurante/cozinha" element={<RestauranteCozinha />} />
         <Route path="/restaurante/producao" element={<RestauranteGuard><RestauranteProducao /></RestauranteGuard>} />
+        <Route path="/restaurante/pontos-preparo" element={<RestauranteGuard><RestaurantePontosPreparo /></RestauranteGuard>} />
+        <Route path="/restaurante/ponto-preparo/:id" element={<RestauranteGuard><RestaurantePontoPreparo /></RestauranteGuard>} />
         <Route path="/restaurante/bar" element={<RestauranteGuard><RestauranteBar /></RestauranteGuard>} />
         <Route path="/restaurante/chamada" element={<RestauranteGuard><RestauranteChamada /></RestauranteGuard>} />
         <Route path="/restaurante/sessao" element={<RestauranteGuard><RestauranteSessao /></RestauranteGuard>} />
