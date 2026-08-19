@@ -657,6 +657,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const [mostrarPicker, setMostrarPicker] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mostrarFechar, setMostrarFechar] = useState(false);
+  const [mostrarAvisoPendente, setMostrarAvisoPendente] = useState(false);
   const [erro, setErro] = useState(null);
   const [mostrarQr, setMostrarQr] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
@@ -897,6 +898,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         <button
           onClick={() => {
             if (temEntregaPendente) { window.alert('Confirme a entrega dos itens pendentes antes de voltar.'); return; }
+            // Não bloqueia sozinho — pergunta enviar ou voltar sem enviar (mesma regra
+            // do lado do estabelecimento em restaurante-salao). Itens continuam salvos
+            // na comanda de qualquer jeito, só o envio pra produção que fica pendente.
+            if (temPendente) { setMostrarAvisoPendente(true); return; }
             onVoltar();
           }}
           className="flex items-center gap-1 text-sm text-[#71717A] dark:text-[#A1A1AA] mb-2">
@@ -1139,6 +1144,27 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
 
       {mostrarFechar && (
         <FecharComandaModal comanda={comanda} onFechar={() => setMostrarFechar(false)} onFechada={() => { setMostrarFechar(false); onVoltar(); }} />
+      )}
+
+      {mostrarAvisoPendente && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Tem produto não enviado</h2>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">
+              Essa comanda tem produto ainda não enviado pra cozinha/bar. Quer enviar agora ou voltar sem enviar (o item continua salvo na comanda)?
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => { setMostrarAvisoPendente(false); onVoltar(); }} disabled={enviando}
+                className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
+                Voltar sem enviar
+              </button>
+              <button onClick={() => { setMostrarAvisoPendente(false); enviar(); }} disabled={enviando}
+                className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+                Enviar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {mostrarPicker && (
