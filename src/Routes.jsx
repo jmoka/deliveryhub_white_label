@@ -56,6 +56,7 @@ import GarcomPortal from './pages/garcom-portal';
 import RestauranteGarcons from './pages/restaurante-garcons';
 import RestauranteImpressoras from './pages/restaurante-impressoras';
 import RestauranteSalao from './pages/restaurante-salao';
+import RestauranteVendaBalcao from './pages/restaurante-venda-balcao';
 import RestauranteCardapioDigital from './pages/restaurante-cardapio-digital';
 import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
@@ -127,6 +128,7 @@ const Routes = () => {
 
         {/* Módulo Salão — só estabelecimentos tipo Restaurante */}
         <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />
+        <Route path="/restaurante/venda-balcao" element={<RestauranteGuard><RestauranteVendaBalcao /></RestauranteGuard>} />
         <Route path="/restaurante/garcons" element={<RestauranteGuard><RestauranteGarcons /></RestauranteGuard>} />
         <Route path="/restaurante/impressoras" element={<RestauranteGuard><RestauranteImpressoras /></RestauranteGuard>} />
         <Route path="/restaurante/kds" element={<RestauranteKdsSetor />} />
