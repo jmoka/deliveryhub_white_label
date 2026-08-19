@@ -7,21 +7,23 @@ import Icon from '../../components/AppIcon';
 const CICLO_MS = 7000;
 const MAX_CHAMADOS = 5;
 
-// Painel de chamada da Venda Balcão — fica ligado numa TV/tablet no salão. Assim que o
-// pedido é enviado pra produção, o cliente aparece em "Em preparo" (lista lateral
-// silenciosa, na ordem em que os pedidos foram feitos). Quando TODOS os itens do pedido
-// ficam prontos, ele vira o destaque central e entra no ciclo de chamada (bipa+pisca a
-// cada 7s, 1 comanda por vez — a mais antiga ainda com chamado_count < 5). Depois de 5
-// chamados sem confirmação, sai do destaque e cai em "Aguardando entregar" (silenciosa)
-// até o operador marcar os itens como entregues. Item pode ser marcado entregue a
-// qualquer momento (ex: bebida que o cliente já levou na hora), sem precisar esperar o
-// resto do pedido — a comanda só some da fila quando TODOS os itens dela estiverem
-// entregues.
+// Painel de chamada da Venda Balcão — fica ligado numa TV/tablet no salão, em 3 colunas.
+// Esquerda (silenciosa, ordem de chegada): "Aguardando Preparo" assim que o pedido é
+// enviado, "Em preparo" quando algum item entra em preparo. Centro: destaque da chamada
+// — só entra aqui quando TODOS os itens do pedido ficam prontos, bipa+pisca a cada 7s
+// (1 comanda por vez, a mais antiga com chamado_count < 5). Direita (destacada, cor
+// laranja): "Aguardando entregar" — pra onde a comanda vai depois de 5 chamados sem
+// confirmação, até o operador marcar os itens como entregues. Item pode ser marcado
+// entregue a qualquer momento (ex: bebida que o cliente já levou na hora), sem precisar
+// esperar o resto do pedido — a comanda só some da fila quando TODOS os itens dela
+// estiverem entregues, indo pro rodapé retrátil "Entregue" (fechado por padrão).
 const RestauranteChamada = () => {
   const [fila, setFila] = useState([]);
   const [historico, setHistorico] = useState([]);
   const [erro, setErro] = useState(null);
   const [flash, setFlash] = useState(false);
+  const [entregueAberto, setEntregueAberto] = useState(false);
+  const [atualizando, setAtualizando] = useState(false);
   const now = useNowTick();
   const tocarSom = useNotificacaoSonora('chamada');
   const chamandoRef = useRef(false);
@@ -51,6 +53,7 @@ const RestauranteChamada = () => {
   }, [carregar]);
 
   const filaVisivel = fila.filter((p) => p.itens.length > 0);
+  const aguardandoPreparo = filaVisivel.filter((p) => p.status === 'aguardando');
   const emPreparo = filaVisivel.filter((p) => p.status === 'preparando');
   const prontos = filaVisivel.filter((p) => p.status === 'pronto');
   const central = prontos.find((p) => p.chamado_count < MAX_CHAMADOS) ?? null;
@@ -82,6 +85,18 @@ const RestauranteChamada = () => {
       .finally(() => { chamandoRef.current = false; });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [now, central?.order_id, central?.ultima_chamada_em]);
+
+  // Spin mínimo de 400ms — feedback visual mesmo quando carregar() resolve na hora
+  // (mesmo padrão do botão "Atualizar dados" do RestauranteHeader).
+  const handleAtualizar = async () => {
+    if (atualizando) return;
+    setAtualizando(true);
+    try {
+      await carregar();
+    } finally {
+      setTimeout(() => setAtualizando(false), 400);
+    }
+  };
 
   const marcarEntregue = async (orderId, itemId) => {
     try {
@@ -116,30 +131,29 @@ const RestauranteChamada = () => {
         </h1>
         <div className="flex items-center gap-3">
           {naFila > 0 && <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA]">+{naFila} na fila</span>}
-          <button onClick={carregar} title="Atualizar dados" className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
-            <Icon name="RefreshCw" size={16} />
+          <button onClick={handleAtualizar} disabled={atualizando} title="Atualizar dados"
+            className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A] disabled:opacity-50">
+            <Icon name="RefreshCw" size={16} className={atualizando ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
       {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
 
-      <div className="flex-1 flex flex-col lg:flex-row gap-6">
-        {/* Destaque central — 1 comanda por vez, pisca contínuo + flash no bipe */}
-        <div className="flex-1 flex items-center justify-center">
-          {central ? (
-            <div className={`w-full max-w-xl rounded-3xl border-4 p-8 text-center transition-colors animate-pulse ${flash ? 'bg-yellow-400/20 border-yellow-400 dark:border-yellow-800' : 'bg-[#232323] border-orange-500/60'}`}>
-              <p className="text-sm font-bold text-orange-400 uppercase tracking-widest mb-2">Pedido pronto</p>
-              <p className="text-4xl font-black text-white mb-1">{central.cliente}</p>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-5">Chamado {central.chamado_count}/{MAX_CHAMADOS}</p>
-              <ItensLista pedido={central} tamanho="lg" />
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-6 min-h-0">
+        {/* Esquerda — fila silenciosa antes de ficar pronto, na ordem de chegada */}
+        <div className="flex flex-col gap-4 min-h-0 max-h-[60vh] lg:max-h-none">
+          <div className="flex-1 overflow-y-auto">
+            <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Aguardando Preparo ({aguardandoPreparo.length})</h2>
+            <div className="space-y-2">
+              {aguardandoPreparo.map((p) => (
+                <div key={p.order_id} className="bg-[#232323] border border-[#2A2A2A] rounded-xl p-3 flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-white">{p.cliente}</p>
+                  <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wide text-[#A1A1AA] bg-white/5 px-2 py-1 rounded-full">Aguardando</span>
+                </div>
+              ))}
+              {aguardandoPreparo.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vazio.</p>}
             </div>
-          ) : (
-            <p className="text-[#71717A] dark:text-[#A1A1AA] text-sm">Nenhum pedido de balcão aguardando.</p>
-          )}
-        </div>
-
-        {/* Lateral — Em preparo (silencioso, ordem de chegada) + Aguardando entregar + Entregue (histórico) */}
-        <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 max-h-[80vh]">
+          </div>
           <div className="flex-1 overflow-y-auto">
             <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Em preparo ({emPreparo.length})</h2>
             <div className="space-y-2">
@@ -152,31 +166,55 @@ const RestauranteChamada = () => {
               {emPreparo.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vazio.</p>}
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Aguardando entregar ({aguardando.length})</h2>
-            <div className="space-y-2">
-              {aguardando.map((p) => (
-                <div key={p.order_id} className="bg-[#232323] border border-[#2A2A2A] rounded-xl p-3">
-                  <p className="text-sm font-bold text-white mb-1.5">{p.cliente}</p>
-                  <ItensLista pedido={p} />
-                </div>
-              ))}
-              {aguardando.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vazio.</p>}
+        </div>
+
+        {/* Centro — destaque da chamada, 1 comanda por vez, pisca contínuo + flash no bipe */}
+        <div className="flex items-center justify-center">
+          {central ? (
+            <div className={`w-full max-w-xl rounded-3xl border-4 p-8 text-center transition-colors animate-pulse ${flash ? 'bg-yellow-400/20 border-yellow-400 dark:border-yellow-800' : 'bg-[#232323] border-orange-500/60'}`}>
+              <p className="text-sm font-bold text-orange-400 uppercase tracking-widest mb-2">Pedido pronto</p>
+              <p className="text-4xl font-black text-white mb-1">{central.cliente}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-5">Chamado {central.chamado_count}/{MAX_CHAMADOS}</p>
+              <ItensLista pedido={central} tamanho="lg" />
             </div>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Entregue</h2>
-            <div className="space-y-1.5">
-              {historico.map((p, idx) => (
-                <div key={`${p.order_id}-${idx}`} className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#1F1F1F] rounded-lg px-2.5 py-1.5">
-                  <Icon name="Check" size={12} className="text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
-                  <span className="text-white font-bold">{p.cliente}</span>
-                </div>
-              ))}
-              {historico.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nada ainda.</p>}
-            </div>
+          ) : (
+            <p className="text-[#71717A] dark:text-[#A1A1AA] text-sm">Nenhum pedido de balcão aguardando.</p>
+          )}
+        </div>
+
+        {/* Direita — Aguardando entregar, coluna única destacada (pedidos prontos que já saíram do ciclo de chamada) */}
+        <div className="flex flex-col min-h-0 max-h-[60vh] lg:max-h-none rounded-2xl border-2 border-orange-500/40 bg-orange-500/[0.06] p-3 overflow-hidden">
+          <h2 className="text-xs font-black text-orange-400 uppercase tracking-wide mb-2 flex-shrink-0">Aguardando entregar ({aguardando.length})</h2>
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {aguardando.map((p) => (
+              <div key={p.order_id} className="bg-[#232323] border border-[#2A2A2A] rounded-xl p-3">
+                <p className="text-sm font-bold text-white mb-1.5">{p.cliente}</p>
+                <ItensLista pedido={p} />
+              </div>
+            ))}
+            {aguardando.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vazio.</p>}
           </div>
         </div>
+      </div>
+
+      {/* Rodapé — Entregue, retrátil (fica fechado por padrão pra não poluir a TV) */}
+      <div className="flex-shrink-0 mt-4">
+        <button onClick={() => setEntregueAberto((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-black text-white uppercase tracking-wide hover:text-orange-400">
+          <Icon name={entregueAberto ? 'ChevronDown' : 'ChevronRight'} size={14} />
+          Entregue ({historico.length})
+        </button>
+        {entregueAberto && (
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
+            {historico.map((p, idx) => (
+              <div key={`${p.order_id}-${idx}`} className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#1F1F1F] rounded-lg px-2.5 py-1.5">
+                <Icon name="Check" size={12} className="text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
+                <span className="text-white font-bold truncate">{p.cliente}</span>
+              </div>
+            ))}
+            {historico.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nada ainda.</p>}
+          </div>
+        )}
       </div>
     </div>
   );
