@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe, getSalaoComandasFechadasHoje,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
-  adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
+  adicionarItensComandaSalao, enviarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, getMeusCombos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, alterarTrocoPixComandaSalao, abrirVendaBalcao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
   reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
-import { printReciboCliente, printConferenciaComanda } from '../../utils/printComanda';
+import { printReciboCliente, printConferenciaComanda, printTicketSetor } from '../../utils/printComanda';
 import { getAcompanharUrls, getAutoAtendimentoUrls } from '../../utils/mesaAcompanharUrl';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
@@ -551,6 +551,15 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   const incluirItem = (item) => acao(() => adicionarItensComandaSalao(comandaId, [item]));
 
+  // Item fica pendente até esse clique — evita que cozinha/bar vejam e logo em seguida
+  // percam um item que foi corrigido/apagado por engano (mesmo botão do garçom).
+  const enviarItens = () => {
+    acao(async () => {
+      const { grupos } = await enviarItensComandaSalao(comandaId);
+      (grupos ?? []).forEach((grupo) => { if (grupo.itens?.length) printTicketSetor(grupo.itens, comanda, grupo.setor); });
+    });
+  };
+
   const removerItem = (item) => {
     if (!window.confirm(`Remover ${item.products?.name}?`)) return;
     acao(() => removerItemComandaSalao(comandaId, item.id));
@@ -682,6 +691,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   if (!comanda) return null;
 
   const podeEditar = comanda.status === 'aberta' || comanda.status === 'fechada_garcom';
+  const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
   // Comanda já paga: só dá pra corrigir a forma de pagamento (ex: confirmou PIX por
   // engano, era dinheiro) — não reabre valor nem permite remover. Backend também bloqueia
   // se o caixa dessa comanda já tiver sido fechado (resumo já foi gravado e congelado).
@@ -896,6 +906,18 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             className="w-full mb-3 py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
             <Icon name="Plus" size={16} /> Incluir produto
           </button>
+        )}
+
+        {temPendente && (
+          <>
+            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-2 py-1.5 mb-2">
+              Tem produto ainda não enviado pra cozinha/bar — não dá pra fechar ou pagar a comanda até enviar.
+            </p>
+            <button onClick={enviarItens} disabled={salvando}
+              className="w-full mb-3 py-2.5 border border-[#FF441F] text-[#FF441F] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+              <Icon name="Send" size={16} /> {salvando ? 'Enviando...' : 'Enviar novos itens'}
+            </button>
+          </>
         )}
 
         {comanda.status === 'aberta' && (comanda.itens ?? []).length > 1 && (
@@ -1222,8 +1244,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
             Cancelar comanda
           </button>
-          <button onClick={pagar} disabled={salvando || saldoDevedor > 0.01}
-            title={saldoDevedor > 0.01 ? 'Registre os pagamentos até o saldo zerar' : undefined}
+          <button onClick={pagar} disabled={salvando || saldoDevedor > 0.01 || temPendente}
+            title={temPendente ? 'Envie os produtos pendentes antes de pagar' : saldoDevedor > 0.01 ? 'Registre os pagamentos até o saldo zerar' : undefined}
             className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
             {salvando ? 'Processando...' : 'Confirmar pagamento'}
           </button>

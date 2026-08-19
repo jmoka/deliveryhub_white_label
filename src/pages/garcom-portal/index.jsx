@@ -871,6 +871,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
   const temEntregaPendente = (comanda.itens ?? []).some((i) => (i.status === 'preparando' || i.status === 'pronto') && !i.entregue_garcom);
   const fechada = comanda.status === 'fechada_garcom';
+  const paga = comanda.status === 'paga';
+  // Comanda paga aparece aqui só quando ainda tem item não entregue (cliente pagou
+  // adiantado) — trava edição/fechamento igual "fechada", mas com aviso diferente.
+  const travada = comanda.status !== 'aberta';
 
   // Gorjeta só vira valor definitivo quando o caixa fecha a conta (orders.gorjeta_valor).
   // Antes disso é só estimativa (gorjeta_sugestao) — não soma junto do saldo real do
@@ -888,7 +892,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const totalTrocoPix = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? Number(p.troco || 0) : 0), 0);
 
   return (
-    <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!fechada ? 'pb-44' : 'pb-6'}`}>
+    <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!travada ? 'pb-44' : 'pb-6'}`}>
       <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4 sticky top-0 z-10">
         <button
           onClick={() => {
@@ -910,6 +914,11 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         {fechada && (
           <p className="text-xs text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-lg px-2 py-1 mt-2 inline-block">
             Fechada — aguardando pagamento no caixa
+          </p>
+        )}
+        {paga && (
+          <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg px-2 py-1 mt-2 inline-block">
+            Paga — falta entregar item(ns) ao cliente
           </p>
         )}
         {comanda.tracking_token && (
@@ -1007,7 +1016,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         {(comanda.itens ?? []).length === 0 && (
           <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhum item ainda.</p>
         )}
-        {!fechada && (comanda.itens ?? []).length > 1 && (
+        {!travada && (comanda.itens ?? []).length > 1 && (
           <button onClick={() => setMostrarDividir(true)}
             className="w-full py-2.5 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center gap-2">
             <Icon name="Scissors" size={16} /> Separar comanda
@@ -1093,7 +1102,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         })()}
       </div>
 
-      {!fechada && (
+      {!travada && (
         <div className="p-4 bg-white dark:bg-[#27272A] border-t border-[#E4E4E7] dark:border-[#3F3F46] fixed bottom-0 left-0 right-0">
           <button onClick={() => setMostrarPicker(true)}
             className="w-full flex items-center justify-center gap-2 py-3 mb-2 border-2 border-dashed border-[#FF441F]/40 rounded-xl text-sm font-bold text-[#FF441F]">
@@ -1115,8 +1124,8 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
               className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#FF441F] text-[#FF441F] disabled:opacity-40">
               {enviando ? 'Enviando...' : 'Enviar novos itens'}
             </button>
-            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0 || faltaPagar > 0.01 || temEntregaPendente}
-              title={faltaPagar > 0.01 ? 'Registre os pagamentos até zerar (com gorjeta) pra fechar' : temEntregaPendente ? 'Confirme a entrega dos itens pendentes pra poder fechar' : undefined}
+            <button onClick={() => setMostrarFechar(true)} disabled={(comanda.itens ?? []).length === 0 || faltaPagar > 0.01 || temEntregaPendente || temPendente}
+              title={temPendente ? 'Envie os produtos pendentes antes de fechar' : faltaPagar > 0.01 ? 'Registre os pagamentos até zerar (com gorjeta) pra fechar' : temEntregaPendente ? 'Confirme a entrega dos itens pendentes pra poder fechar' : undefined}
               className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] disabled:opacity-40">
               Fechar comanda
             </button>
@@ -1479,7 +1488,9 @@ const GarcomHome = () => {
                 <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
                   #{c.numero_comanda ?? c.id}{c.mesa_id ? ` — Mesa ${c.mesa_id}` : ''} — {c.cliente_mesa_nome}
                 </p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  {c.status === 'aberta' ? 'Em aberto' : c.status === 'paga' ? 'Paga — falta entregar' : 'Aguardando pagamento'}
+                </p>
                 {conferenciaPendente(c) && (
                   <p className="text-[9px] font-bold text-white bg-[#FF441F] rounded-full px-1.5 py-0.5 mt-1 inline-flex items-center gap-1">
                     <Icon name="BellRing" size={9} /> Pediu conferência

@@ -337,6 +337,8 @@ export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_rece
   apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix }) });
 export const adicionarItensComandaSalao = (id, itens) =>
   apiFetch(`/salao/comandas/${id}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
+export const enviarItensComandaSalao = (id) =>
+  apiFetch(`/salao/comandas/${id}/enviar`, { method: 'POST' });
 export const editarItemComandaSalao = (id, itemId, body) =>
   apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'PATCH', body: JSON.stringify(body) });
 export const removerItemComandaSalao = (id, itemId) =>

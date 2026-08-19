@@ -10,7 +10,7 @@ import Icon from '../../components/AppIcon';
 // Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
 // o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
 // pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, posicao, now, ehPrimeiro, ehUltimo, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, onMover, onAbrirComanda, onSalvarObservacao }) => {
+const ItemCard = ({ item, posicao, now, ehPrimeiro, ehUltimo, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, onMover, onAbrirComanda, onSalvarObservacao, highlighted = false }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -29,9 +29,14 @@ const ItemCard = ({ item, posicao, now, ehPrimeiro, ehUltimo, onReimprimir, onIn
 
   return (
     <div
+      id={`producao-item-${item.id}`}
       onClick={podeAbrirComanda ? () => onAbrirComanda(item.order_id) : undefined}
       title={podeAbrirComanda ? 'Ver comanda completa' : undefined}
-      className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden ${podeAbrirComanda ? 'cursor-pointer hover:border-[#FF441F]/60' : ''} ${item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'}`}>
+      className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden transition-all duration-300 ${podeAbrirComanda ? 'cursor-pointer hover:border-[#FF441F]/60' : ''} ${
+        highlighted
+          ? 'border-yellow-400 ring-2 ring-yellow-400/60 shadow-xl shadow-yellow-300/20 scale-[1.02]'
+          : item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'
+      }`}>
       {item.garcom && (
         <div className="bg-white px-4 py-2">
           <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
@@ -340,8 +345,13 @@ const RestauranteProducao = () => {
   const totalDelivery = todosItens.filter((i) => i.tipo === 'delivery').length;
   const totalSalao = todosItens.filter((i) => i.tipo === 'salao').length;
   const buscaNormalizada = busca.trim().toLowerCase();
+  // Leitor de código de barras digita os dígitos zero-padded (ver barcodeValue em
+  // printComanda.js) e manda Enter — bate exato no numero_comanda, não por substring
+  // (senão "00000042" nunca acharia a comanda #42).
+  const numeroComandaEscaneado = /^\d+$/.test(busca.trim()) ? parseInt(busca.trim(), 10) : null;
   const passaBusca = (i) => {
     if (!buscaNormalizada) return true;
+    if (numeroComandaEscaneado !== null && i.numero_comanda === numeroComandaEscaneado) return true;
     const alvo = [i.cliente, i.mesa, i.mesa_numero, i.numero_comanda, i.garcom]
       .filter((v) => v !== null && v !== undefined)
       .join(' ')
@@ -350,6 +360,10 @@ const RestauranteProducao = () => {
   };
   const passaFiltro = (i) => (filtroCanal === 'todos' || i.tipo === filtroCanal) && passaBusca(i);
   const totalItens = todosItens.filter(passaFiltro).length;
+  // Igual à caixa de leitor da Cozinha: verde quando acha a comanda escaneada, vermelho
+  // quando não acha — só reage ao código exato, busca por nome/mesa/garçom fica neutra.
+  const itemEncontradoBusca = numeroComandaEscaneado !== null && todosItens.some((i) => i.numero_comanda === numeroComandaEscaneado);
+  const corBuscaCod = numeroComandaEscaneado === null ? null : itemEncontradoBusca ? 'ok' : 'erro';
 
   return (
     <div className="min-h-screen bg-[#111111]">
@@ -378,22 +392,42 @@ const RestauranteProducao = () => {
           </div>
         </div>
 
-        {/* Busca por cliente, mesa, comanda ou garçom */}
-        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl border border-[#2A2A2A] bg-[#111111] focus-within:border-[#FF441F]">
-          <Icon name="Search" size={16} className="text-[#71717A] flex-shrink-0" />
+        {/* Busca por cliente, mesa, comanda, garçom ou leitor de código de barras — mesma
+            caixa (cor, botão Buscar, texto de confirmação) da Cozinha */}
+        <div className={`flex items-center gap-2 mt-3 px-3 py-2 rounded-xl border transition-colors ${
+          corBuscaCod === 'ok' ? 'border-green-500 bg-green-900/20' :
+          corBuscaCod === 'erro' ? 'border-red-500 bg-red-900/20' :
+          'border-[#2A2A2A] bg-[#111111] focus-within:border-[#FF441F]'
+        }`}>
+          <Icon name="ScanLine" size={16} className={`flex-shrink-0 ${corBuscaCod === 'ok' ? 'text-green-400' : corBuscaCod === 'erro' ? 'text-red-400' : 'text-[#71717A]'}`} />
           <input
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por cliente, mesa, comanda ou garçom..."
+            placeholder="Buscar por cliente, mesa, comanda, garçom ou aponte o leitor..."
             className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3A3A3A] outline-none"
           />
           {busca && (
-            <button onClick={() => setBusca('')} className="text-[#71717A] hover:text-white flex-shrink-0">
-              <Icon name="X" size={15} />
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  const alvo = todosItens.find((i) => i.numero_comanda === numeroComandaEscaneado);
+                  if (alvo) document.getElementById(`producao-item-${alvo.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="flex-shrink-0 px-3 py-1 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19]">
+                Buscar
+              </button>
+              <button onClick={() => setBusca('')} className="text-[#71717A] hover:text-white flex-shrink-0">
+                <Icon name="X" size={15} />
+              </button>
+            </>
           )}
         </div>
+        {corBuscaCod && (
+          <p className={`text-xs font-semibold mt-1.5 ${corBuscaCod === 'ok' ? 'text-green-400' : 'text-red-400'}`}>
+            {corBuscaCod === 'ok' ? `Comanda #${numeroComandaEscaneado} encontrada` : `Comanda #${numeroComandaEscaneado} não encontrada`}
+          </p>
+        )}
 
         {/* Filtro de canal — Todos/Delivery/Salão */}
         <div className="flex items-center gap-2 mt-3">
@@ -467,7 +501,8 @@ const RestauranteProducao = () => {
                           {aguardando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                              highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                           ))}
                         </div>
                       )}
@@ -480,7 +515,8 @@ const RestauranteProducao = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {preparando.map((item, idx) => (
                             <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
+                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                              highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                           ))}
                         </div>
                       )}
@@ -494,7 +530,8 @@ const RestauranteProducao = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                             {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((item, idx) => (
                               <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} />
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                                highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                             ))}
                           </div>
                           {entregues.length > 2 && (
