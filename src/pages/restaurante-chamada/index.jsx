@@ -7,13 +7,16 @@ import Icon from '../../components/AppIcon';
 const CICLO_MS = 7000;
 const MAX_CHAMADOS = 5;
 
-// Painel de chamada da Venda Balcão — fica ligado numa TV/tablet no salão. Chama 1
-// comanda por vez (a mais antiga ainda com chamado_count < 5), bipa+pisca a cada 7s.
-// Depois de 5 chamados sem confirmação, sai do destaque e cai na lista lateral
-// "Aguardando entregar" (silenciosa) até o operador marcar os itens como entregues.
-// Item pode ser marcado entregue a qualquer momento (ex: bebida que o cliente já
-// levou na hora), sem precisar esperar o resto do pedido — a comanda só some da
-// fila quando TODOS os itens dela estiverem entregues.
+// Painel de chamada da Venda Balcão — fica ligado numa TV/tablet no salão. Assim que o
+// pedido é enviado pra produção, o cliente aparece em "Em preparo" (lista lateral
+// silenciosa, na ordem em que os pedidos foram feitos). Quando TODOS os itens do pedido
+// ficam prontos, ele vira o destaque central e entra no ciclo de chamada (bipa+pisca a
+// cada 7s, 1 comanda por vez — a mais antiga ainda com chamado_count < 5). Depois de 5
+// chamados sem confirmação, sai do destaque e cai em "Aguardando entregar" (silenciosa)
+// até o operador marcar os itens como entregues. Item pode ser marcado entregue a
+// qualquer momento (ex: bebida que o cliente já levou na hora), sem precisar esperar o
+// resto do pedido — a comanda só some da fila quando TODOS os itens dela estiverem
+// entregues.
 const RestauranteChamada = () => {
   const [fila, setFila] = useState([]);
   const [historico, setHistorico] = useState([]);
@@ -48,9 +51,11 @@ const RestauranteChamada = () => {
   }, [carregar]);
 
   const filaVisivel = fila.filter((p) => p.itens.length > 0);
-  const central = filaVisivel.find((p) => p.chamado_count < MAX_CHAMADOS) ?? null;
-  const aguardando = filaVisivel.filter((p) => p.chamado_count >= MAX_CHAMADOS);
-  const naFila = filaVisivel.filter((p) => p.chamado_count < MAX_CHAMADOS && p.order_id !== central?.order_id).length;
+  const emPreparo = filaVisivel.filter((p) => p.status === 'preparando');
+  const prontos = filaVisivel.filter((p) => p.status === 'pronto');
+  const central = prontos.find((p) => p.chamado_count < MAX_CHAMADOS) ?? null;
+  const aguardando = prontos.filter((p) => p.chamado_count >= MAX_CHAMADOS);
+  const naFila = prontos.filter((p) => p.chamado_count < MAX_CHAMADOS && p.order_id !== central?.order_id).length;
 
   // Ciclo de 7s: dispara bipe+pisca e registra a chamada no servidor (sobrevive a
   // reload da TV, já que o contador/última chamada ficam persistidos na comanda).
@@ -133,8 +138,20 @@ const RestauranteChamada = () => {
           )}
         </div>
 
-        {/* Lateral — Aguardando entregar (silencioso) + Entregue (histórico) */}
+        {/* Lateral — Em preparo (silencioso, ordem de chegada) + Aguardando entregar + Entregue (histórico) */}
         <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 max-h-[80vh]">
+          <div className="flex-1 overflow-y-auto">
+            <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Em preparo ({emPreparo.length})</h2>
+            <div className="space-y-2">
+              {emPreparo.map((p) => (
+                <div key={p.order_id} className="bg-[#232323] border border-[#2A2A2A] rounded-xl p-3 flex items-center justify-between gap-2">
+                  <p className="text-sm font-bold text-white">{p.cliente}</p>
+                  <span className="flex-shrink-0 text-[10px] font-bold uppercase tracking-wide text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full">Em preparo</span>
+                </div>
+              ))}
+              {emPreparo.length === 0 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vazio.</p>}
+            </div>
+          </div>
           <div className="flex-1 overflow-y-auto">
             <h2 className="text-xs font-black text-white uppercase tracking-wide mb-2">Aguardando entregar ({aguardando.length})</h2>
             <div className="space-y-2">
