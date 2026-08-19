@@ -2,17 +2,17 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha,
-  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
+  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
 } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken, resgatarToken,
   getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
-  getKdsImpressoras, getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
+  getKdsImpressoras, getKdsItens, marcarItemPronto, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
-import { barcodeValue, getPrinterName, setPrinterName, printTicketSetor } from '../../utils/printComanda';
+import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
@@ -216,6 +216,7 @@ const RestauranteCozinha = () => {
   const [erro, setErro] = useState(null);
   const [scanInput, setScanInput] = useState('');
   const [highlighted, setHighlighted] = useState(null);
+  const [highlightedSalaoItemId, setHighlightedSalaoItemId] = useState(null);
   const [scanMsg, setScanMsg] = useState(null);
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
   const [printerInput, setPrinterInput] = useState('');
@@ -391,24 +392,42 @@ const RestauranteCozinha = () => {
     setPrinterInput(saved);
   }, []);
 
+  // Não limpa scanInput no final de propósito — ele fica ativo como filtro (ver
+  // idEscaneado/passaFiltro abaixo), igual Produção/Bar filtram pelo campo de busca.
+  // O highlight é só o "pisca" de confirmação de que achou, a lista já filtrada
+  // continua mostrando só aquele item até o usuário limpar.
   const buscarPorId = useCallback((rawValue) => {
     const id = parseInt(rawValue.replace(/\D/g, ''));
     if (!id) return;
     const found = pedidos.find((p) => p.id === id);
+    const itemSalao = !found ? itensSalao.find((i) => i.numero_comanda === id) : null;
     if (found) {
       setHighlighted(id);
       setScanMsg({ tipo: 'ok', texto: `Pedido #${id} encontrado` });
-      setTimeout(() => { setHighlighted(null); setScanMsg(null); }, 4000);
+      setTimeout(() => setHighlighted(null), 2000);
       setTimeout(() => {
         document.getElementById(`order-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 50);
+    } else if (itemSalao) {
+      setHighlightedSalaoItemId(itemSalao.id);
+      setScanMsg({ tipo: 'ok', texto: `Comanda #${id} encontrada` });
+      setTimeout(() => setHighlightedSalaoItemId(null), 2000);
+      setTimeout(() => {
+        document.getElementById(`salao-item-${itemSalao.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
     } else {
-      setScanMsg({ tipo: 'erro', texto: `Pedido #${id} não está na cozinha agora` });
-      setTimeout(() => setScanMsg(null), 3000);
+      setScanMsg({ tipo: 'erro', texto: `Pedido/comanda #${id} não está na cozinha agora` });
     }
-    setScanInput('');
     scanRef.current?.focus();
-  }, [pedidos]);
+  }, [pedidos, itensSalao]);
+
+  const limparScan = () => {
+    setScanInput('');
+    setHighlighted(null);
+    setHighlightedSalaoItemId(null);
+    setScanMsg(null);
+    scanRef.current?.focus();
+  };
 
   const handleScanKey = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); buscarPorId(scanInput); }
@@ -436,17 +455,6 @@ const RestauranteCozinha = () => {
       if (modoToken) await marcarItemPronto(itemId);
       else await marcarItemProntoRestaurante(itemId);
       carregarSalao(impressorasCozinha, modoToken);
-    } catch (e) {
-      alert(e.message);
-    }
-  };
-
-  const reimprimirSalao = async (item) => {
-    try {
-      const res = modoToken ? await reimprimirItem(item.id) : await reimprimirItemRestaurante(item.id);
-      if (res.via === 'navegador') {
-        printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente, numero_comanda: item.numero_comanda }, 'Cozinha');
-      }
     } catch (e) {
       alert(e.message);
     }
@@ -497,12 +505,14 @@ const RestauranteCozinha = () => {
     ...itensSalaoPreparando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
   ].sort((a, b) => a.ts - b.ts);
 
-  // Filtro por canal (Todos/Delivery/Salão) aplicado só na exibição — posição na fila
-  // é recalculada sobre a lista já filtrada.
-  const passaFiltro = (e) => filtroCanal === 'todos' || e.tipo === filtroCanal;
+  // Filtro por canal (Todos/Delivery/Salão) + busca pelo leitor/campo de código, igual
+  // Produção e Bar: com código escaneado, só sobra o pedido/comanda que bateu.
+  const idEscaneado = /^\d+$/.test(scanInput.trim()) ? parseInt(scanInput.trim(), 10) : null;
+  const passaBuscaEntry = (e) => idEscaneado === null || (e.tipo === 'delivery' ? e.pedido.id === idEscaneado : e.item.numero_comanda === idEscaneado);
+  const passaFiltro = (e) => (filtroCanal === 'todos' || e.tipo === filtroCanal) && passaBuscaEntry(e);
   const aguardandoPreparo = filaAguardando.filter(passaFiltro);
   const emPreparo = filaEmPreparo.filter(passaFiltro);
-  const prontosSalao = filtroCanal === 'delivery' ? [] : itensSalaoProntos;
+  const prontosSalao = filtroCanal === 'delivery' ? [] : itensSalaoProntos.filter((i) => idEscaneado === null || i.numero_comanda === idEscaneado);
   const totalDelivery = filaAguardando.filter((e) => e.tipo === 'delivery').length + filaEmPreparo.filter((e) => e.tipo === 'delivery').length;
   const totalSalao = filaAguardando.filter((e) => e.tipo === 'salao').length + filaEmPreparo.filter((e) => e.tipo === 'salao').length;
 
@@ -612,15 +622,20 @@ const RestauranteCozinha = () => {
               value={scanInput}
               onChange={(e) => setScanInput(e.target.value)}
               onKeyDown={handleScanKey}
-              placeholder="Aponte o leitor ou digite o nº do pedido..."
+              placeholder="Aponte o leitor ou digite o nº do pedido/comanda..."
               className="flex-1 bg-transparent text-white text-sm placeholder:text-[#3A3A3A] outline-none font-mono"
               autoFocus
             />
             {scanInput && (
-              <button onClick={() => buscarPorId(scanInput)}
-                className="flex-shrink-0 px-3 py-1 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19]">
-                Buscar
-              </button>
+              <>
+                <button onClick={() => buscarPorId(scanInput)}
+                  className="flex-shrink-0 px-3 py-1 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19]">
+                  Buscar
+                </button>
+                <button onClick={limparScan} title="Limpar busca" className="flex-shrink-0 text-[#71717A] hover:text-white">
+                  <Icon name="X" size={16} />
+                </button>
+              </>
             )}
           </div>
           {scanMsg && (
@@ -679,7 +694,8 @@ const RestauranteCozinha = () => {
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
                   <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
-                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
+                    onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao}
+                    highlighted={highlightedSalaoItemId === entry.item.id} />
                 )
               ))}
             </div>
@@ -707,7 +723,8 @@ const RestauranteCozinha = () => {
                     atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
                 ) : (
                   <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
-                    onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
+                    onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao}
+                    highlighted={highlightedSalaoItemId === entry.item.id} />
                 )
               ))}
             </div>
@@ -725,7 +742,8 @@ const RestauranteCozinha = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(verTodosProntos ? prontosSalao : prontosSalao.slice(0, 5)).map((item, idx) => (
               <SalaoItemCard key={`p-${item.id}`} item={item} posicao={idx + 1} now={now}
-                onReimprimir={reimprimirSalao} onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao} />
+                onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao}
+                highlighted={highlightedSalaoItemId === item.id} />
             ))}
           </div>
           {prontosSalao.length > 5 && (

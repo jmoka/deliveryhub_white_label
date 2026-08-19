@@ -4,7 +4,7 @@ import { formatDuracao } from '../../utils/formatDuracao';
 
 // Card de item de salão/setor (KDS) — usado tanto na tela unificada da Cozinha
 // quanto na tela de setor por impressora (bar, salgados...), pra ficarem sempre idênticas.
-const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar }) => {
+const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, highlighted = false }) => {
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -12,7 +12,11 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
   const tempoTotal = now - enviadoEm;
 
   return (
-  <div className={`rounded-2xl border-2 overflow-hidden bg-purple-950/20 ${item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : 'border-purple-300'}`}>
+  <div id={`salao-item-${item.id}`} className={`rounded-2xl border-2 overflow-hidden bg-purple-950/20 transition-all duration-300 ${
+    highlighted
+      ? 'border-yellow-400 ring-2 ring-yellow-400/60 shadow-xl shadow-yellow-300/20 scale-[1.02]'
+      : item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : 'border-purple-300'
+  }`}>
     {item.garcom && (
       <div className="bg-white px-4 py-2">
         <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
@@ -29,10 +33,12 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
           <p className="text-lg font-bold text-white">Produto: {item.product_name} <span className="text-purple-300 font-normal text-xs">· Salão</span></p>
         </div>
       </div>
-      <button onClick={() => onReimprimir(item)}
-        className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
-        <Icon name="Printer" size={11} /> Reimpressão
-      </button>
+      {onReimprimir && (
+        <button onClick={() => onReimprimir(item)}
+          className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
+          <Icon name="Printer" size={11} /> Reimpressão
+        </button>
+      )}
     </div>
     {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
     {item.garcom_nao_entregou && (
@@ -54,6 +60,7 @@ const SalaoItemCard = ({ item, posicao, now, onReimprimir, onIniciarPreparo, onM
     <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
       <Icon name="MapPin" size={14} />
       <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? 'Avulsa'}</span>
+      {item.numero_comanda && <span className="text-[11px] font-normal text-purple-300/80">#{item.numero_comanda}</span>}
     </div>
     <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
       <span className="flex items-center gap-1 text-blue-400">
