@@ -308,6 +308,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [mostrarPicker, setMostrarPicker] = useState(false);
   const [mostrarDividir, setMostrarDividir] = useState(false);
   const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
+  const [mostrarAvisoPendente, setMostrarAvisoPendente] = useState(false);
 
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
@@ -621,6 +622,24 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   const podeEditar = comanda.status === 'aberta' || comanda.status === 'fechada_garcom';
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
+
+  // Fechar pelo X (sem passar por "Confirmar pagamento"/"Cancelar comanda" explícito):
+  // comanda vazia (mesa aberta e ninguém pediu nada) não pode ficar "esquecida" ocupando
+  // a mesa pra sempre — confirma e cancela (backend deleta de vez, ver `cancelar` em
+  // salao-pdv.service.ts, já que nunca teve produto/pagamento real). Com item pendente,
+  // só avisa — fechar o modal não perde nada, os itens continuam salvos pra reabrir depois.
+  const fecharModal = () => {
+    if (comanda.status === 'aberta' && (comanda.itens ?? []).length === 0) {
+      if (!window.confirm('Essa comanda está vazia. Fechar sem lançar nenhum produto vai cancelá-la. Deseja continuar?')) return;
+      acao(async () => { await cancelarComandaSalao(comandaId); onFechar(); });
+      return;
+    }
+    if (temPendente) {
+      setMostrarAvisoPendente(true);
+      return;
+    }
+    onFechar();
+  };
   // Comanda já paga: só dá pra corrigir a forma de pagamento (ex: confirmou PIX por
   // engano, era dinheiro) — não reabre valor nem permite remover. Backend também bloqueia
   // se o caixa dessa comanda já tiver sido fechado (resumo já foi gravado e congelado).
@@ -677,7 +696,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                 : comanda.status === 'paga' ? 'Paga'
                 : comanda.status === 'canceled' ? 'Cancelada' : comanda.status}
             </span>
-            <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F]" title="Fechar">
+            <button onClick={fecharModal} className="p-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F]" title="Fechar">
               <Icon name="X" size={18} />
             </button>
           </div>
@@ -876,6 +895,27 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             onConfirmar={dividirComanda}
             salvando={salvando}
           />
+        )}
+
+        {mostrarAvisoPendente && (
+          <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[70] p-4">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+              <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Tem produto não enviado</h2>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">
+                Essa comanda tem produto ainda não enviado pra cozinha/bar. Quer enviar agora ou fechar sem enviar (o item continua salvo na comanda)?
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => { setMostrarAvisoPendente(false); onFechar(); }} disabled={salvando}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
+                  Fechar sem enviar
+                </button>
+                <button onClick={() => { setMostrarAvisoPendente(false); enviarItens(); }} disabled={salvando}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {mostrarEditarCliente && (
@@ -1190,9 +1230,13 @@ const RestauranteSalao = () => {
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [comandasFechadas, setComandasFechadas] = useState([]);
-  const [filtroNome, setFiltroNome] = useState('');
+  const [busca, setBusca] = useState('');
+  const [erroBusca, setErroBusca] = useState(false);
   const [filtroData, setFiltroData] = useState('');
   const [filtroValorMin, setFiltroValorMin] = useState('');
+  const [visualizacao, setVisualizacao] = useState('card'); // 'lista' | 'card'
+  const [filtroTipo, setFiltroTipo] = useState('avulsas'); // 'todos' | 'avulsas'
+  const [fechadasAbertas, setFechadasAbertas] = useState(false);
   const [comandaAtiva, setComandaAtiva] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mesaParaAbrir, setMesaParaAbrir] = useState(undefined);
@@ -1276,8 +1320,26 @@ const RestauranteSalao = () => {
     return () => clearInterval(interval);
   }, [carregar]);
 
+  // Busca livre — mesmo padrão de Cozinha/Bar/Produção: aceita tanto código de
+  // barras/número de comanda exato (leitor) quanto texto livre (cliente, mesa, garçom).
+  // Garçom: comanda aberta pelo estabelecimento (venda balcão/caixa) não tem
+  // garcons.nome — cai no aberto_por_nome, mesmo dado já usado pra exibir "Caixa: X".
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const numeroBuscado = /^\d+$/.test(busca.trim()) ? parseInt(busca.trim(), 10) : null;
+  const passaBusca = (c) => {
+    if (!buscaNormalizada) return true;
+    if (numeroBuscado !== null && (c.numero_comanda ?? c.id) === numeroBuscado) return true;
+    const alvo = [c.cliente_mesa_nome, c.mesas?.numero, c.numero_comanda ?? c.id, c.garcons?.nome ?? c.aberto_por_nome]
+      .filter((v) => v !== null && v !== undefined).join(' ').toLowerCase();
+    return alvo.includes(buscaNormalizada);
+  };
+
   const passaNoFiltro = (c) => {
-    if (filtroNome && !c.cliente_mesa_nome?.toLowerCase().includes(filtroNome.toLowerCase())) return false;
+    if (!passaBusca(c)) return false;
+    // Comanda de mesa já aparece como card "ocupada" na grade de Mesas lá em cima —
+    // "Só comandas" existe pra filtrar só as avulsas (venda balcão/comanda sem mesa),
+    // que não têm outro lugar pra aparecer.
+    if (filtroTipo === 'avulsas' && c.mesa_id) return false;
     if (filtroValorMin && (c.total ?? 0) < parseFloat(filtroValorMin)) return false;
     if (filtroData) {
       const dataRef = c.pago_em ?? c.created_at;
@@ -1286,30 +1348,67 @@ const RestauranteSalao = () => {
     return true;
   };
 
-  const comandasFiltradas = useMemo(() => comandas.filter(passaNoFiltro), [comandas, filtroNome, filtroData, filtroValorMin]);
-  const comandasFechadasFiltradas = useMemo(() => comandasFechadas.filter(passaNoFiltro), [comandasFechadas, filtroNome, filtroData, filtroValorMin]);
-  const filtroAtivo = !!(filtroNome || filtroData || filtroValorMin);
+  const comandasFiltradas = useMemo(() => comandas.filter(passaNoFiltro), [comandas, busca, filtroTipo, filtroData, filtroValorMin]);
+  const comandasFechadasFiltradas = useMemo(() => comandasFechadas.filter(passaNoFiltro), [comandasFechadas, busca, filtroTipo, filtroData, filtroValorMin]);
+  const filtroAtivo = !!(busca || filtroData || filtroValorMin);
 
-  // Leitor de código de barras digita os dígitos do código impresso na comanda (ver
-  // barcodeValue em printComanda.js) e manda Enter igual a um teclado — não precisa de
-  // integração especial, só um input que reage ao Enter.
-  const [codigoBusca, setCodigoBusca] = useState('');
-  const [erroCodigoBusca, setErroCodigoBusca] = useState(false);
+  // Enter (leitor de código de barras digita os dígitos e manda Enter igual a um
+  // teclado) com número exato abre a comanda direto, igual já fazia antes — texto
+  // livre só segue filtrando a lista, sem ação especial no Enter.
   const buscarPorCodigo = () => {
-    const codigo = codigoBusca.trim();
-    if (!codigo) return;
-    const numero = parseInt(codigo, 10);
-    const achada = [...comandas, ...comandasFechadas].find(
-      (c) => (c.numero_comanda ?? c.id) === numero,
-    );
+    if (numeroBuscado === null) return;
+    const achada = [...comandas, ...comandasFechadas].find((c) => (c.numero_comanda ?? c.id) === numeroBuscado);
     if (achada) {
       setComandaAtiva(achada.id);
-      setCodigoBusca('');
-      setErroCodigoBusca(false);
+      setBusca('');
+      setErroBusca(false);
     } else {
-      setErroCodigoBusca(true);
+      setErroBusca(true);
     }
   };
+
+  const statusLabelComanda = (c) => (c.status === 'aberta' ? 'Em aberto' : c.status === 'fechada_garcom' ? 'Aguardando pagamento' : 'Paga');
+  const responsavelComanda = (c) => (c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —');
+
+  const ComandaLinha = ({ c }) => (
+    <button onClick={() => setComandaAtiva(c.id)}
+      className={`w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left ${c.status === 'paga' ? 'opacity-80' : ''}`}>
+      <div>
+        <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
+          #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
+        </p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{responsavelComanda(c)} · {statusLabelComanda(c)}</p>
+      </div>
+      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
+    </button>
+  );
+
+  const ComandaCard = ({ c }) => (
+    <button onClick={() => setComandaAtiva(c.id)}
+      className={`bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 text-left ${c.status === 'paga' ? 'opacity-80' : ''}`}>
+      <p className="text-xs font-bold text-[#FF441F]">#{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''}</p>
+      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate mt-0.5">{c.cliente_mesa_nome}</p>
+      <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] truncate">{responsavelComanda(c)}</p>
+      <div className="flex items-center justify-between mt-2 gap-1">
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 font-medium whitespace-nowrap">
+          {statusLabelComanda(c)}
+        </span>
+        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(c.total)}</span>
+      </div>
+    </button>
+  );
+
+  const ListaOuCards = ({ lista, vazio }) => visualizacao === 'lista' ? (
+    <div className="space-y-2">
+      {lista.map((c) => <ComandaLinha key={c.id} c={c} />)}
+      {lista.length === 0 && <p className="text-sm text-[#A1A1AA]">{vazio}</p>}
+    </div>
+  ) : (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {lista.map((c) => <ComandaCard key={c.id} c={c} />)}
+      {lista.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">{vazio}</p>}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
@@ -1384,72 +1483,62 @@ const RestauranteSalao = () => {
             <div className="flex items-center gap-2 mb-3">
               <Icon name="ScanLine" size={16} className="text-[#71717A] dark:text-[#A1A1AA] shrink-0" />
               <input
-                value={codigoBusca}
-                onChange={(e) => { setCodigoBusca(e.target.value); setErroCodigoBusca(false); }}
+                value={busca}
+                onChange={(e) => { setBusca(e.target.value); setErroBusca(false); }}
                 onKeyDown={(e) => e.key === 'Enter' && buscarPorCodigo()}
-                placeholder="Escaneie o código de barras da comanda ou digite o número"
+                placeholder="Buscar por cliente, mesa, comanda, garçom ou aponte o leitor..."
                 autoFocus
-                className={`flex-1 border rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none ${erroCodigoBusca ? 'border-red-500 focus:border-red-500' : 'border-[#E4E4E7] dark:border-[#3F3F46] focus:border-[#FF441F]'}`}
+                className={`flex-1 border rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none ${erroBusca ? 'border-red-500 focus:border-red-500' : 'border-[#E4E4E7] dark:border-[#3F3F46] focus:border-[#FF441F]'}`}
               />
-              {erroCodigoBusca && <span className="text-xs text-red-600 dark:text-red-400 shrink-0">Comanda não encontrada</span>}
+              {erroBusca && <span className="text-xs text-red-600 dark:text-red-400 shrink-0">Comanda não encontrada</span>}
             </div>
 
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-              <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Comandas em aberto</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Comandas em aberto</p>
+                <div className="flex items-center gap-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg p-0.5">
+                  <button onClick={() => setVisualizacao('lista')} title="Ver em lista"
+                    className={`p-1.5 rounded-md ${visualizacao === 'lista' ? 'bg-white dark:bg-[#27272A] text-[#FF441F]' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                    <Icon name="List" size={14} />
+                  </button>
+                  <button onClick={() => setVisualizacao('card')} title="Ver em cards"
+                    className={`p-1.5 rounded-md ${visualizacao === 'card' ? 'bg-white dark:bg-[#27272A] text-[#FF441F]' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                    <Icon name="LayoutGrid" size={14} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg p-0.5">
+                  <button onClick={() => setFiltroTipo('todos')} title="Mostrar comandas de mesa e avulsas"
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold ${filtroTipo === 'todos' ? 'bg-white dark:bg-[#27272A] text-[#FF441F]' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                    Todos
+                  </button>
+                  <button onClick={() => setFiltroTipo('avulsas')} title="Mesas já aparecem na grade de Mesas acima"
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold ${filtroTipo === 'avulsas' ? 'bg-white dark:bg-[#27272A] text-[#FF441F]' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                    Só comandas
+                  </button>
+                </div>
+              </div>
               <div className="flex gap-2 flex-wrap">
-                <input value={filtroNome} onChange={(e) => setFiltroNome(e.target.value)} placeholder="Nome do cliente"
-                  className="w-32 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
                 <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)}
                   className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
                 <input type="number" min="0" value={filtroValorMin} onChange={(e) => setFiltroValorMin(e.target.value)} placeholder="Valor mín."
                   className="w-24 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
                 {filtroAtivo && (
-                  <button onClick={() => { setFiltroNome(''); setFiltroData(''); setFiltroValorMin(''); }}
+                  <button onClick={() => { setBusca(''); setErroBusca(false); setFiltroData(''); setFiltroValorMin(''); }}
                     className="text-xs text-[#FF441F] font-semibold px-1">Limpar</button>
                 )}
               </div>
             </div>
-            <div className="space-y-2">
-              {comandasFiltradas.map((c) => (
-                <button key={c.id} onClick={() => setComandaAtiva(c.id)}
-                  className="w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left">
-                  <div>
-                    <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
-                      #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
-                    </p>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                      {c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —'}
-                      {' · '}{c.status === 'aberta' ? 'Em aberto' : 'Aguardando pagamento'}
-                    </p>
-                  </div>
-                  <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
-                </button>
-              ))}
-              {comandasFiltradas.length === 0 && (
-                <p className="text-sm text-[#A1A1AA]">{filtroAtivo ? 'Nenhuma comanda encontrada com esse filtro.' : 'Nenhuma comanda em aberto.'}</p>
-              )}
-            </div>
+            <ListaOuCards lista={comandasFiltradas}
+              vazio={filtroAtivo ? 'Nenhuma comanda encontrada com esse filtro.' : 'Nenhuma comanda em aberto.'} />
 
             {comandasFechadas.length > 0 && (
               <>
-                <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2 mt-6">Comandas fechadas hoje</p>
-                <div className="space-y-2">
-                  {comandasFechadasFiltradas.map((c) => (
-                    <button key={c.id} onClick={() => setComandaAtiva(c.id)}
-                      className="w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left opacity-80">
-                      <div>
-                        <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
-                          #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
-                        </p>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                          {c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —'}
-                          {' · '}Paga
-                        </p>
-                      </div>
-                      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
-                    </button>
-                  ))}
-                </div>
+                <button onClick={() => setFechadasAbertas((v) => !v)}
+                  className="flex items-center gap-1.5 text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2 mt-6">
+                  <Icon name={fechadasAbertas ? 'ChevronDown' : 'ChevronRight'} size={16} />
+                  Comandas fechadas hoje ({comandasFechadasFiltradas.length})
+                </button>
+                {fechadasAbertas && <ListaOuCards lista={comandasFechadasFiltradas} vazio="Nenhuma comanda fechada encontrada com esse filtro." />}
               </>
             )}
           </>
