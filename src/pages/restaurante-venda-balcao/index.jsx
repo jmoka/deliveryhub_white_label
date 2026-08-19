@@ -63,6 +63,30 @@ const RestauranteVendaBalcao = () => {
     abrirVendaBalcao().then((c) => setComandaId(c.id)).catch((err) => setErroAbertura(err.message));
   }, []);
 
+  // Depois de finalizar uma venda, abre a próxima na mesma tela em vez de navegar pra
+  // /restaurante/salao — pedido do usuário, pra quem vende no balcão o dia todo não
+  // precisar clicar em "Venda Balcão" de novo a cada cliente.
+  const iniciarNovaVenda = async () => {
+    setComanda(null);
+    setComandaId(null);
+    setNomeCliente('');
+    setDescontoInput('');
+    setAcrescimoInput('');
+    setValorPagamento('');
+    setFormaPagamentoParcial('pix');
+    setValorRecebidoParcial('');
+    setTrocoViaPixParcial(false);
+    setForma('pix');
+    setValorRecebidoFinal('');
+    try {
+      const nova = await abrirVendaBalcao();
+      finalizadaRef.current = false;
+      setComandaId(nova.id);
+    } catch (err) {
+      setErroAbertura(err.message);
+    }
+  };
+
   useEffect(() => { comandaIdRef.current = comandaId; }, [comandaId]);
 
   // Rede de segurança pra saídas que não passam pelos botões (ex: voltar do
@@ -183,32 +207,46 @@ const RestauranteVendaBalcao = () => {
   };
 
   const finalizar = () => {
+    // Não usa o helper `acao()` aqui de propósito — ele recarrega a comanda no final
+    // usando o comandaId antigo (fechado da closure), o que sobrescreveria a comanda
+    // nova aberta por iniciarNovaVenda() com os dados da venda que acabou de pagar.
+    if (emAndamentoRef.current) return;
     if (forma === 'cash' && valorRecebidoFinal && Number(valorRecebidoFinal) < valorACobrarFinal) {
       setErro('Valor recebido não pode ser menor que o valor a pagar.');
       return;
     }
-    acao(async () => {
-      const res = await pagarComandaSalao(
-        comandaId, forma, undefined,
-        // Idem: sem isso, pagamento em dinheiro exato (sem digitar valor recebido) nunca
-        // credita a venda no caixa físico.
-        forma === 'cash' ? Number(valorRecebidoFinal || valorACobrarFinal) : undefined,
-      );
-      if (res?.recibo?.via !== 'agente') {
-        printReciboCliente(comanda, comanda.itens ?? [], {
-          subtotal,
-          desconto: Number(descontoInput || 0),
-          acrescimo: Number(acrescimoInput || 0),
-          taxaCartao: res?.taxa_cartao_valor ?? 0,
-          total: res?.total_geral ?? (totalFinal + taxaCartaoValorFinal),
-          formaPagamento: forma,
-          trocoDado: res?.troco ?? 0,
-          pagamentos: res?.pagamentos ?? [],
-        });
+    emAndamentoRef.current = true;
+    setErro(null);
+    setSalvando(true);
+    (async () => {
+      try {
+        const res = await pagarComandaSalao(
+          comandaId, forma, undefined,
+          // Idem: sem isso, pagamento em dinheiro exato (sem digitar valor recebido) nunca
+          // credita a venda no caixa físico.
+          forma === 'cash' ? Number(valorRecebidoFinal || valorACobrarFinal) : undefined,
+        );
+        if (res?.recibo?.via !== 'agente') {
+          printReciboCliente(comanda, comanda.itens ?? [], {
+            subtotal,
+            desconto: Number(descontoInput || 0),
+            acrescimo: Number(acrescimoInput || 0),
+            taxaCartao: res?.taxa_cartao_valor ?? 0,
+            total: res?.total_geral ?? (totalFinal + taxaCartaoValorFinal),
+            formaPagamento: forma,
+            trocoDado: res?.troco ?? 0,
+            pagamentos: res?.pagamentos ?? [],
+          });
+        }
+        finalizadaRef.current = true;
+        await iniciarNovaVenda();
+      } catch (err) {
+        setErro(err.message);
+      } finally {
+        emAndamentoRef.current = false;
+        setSalvando(false);
       }
-      finalizadaRef.current = true;
-      navigate('/restaurante/salao');
-    });
+    })();
   };
 
   if (erroAbertura) {
