@@ -1404,7 +1404,7 @@ const RestauranteSalao = () => {
       {lista.length === 0 && <p className="text-sm text-[#A1A1AA]">{vazio}</p>}
     </div>
   ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       {lista.map((c) => <ComandaCard key={c.id} c={c} />)}
       {lista.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">{vazio}</p>}
     </div>
@@ -1488,13 +1488,13 @@ const RestauranteSalao = () => {
                 onKeyDown={(e) => e.key === 'Enter' && buscarPorCodigo()}
                 placeholder="Buscar por cliente, mesa, comanda, garçom ou aponte o leitor..."
                 autoFocus
-                className={`flex-1 border rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none ${erroBusca ? 'border-red-500 focus:border-red-500' : 'border-[#E4E4E7] dark:border-[#3F3F46] focus:border-[#FF441F]'}`}
+                className={`flex-1 min-w-0 border rounded-lg px-3 py-2 text-sm bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none ${erroBusca ? 'border-red-500 focus:border-red-500' : 'border-[#E4E4E7] dark:border-[#3F3F46] focus:border-[#FF441F]'}`}
               />
               {erroBusca && <span className="text-xs text-red-600 dark:text-red-400 shrink-0">Comanda não encontrada</span>}
             </div>
 
             <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Comandas em aberto</p>
                 <div className="flex items-center gap-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg p-0.5">
                   <button onClick={() => setVisualizacao('lista')} title="Ver em lista"

@@ -17,6 +17,9 @@ export default {
       },
     },
     extend: {
+      screens: {
+        xs: '360px',
+      },
       colors: {
         brand: { DEFAULT: '#FF441F', hover: '#E63A19', light: '#FFF1EE' },
         promo: { DEFAULT: '#FF7A00', hover: '#E06C00', light: '#FFF4E6' },
