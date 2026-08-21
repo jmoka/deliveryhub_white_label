@@ -6,8 +6,7 @@ import Icon from '../../components/AppIcon';
 import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
 import { imgUrl } from '../../lib/imgUrl';
 import { apiPath } from '../../lib/apiUrl';
-import { getMotoboyToken } from '../../services/motoboyAuthService';
-import { getPerfil, ehMotoboy } from '../../services/perfilService';
+import { getPerfil } from '../../services/perfilService';
 import { supabase } from '../../lib/supabase';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -759,15 +758,6 @@ const MenuCatalogProductBrowse = () => {
     getPerfil().then(setPerfilCliente).catch(() => {});
   }, [userProfile?.id, userProfile?.role]);
 
-  // Motoboy não deve navegar a vitrine de cliente — manda pro painel dele. Cobre
-  // tanto role='motoboy' quanto email com cadastro de motoboy numa conta de
-  // cliente separada (ver PerfilService.ehMotoboy).
-  useEffect(() => {
-    if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) return;
-    if (isMotoboy()) { navigate('/motoboy', { replace: true }); return; }
-    ehMotoboy().then((r) => { if (r.motoboy) navigate('/motoboy', { replace: true }); }).catch(() => {});
-  }, [userProfile?.id, userProfile?.role]);
-
   // Se a precisão do GPS piorar (ou não vier mais tão boa) e o raio selecionado sumir
   // da lista disponível, sobe pro menor raio que ainda é real — nunca deixa um valor
   // inválido/ilusório selecionado.
@@ -894,11 +884,12 @@ const MenuCatalogProductBrowse = () => {
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
-            {getMotoboyToken() ? (
+            {isMotoboy() ? (
               <button onClick={() => navigate('/motoboy')}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Painel do motoboy">
-                <Icon name="Bike" size={16} />
-                Painel do motoboy
+                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Painel do motoboy">
+                <Icon name="Bike" size={18} className="sm:hidden" />
+                <Icon name="Bike" size={16} className="hidden sm:block" />
+                <span className="hidden sm:inline text-xs font-semibold">Painel do motoboy</span>
               </button>
             ) : (
               isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
@@ -1321,10 +1312,10 @@ const MenuCatalogProductBrowse = () => {
           <button onClick={() => navigate('/restaurant-registration-setup')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
             <Icon name="Store" size={12} /> Cadastrar estabelecimento
           </button>
-          {(getMotoboyToken() || (isAuthenticated() && !isAdmin() && !isRestaurantOwner())) && (
+          {(isMotoboy() || (isAuthenticated() && !isAdmin() && !isRestaurantOwner())) && (
             <>
               <span className="text-[#E4E4E7]">·</span>
-              {getMotoboyToken() ? (
+              {isMotoboy() ? (
                 <button onClick={() => navigate('/motoboy')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
                   <Icon name="Bike" size={12} /> Painel do motoboy
                 </button>

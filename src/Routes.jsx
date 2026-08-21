@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes as RouterRoutes, Route } from "react-router-dom";
+import { BrowserRouter, Routes as RouterRoutes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
 import { ThemeToggle } from "./contexts/ThemeContext";
@@ -9,6 +9,7 @@ import MenuCatalogProductBrowse from './pages/menu-catalog-product-browse';
 import CustomerAccountOrderHistory from './pages/customer-account-order-history';
 import RestaurantRegistrationSetup from './pages/restaurant-registration-setup';
 import CustomerRegistrationLogin from './pages/customer-registration-login';
+import ResetPassword from './pages/reset-password';
 import OrderTrackingStatus from './pages/order-tracking-status';
 import AdminDashboard from './pages/admin-dashboard';
 import AdminEmpresas from './pages/admin-empresas';
@@ -25,6 +26,7 @@ import AdminPlanos from './pages/admin-planos';
 import AdminUsuarios from './pages/admin-usuarios';
 import AdminMeuPerfil from './pages/admin-meu-perfil';
 import RestauranteGuard from './components/RestauranteGuard';
+import MotoboyGuard from './components/MotoboyGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
 import RestauranteProdutos from './pages/restaurante-produtos';
 import RestaurantePedidos from './pages/restaurante-pedidos';
@@ -80,6 +82,7 @@ const Routes = () => {
         <Route path="/customer-account-order-history" element={<CustomerAccountOrderHistory />} />
         <Route path="/restaurant-registration-setup" element={<RestaurantRegistrationSetup />} />
         <Route path="/customer-registration-login" element={<CustomerRegistrationLogin />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/order-tracking-status" element={<OrderTrackingStatus />} />
 
         {/* Admin — requer role=admin */}
@@ -142,9 +145,9 @@ const Routes = () => {
         {/* Perfil do cliente */}
         <Route path="/customer-profile" element={<CustomerProfile />} />
 
-        {/* Motoboy portal — token-based, sem Supabase Auth */}
-        <Route path="/motoboy" element={<MotoboyPortal />} />
-        <Route path="/motoboy/login" element={<MotoboyPortal />} />
+        {/* Motoboy portal — conta real de Supabase Auth, mesmo login da tela geral */}
+        <Route path="/motoboy" element={<MotoboyGuard><MotoboyPortal /></MotoboyGuard>} />
+        <Route path="/motoboy/login" element={<Navigate to="/customer-registration-login" replace />} />
         <Route path="/motoboy/cadastro" element={<MotoboyCadastro />} />
 
         {/* Garçom portal — login próprio via key+senha, sem Supabase Auth */}

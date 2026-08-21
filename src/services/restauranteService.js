@@ -219,8 +219,6 @@ export const revisarSolicitacaoMotoboy = (id) =>
   apiFetch(`/motoboys/solicitacoes/${id}/revisar`, { method: 'PATCH' });
 export const removerAfiliacaoMotoboy = (motoboyId) =>
   apiFetch(`/motoboys/${motoboyId}/remover`, { method: 'PATCH' });
-export const forcarLogoutMotoboy = (motoboyId) =>
-  apiFetch(`/motoboys/${motoboyId}/forcar-logout`, { method: 'POST' });
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
 
@@ -233,6 +231,13 @@ export const excluirMotoboy = (motoboyId) =>
   apiFetch(`/motoboys/${motoboyId}`, { method: 'DELETE' });
 export const bloquearMotoboy = (motoboyId, bloqueado) =>
   apiFetch(`/motoboys/${motoboyId}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
+
+// Link de definir/redefinir senha (WhatsApp/copiar) e envio por e-mail — mesmo
+// mecanismo do "esqueci senha" do cliente, sem mailer próprio.
+export const gerarLinkSenhaMotoboy = (motoboyId) =>
+  apiFetch(`/motoboys/${motoboyId}/gerar-link-senha`, { method: 'POST' });
+export const enviarLinkSenhaMotoboyPorEmail = (motoboyId) =>
+  apiFetch(`/motoboys/${motoboyId}/enviar-link-senha-email`, { method: 'POST' });
 
 // Combos
 export const getMeusCombos = () => apiFetch('/combos');

@@ -6,7 +6,6 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
 import { authService } from '../../services/authService';
-import { getMotoboyToken, setMotoboyToken, login as motoboyLogin } from '../../services/motoboyAuthService';
 
 const TAB_LOGIN = 'login';
 const TAB_REGISTER = 'register';
@@ -19,8 +18,12 @@ const CustomerRegistrationLogin = () => {
   const [erro, setErro] = useState(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  const { signIn, signUp, isAuthenticated, isAdmin, isRestaurantOwner } = useAuth();
+  const { signIn, signUp, isAuthenticated, isAdmin, isRestaurantOwner, isMotoboy } = useAuth();
 
+  // Motoboy também compra como qualquer usuário — cai na vitrine normal (com
+  // o botão "Painel do motoboy" no topo), não direto no painel de entregas.
+  // A única exceção é `from`: se ele tentou acessar /motoboy direto sem estar
+  // logado, o MotoboyGuard já manda de volta pra lá depois do login.
   const getRedirectUrl = (from) => {
     if (from && from !== '/customer-registration-login') return from;
     if (isAdmin()) return '/admin';
@@ -42,19 +45,6 @@ const CustomerRegistrationLogin = () => {
       if (result?.success) {
         navigate(getRedirectUrl(location?.state?.from));
         return;
-      }
-
-      // Não é conta de cliente/estabelecimento (Supabase Auth) — tenta como
-      // motoboy antes de desistir, já que motoboy cadastrado pelo estabelecimento
-      // não tem conta no Supabase, só na tabela própria. Evita a pessoa precisar
-      // saber de antemão que o login de motoboy fica em /motoboy.
-      try {
-        const { token } = await motoboyLogin(formData?.emailOrPhone, formData?.password);
-        setMotoboyToken(token);
-        navigate('/motoboy');
-        return;
-      } catch {
-        // mantém o erro original do login de cliente/estabelecimento abaixo
       }
 
       throw new Error(result?.error || 'Credenciais inválidas');
@@ -188,7 +178,7 @@ const CustomerRegistrationLogin = () => {
             Você precisará estar logado para completar o cadastro do estabelecimento.
           </p>
 
-          {!getMotoboyToken() && (
+          {!isMotoboy() && (
             <>
               {/* Separador */}
               <div className="flex items-center gap-3">
@@ -206,10 +196,10 @@ const CustomerRegistrationLogin = () => {
                 Cadastrar como entregador
               </button>
               <button
-                onClick={() => navigate('/motoboy')}
+                onClick={() => setActiveTab(TAB_LOGIN)}
                 className="w-full text-center text-xs text-[#71717A] dark:text-[#A1A1AA] hover:underline"
               >
-                Já é entregador? Entre por aqui
+                Já é entregador? Entre por aqui em cima
               </button>
             </>
           )}

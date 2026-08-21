@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getMe, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
+  getMe, atualizarPerfil, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
   getPedidosDisponiveis, pegarPedido,
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
   getGanhosResumo, getGanhosHistorico, solicitarRevisaoPlataforma,
 } from '../../services/motoboyService';
-import { login, logout, completarCadastro, arquivoParaBase64, getMotoboyToken, setMotoboyToken, clearMotoboyToken } from '../../services/motoboyAuthService';
+import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
 import ColetaBarcode from './ColetaBarcode';
 import EntregaBarcode from './EntregaBarcode';
 import Icon from '../../components/AppIcon';
+import CredenciaisForm from '../../components/perfil/CredenciaisForm';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -86,149 +87,6 @@ const STATUS_LABEL = {
   ready: 'Pronto p/ entrega',
   motoboy_collecting: 'Indo buscar',
   out_for_delivery: 'Saiu p/ entrega',
-};
-
-const MotoboyLogin = ({ onLogin }) => {
-  const navigate = useNavigate();
-  const [identificador, setIdentificador] = useState('');
-  const [password, setPassword] = useState('');
-  const [erro, setErro] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErro(null);
-    setLoading(true);
-    try {
-      const { token } = await login(identificador.trim(), password);
-      setMotoboyToken(token);
-      onLogin();
-    } catch (err) {
-      setErro(err.message ?? 'Telefone/e-mail ou senha inválidos.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 w-full max-w-sm shadow-lg">
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <Icon name="Bike" size={28} className="text-[#FF441F]" />
-          </div>
-          <h1 className="text-lg font-black text-[#18181B]">Portal do Entregador</h1>
-          <p className="text-sm text-[#71717A] mt-1">Entre com seu telefone/e-mail e senha</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            value={identificador}
-            onChange={(e) => setIdentificador(e.target.value)}
-            placeholder="Telefone ou e-mail"
-            required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F]"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Senha"
-            required
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F]"
-          />
-          {erro && <p className="text-xs text-red-600">{erro}</p>}
-          <button type="submit" disabled={loading}
-            className="w-full py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 text-sm">
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-          <button type="button" onClick={() => navigate('/motoboy/cadastro')}
-            className="w-full py-2.5 text-sm text-[#71717A] hover:text-[#27272A]">
-            Ainda não tenho cadastro
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const CAMPOS_ARQUIVO_COMPLETAR = [
-  { name: 'foto_perfil', label: 'Foto de perfil', icon: 'User', accept: 'image/*' },
-  { name: 'documento_frente', label: 'Documento com foto', icon: 'IdCard', accept: 'image/*,application/pdf' },
-  { name: 'comprovante_endereco', label: 'Comprovante de endereço', icon: 'FileText', accept: 'image/*,application/pdf' },
-];
-
-// Motoboys cadastrados antes do login por senha (link antigo do restaurante) completam aqui.
-const CompletarCadastro = ({ nomeAtual, onCompletar }) => {
-  const { refreshUserProfile } = useAuth();
-  const [form, setForm] = useState({ name: nomeAtual ?? '', phone: '', email: '', password: '' });
-  const [arquivos, setArquivos] = useState({});
-  const [previews, setPreviews] = useState({});
-  const [erro, setErro] = useState(null);
-  const [enviando, setEnviando] = useState(false);
-
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleArquivo = async (campo, file) => {
-    if (!file) return;
-    const base64 = await arquivoParaBase64(file);
-    setArquivos((a) => ({ ...a, [campo]: base64 }));
-    setPreviews((p) => ({ ...p, [campo]: file.name }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErro(null);
-    for (const campo of CAMPOS_ARQUIVO_COMPLETAR) {
-      if (!arquivos[campo.name]) { setErro(`Envie: ${campo.label}`); return; }
-    }
-    setEnviando(true);
-    try {
-      const { token } = await completarCadastro({ ...form, ...arquivos });
-      setMotoboyToken(token);
-      refreshUserProfile(); // se era cliente logado, o role virou 'motoboy' no banco
-      onCompletar();
-    } catch (err) {
-      setErro(err.message);
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 w-full max-w-sm shadow-lg my-8">
-        <div className="text-center mb-6">
-          <Icon name="ShieldAlert" size={28} className="text-[#FF441F] mx-auto mb-2" />
-          <h1 className="text-lg font-black text-[#18181B]">Complete seu cadastro</h1>
-          <p className="text-sm text-[#71717A] mt-1">Defina uma senha e envie seus documentos pra continuar usando o app</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input required value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Nome completo"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <input required value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="Telefone"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <input required type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="E-mail"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <input required type="password" minLength={6} value={form.password} onChange={(e) => set('password', e.target.value)} placeholder="Crie uma senha"
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <div className="space-y-2.5 pt-1">
-            {CAMPOS_ARQUIVO_COMPLETAR.map((campo) => (
-              <label key={campo.name} className="flex items-center gap-3 border border-dashed border-[#E4E4E7] rounded-xl px-3 py-2.5 cursor-pointer hover:border-[#FF441F]/50">
-                <Icon name={previews[campo.name] ? 'CheckCircle2' : campo.icon} size={18} className={previews[campo.name] ? 'text-green-600' : 'text-[#71717A]'} />
-                <span className="flex-1 text-sm text-[#27272A] truncate">{previews[campo.name] ?? campo.label}</span>
-                <input type="file" accept={campo.accept} className="hidden" onChange={(e) => handleArquivo(campo.name, e.target.files?.[0])} />
-              </label>
-            ))}
-          </div>
-          {erro && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
-          <button type="submit" disabled={enviando}
-            className="w-full py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 text-sm mt-2">
-            {enviando ? 'Enviando...' : 'Concluir cadastro'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
 };
 
 const STATUS_AFILIACAO_LABEL = {
@@ -448,8 +306,124 @@ const AbaGanhos = () => {
   );
 };
 
+// Mesmo padrão visual/comportamento de src/pages/customer-profile/index.jsx:
+// avatar circular com upload instantâneo (salva na hora, sem passar pelo form),
+// campos de dados num card com header ícone+label, senha via CredenciaisForm.
+const Campo = ({ label, value, onChange, placeholder, required, readOnly }) => (
+  <div>
+    <label className="block text-xs font-medium text-[#71717A] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+    <input
+      value={value}
+      onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      readOnly={readOnly}
+      placeholder={placeholder}
+      className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none ${
+        readOnly
+          ? 'border-[#F4F4F5] bg-[#FAFAFA] text-[#71717A] cursor-default'
+          : 'border-[#E4E4E7] bg-white text-[#18181B] focus:border-[#FF441F]'
+      }`}
+    />
+  </div>
+);
+
+const AbaPerfil = ({ me, onAtualizado }) => {
+  const [form, setForm] = useState({ name: me?.name ?? '', phone: me?.phone ?? '' });
+  const [fotoUrl, setFotoUrl] = useState(me?.foto_perfil_url ?? null);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+  const [sucesso, setSucesso] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleFotoSelecionada = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEnviandoFoto(true);
+    try {
+      const base64 = await arquivoParaBase64(file);
+      const atualizado = await atualizarPerfil({ foto_perfil: base64 });
+      setFotoUrl(atualizado?.foto_perfil_url ?? null);
+      await onAtualizado();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setEnviandoFoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSalvar = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setSucesso(false);
+    setSalvando(true);
+    try {
+      await atualizarPerfil({ name: form.name, phone: form.phone });
+      setSucesso(true);
+      await onAtualizado();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Foto de perfil */}
+      <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 flex items-center gap-4">
+        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={enviandoFoto}
+          className="relative w-16 h-16 rounded-full overflow-hidden bg-[#F4F4F5] flex-shrink-0 border border-[#E4E4E7]">
+          {fotoUrl
+            ? <img src={fotoUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center"><Icon name="User" size={24} className="text-[#A1A1AA]" /></div>}
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+            <Icon name="Camera" size={16} className="text-white" />
+          </div>
+        </button>
+        <div>
+          <p className="text-sm font-semibold text-[#18181B]">Foto de perfil</p>
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={enviandoFoto}
+            className="text-xs text-[#FF441F] font-semibold hover:underline disabled:opacity-50">
+            {enviandoFoto ? 'Enviando...' : 'Trocar foto'}
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoSelecionada} />
+      </div>
+
+      {/* Dados pessoais */}
+      <form onSubmit={handleSalvar} className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
+        <p className="text-sm font-semibold text-[#18181B] flex items-center gap-2">
+          <Icon name="User" size={14} className="text-[#FF441F]" /> Dados pessoais
+        </p>
+        <Campo label="E-mail (trocar abaixo, em Segurança)" value={me?.email ?? ''} readOnly />
+        <Campo label="Nome completo" value={form.name} onChange={set('name')} placeholder="João Silva" required />
+        <Campo label="Telefone" value={form.phone} onChange={set('phone')} placeholder="Ex: 11999998888" />
+        {erro && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
+        {sucesso && <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">Perfil atualizado.</p>}
+        <button type="submit" disabled={salvando}
+          className="w-full py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 text-sm">
+          {salvando ? 'Salvando...' : 'Salvar alterações'}
+        </button>
+      </form>
+
+      {/* Segurança */}
+      <div>
+        <p className="text-sm font-semibold text-[#18181B] flex items-center gap-2 mb-3">
+          <Icon name="Lock" size={14} className="text-[#FF441F]" /> Segurança
+        </p>
+        <CredenciaisForm currentEmail={me?.email} />
+      </div>
+    </div>
+  );
+};
+
 const MotoboyPortal = () => {
-  const [authed, setAuthed] = useState(!!getMotoboyToken());
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const [erro, setErro] = useState(null);
   const [me, setMe] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -482,37 +456,23 @@ const MotoboyPortal = () => {
       const [infoData, pedidosData] = await Promise.all([getMe(), getMeusPedidos()]);
       setMe(infoData);
       setPedidos(pedidosData.pedidos ?? []);
+      setErro(null);
     } catch (e) {
-      if (e.message.includes('inválido') || e.message.includes('expirada') || e.message.includes('desativada')) {
-        clearMotoboyToken();
-        setAuthed(false);
-      }
+      setErro(e.message);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Handle URL token on first load (link legado de restaurante — vira modo "completar cadastro")
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token');
-    if (urlToken) {
-      setMotoboyToken(urlToken);
-      window.history.replaceState({}, '', '/motoboy');
-      setAuthed(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!authed) return;
     carregarDados();
     carregarAfiliacoes();
     const interval = setInterval(() => { carregarDados(); carregarAfiliacoes(); }, 30000);
     return () => clearInterval(interval);
-  }, [authed, carregarDados, carregarAfiliacoes]);
+  }, [carregarDados, carregarAfiliacoes]);
 
   useEffect(() => {
-    if (!authed || !estabelecimentoAtivo) return;
+    if (!estabelecimentoAtivo) return;
     const carregarDisponiveis = async () => {
       try {
         const d = await getPedidosDisponiveis(estabelecimentoAtivo);
@@ -525,7 +485,7 @@ const MotoboyPortal = () => {
     carregarDisponiveis();
     const id = setInterval(carregarDisponiveis, 10000);
     return () => clearInterval(id);
-  }, [authed, estabelecimentoAtivo, tocarSom]);
+  }, [estabelecimentoAtivo, tocarSom]);
 
   // GPS loop
   useEffect(() => {
@@ -598,22 +558,31 @@ const MotoboyPortal = () => {
   };
 
   const handleSair = async () => {
-    await logout();
-    clearMotoboyToken();
-    setAuthed(false);
+    await signOut();
+    navigate('/customer-registration-login');
   };
 
-  if (!authed) return <MotoboyLogin onLogin={() => { setAuthed(true); setLoading(true); }} />;
+  if (erro && !me) {
+    return (
+      <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 w-full max-w-sm shadow-lg text-center">
+          <Icon name="ShieldAlert" size={28} className="text-[#FF441F] mx-auto mb-2" />
+          <h1 className="text-lg font-black text-[#18181B] mb-1">Não foi possível carregar</h1>
+          <p className="text-sm text-[#71717A] mb-4">{erro}</p>
+          <button onClick={handleSair}
+            className="w-full py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] text-sm">
+            Fazer login novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
     </div>
   );
-
-  if (me?.precisa_completar_cadastro) {
-    return <CompletarCadastro nomeAtual={me?.name} onCompletar={() => carregarDados()} />;
-  }
 
   const aceitos = afiliacoes.filter((a) => a.status === 'aceito');
 
@@ -629,6 +598,17 @@ const MotoboyPortal = () => {
             <p className="text-xs text-[#71717A]">{pedidos.length} pedido(s) em aberto</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAba('perfil')}
+              title="Meu perfil"
+              className={`w-9 h-9 rounded-full overflow-hidden bg-[#F4F4F5] flex-shrink-0 border flex items-center justify-center transition-colors ${
+                aba === 'perfil' ? 'border-[#FF441F] ring-2 ring-[#FF441F]/30' : 'border-[#E4E4E7]'
+              }`}
+            >
+              {me?.foto_perfil_url
+                ? <img src={me.foto_perfil_url} alt="Meu perfil" className="w-full h-full object-cover" />
+                : <Icon name="User" size={16} className="text-[#71717A]" />}
+            </button>
             <button
               onClick={() => setGpsAtivo((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-colors ${
@@ -677,6 +657,8 @@ const MotoboyPortal = () => {
         )}
 
         {aba === 'ganhos' && <AbaGanhos />}
+
+        {aba === 'perfil' && <AbaPerfil me={me} onAtualizado={carregarDados} />}
 
         {aba === 'pedidos' && (
           <>

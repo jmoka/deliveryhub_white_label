@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
-import { ehMotoboy } from '../../services/perfilService';
 import Icon from '../../components/AppIcon';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 
@@ -20,7 +19,7 @@ const STATUS_LABELS = {
 
 const CustomerAccountOrderHistory = () => {
   const navigate = useNavigate();
-  const { user, userProfile, loading: authLoading, isAuthenticated, isMotoboy, signOut } = useAuth();
+  const { user, userProfile, loading: authLoading, isAuthenticated, signOut } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -32,21 +31,8 @@ const CustomerAccountOrderHistory = () => {
       navigate('/customer-registration-login', { state: { from: '/customer-account-order-history' } });
       return;
     }
-    if (isMotoboy()) {
-      navigate('/motoboy', { replace: true });
-      return;
-    }
-
     const carregar = async () => {
       try {
-        // Cobre o caso de email com cadastro de motoboy separado (identidade
-        // distinta da conta de cliente logada) — isMotoboy() só pega role='motoboy'.
-        const { motoboy } = await ehMotoboy();
-        if (motoboy) {
-          navigate('/motoboy', { replace: true });
-          return;
-        }
-
         const sessionResult = await supabase.auth.getSession();
         const token = sessionResult?.data?.session?.access_token;
         if (!token) throw new Error('Sessão expirada');

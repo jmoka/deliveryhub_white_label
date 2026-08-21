@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
-import { cadastro, setMotoboyToken, arquivoParaBase64 } from '../../services/motoboyAuthService';
+import { completarCadastroMotoboy, arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const CAMPOS_ARQUIVO = [
@@ -13,7 +13,7 @@ const CAMPOS_ARQUIVO = [
 
 const MotoboyCadastro = () => {
   const navigate = useNavigate();
-  const { refreshUserProfile } = useAuth();
+  const { signUp, refreshUserProfile } = useAuth();
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
   const [arquivos, setArquivos] = useState({});
   const [previews, setPreviews] = useState({});
@@ -42,10 +42,18 @@ const MotoboyCadastro = () => {
 
     setEnviando(true);
     try {
-      const { token } = await cadastro({ ...form, ...arquivos });
-      setMotoboyToken(token);
-      refreshUserProfile(); // se era cliente logado, o role virou 'motoboy' no banco
-      navigate('/motoboy');
+      const resultado = await signUp(form.email, form.password, {
+        name: form.name,
+        role: 'motoboy',
+        phone: form.phone,
+      });
+      if (!resultado?.success) throw new Error(resultado?.error || 'Erro ao criar conta');
+
+      await completarCadastroMotoboy({ name: form.name, phone: form.phone, ...arquivos });
+      await refreshUserProfile();
+      // Cadastro ainda entra "pendente" de aprovação da plataforma — manda pra
+      // vitrine (como qualquer usuário), não pro painel de entregas ainda vazio.
+      navigate('/menu-catalog-product-browse');
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -79,8 +87,8 @@ const MotoboyCadastro = () => {
           <input required type="email" value={form.email} onChange={(e) => set('email', e.target.value)}
             placeholder="E-mail"
             className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <input required type="password" minLength={6} value={form.password} onChange={(e) => set('password', e.target.value)}
-            placeholder="Senha (mínimo 6 caracteres)"
+          <input required type="password" minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)}
+            placeholder="Senha (mínimo 8 caracteres)"
             className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
 
           <div className="pt-2 space-y-2.5">

@@ -1,20 +1,23 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { getMotoboyToken } from '../services/motoboyService';
+import { useAuth } from '../contexts/AuthContext';
 
 const MotoboyGuard = ({ children }) => {
+  const { loading, isAuthenticated, isMotoboy } = useAuth();
   const location = useLocation();
 
-  // Token passed in URL (?token=...) → save it and redirect clean
-  const params = new URLSearchParams(location.search);
-  const urlToken = params.get('token');
-  if (urlToken) {
-    localStorage.setItem('motoboy_access_token', urlToken);
-    return <Navigate to="/motoboy" replace />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  const token = getMotoboyToken();
-  if (!token) return <Navigate to="/motoboy/login" replace />;
+  if (!isAuthenticated()) {
+    return <Navigate to="/customer-registration-login" state={{ from: location.pathname }} replace />;
+  }
+  if (!isMotoboy()) return <Navigate to="/" replace />;
 
   return children;
 };

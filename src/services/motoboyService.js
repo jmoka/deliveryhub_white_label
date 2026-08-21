@@ -1,19 +1,18 @@
 import { apiPath } from '../lib/apiUrl';
-import { getMotoboyToken, setMotoboyToken, clearMotoboyToken } from './motoboyAuthService';
+import { supabase } from '../lib/supabase';
 
 const API = apiPath('/api/motoboy');
 
-export { getMotoboyToken, setMotoboyToken, clearMotoboyToken };
-
 async function motoboyFetch(path, options = {}) {
-  const token = getMotoboyToken();
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
   if (!token) throw new Error('Sessão expirada. Faça login novamente.');
 
   const res = await fetch(`${API}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'x-motoboy-token': token,
+      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
@@ -30,6 +29,8 @@ async function motoboyFetch(path, options = {}) {
 }
 
 export const getMe = () => motoboyFetch('/me');
+export const atualizarPerfil = (dados) =>
+  motoboyFetch('/me', { method: 'PATCH', body: JSON.stringify(dados) });
 export const solicitarRevisaoPlataforma = () => motoboyFetch('/solicitar-revisao', { method: 'POST' });
 export const getMeusPedidos = () => motoboyFetch('/pedidos');
 export const atualizarLocalizacao = (pedidoId, lat, lng) =>

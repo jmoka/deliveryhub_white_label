@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   listarMotoboys, listarSolicitacoesMotoboy, aceitarSolicitacaoMotoboy,
-  recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy, forcarLogoutMotoboy,
+  recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy,
   criarMotoboy, editarMotoboy, excluirMotoboy, bloquearMotoboy,
+  gerarLinkSenhaMotoboy, enviarLinkSenhaMotoboyPorEmail,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
@@ -111,12 +112,60 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) =>
   const [phone, setPhone] = useState(motoboy?.phone ?? '');
   const [email, setEmail] = useState(motoboy?.email ?? '');
   const [password, setPassword] = useState('');
+  const [gerandoLink, setGerandoLink] = useState(false);
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [linkCopiado, setLinkCopiado] = useState(false);
+  const [emailEnviado, setEmailEnviado] = useState(false);
+  const [erroLink, setErroLink] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const dados = { name, phone, email };
     if (password) dados.password = password;
     onSalvar(dados);
+  };
+
+  const handleCopiarLink = async () => {
+    setErroLink(null);
+    setGerandoLink(true);
+    try {
+      const { link } = await gerarLinkSenhaMotoboy(motoboy.id);
+      await navigator.clipboard.writeText(link);
+      setLinkCopiado(true);
+      setTimeout(() => setLinkCopiado(false), 3000);
+    } catch (err) {
+      setErroLink(err.message);
+    } finally {
+      setGerandoLink(false);
+    }
+  };
+
+  const handleWhatsApp = async () => {
+    setErroLink(null);
+    setGerandoLink(true);
+    try {
+      const { link } = await gerarLinkSenhaMotoboy(motoboy.id);
+      const numero = (motoboy.phone ?? '').replace(/\D/g, '');
+      const texto = encodeURIComponent(`Olá! Use este link pra definir sua senha de acesso: ${link}`);
+      window.open(`https://wa.me/${numero}?text=${texto}`, '_blank');
+    } catch (err) {
+      setErroLink(err.message);
+    } finally {
+      setGerandoLink(false);
+    }
+  };
+
+  const handleEnviarEmail = async () => {
+    setErroLink(null);
+    setEnviandoEmail(true);
+    try {
+      await enviarLinkSenhaMotoboyPorEmail(motoboy.id);
+      setEmailEnviado(true);
+    } catch (err) {
+      setErroLink(err.message);
+    } finally {
+      setEnviandoEmail(false);
+    }
   };
 
   return (
@@ -143,7 +192,7 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) =>
           </div>
           <div>
             <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">E-mail</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
               className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           </div>
           <div>
@@ -154,9 +203,32 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) =>
               placeholder="Mínimo 8 caracteres" minLength={8} required={!editando}
               className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
             {!editando && (
-              <p className="text-[11px] text-[#A1A1AA] mt-1">Compartilhe telefone/e-mail e essa senha com o motoboy — é o login dele no app.</p>
+              <p className="text-[11px] text-[#A1A1AA] mt-1">Compartilhe telefone/e-mail e essa senha com o motoboy — ou gere um link de acesso depois de salvar.</p>
             )}
           </div>
+
+          {editando && (
+            <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 space-y-2">
+              <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA]">
+                Link pra definir/redefinir senha
+              </p>
+              {erroLink && <p className="text-xs text-red-600 dark:text-red-400">{erroLink}</p>}
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={handleCopiarLink} disabled={gerandoLink}
+                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] disabled:opacity-50">
+                  {gerandoLink ? '...' : linkCopiado ? 'Link copiado!' : 'Copiar link'}
+                </button>
+                <button type="button" onClick={handleWhatsApp} disabled={gerandoLink}
+                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 hover:bg-green-100 disabled:opacity-50">
+                  {gerandoLink ? '...' : 'Enviar por WhatsApp'}
+                </button>
+                <button type="button" onClick={handleEnviarEmail} disabled={enviandoEmail}
+                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 hover:bg-blue-100 disabled:opacity-50">
+                  {enviandoEmail ? '...' : emailEnviado ? 'E-mail enviado!' : 'Enviar por e-mail'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 mt-5">
@@ -185,7 +257,6 @@ const RestauranteMotoboys = () => {
   const [processando, setProcessando] = useState(false);
   const [removendo, setRemovendo] = useState(null);
   const [revisando, setRevisando] = useState(null);
-  const [forcandoLogout, setForcandoLogout] = useState(null);
   const [formModal, setFormModal] = useState(null); // null | 'novo' | motoboy (edição)
   const [salvandoForm, setSalvandoForm] = useState(false);
   const [erroForm, setErroForm] = useState(null);
@@ -243,19 +314,6 @@ const RestauranteMotoboys = () => {
       setMsg({ tipo: 'erro', texto: err.message });
     } finally {
       setRevisando(null);
-    }
-  };
-
-  const handleForcarLogout = async (mb) => {
-    if (!window.confirm(`Encerrar a sessão de ${mb.name} no dispositivo onde está logado, pra liberar login em outro?`)) return;
-    setForcandoLogout(mb.id);
-    try {
-      await forcarLogoutMotoboy(mb.id);
-      setMotoboys((prev) => prev.map((m) => (m.id === mb.id ? { ...m, sessao_ativa: false } : m)));
-    } catch (err) {
-      setMsg({ tipo: 'erro', texto: err.message });
-    } finally {
-      setForcandoLogout(null);
     }
   };
 
@@ -405,11 +463,6 @@ const RestauranteMotoboys = () => {
                     <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{mb.name}</p>
                     {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{mb.phone}</p>}
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {mb.sessao_ativa && (
-                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
-                          Logado em 1 dispositivo
-                        </span>
-                      )}
                       {mb.bloqueado && (
                         <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
                           Bloqueado
@@ -442,15 +495,6 @@ const RestauranteMotoboys = () => {
                     >
                       {bloqueando === mb.id ? '...' : mb.bloqueado ? 'Desbloquear' : 'Bloquear'}
                     </button>
-                    {mb.sessao_ativa && (
-                      <button
-                        onClick={() => handleForcarLogout(mb)}
-                        disabled={forcandoLogout === mb.id}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 disabled:opacity-50"
-                      >
-                        {forcandoLogout === mb.id ? '...' : 'Forçar logout'}
-                      </button>
-                    )}
                     {mb.gerenciado_por_mim ? (
                       <button
                         onClick={() => handleExcluir(mb)}
