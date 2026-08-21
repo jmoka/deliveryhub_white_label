@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
+import { ehMotoboy } from '../../services/perfilService';
 import Icon from '../../components/AppIcon';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 
@@ -38,6 +39,14 @@ const CustomerAccountOrderHistory = () => {
 
     const carregar = async () => {
       try {
+        // Cobre o caso de email com cadastro de motoboy separado (identidade
+        // distinta da conta de cliente logada) — isMotoboy() só pega role='motoboy'.
+        const { motoboy } = await ehMotoboy();
+        if (motoboy) {
+          navigate('/motoboy', { replace: true });
+          return;
+        }
+
         const sessionResult = await supabase.auth.getSession();
         const token = sessionResult?.data?.session?.access_token;
         if (!token) throw new Error('Sessão expirada');

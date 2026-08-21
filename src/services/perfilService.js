@@ -1,12 +1,12 @@
 import { supabase } from '../lib/supabase';
 import { apiPath } from '../lib/apiUrl';
 
-async function apiFetch(options = {}) {
+async function apiFetch(options = {}, subpath = '') {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
   const token = session?.access_token;
   if (!token) throw new Error('Sessão expirada. Faça login.');
 
-  const res = await fetch(apiPath('/api/perfil'), {
+  const res = await fetch(`${apiPath('/api/perfil')}${subpath}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -26,6 +26,10 @@ async function apiFetch(options = {}) {
 export const getPerfil = () => apiFetch();
 export const updatePerfil = (data) =>
   apiFetch({ method: 'PATCH', body: JSON.stringify(data) });
+
+// Detecta conta de cliente cujo email também tem cadastro de motoboy (identidades
+// separadas que coincidem no email) — usado pra barrar telas de cliente pra ela.
+export const ehMotoboy = () => apiFetch({}, '/e-motoboy');
 
 export async function uploadFoto(file) {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
