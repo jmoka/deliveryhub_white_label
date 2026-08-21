@@ -224,6 +224,16 @@ export const forcarLogoutMotoboy = (motoboyId) =>
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
 
+// Motoboys — cadastro direto pelo estabelecimento (dono cadastra/edita/exclui/bloqueia)
+export const criarMotoboy = (dados) =>
+  apiFetch('/motoboys', { method: 'POST', body: JSON.stringify(dados) });
+export const editarMotoboy = (motoboyId, dados) =>
+  apiFetch(`/motoboys/${motoboyId}`, { method: 'PATCH', body: JSON.stringify(dados) });
+export const excluirMotoboy = (motoboyId) =>
+  apiFetch(`/motoboys/${motoboyId}`, { method: 'DELETE' });
+export const bloquearMotoboy = (motoboyId, bloqueado) =>
+  apiFetch(`/motoboys/${motoboyId}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
+
 // Combos
 export const getMeusCombos = () => apiFetch('/combos');
 export const getComboDetalhe = (id) => apiFetch(`/combos/${id}`);

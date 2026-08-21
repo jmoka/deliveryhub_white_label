@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   listarMotoboys, listarSolicitacoesMotoboy, aceitarSolicitacaoMotoboy,
   recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy, forcarLogoutMotoboy,
+  criarMotoboy, editarMotoboy, excluirMotoboy, bloquearMotoboy,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
@@ -104,6 +105,74 @@ const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando, 
   );
 };
 
+const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) => {
+  const editando = !!motoboy;
+  const [name, setName] = useState(motoboy?.name ?? '');
+  const [phone, setPhone] = useState(motoboy?.phone ?? '');
+  const [email, setEmail] = useState(motoboy?.email ?? '');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const dados = { name, phone, email };
+    if (password) dados.password = password;
+    onSalvar(dados);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onFechar}>
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4">
+          {editando ? 'Editar motoboy' : 'Adicionar motoboy'}
+        </h3>
+
+        {erro && (
+          <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 rounded-lg px-3 py-2 mb-3">{erro}</p>
+        )}
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Nome</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} required
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Telefone</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Ex: 11999998888"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">E-mail</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">
+              {editando ? 'Nova senha (deixe em branco pra manter a atual)' : 'Senha de acesso'}
+            </label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres" minLength={8} required={!editando}
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            {!editando && (
+              <p className="text-[11px] text-[#A1A1AA] mt-1">Compartilhe telefone/e-mail e essa senha com o motoboy — é o login dele no app.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-5">
+          <button type="button" onClick={onFechar} className="flex-1 py-2.5 border rounded-xl text-sm text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-950/40">
+            Cancelar
+          </button>
+          <button type="submit" disabled={processando}
+            className="flex-1 py-2.5 bg-[#FF441F] text-white rounded-xl text-sm font-semibold hover:bg-[#E63A19] disabled:opacity-50">
+            {processando ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 const RestauranteMotoboys = () => {
   const [aba, setAba] = useState('pendentes'); // pendentes | aceitas | recusadas
   const [motoboys, setMotoboys] = useState([]);
@@ -117,6 +186,11 @@ const RestauranteMotoboys = () => {
   const [removendo, setRemovendo] = useState(null);
   const [revisando, setRevisando] = useState(null);
   const [forcandoLogout, setForcandoLogout] = useState(null);
+  const [formModal, setFormModal] = useState(null); // null | 'novo' | motoboy (edição)
+  const [salvandoForm, setSalvandoForm] = useState(false);
+  const [erroForm, setErroForm] = useState(null);
+  const [excluindo, setExcluindo] = useState(null);
+  const [bloqueando, setBloqueando] = useState(null);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -198,6 +272,52 @@ const RestauranteMotoboys = () => {
     }
   };
 
+  const handleSalvarForm = async (dados) => {
+    setSalvandoForm(true);
+    setErroForm(null);
+    try {
+      if (formModal === 'novo') {
+        await criarMotoboy(dados);
+        setMsg({ tipo: 'ok', texto: 'Motoboy cadastrado!' });
+      } else {
+        await editarMotoboy(formModal.id, dados);
+        setMsg({ tipo: 'ok', texto: 'Motoboy atualizado!' });
+      }
+      setTimeout(() => setMsg(null), 3000);
+      setFormModal(null);
+      reload();
+    } catch (err) {
+      setErroForm(err.message);
+    } finally {
+      setSalvandoForm(false);
+    }
+  };
+
+  const handleExcluir = async (mb) => {
+    if (!window.confirm(`Excluir "${mb.name}" definitivamente? Essa ação não pode ser desfeita.`)) return;
+    setExcluindo(mb.id);
+    try {
+      await excluirMotoboy(mb.id);
+      setMotoboys((prev) => prev.filter((m) => m.id !== mb.id));
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setExcluindo(null);
+    }
+  };
+
+  const handleBloquear = async (mb) => {
+    setBloqueando(mb.id);
+    try {
+      await bloquearMotoboy(mb.id, !mb.bloqueado);
+      setMotoboys((prev) => prev.map((m) => (m.id === mb.id ? { ...m, bloqueado: !m.bloqueado } : m)));
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setBloqueando(null);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5] dark:bg-[#18181B]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
@@ -263,45 +383,95 @@ const RestauranteMotoboys = () => {
         )}
 
         {aba === 'aceitas' && (
-          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
-            {motoboys.length === 0 ? (
-              <p className="p-5 text-sm text-[#71717A] dark:text-[#A1A1AA] text-center">
-                Nenhum motoboy afiliado ainda. O entregador se cadastra pelo app e solicita atender aqui.
-              </p>
-            ) : motoboys.map((mb) => (
-              <div key={mb.id} className="p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
-                  {mb.foto_perfil_url && !isPdfUrl(mb.foto_perfil_url)
-                    ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
+          <div className="space-y-3">
+            <button onClick={() => { setErroForm(null); setFormModal('novo'); }}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 border-2 border-dashed border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:border-[#FF441F] hover:text-[#FF441F] transition-colors">
+              <Icon name="Plus" size={16} /> Adicionar motoboy
+            </button>
+
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
+              {motoboys.length === 0 ? (
+                <p className="p-5 text-sm text-[#71717A] dark:text-[#A1A1AA] text-center">
+                  Nenhum motoboy afiliado ainda. Cadastre o seu próprio acima, ou aguarde um entregador se cadastrar pelo app e solicitar atender aqui.
+                </p>
+              ) : motoboys.map((mb) => (
+                <div key={mb.id} className="p-4 flex flex-wrap items-center gap-3">
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
+                    {mb.foto_perfil_url && !isPdfUrl(mb.foto_perfil_url)
+                      ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{mb.name}</p>
+                    {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{mb.phone}</p>}
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {mb.sessao_ativa && (
+                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                          Logado em 1 dispositivo
+                        </span>
+                      )}
+                      {mb.bloqueado && (
+                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+                          Bloqueado
+                        </span>
+                      )}
+                      {mb.gerenciado_por_mim && (
+                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
+                          Cadastrado por você
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 flex-shrink-0">
+                    {mb.gerenciado_por_mim && (
+                      <button
+                        onClick={() => { setErroForm(null); setFormModal(mb); }}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]"
+                      >
+                        Editar
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleBloquear(mb)}
+                      disabled={bloqueando === mb.id}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 ${
+                        mb.bloqueado
+                          ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40'
+                      }`}
+                    >
+                      {bloqueando === mb.id ? '...' : mb.bloqueado ? 'Desbloquear' : 'Bloquear'}
+                    </button>
+                    {mb.sessao_ativa && (
+                      <button
+                        onClick={() => handleForcarLogout(mb)}
+                        disabled={forcandoLogout === mb.id}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 disabled:opacity-50"
+                      >
+                        {forcandoLogout === mb.id ? '...' : 'Forçar logout'}
+                      </button>
+                    )}
+                    {mb.gerenciado_por_mim ? (
+                      <button
+                        onClick={() => handleExcluir(mb)}
+                        disabled={excluindo === mb.id}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50"
+                      >
+                        {excluindo === mb.id ? '...' : 'Excluir'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRemover(mb)}
+                        disabled={removendo === mb.id}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50"
+                      >
+                        {removendo === mb.id ? '...' : 'Remover'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{mb.name}</p>
-                  {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{mb.phone}</p>}
-                  {mb.sessao_ativa && (
-                    <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
-                      Logado em 1 dispositivo
-                    </span>
-                  )}
-                </div>
-                {mb.sessao_ativa && (
-                  <button
-                    onClick={() => handleForcarLogout(mb)}
-                    disabled={forcandoLogout === mb.id}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40 disabled:opacity-50 flex-shrink-0"
-                  >
-                    {forcandoLogout === mb.id ? '...' : 'Forçar logout'}
-                  </button>
-                )}
-                <button
-                  onClick={() => handleRemover(mb)}
-                  disabled={removendo === mb.id}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50 flex-shrink-0"
-                >
-                  {removendo === mb.id ? '...' : 'Remover'}
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
@@ -352,6 +522,16 @@ const RestauranteMotoboys = () => {
           onRecusar={handleRecusar}
           processando={processando}
           somenteLeitura={fichaSomenteLeitura}
+        />
+      )}
+
+      {formModal && (
+        <MotoboyFormModal
+          motoboy={formModal === 'novo' ? null : formModal}
+          onFechar={() => { setFormModal(null); setErroForm(null); }}
+          onSalvar={handleSalvarForm}
+          processando={salvandoForm}
+          erro={erroForm}
         />
       )}
     </div>
