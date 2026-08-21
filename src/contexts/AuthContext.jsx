@@ -181,6 +181,10 @@ export const AuthProvider = ({ children }) => {
     return userProfile?.role === 'restaurant_owner'
   }
 
+  const isMotoboy = () => {
+    return userProfile?.role === 'motoboy'
+  }
+
   const isAuthenticated = () => {
     return !!user
   }
@@ -196,6 +200,7 @@ export const AuthProvider = ({ children }) => {
     clearError,
     isAdmin,
     isRestaurantOwner,
+    isMotoboy,
     isAuthenticated,
     refreshUserProfile,
     planoStatus,

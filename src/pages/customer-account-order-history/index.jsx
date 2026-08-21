@@ -19,14 +19,20 @@ const STATUS_LABELS = {
 
 const CustomerAccountOrderHistory = () => {
   const navigate = useNavigate();
-  const { user, userProfile, isAuthenticated, signOut } = useAuth();
+  const { user, userProfile, loading: authLoading, isAuthenticated, isMotoboy, signOut } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!isAuthenticated()) {
       navigate('/customer-registration-login', { state: { from: '/customer-account-order-history' } });
+      return;
+    }
+    if (isMotoboy()) {
+      navigate('/motoboy', { replace: true });
       return;
     }
 
@@ -50,7 +56,7 @@ const CustomerAccountOrderHistory = () => {
     };
 
     carregar();
-  }, []);
+  }, [authLoading, userProfile]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18181B]">
