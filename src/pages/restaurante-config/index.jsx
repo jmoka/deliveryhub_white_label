@@ -5,6 +5,7 @@ import {
   atualizarLocalizacaoManual,
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
 } from '../../services/restauranteService';
+import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
 import Icon from '../../components/AppIcon';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
@@ -599,6 +600,9 @@ const RestauranteConfig = () => {
 
             {/* Guia passo a passo */}
             <Guia />
+
+            {/* Agente de impressão local — baixar, descompactar, rodar e parear impressoras */}
+            {moduloSalao && <AgenteImpressaoPanel />}
 
             {/* Formulário — limpo */}
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">

@@ -4,10 +4,9 @@ import {
   getImpressorasDetectadas, gerarTokenAgente, getStatusAgente, testarImpressora,
   renovarTokenImpressora,
 } from '../../services/restauranteService';
-import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
-const AgenteImpressaoPanel = () => {
+export const AgenteImpressaoPanel = () => {
   const [status, setStatus] = useState(null);
   const [token, setToken] = useState(null);
   const [gerando, setGerando] = useState(false);
@@ -47,9 +46,22 @@ const AgenteImpressaoPanel = () => {
           </span>
         )}
       </div>
-      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
-        Baixe e rode o agente no PC das impressoras — ele detecta e imprime as comandas automaticamente.
-        <a href="https://github.com/jmoka/deliveryhub_white_label/tree/main/print-agent" target="_blank" rel="noreferrer" className="text-[#FF441F] font-semibold ml-1">Ver instruções</a>
+      <ol className="text-xs text-[#71717A] dark:text-[#A1A1AA] space-y-1.5 mb-3 list-decimal list-inside">
+        <li>
+          <a href="/print-agent.rar" download className="text-[#FF441F] font-semibold">Baixe o agente (print-agent.rar)</a>
+          {' '}no PC onde as impressoras estão instaladas ou conectadas.
+        </li>
+        <li>Descompacte o arquivo baixado (botão direito → Extrair aqui).</li>
+        <li>Abra a pasta <strong>print-agent</strong>.</li>
+        <li>Abra a pasta <strong>releases</strong>.</li>
+        <li>Dê duplo clique em <strong>DeliveryHubAgente.exe</strong> para abrir o agente.</li>
+        <li>Clique em <strong>"Gerar token de pareamento"</strong> abaixo, copie a chave e cole na janela do agente para conectar as impressoras.</li>
+      </ol>
+      <p className="text-xs text-[#A1A1AA] mb-3">
+        💡 Dica: crie um atalho do <strong>DeliveryHubAgente.exe</strong> na área de trabalho para abrir o agente rapidamente da próxima vez.
+      </p>
+      <p className="text-xs text-[#A1A1AA] mb-3">
+        <a href="https://github.com/jmoka/deliveryhub_white_label/tree/main/print-agent" target="_blank" rel="noreferrer" className="text-[#FF441F] font-semibold">Documentação completa</a>
       </p>
       <button onClick={gerar} disabled={gerando}
         className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
