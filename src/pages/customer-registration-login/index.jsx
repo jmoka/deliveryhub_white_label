@@ -6,7 +6,7 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
 import { authService } from '../../services/authService';
-import { getMotoboyToken } from '../../services/motoboyAuthService';
+import { getMotoboyToken, setMotoboyToken, login as motoboyLogin } from '../../services/motoboyAuthService';
 
 const TAB_LOGIN = 'login';
 const TAB_REGISTER = 'register';
@@ -39,8 +39,25 @@ const CustomerRegistrationLogin = () => {
     setLoading(true);
     try {
       const result = await signIn(formData?.emailOrPhone, formData?.password);
-      if (!result?.success) throw new Error(result?.error || 'Credenciais inválidas');
-      navigate(getRedirectUrl(location?.state?.from));
+      if (result?.success) {
+        navigate(getRedirectUrl(location?.state?.from));
+        return;
+      }
+
+      // Não é conta de cliente/estabelecimento (Supabase Auth) — tenta como
+      // motoboy antes de desistir, já que motoboy cadastrado pelo estabelecimento
+      // não tem conta no Supabase, só na tabela própria. Evita a pessoa precisar
+      // saber de antemão que o login de motoboy fica em /motoboy.
+      try {
+        const { token } = await motoboyLogin(formData?.emailOrPhone, formData?.password);
+        setMotoboyToken(token);
+        navigate('/motoboy');
+        return;
+      } catch {
+        // mantém o erro original do login de cliente/estabelecimento abaixo
+      }
+
+      throw new Error(result?.error || 'Credenciais inválidas');
     } catch (error) {
       throw error;
     } finally {
@@ -187,6 +204,12 @@ const CustomerRegistrationLogin = () => {
               >
                 <Icon name="Bike" size={18} className="text-white" />
                 Cadastrar como entregador
+              </button>
+              <button
+                onClick={() => navigate('/motoboy')}
+                className="w-full text-center text-xs text-[#71717A] dark:text-[#A1A1AA] hover:underline"
+              >
+                Já é entregador? Entre por aqui
               </button>
             </>
           )}
