@@ -7,7 +7,7 @@ import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart'
 import { imgUrl } from '../../lib/imgUrl';
 import { apiPath } from '../../lib/apiUrl';
 import { getMotoboyToken } from '../../services/motoboyAuthService';
-import { getPerfil } from '../../services/perfilService';
+import { getPerfil, ehMotoboy } from '../../services/perfilService';
 import { supabase } from '../../lib/supabase';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -636,7 +636,7 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota }) => (
 /* ── Componente principal ────────────────────────────────────────── */
 const MenuCatalogProductBrowse = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, isRestaurantOwner, signOut, userProfile } = useAuth();
+  const { isAuthenticated, isAdmin, isRestaurantOwner, isMotoboy, signOut, userProfile } = useAuth();
 
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
@@ -757,6 +757,15 @@ const MenuCatalogProductBrowse = () => {
   useEffect(() => {
     if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) { setPerfilCliente(null); return; }
     getPerfil().then(setPerfilCliente).catch(() => {});
+  }, [userProfile?.id, userProfile?.role]);
+
+  // Motoboy não deve navegar a vitrine de cliente — manda pro painel dele. Cobre
+  // tanto role='motoboy' quanto email com cadastro de motoboy numa conta de
+  // cliente separada (ver PerfilService.ehMotoboy).
+  useEffect(() => {
+    if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) return;
+    if (isMotoboy()) { navigate('/motoboy', { replace: true }); return; }
+    ehMotoboy().then((r) => { if (r.motoboy) navigate('/motoboy', { replace: true }); }).catch(() => {});
   }, [userProfile?.id, userProfile?.role]);
 
   // Se a precisão do GPS piorar (ou não vier mais tão boa) e o raio selecionado sumir
