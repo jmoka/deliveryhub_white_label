@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getUsuarios, trocarCredenciaisUsuario, getEmpresas, atualizarEmpresa } from '../../services/adminService';
+import {
+  getUsuarios, trocarCredenciaisUsuario, getEmpresas, atualizarEmpresa,
+  editarUsuario, bloquearUsuario, excluirUsuario,
+} from '../../services/adminService';
 import AdminHeader from '../../components/admin/AdminHeader';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -154,9 +158,86 @@ const CredenciaisModal = ({ usuario, onClose, onSave }) => {
   );
 };
 
+const EditarModal = ({ usuario, onClose, onSave }) => {
+  const [name, setName] = useState(usuario.name ?? '');
+  const [role, setRole] = useState(usuario.role);
+  const [phone, setPhone] = useState(usuario.phone_e164 ?? '');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSalvando(true);
+    setErro(null);
+    try {
+      await editarUsuario(usuario.id, { name, role, phone_e164: phone });
+      onSave();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-zinc-100">Editar usuário</h3>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">{usuario.email}</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Nome</label>
+            <input
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Telefone</label>
+            <input
+              placeholder="+5511999999999"
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Papel</label>
+            <select
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              {Object.entries(ROLE_LABELS).map(([v, label]) => (
+                <option key={v} value={v}>{label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Mudar o papel altera o que o usuário pode acessar no sistema.</p>
+          </div>
+
+          {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const LIMIT = 50;
 
 const AdminUsuarios = () => {
+  const { user } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -167,6 +248,8 @@ const AdminUsuarios = () => {
   const [empresas, setEmpresas] = useState([]);
   const [modalVincular, setModalVincular] = useState(null);
   const [modalCredenciais, setModalCredenciais] = useState(null);
+  const [modalEditar, setModalEditar] = useState(null);
+  const [processando, setProcessando] = useState(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -192,6 +275,33 @@ const AdminUsuarios = () => {
       carregar();
     } catch (e) {
       alert(e.message);
+    }
+  };
+
+  const handleBloquear = async (usuario) => {
+    const acao = usuario.bloqueado ? 'Desbloquear' : 'Bloquear';
+    if (!confirm(`${acao} "${usuario.name || usuario.email}"?${!usuario.bloqueado ? ' O usuário não vai mais conseguir fazer login.' : ''}`)) return;
+    setProcessando(usuario.id);
+    try {
+      await bloquearUsuario(usuario.id, !usuario.bloqueado);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setProcessando(null);
+    }
+  };
+
+  const handleExcluir = async (usuario) => {
+    if (!confirm(`Excluir "${usuario.name || usuario.email}" permanentemente? Essa ação não pode ser desfeita.`)) return;
+    setProcessando(usuario.id);
+    try {
+      await excluirUsuario(usuario.id);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setProcessando(null);
     }
   };
 
@@ -263,9 +373,16 @@ const AdminUsuarios = () => {
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-gray-500 dark:text-zinc-400 hidden sm:table-cell max-w-xs truncate">{u.email}</td>
                       <td className="px-2 sm:px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_BADGE_CLASS[u.role] ?? ROLE_BADGE_CLASS.customer}`}>
-                          {ROLE_LABELS[u.role] ?? u.role}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_BADGE_CLASS[u.role] ?? ROLE_BADGE_CLASS.customer}`}>
+                            {ROLE_LABELS[u.role] ?? u.role}
+                          </span>
+                          {u.bloqueado && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+                              Bloqueado
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden md:table-cell">
                         {u.restaurante ? (
@@ -295,6 +412,26 @@ const AdminUsuarios = () => {
                             className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
                             Email/senha
                           </button>
+                          <button onClick={() => setModalEditar(u)}
+                            className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
+                            Editar
+                          </button>
+                          {u.id !== user?.id && (
+                            <button onClick={() => handleBloquear(u)} disabled={processando === u.id}
+                              className={`px-3 py-1 text-xs font-medium rounded-lg disabled:opacity-50 ${
+                                u.bloqueado
+                                  ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                                  : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                              }`}>
+                              {u.bloqueado ? 'Desbloquear' : 'Bloquear'}
+                            </button>
+                          )}
+                          {u.id !== user?.id && (
+                            <button onClick={() => handleExcluir(u)} disabled={processando === u.id}
+                              className="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg disabled:opacity-50">
+                              Excluir
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -333,6 +470,13 @@ const AdminUsuarios = () => {
           usuario={modalCredenciais}
           onClose={() => setModalCredenciais(null)}
           onSave={() => { setModalCredenciais(null); carregar(); alert('Credenciais atualizadas com sucesso.'); }}
+        />
+      )}
+      {modalEditar && (
+        <EditarModal
+          usuario={modalEditar}
+          onClose={() => setModalEditar(null)}
+          onSave={() => { setModalEditar(null); carregar(); }}
         />
       )}
     </div>

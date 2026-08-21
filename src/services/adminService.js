@@ -119,5 +119,10 @@ export const getUsuarios = (params = {}) => {
 };
 export const trocarCredenciaisUsuario = (id, data) =>
   apiFetch(`/admin/usuarios/${id}/credenciais`, { method: 'PATCH', body: JSON.stringify(data) });
+export const editarUsuario = (id, data) =>
+  apiFetch(`/admin/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const bloquearUsuario = (id, bloqueado) =>
+  apiFetch(`/admin/usuarios/${id}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
+export const excluirUsuario = (id) => apiFetch(`/admin/usuarios/${id}`, { method: 'DELETE' });
 export const getAuditoriaUsuario = (usuarioId) =>
   apiFetch(`/admin/usuarios/auditoria?usuario_id=${usuarioId}`);
