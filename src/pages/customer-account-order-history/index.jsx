@@ -78,22 +78,6 @@ const CustomerAccountOrderHistory = () => {
       </header>
 
       <main className="p-4 max-w-2xl mx-auto">
-        {/* CTA restaurante — só aparece para role=customer */}
-        {userProfile?.role === 'customer' && (
-          <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4 mb-5 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">Tem um restaurante?</p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">Cadastre e comece a receber pedidos agora</p>
-            </div>
-            <button
-              onClick={() => navigate('/restaurant-registration-setup')}
-              className="flex-shrink-0 px-4 py-2 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
-            >
-              Cadastrar restaurante
-            </button>
-          </div>
-        )}
-
         {/* Perfil */}
         <div className="bg-white dark:bg-[#18181B] rounded-xl border dark:border-[#3F3F46] p-4 mb-5 flex flex-wrap items-center gap-3">
           <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-full flex items-center justify-center flex-shrink-0">
@@ -175,6 +159,24 @@ const CustomerAccountOrderHistory = () => {
               );
             })}
           </div>
+        )}
+
+        {userProfile?.role === 'customer' && (
+          <footer className="mt-8 pt-4 border-t border-gray-200 dark:border-[#3F3F46] flex items-center justify-center gap-2 flex-wrap text-xs">
+            <button
+              onClick={() => navigate('/restaurant-registration-setup')}
+              className="text-gray-400 dark:text-[#71717A] hover:text-orange-500 dark:hover:text-orange-400 inline-flex items-center gap-1"
+            >
+              <Icon name="Store" size={12} /> Cadastrar restaurante
+            </button>
+            <span className="text-gray-300 dark:text-[#3F3F46]">·</span>
+            <button
+              onClick={() => navigate('/motoboy/cadastro')}
+              className="text-gray-400 dark:text-[#71717A] hover:text-orange-500 dark:hover:text-orange-400 inline-flex items-center gap-1"
+            >
+              <Icon name="Bike" size={12} /> Seja um entregador
+            </button>
+          </footer>
         )}
       </main>
     </div>
