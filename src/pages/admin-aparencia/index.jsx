@@ -35,10 +35,9 @@ const ColorField = ({ label, value, onChange, allowTransparent = false }) => {
       ) : (
         <div className="flex items-center gap-3">
           <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
-            className="w-12 h-10 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
+            className="w-12 h-10 flex-shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
           <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
-            className="flex-1 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
-          <div className="w-10 h-10 rounded-lg border border-gray-300 dark:border-zinc-700 flex-shrink-0" style={{ background: value }} />
+            className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
         </div>
       )}
     </div>
@@ -61,10 +60,9 @@ const OptionalBgField = ({ label, value, onChange }) => {
       {enabled && (
         <div className="flex items-center gap-3">
           <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
-            className="w-12 h-10 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
+            className="w-12 h-10 flex-shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
           <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
-            className="flex-1 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
-          <div className="w-10 h-10 rounded-lg border border-gray-300 dark:border-zinc-700 flex-shrink-0" style={{ background: value }} />
+            className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
         </div>
       )}
     </div>
