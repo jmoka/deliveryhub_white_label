@@ -873,17 +873,7 @@ const MenuCatalogProductBrowse = () => {
             <span className="font-black text-[#18181B] text-lg hidden sm:block tracking-tight">DeliveryHub</span>
           </button>
 
-          <div className="hidden md:flex flex-1 max-w-md">
-            <div className="flex items-center gap-2 bg-[#F4F4F5] hover:bg-[#E4E4E7] rounded-xl px-3 py-2.5 w-full transition-colors">
-              <Icon name="Search" size={15} className="text-[#71717A] flex-shrink-0" />
-              <input value={busca} onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar restaurantes ou pratos"
-                className="flex-1 bg-transparent text-sm text-[#27272A] placeholder-[#71717A] outline-none" />
-              {busca && <button onClick={() => setBusca('')}><Icon name="X" size={13} className="text-[#71717A]" /></button>}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
             {isMotoboy() ? (
               <button onClick={() => navigate('/motoboy')}
                 className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Painel do motoboy">
@@ -894,11 +884,20 @@ const MenuCatalogProductBrowse = () => {
             ) : (
               isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
                 <button onClick={() => navigate('/motoboy/cadastro')}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
-                  <Icon name="Bike" size={16} />
-                  Seja um entregador
+                  className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
+                  <Icon name="Bike" size={18} className="sm:hidden" />
+                  <Icon name="Bike" size={16} className="hidden sm:block" />
+                  <span className="hidden sm:inline">Seja um entregador</span>
                 </button>
               )
+            )}
+            {!isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
+              <button onClick={() => navigate('/restaurant-registration-setup')}
+                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um vendedor">
+                <Icon name="Store" size={18} className="sm:hidden" />
+                <Icon name="Store" size={16} className="hidden sm:block" />
+                <span className="hidden sm:inline">Seja um vendedor</span>
+              </button>
             )}
             <button onClick={() => navigate('/shopping-cart-checkout')}
               className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
