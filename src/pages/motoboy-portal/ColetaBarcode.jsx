@@ -56,8 +56,8 @@ const ColetaBarcode = ({ pedidoId, onConfirmado }) => {
   useEffect(() => () => { stopScan(); }, []);
 
   return (
-    <div className="space-y-3 border-t border-[#E4E4E7] pt-3">
-      <p className="text-xs font-semibold text-blue-700 text-center">
+    <div className="space-y-3 border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-3">
+      <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 text-center">
         Escaneie o código da comanda para confirmar que você tem o pedido
       </p>
 
@@ -72,7 +72,7 @@ const ColetaBarcode = ({ pedidoId, onConfirmado }) => {
           Escanear Comanda (câmera)
         </button>
       ) : (
-        <button onClick={stopScan} className="w-full py-2 bg-[#F4F4F5] text-[#27272A] text-sm rounded-xl">
+        <button onClick={stopScan} className="w-full py-2 bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] text-sm rounded-xl">
           Cancelar scan
         </button>
       )}
@@ -83,7 +83,7 @@ const ColetaBarcode = ({ pedidoId, onConfirmado }) => {
           onChange={(e) => setManual(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleConfirmar(manual)}
           placeholder="Digitar código manualmente"
-          className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
+          className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
         />
         <button
           onClick={() => handleConfirmar(manual)}
@@ -94,7 +94,7 @@ const ColetaBarcode = ({ pedidoId, onConfirmado }) => {
         </button>
       </div>
 
-      {erro && <p className="text-xs text-red-600">{erro}</p>}
+      {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
     </div>
   );
 };

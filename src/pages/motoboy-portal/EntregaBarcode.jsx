@@ -133,12 +133,12 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
   };
 
   return (
-    <div className="border-t border-[#E4E4E7] pt-3 space-y-3">
+    <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-3 space-y-3">
 
       {/* ETAPA: SCAN */}
       {etapa === 'scan' && (
         <>
-          <p className="text-xs font-semibold text-green-700 text-center bg-green-50 rounded-xl px-3 py-2">
+          <p className="text-xs font-semibold text-green-700 dark:text-green-400 text-center bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
             Escaneie o código da comanda para confirmar entrega
           </p>
           <div id={divId} className={`rounded-xl overflow-hidden ${scanning ? 'block' : 'hidden'}`} />
@@ -148,7 +148,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               <Icon name="ScanLine" size={16} /> Escanear comanda (câmera)
             </button>
           ) : (
-            <button onClick={stopScan} className="w-full py-2 bg-[#F4F4F5] text-[#27272A] text-sm rounded-xl">
+            <button onClick={stopScan} className="w-full py-2 bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] text-sm rounded-xl">
               Cancelar scan
             </button>
           )}
@@ -156,7 +156,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             <input value={manual} onChange={(e) => setManual(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && validarCodigo(manual) && setEtapa('pagamento')}
               placeholder={`Código manual (${expectedCode})`}
-              className="flex-1 border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500" />
+              className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500" />
             <button
               onClick={() => { if (validarCodigo(manual)) { setErro(null); setEtapa('pagamento'); } else setErro('Código incorreto'); }}
               disabled={!manual.trim()}
@@ -170,7 +170,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: ESCOLHA DE PAGAMENTO */}
       {etapa === 'pagamento' && (
         <>
-          <p className="text-xs font-semibold text-center text-[#18181B] bg-green-50 rounded-xl px-3 py-2">
+          <p className="text-xs font-semibold text-center text-[#18181B] dark:text-[#F4F4F5] bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
             ✅ Código confirmado — Como o cliente vai pagar?
           </p>
           <div className="space-y-2">
@@ -183,7 +183,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
 
             <button
               onClick={() => setEtapa('exato')}
-              className="w-full py-3 border-2 border-green-200 bg-green-50 text-green-800 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 transition-colors">
+              className="w-full py-3 border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-950/40 transition-colors">
               <Icon name="Banknote" size={16} /> Cliente pagou valor exato — sem troco
             </button>
 
@@ -191,17 +191,17 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               <>
                 <button
                   onClick={() => setEtapa('pix')}
-                  className="w-full py-3 border-2 border-blue-200 bg-blue-50 text-blue-800 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors">
+                  className="w-full py-3 border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
                   <Icon name="QrCode" size={16} /> Cliente quer pagar com PIX
                 </button>
                 <button
                   onClick={() => setEtapa('pix_parcial')}
-                  className="w-full py-3 border-2 border-purple-200 bg-purple-50 text-purple-800 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-purple-100 transition-colors">
+                  className="w-full py-3 border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors">
                   <Icon name="Split" size={16} /> Dinheiro + PIX (combinado)
                 </button>
               </>
             ) : (
-              <p className="text-xs text-[#A1A1AA] text-center bg-[#F4F4F5] rounded-xl px-3 py-2">
+              <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
                 PIX indisponível — chave não configurada no restaurante
               </p>
             )}
@@ -216,21 +216,21 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: TROCO */}
       {etapa === 'troco' && (
         <>
-          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-black text-amber-800 text-center">Confirmação de Troco</p>
+          <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-black text-amber-800 dark:text-amber-300 text-center">Confirmação de Troco</p>
             <div className="flex justify-between text-sm">
-              <span className="text-amber-700">Receber do cliente:</span>
-              <strong className="text-amber-900">{fmt(pedido.troco_para)}</strong>
+              <span className="text-amber-700 dark:text-amber-400">Receber do cliente:</span>
+              <strong className="text-amber-900 dark:text-amber-200">{fmt(pedido.troco_para)}</strong>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-amber-700">Devolver de troco:</span>
-              <strong className="text-amber-900">{fmt(trocoValor)}</strong>
+              <span className="text-amber-700 dark:text-amber-400">Devolver de troco:</span>
+              <strong className="text-amber-900 dark:text-amber-200">{fmt(trocoValor)}</strong>
             </div>
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" checked={trocoConfirmado}
                 onChange={(e) => setTrocoConfirmado(e.target.checked)}
                 className="mt-0.5 w-5 h-5 accent-amber-500 flex-shrink-0" />
-              <span className="text-xs text-amber-900 leading-snug font-medium">
+              <span className="text-xs text-amber-900 dark:text-amber-200 leading-snug font-medium">
                 Confirmo que recebi <strong>{fmt(pedido.troco_para)}</strong> e passei <strong>{fmt(trocoValor)}</strong> de troco
               </span>
             </label>
@@ -241,7 +241,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Confirmar e Marcar Entregue'}
           </button>
-          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar
           </button>
         </>
@@ -250,17 +250,17 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: VALOR EXATO */}
       {etapa === 'exato' && (
         <>
-          <div className="bg-green-50 border-2 border-green-300 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-black text-green-800 text-center">Confirmar Recebimento</p>
+          <div className="bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-black text-green-800 dark:text-green-300 text-center">Confirmar Recebimento</p>
             <div className="flex justify-between text-sm">
-              <span className="text-green-700">Valor recebido:</span>
-              <strong className="text-green-900">{fmt(total)}</strong>
+              <span className="text-green-700 dark:text-green-400">Valor recebido:</span>
+              <strong className="text-green-900 dark:text-green-200">{fmt(total)}</strong>
             </div>
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" checked={exatoConfirmado}
                 onChange={(e) => setExatoConfirmado(e.target.checked)}
                 className="mt-0.5 w-5 h-5 accent-green-500 flex-shrink-0" />
-              <span className="text-xs text-green-900 leading-snug font-medium">
+              <span className="text-xs text-green-900 dark:text-green-200 leading-snug font-medium">
                 Confirmo que recebi <strong>{fmt(total)}</strong> em dinheiro, valor exato, sem troco
               </span>
             </label>
@@ -271,7 +271,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Entregue!'}
           </button>
-          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar
           </button>
         </>
@@ -290,31 +290,31 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: PIX TOTAL */}
       {etapa === 'pix' && (
         <>
-          <p className="text-sm font-black text-blue-800 text-center">PIX — {fmt(total)}</p>
+          <p className="text-sm font-black text-blue-800 dark:text-blue-300 text-center">PIX — {fmt(total)}</p>
           {pixQr(total) ? (
             <div className="flex flex-col items-center gap-2">
-              <img src={pixQr(total)} alt="QR Code PIX" className="w-[220px] h-[220px] rounded-xl border border-blue-200" />
-              <p className="text-xs text-blue-700 text-center">Cliente escaneia com o app do banco</p>
+              <img src={pixQr(total)} alt="QR Code PIX" className="w-[220px] h-[220px] rounded-xl border border-blue-200 dark:border-blue-800" />
+              <p className="text-xs text-blue-700 dark:text-blue-400 text-center">Cliente escaneia com o app do banco</p>
             </div>
           ) : (
-            <p className="text-xs text-red-500 text-center">Erro ao gerar QR Code</p>
+            <p className="text-xs text-red-500 dark:text-red-400 text-center">Erro ao gerar QR Code</p>
           )}
 
           {/* Comprovante */}
           {comprovantePreview ? (
             <div className="relative">
-              <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300" />
+              <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300 dark:border-green-700" />
               <button
                 onClick={() => { setComprovantePreview(null); setComprovanteBase64(null); }}
-                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow">
+                className="absolute top-1 right-1 bg-white dark:bg-[#27272A] rounded-full p-1 shadow">
                 <Icon name="X" size={14} className="text-gray-600" />
               </button>
-              <p className="text-xs text-green-700 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
+              <p className="text-xs text-green-700 dark:text-green-400 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
             </div>
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2.5 border-2 border-dashed border-blue-300 bg-blue-50 text-blue-700 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors">
+              className="w-full py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
               <Icon name="Camera" size={16} /> Fotografar comprovante do cliente
             </button>
           )}
@@ -326,7 +326,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             <Icon name="CheckCircle2" size={16} />
             {uploadandoFoto ? 'Enviando foto...' : confirmando ? 'Confirmando...' : 'PIX Recebido — Marcar Entregue'}
           </button>
-          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar
           </button>
         </>
@@ -335,30 +335,30 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: PIX PARCIAL (dinheiro + PIX) */}
       {etapa === 'pix_parcial' && (
         <>
-          <p className="text-sm font-black text-purple-800 text-center">Dinheiro + PIX — Total {fmt(total)}</p>
+          <p className="text-sm font-black text-purple-800 dark:text-purple-300 text-center">Dinheiro + PIX — Total {fmt(total)}</p>
           <div className="space-y-2">
-            <p className="text-xs text-[#71717A] font-medium">Quanto o cliente paga em dinheiro?</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">Quanto o cliente paga em dinheiro?</p>
             <input
               type="number" step="0.01" min="0.01" max={total - 0.01}
               value={dinheiroInput}
               onChange={(e) => setDinheiroInput(e.target.value)}
               placeholder="Ex: 10,00"
-              className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
             />
             {pixParcialVal > 0 && (
               <>
-                <div className="flex justify-between text-sm bg-purple-50 rounded-xl px-3 py-2">
-                  <span className="text-purple-700">Dinheiro:</span>
-                  <strong className="text-purple-900">{fmt(dinheiroVal)}</strong>
+                <div className="flex justify-between text-sm bg-purple-50 dark:bg-purple-950/30 rounded-xl px-3 py-2">
+                  <span className="text-purple-700 dark:text-purple-400">Dinheiro:</span>
+                  <strong className="text-purple-900 dark:text-purple-200">{fmt(dinheiroVal)}</strong>
                 </div>
-                <div className="flex justify-between text-sm bg-blue-50 rounded-xl px-3 py-2">
-                  <span className="text-blue-700">PIX a cobrar:</span>
-                  <strong className="text-blue-900">{fmt(pixParcialVal)}</strong>
+                <div className="flex justify-between text-sm bg-blue-50 dark:bg-blue-950/30 rounded-xl px-3 py-2">
+                  <span className="text-blue-700 dark:text-blue-400">PIX a cobrar:</span>
+                  <strong className="text-blue-900 dark:text-blue-200">{fmt(pixParcialVal)}</strong>
                 </div>
                 {pixQr(pixParcialVal) && (
                   <div className="flex flex-col items-center gap-2 mt-1">
-                    <img src={pixQr(pixParcialVal)} alt="QR Code PIX parcial" className="w-[200px] h-[200px] rounded-xl border border-blue-200" />
-                    <p className="text-xs text-blue-700 text-center">Cliente escaneia para pagar {fmt(pixParcialVal)}</p>
+                    <img src={pixQr(pixParcialVal)} alt="QR Code PIX parcial" className="w-[200px] h-[200px] rounded-xl border border-blue-200 dark:border-blue-800" />
+                    <p className="text-xs text-blue-700 dark:text-blue-400 text-center">Cliente escaneia para pagar {fmt(pixParcialVal)}</p>
                   </div>
                 )}
               </>
@@ -370,7 +370,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Pagamento Recebido — Entregue'}
           </button>
-          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar
           </button>
         </>
@@ -379,7 +379,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: AÇÃO FINAL */}
       {etapa === 'acao' && (
         <>
-          <p className="text-xs font-semibold text-center text-[#18181B] bg-green-50 rounded-xl px-3 py-2">
+          <p className="text-xs font-semibold text-center text-[#18181B] dark:text-[#F4F4F5] bg-green-50 dark:bg-green-950/30 rounded-xl px-3 py-2">
             ✅ Confirme a entrega do pedido #{pedido.id}
           </p>
           <button
@@ -393,7 +393,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
             <Icon name="Clock" size={14} /> Não consegui entregar (pendência)
           </button>
-          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] hover:text-[#18181B]">
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar
           </button>
         </>
@@ -402,13 +402,13 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
       {/* ETAPA: OCORRÊNCIA */}
       {etapa === 'ocorrencia' && (
         <>
-          <p className="text-xs font-bold text-orange-700 mb-1">Descreva o motivo da pendência:</p>
+          <p className="text-xs font-bold text-orange-700 dark:text-orange-400 mb-1">Descreva o motivo da pendência:</p>
           <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3}
             placeholder="Ex: Cliente não atendeu, endereço incorreto..."
-            className="w-full border border-[#E4E4E7] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 resize-none" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 resize-none" />
           <div className="flex gap-2">
             <button onClick={() => setEtapa('acao')}
-              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] rounded-xl text-[#71717A] hover:bg-[#F4F4F5]">
+              className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
               Voltar
             </button>
             <button onClick={handleOcorrencia} disabled={confirmando || motivo.trim().length < 10}
@@ -416,11 +416,11 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               {confirmando ? '...' : 'Registrar'}
             </button>
           </div>
-          <p className="text-[10px] text-[#A1A1AA] text-center">Mínimo 10 caracteres</p>
+          <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A] text-center">Mínimo 10 caracteres</p>
         </>
       )}
 
-      {erro && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{erro}</p>}
+      {erro && <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-xl px-3 py-2">{erro}</p>}
     </div>
   );
 };
