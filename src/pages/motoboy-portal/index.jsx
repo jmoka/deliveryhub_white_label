@@ -590,12 +590,18 @@ const MotoboyPortal = () => {
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <header className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] px-4 py-4">
         <div className="flex items-center justify-between max-w-lg mx-auto">
-          <div>
-            <h1 className="text-base font-black text-[#18181B] dark:text-[#F4F4F5]">
-              <Icon name="Bike" size={16} className="inline mr-1.5 text-[#FF441F]" />
-              {me?.name ?? 'Motoboy'}
-            </h1>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{pedidos.length} pedido(s) em aberto</p>
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => navigate(-1)} title="Voltar"
+              className="p-1.5 -ml-1.5 rounded-full text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] flex-shrink-0">
+              <Icon name="ArrowLeft" size={18} />
+            </button>
+            <div className="min-w-0">
+              <h1 className="text-base font-black text-[#18181B] dark:text-[#F4F4F5] truncate">
+                <Icon name="Bike" size={16} className="inline mr-1.5 text-[#FF441F]" />
+                {me?.name ?? 'Motoboy'}
+              </h1>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{pedidos.length} pedido(s) em aberto</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
