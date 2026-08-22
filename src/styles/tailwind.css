@@ -6,6 +6,11 @@
 
 @layer base {
   :root {
+    /* Raio base usado por rounded-lg/md/sm (tailwind.config.js) — nunca tinha
+       sido definido, então esses três tamanhos renderizavam sem arredondar
+       nada (var(--radius) sem valor cai pro 0 do border-radius). */
+    --radius: 0.5rem;
+
     /* Core Colors */
     --color-background: #FAFAFA; /* gray-50 */
     --color-foreground: #1F2937; /* gray-800 */

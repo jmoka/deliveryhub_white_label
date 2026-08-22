@@ -17,6 +17,7 @@ import AdminComissoes from './pages/admin-comissoes';
 import AdminGuard from './components/AdminGuard';
 import AdminTrocarSenha from './pages/admin-trocar-senha';
 import AdminConfiguracoes from './pages/admin-configuracoes';
+import AdminAparencia from './pages/admin-aparencia';
 import AdminEmpresaDetalhe from './pages/admin-empresa-detalhe';
 import AdminCategorias from './pages/admin-categorias';
 import AdminTiposEstabelecimento from './pages/admin-tipos-estabelecimento';
@@ -99,6 +100,7 @@ const Routes = () => {
         <Route path="/admin/motoboys" element={<AdminGuard><AdminMotoboys /></AdminGuard>} />
         <Route path="/admin/planos" element={<AdminGuard><AdminPlanos /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
+        <Route path="/admin/aparencia" element={<AdminGuard><AdminAparencia /></AdminGuard>} />
 
         {/* Cardápio público por slug — sem auth */}
         <Route path="/r/:slug" element={<RestauranteCatalogo />} />

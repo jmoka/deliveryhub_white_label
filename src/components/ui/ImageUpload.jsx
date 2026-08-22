@@ -12,8 +12,11 @@ const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/gif';
  *  folder     — subpasta no bucket ('logos' | 'banners' | 'carrossel' | 'fundos')
  *  aspect     — proporção do preview: 'square' | 'wide' | 'banner'
  *  placeholder — texto no input URL
+ *  uploadFn   — (file, folder) => Promise<{ url }> — default é o upload do dono de
+ *               restaurante; passe outra função (ex. upload de admin) quando o contexto
+ *               não for uma loja (ex. branding da plataforma).
  */
-const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', placeholder = 'https://...' }) => {
+const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', placeholder = 'https://...', uploadFn = uploadImagem }) => {
   const [tab, setTab] = useState('upload');
   const [urlInput, setUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -33,7 +36,7 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
     setProgress(20);
     try {
       setProgress(50);
-      const result = await uploadImagem(file, folder);
+      const result = await uploadFn(file, folder);
       setProgress(100);
       onChange(result.url);
     } catch (e) {

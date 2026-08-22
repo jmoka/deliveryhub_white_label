@@ -41,6 +41,26 @@ export const getPlataformaConfig = () => apiFetch('/plataforma/config');
 export const updatePlataformaConfig = (data) =>
   apiFetch('/plataforma/config', { method: 'PATCH', body: JSON.stringify(data) });
 export const getRedeInfo = () => apiFetch('/plataforma/rede');
+
+export const uploadImagemPlataforma = async (file, folder = 'plataforma') => {
+  const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
+  const token = sessionResult?.data?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+  const form = new FormData();
+  form.append('file', file);
+
+  const res = await fetch(`${API}/plataforma/upload?folder=${encodeURIComponent(folder)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const json = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
+  if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+  return json; // { url: string }
+};
 export const getMetricas = () => apiFetch('/plataforma/metricas');
 export const getComissoes = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();

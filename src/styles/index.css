@@ -10,3 +10,23 @@ body {
   font-family: inherit;
   margin: unset;
 }
+
+/* input[type=color]: o navegador ignora border-radius no quadrado de cor
+   interno por padrão — precisa mirar o pseudo-elemento diretamente. */
+input[type="color"] {
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 0.5rem;
+}
+input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: 0.5rem;
+}

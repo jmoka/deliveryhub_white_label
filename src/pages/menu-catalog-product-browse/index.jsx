@@ -10,6 +10,44 @@ import { getPerfil } from '../../services/perfilService';
 import { supabase } from '../../lib/supabase';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+// Defaults do branding do marketplace — batem com os valores hoje hardcoded,
+// então a página renderiza igual até o fetch de /api/r/branding resolver
+// (ou se o admin nunca tiver configurado nada em /admin/aparencia).
+const DEFAULT_MARCA = {
+  logo_icon: 'Utensils',
+  nome_marca: 'DeliveryHub',
+  header_bg_color: '#FFFFFF',
+  header_text_color: '#18181B',
+  page_fundo_tipo: 'cor',
+  page_bg_color: '#F4F4F5',
+  page_fundo_imagem_url: '',
+  secoes_bg_color: '#FFFFFF',
+  texto_principal_color: '#18181B',
+  texto_principal_bg_color: '',
+  texto_secundario_color: '#71717A',
+  texto_secundario_bg_color: '',
+  hero_tagline: 'Delivery · Rápido · Confiável',
+  hero_titulo: 'Seu delivery favorito',
+  hero_subtitulo: 'Peça dos melhores restaurantes da sua cidade',
+  hero_fundo_tipo: 'gradiente',
+  hero_fundo_cor: '#FF441F',
+  hero_fundo_imagem_url: '',
+  stat1_label: 'Restaurantes',
+  stat2_label: 'Avaliação média',
+  stat3_label: 'Min. entrega',
+  stat3_valor: '~30',
+  footer_bg_color: '#FFFFFF',
+  footer_text_color: '#71717A',
+  footer_link_color: '#FF441F',
+};
+
+const hexToRgba = (hex, alpha) => {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex ?? '');
+  if (!m) return hex;
+  const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 // Raios pequenos em km (20m a 2km) na frente dos já existentes — permite achar
 // fornecedor bem pertinho, não só por cidade/bairro. 0 = sem limite.
 const RAIO_OPCOES = [0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 25, 50, 0];
@@ -73,22 +111,22 @@ const RestCardGrid = ({ r, i }) => {
         </div>
         <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm rounded-lg px-1.5 py-0.5 shadow">
           <Icon name="Star" size={11} className="text-yellow-400" fill="currentColor" />
-          <span className="text-xs font-bold text-[#27272A]">{nota}</span>
+          <span className="text-xs font-bold text-[var(--texto-principal)]">{nota}</span>
         </div>
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-bold text-[#18181B] text-sm leading-tight">{r.name}</p>
+          <p className="font-bold text-[var(--texto-principal)] text-sm leading-tight">{r.name}</p>
           {r.distancia_km != null && (
             <span className="flex-shrink-0 text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-1.5 py-0.5 rounded-full">
               {fmtDistancia(r.distancia_km)}
             </span>
           )}
         </div>
-        {r.address && <p className="text-xs text-[#71717A] mt-0.5 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
+        {r.address && <p className="text-xs text-[var(--texto-secundario)] mt-0.5 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
         <div className="flex items-center gap-3 mt-2.5">
-          <span className="flex items-center gap-1 text-xs text-[#71717A]"><Icon name="Clock" size={11}/> {tempo}</span>
-          <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[#71717A]'}`}>
+          <span className="flex items-center gap-1 text-xs text-[var(--texto-secundario)]"><Icon name="Clock" size={11}/> {tempo}</span>
+          <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[var(--texto-secundario)]'}`}>
             <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$ ${r.frete?.toFixed(2)}`}
           </span>
         </div>
@@ -126,7 +164,7 @@ const RestCardList = ({ r, i }) => {
       <div className="flex-1 min-w-0 py-1">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <p className="font-bold text-[#18181B] text-sm leading-tight truncate">{r.name}</p>
+            <p className="font-bold text-[var(--texto-principal)] text-sm leading-tight truncate">{r.name}</p>
             {!aberto && <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded-full flex-shrink-0">Fechado</span>}
           </div>
           <div className="flex items-center gap-0.5 flex-shrink-0 bg-yellow-50 rounded-lg px-1.5 py-0.5">
@@ -134,10 +172,10 @@ const RestCardList = ({ r, i }) => {
             <span className="text-xs font-bold text-yellow-700">{nota}</span>
           </div>
         </div>
-        {r.address && <p className="text-xs text-[#71717A] mt-1 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
+        {r.address && <p className="text-xs text-[var(--texto-secundario)] mt-1 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <span className="flex items-center gap-1 text-xs text-[#71717A]"><Icon name="Clock" size={11}/> {tempo}</span>
-          <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[#71717A]'}`}>
+          <span className="flex items-center gap-1 text-xs text-[var(--texto-secundario)]"><Icon name="Clock" size={11}/> {tempo}</span>
+          <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[var(--texto-secundario)]'}`}>
             <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$${r.frete?.toFixed(2)}`}
           </span>
           {gratis && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Frete grátis</span>}
@@ -212,11 +250,11 @@ const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
         )}
       </div>
       <div className="p-3">
-        <p className="text-xs font-bold text-[#18181B] leading-tight line-clamp-2">{produto.name}</p>
+        <p className="text-xs font-bold text-[var(--texto-principal)] leading-tight line-clamp-2">{produto.name}</p>
         <div className="mt-1.5 flex items-center justify-between">
           <div>
-            {!restFechado && temPromo && <p className="text-[10px] line-through text-[#71717A]">{fmt(produto.price)}</p>}
-            <p className={`text-sm font-black ${restFechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+            {!restFechado && temPromo && <p className="text-[10px] line-through text-[var(--texto-secundario)]">{fmt(produto.price)}</p>}
+            <p className={`text-sm font-black ${restFechado ? 'text-[var(--texto-secundario)]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
               {restFechado ? 'Indisponível' : fmt(preco)}
             </p>
           </div>
@@ -228,7 +266,7 @@ const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
                 ? <img src={imgUrl(rest.logo_url)} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
             </div>
-            <p className="text-[10px] text-[#71717A] font-medium truncate">{rest.name}</p>
+            <p className="text-[10px] text-[var(--texto-secundario)] font-medium truncate">{rest.name}</p>
             {restFechado && <span className="text-[9px] text-red-500 font-bold flex-shrink-0">• Fechado</span>}
           </div>
         )}
@@ -269,10 +307,10 @@ const ComboCompCard = ({ combo, i, navigate }) => {
         )}
       </div>
       <div className="p-3">
-        <p className="text-xs font-bold text-[#18181B] leading-tight line-clamp-2">{combo.name}</p>
+        <p className="text-xs font-bold text-[var(--texto-principal)] leading-tight line-clamp-2">{combo.name}</p>
         <div className="mt-1.5">
-          {!restFechado && temPromo && <p className="text-[10px] line-through text-[#71717A]">{fmt(combo.price)}</p>}
-          <p className={`text-sm font-black ${restFechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+          {!restFechado && temPromo && <p className="text-[10px] line-through text-[var(--texto-secundario)]">{fmt(combo.price)}</p>}
+          <p className={`text-sm font-black ${restFechado ? 'text-[var(--texto-secundario)]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
             {restFechado ? 'Indisponível' : fmt(preco)}
           </p>
         </div>
@@ -283,7 +321,7 @@ const ComboCompCard = ({ combo, i, navigate }) => {
                 ? <img src={imgUrl(rest.logo_url)} alt={rest.name} className={`w-full h-full object-cover ${restFechado ? 'grayscale' : ''}`} />
                 : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
             </div>
-            <p className="text-[10px] text-[#71717A] font-medium truncate">{rest.name}</p>
+            <p className="text-[10px] text-[var(--texto-secundario)] font-medium truncate">{rest.name}</p>
             {restFechado && <span className="text-[9px] text-red-500 font-bold flex-shrink-0">• Fechado</span>}
           </div>
         )}
@@ -317,14 +355,14 @@ const ComboCarrosselCard = ({ combo, i, navigate }) => {
         <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">COMBO</span>
       </div>
       <div className="p-2.5">
-        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{combo.name}</p>
+        <p className="text-xs font-bold text-[var(--texto-principal)] line-clamp-2 leading-tight">{combo.name}</p>
         <div className="mt-1.5">
-          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(combo.price)}</p>}
-          <p className={`text-sm font-black ${fechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+          {temPromo && <p className="text-[9px] line-through text-[var(--texto-secundario)]">{fmt(combo.price)}</p>}
+          <p className={`text-sm font-black ${fechado ? 'text-[var(--texto-secundario)]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
             {fechado ? '–' : fmt(preco)}
           </p>
         </div>
-        {rest && <p className="text-[9px] text-[#71717A] truncate mt-1">{rest.name}</p>}
+        {rest && <p className="text-[9px] text-[var(--texto-secundario)] truncate mt-1">{rest.name}</p>}
       </div>
     </motion.button>
   );
@@ -341,14 +379,14 @@ const ComboCarrossel = ({ combos, navigate }) => {
     <div className="relative">
       <button onClick={() => scroll(-1)}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
-        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+        <Icon name="ChevronLeft" size={16} className="text-[var(--texto-principal)]" />
       </button>
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {combos.map((c, i) => <ComboCarrosselCard key={c.id} combo={c} i={i} navigate={navigate} />)}
       </div>
       <button onClick={() => scroll(1)}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
-        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+        <Icon name="ChevronRight" size={16} className="text-[var(--texto-principal)]" />
       </button>
     </div>
   );
@@ -365,7 +403,7 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
     <div className="relative">
       <button onClick={() => scroll(-1)}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
-        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+        <Icon name="ChevronLeft" size={16} className="text-[var(--texto-principal)]" />
       </button>
       <div ref={scrollRef}
         className="flex gap-4 overflow-x-auto pb-2 scroll-smooth"
@@ -387,13 +425,13 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
                     <Icon name="Store" size={28} className="text-[#FF441F]/40" />
                   </div>}
             </div>
-            <p className="text-[10px] sm:text-xs font-semibold text-[#27272A] text-center line-clamp-2 leading-tight px-1">{r.name}</p>
+            <p className="text-[10px] sm:text-xs font-semibold text-[var(--texto-principal)] text-center line-clamp-2 leading-tight px-1">{r.name}</p>
           </motion.button>
         ))}
       </div>
       <button onClick={() => scroll(1)}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
-        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+        <Icon name="ChevronRight" size={16} className="text-[var(--texto-principal)]" />
       </button>
     </div>
   );
@@ -446,14 +484,14 @@ const ProdCarrosselCard = ({ produto, i, navigate, onAdd }) => {
         )}
       </div>
       <div className="p-2.5">
-        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{produto.name}</p>
+        <p className="text-xs font-bold text-[var(--texto-principal)] line-clamp-2 leading-tight">{produto.name}</p>
         <div className="mt-1.5">
-          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(produto.price)}</p>}
-          <p className={`text-sm font-black ${fechado ? 'text-[#71717A]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
+          {temPromo && <p className="text-[9px] line-through text-[var(--texto-secundario)]">{fmt(produto.price)}</p>}
+          <p className={`text-sm font-black ${fechado ? 'text-[var(--texto-secundario)]' : temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>
             {fechado ? '–' : fmt(preco)}
           </p>
         </div>
-        {rest && <p className="text-[9px] text-[#71717A] truncate mt-1">{rest.name}</p>}
+        {rest && <p className="text-[9px] text-[var(--texto-secundario)] truncate mt-1">{rest.name}</p>}
       </div>
     </motion.button>
   );
@@ -470,7 +508,7 @@ const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
     <div className="relative">
       <button onClick={() => scroll(-1)}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
-        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+        <Icon name="ChevronLeft" size={16} className="text-[var(--texto-principal)]" />
       </button>
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
         {produtos.map((p, i) => (
@@ -479,7 +517,7 @@ const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
       </div>
       <button onClick={() => scroll(1)}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
-        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+        <Icon name="ChevronRight" size={16} className="text-[var(--texto-principal)]" />
       </button>
     </div>
   );
@@ -488,7 +526,7 @@ const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
 /* ── Sidebar esquerda ────────────────────────────────────────────── */
 const SidebarLeft = ({ categorias, catAtiva, setCatAtiva }) => (
   <aside className="hidden lg:flex flex-col gap-1 w-52 xl:w-60 flex-shrink-0">
-    <p className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider px-3 mb-2">Categorias</p>
+    <p className="text-[11px] font-bold text-[var(--texto-secundario)] bg-[var(--texto-secundario-bg)] rounded-lg uppercase tracking-wider px-3 py-1 mb-2 w-fit">Categorias</p>
     {categorias.map((c) => {
       const ativo = catAtiva === c.id;
       return (
@@ -498,7 +536,7 @@ const SidebarLeft = ({ categorias, catAtiva, setCatAtiva }) => (
           whileTap={{ scale: 0.97 }}
           onClick={() => setCatAtiva(ativo ? null : c.id)}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full ${
-            ativo ? 'text-white shadow-md' : 'text-[#27272A] hover:bg-white hover:shadow-sm'
+            ativo ? 'text-white shadow-md' : 'text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] hover:bg-white hover:shadow-sm'
           }`}
           style={ativo ? { background: `linear-gradient(135deg, ${c.color_primary}, ${c.color_secondary})` } : {}}
         >
@@ -526,7 +564,7 @@ const SidebarRight = ({ restaurantes, navigate }) => {
         <p className="text-xs text-white/80 mt-1">Aproveite antes que acabe!</p>
       </div>
       <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4">
-        <p className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider mb-3">Mais populares</p>
+        <p className="text-[11px] font-bold text-[var(--texto-secundario)] bg-[var(--texto-secundario-bg)] rounded-lg uppercase tracking-wider px-2 py-1 mb-3 w-fit">Mais populares</p>
         <div className="space-y-3">
           {top.map((r, i) => (
             <button key={r.id} onClick={() => navigate(`/r/${r.slug}`)}
@@ -537,13 +575,13 @@ const SidebarRight = ({ restaurantes, navigate }) => {
                   ? <img src={imgUrl(r.logo_url)} alt={r.name} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={14} className="text-[#FF441F]/40" /></div>}
               </div>
-              <p className="text-xs font-semibold text-[#18181B] truncate flex-1">{r.name}</p>
+              <p className="text-xs font-semibold text-[var(--texto-principal)] truncate flex-1">{r.name}</p>
             </button>
           ))}
         </div>
       </div>
       <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 space-y-3">
-        <p className="text-[11px] font-bold text-[#71717A] uppercase tracking-wider">Como funciona</p>
+        <p className="text-[11px] font-bold text-[var(--texto-secundario)] bg-[var(--texto-secundario-bg)] rounded-lg uppercase tracking-wider px-2 py-1 w-fit">Como funciona</p>
         {[
           { icon: 'Search',     text: 'Escolha restaurante'    },
           { icon: 'ShoppingBag',text: 'Monte seu pedido'       },
@@ -554,7 +592,7 @@ const SidebarRight = ({ restaurantes, navigate }) => {
             <div className="w-7 h-7 rounded-lg bg-[#FF441F]/10 flex items-center justify-center flex-shrink-0">
               <Icon name={s.icon} size={14} className="text-[#FF441F]" />
             </div>
-            <p className="text-xs text-[#27272A]">{s.text}</p>
+            <p className="text-xs text-[var(--texto-principal)]">{s.text}</p>
           </div>
         ))}
       </div>
@@ -563,9 +601,19 @@ const SidebarRight = ({ restaurantes, navigate }) => {
 };
 
 /* ── Hero ────────────────────────────────────────────────────────── */
-const Hero = ({ busca, setBusca, totalRest, mediaNota }) => (
+const Hero = ({ busca, setBusca, totalRest, mediaNota, marca }) => (
   <section className="relative overflow-hidden">
-    <div className="absolute inset-0 bg-gradient-to-br from-[#FF441F] via-[#FF5C30] to-[#FF7A00]" />
+    {marca.hero_fundo_tipo === 'imagem' && marca.hero_fundo_imagem_url ? (
+      <>
+        <div className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${marca.hero_fundo_imagem_url})` }} />
+        <div className="absolute inset-0 bg-black/30" />
+      </>
+    ) : marca.hero_fundo_tipo === 'cor' ? (
+      <div className="absolute inset-0" style={{ background: marca.hero_fundo_cor }} />
+    ) : (
+      <div className="absolute inset-0 bg-gradient-to-br from-[#FF441F] via-[#FF5C30] to-[#FF7A00]" />
+    )}
     <div className="absolute inset-0 opacity-10"
       style={{ backgroundImage: 'radial-gradient(circle at 25% 60%, #fff 1px, transparent 1px), radial-gradient(circle at 75% 20%, #fff 1px, transparent 1px)', backgroundSize: '36px 36px' }} />
     <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/3" />
@@ -573,11 +621,11 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota }) => (
 
     <div className="relative px-4 py-12 sm:py-16 text-center text-white max-w-screen-2xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <p className="text-xs font-bold text-white/60 mb-2 tracking-widest uppercase">Delivery · Rápido · Confiável</p>
+        <p className="text-xs font-bold text-white/60 mb-2 tracking-widest uppercase">{marca.hero_tagline}</p>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-tight">
-          Seu delivery favorito
+          {marca.hero_titulo}
         </h1>
-        <p className="text-white/80 text-sm sm:text-base mb-8">Peça dos melhores restaurantes da sua cidade</p>
+        <p className="text-white/80 text-sm sm:text-base mb-8">{marca.hero_subtitulo}</p>
       </motion.div>
 
       {/* Barra de busca */}
@@ -588,15 +636,15 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota }) => (
         className="max-w-xl mx-auto mb-8"
       >
         <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-2xl shadow-black/20">
-          <Icon name="Search" size={18} className="text-[#71717A] flex-shrink-0" />
+          <Icon name="Search" size={18} className="text-[var(--texto-secundario)] flex-shrink-0" />
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar restaurantes ou pratos..."
-            className="flex-1 text-sm text-[#27272A] placeholder-[#71717A] outline-none bg-transparent"
+            className="flex-1 text-sm text-[var(--texto-principal)] placeholder-[#71717A] outline-none bg-transparent"
           />
           {busca && (
-            <button onClick={() => setBusca('')} className="text-[#71717A] hover:text-[#27272A]">
+            <button onClick={() => setBusca('')} className="text-[var(--texto-secundario)] hover:text-[#27272A]">
               <Icon name="X" size={15} />
             </button>
           )}
@@ -613,19 +661,19 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota }) => (
         <div className="flex flex-col items-center gap-0.5">
           <Icon name="Store" size={16} className="text-white/60 mb-0.5" />
           <span className="text-xl font-black">{totalRest > 0 ? `${totalRest}+` : '—'}</span>
-          <span className="text-[11px] text-white/60">Restaurantes</span>
+          <span className="text-[11px] text-white/60">{marca.stat1_label}</span>
         </div>
         <div className="w-px h-10 bg-white/20" />
         <div className="flex flex-col items-center gap-0.5">
           <Icon name="Star" size={16} className="text-white/60 mb-0.5" fill="currentColor" />
           <span className="text-xl font-black">{mediaNota > 0 ? mediaNota.toFixed(1) : '4.8'}</span>
-          <span className="text-[11px] text-white/60">Avaliação média</span>
+          <span className="text-[11px] text-white/60">{marca.stat2_label}</span>
         </div>
         <div className="w-px h-10 bg-white/20" />
         <div className="flex flex-col items-center gap-0.5">
           <Icon name="Truck" size={16} className="text-white/60 mb-0.5" />
-          <span className="text-xl font-black">~30</span>
-          <span className="text-[11px] text-white/60 whitespace-nowrap">Min. entrega</span>
+          <span className="text-xl font-black">{marca.stat3_valor}</span>
+          <span className="text-[11px] text-white/60 whitespace-nowrap">{marca.stat3_label}</span>
         </div>
       </motion.div>
     </div>
@@ -651,6 +699,14 @@ const MenuCatalogProductBrowse = () => {
   const [badgeCount, setBadgeCount]     = useState(() => cartCount());
   const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
   const [perfilCliente, setPerfilCliente] = useState(null);
+  const [marca, setMarca] = useState(DEFAULT_MARCA);
+
+  useEffect(() => {
+    fetch(apiPath('/api/r/branding'))
+      .then((r) => r.json())
+      .then((d) => setMarca((m) => ({ ...m, ...d })))
+      .catch(() => {});
+  }, []);
 
   // Filtro geográfico — localização automática (GPS do navegador) + filtros manuais
   // de Estado/Cidade/Bairro/CEP. Sem filtro manual ativo, a localização já limita a
@@ -861,16 +917,25 @@ const MenuCatalogProductBrowse = () => {
     .filter(({ prods }) => prods.length > 0);
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen" style={{
+      ...(marca.page_fundo_tipo === 'imagem' && marca.page_fundo_imagem_url
+        ? { backgroundImage: `url(${marca.page_fundo_imagem_url})`, backgroundSize: 'cover', backgroundPosition: 'top center', backgroundAttachment: 'fixed' }
+        : { backgroundColor: marca.page_bg_color }),
+      '--texto-principal': marca.texto_principal_color,
+      '--texto-principal-bg': marca.texto_principal_bg_color || 'transparent',
+      '--texto-secundario': marca.texto_secundario_color,
+      '--texto-secundario-bg': marca.texto_secundario_bg_color || 'transparent',
+    }}>
 
       {/* ── Header sticky ───────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7] shadow-sm">
+      <header className="sticky top-0 z-50 backdrop-blur-md border-b border-[#E4E4E7] shadow-sm"
+        style={{ backgroundColor: hexToRgba(marca.header_bg_color, 0.95), '--header-text': marca.header_text_color }}>
         <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 flex-shrink-0">
             <div className="w-9 h-9 bg-[#FF441F] rounded-xl flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
-              <Icon name="Utensils" size={18} className="text-white" />
+              <Icon name={marca.logo_icon} size={18} className="text-white" />
             </div>
-            <span className="font-black text-[#18181B] text-lg hidden sm:block tracking-tight">DeliveryHub</span>
+            <span className="font-black text-[var(--header-text)] text-lg hidden sm:block tracking-tight">{marca.nome_marca}</span>
           </button>
 
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
@@ -884,7 +949,7 @@ const MenuCatalogProductBrowse = () => {
             ) : (
               isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
                 <button onClick={() => navigate('/motoboy/cadastro')}
-                  className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
+                  className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[var(--header-text)] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
                   <Icon name="Bike" size={18} className="sm:hidden" />
                   <Icon name="Bike" size={16} className="hidden sm:block" />
                   <span className="hidden sm:inline">Seja um entregador</span>
@@ -893,14 +958,14 @@ const MenuCatalogProductBrowse = () => {
             )}
             {!isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
               <button onClick={() => navigate('/restaurant-registration-setup')}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um vendedor">
+                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[var(--header-text)] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um vendedor">
                 <Icon name="Store" size={18} className="sm:hidden" />
                 <Icon name="Store" size={16} className="hidden sm:block" />
                 <span className="hidden sm:inline">Seja um vendedor</span>
               </button>
             )}
             <button onClick={() => navigate('/shopping-cart-checkout')}
-              className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
+              className="relative p-2 text-[var(--header-text)] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
               <Icon name="ShoppingCart" size={20} />
             </button>
             {isAuthenticated() ? (
@@ -925,15 +990,15 @@ const MenuCatalogProductBrowse = () => {
                     title="Meu perfil">
                     {perfilCliente?.foto_perfil_url
                       ? <img src={perfilCliente.foto_perfil_url} alt="Meu perfil" className="w-full h-full object-cover" />
-                      : <Icon name="User" size={16} className="text-[#71717A]" />}
+                      : <Icon name="User" size={16} className="text-[var(--header-text)]" />}
                   </button>
                 )}
                 <button onClick={() => navigate('/customer-account-order-history')}
-                  className="p-2 text-[#71717A] hover:text-[#27272A] hover:bg-[#F4F4F5] rounded-lg" title="Pedidos">
+                  className="p-2 text-[var(--header-text)] hover:text-[#27272A] hover:bg-[#F4F4F5] rounded-lg" title="Pedidos">
                   <Icon name="ClipboardList" size={19} />
                 </button>
                 <button onClick={async () => { await signOut(); }}
-                  className="p-2 text-[#71717A] hover:text-red-500 hover:bg-red-50 rounded-lg" title="Sair">
+                  className="p-2 text-[var(--header-text)] hover:text-red-500 hover:bg-red-50 rounded-lg" title="Sair">
                   <Icon name="LogOut" size={18} />
                 </button>
               </>
@@ -948,10 +1013,10 @@ const MenuCatalogProductBrowse = () => {
       </header>
 
       {/* ── Hero ────────────────────────────────────────────────── */}
-      <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} />
+      <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} marca={marca} />
 
       {/* ── Filtro geográfico — Estado/Cidade/Bairro/CEP + raio KM ── */}
-      <div className="bg-white border-b border-[#E4E4E7]">
+      <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-3 flex flex-wrap items-center gap-2">
           <button
             onClick={pedirLocalizacao}
@@ -959,7 +1024,7 @@ const MenuCatalogProductBrowse = () => {
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors flex-shrink-0 ${
               statusLocalizacao === 'ok'
                 ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-[#F4F4F5] text-[#71717A] hover:bg-[#E4E4E7]'
+                : 'bg-[#F4F4F5] text-[var(--texto-secundario)] hover:bg-[#E4E4E7]'
             }`}
           >
             <Icon name={statusLocalizacao === 'pedindo' ? 'Loader2' : 'LocateFixed'} size={14}
@@ -969,7 +1034,7 @@ const MenuCatalogProductBrowse = () => {
 
           {localizacao && !temFiltroManual && (
             <select value={raioKm} onChange={(e) => setRaioKm(Number(e.target.value))}
-              className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0">
+              className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0">
               {raioOpcoesDisponiveis.map((km) => (
                 <option key={km} value={km}>{fmtRaioLabel(km)}</option>
               ))}
@@ -977,27 +1042,27 @@ const MenuCatalogProductBrowse = () => {
           )}
 
           <select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setFiltroCidade(''); setFiltroBairro(''); }}
-            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0">
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0">
             <option value="">Estado</option>
             {estadosDisponiveis.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
           <select value={filtroCidade} onChange={(e) => { setFiltroCidade(e.target.value); setFiltroBairro(''); }}
             disabled={cidadesDisponiveis.length === 0}
-            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0 disabled:opacity-40">
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0 disabled:opacity-40">
             <option value="">Cidade</option>
             {cidadesDisponiveis.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
 
           <select value={filtroBairro} onChange={(e) => setFiltroBairro(e.target.value)}
             disabled={bairrosDisponiveis.length === 0}
-            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0 disabled:opacity-40">
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0 disabled:opacity-40">
             <option value="">Bairro</option>
             {bairrosDisponiveis.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
 
           <input value={filtroCep} onChange={(e) => setFiltroCep(e.target.value)} placeholder="CEP"
-            className="w-24 text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[#27272A] bg-white flex-shrink-0 outline-none focus:border-[#FF441F]" />
+            className="w-24 text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0 outline-none focus:border-[#FF441F]" />
 
           {temFiltroManual && (
             <button onClick={limparFiltrosGeo}
@@ -1009,7 +1074,7 @@ const MenuCatalogProductBrowse = () => {
 
         {statusLocalizacao === 'negado' && (
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 pb-3">
-            <p className="text-xs text-[#71717A] flex items-center gap-1.5">
+            <p className="text-xs text-[var(--texto-secundario)] flex items-center gap-1.5">
               <Icon name="Info" size={13} className="flex-shrink-0" />
               Ative a localização pra ver automaticamente os restaurantes mais próximos, ou use os filtros acima.
             </p>
@@ -1018,7 +1083,7 @@ const MenuCatalogProductBrowse = () => {
       </div>
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
-      <div className="hidden lg:block bg-white border-b border-[#E4E4E7]">
+      <div className="hidden lg:block border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto pb-3">
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
             {categoriasParaExibir.map((c, i) => {
@@ -1061,9 +1126,9 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrossel restaurantes populares ─────────────────────── */}
       {restaurantes.length > 0 && (
-        <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+            <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Flame" size={15} className="text-[#FF441F]" />
               Populares
             </p>
@@ -1074,9 +1139,9 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrossel de combos ativos ────────────────────────────── */}
       {combos.length > 0 && (
-        <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-            <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+            <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Package" size={15} className="text-[#FF441F]" />
               Combos em destaque
             </p>
@@ -1087,16 +1152,16 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
       {loadProd ? (
-        <div className="bg-white border-b border-[#E4E4E7]">
+        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
           </div>
         </div>
       ) : (
         carrosseis.map(({ tag, prods }) => (
-          <div key={tag.id} className="bg-white border-b border-[#E4E4E7]">
+          <div key={tag.id} className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
-              <p className="text-sm font-bold text-[#18181B] mb-4 flex items-center gap-2">
+              <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
                 <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
                 {tag.name}
               </p>
@@ -1107,7 +1172,7 @@ const MenuCatalogProductBrowse = () => {
       )}
 
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
-      <div className="lg:hidden bg-white border-b border-[#E4E4E7] px-4 py-3">
+      <div className="lg:hidden border-b border-[#E4E4E7] px-4 py-3" style={{ backgroundColor: marca.secoes_bg_color }}>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {categoriasParaExibir.map((c, i) => {
             const ativo = catAtiva === c.id;
@@ -1129,7 +1194,7 @@ const MenuCatalogProductBrowse = () => {
                 >
                   <Icon name={c.icon_name ?? 'Tag'} size={20} />
                 </div>
-                <span className={`text-[10px] font-bold whitespace-nowrap ${ativo ? 'text-[#FF441F]' : 'text-[#71717A]'}`}>
+                <span className={`text-[10px] font-bold whitespace-nowrap ${ativo ? 'text-[#FF441F]' : 'text-[var(--texto-secundario)]'}`}>
                   {c.name}
                 </span>
               </motion.button>
@@ -1149,11 +1214,11 @@ const MenuCatalogProductBrowse = () => {
           {/* Busca mobile */}
           <div className="md:hidden">
             <div className="flex items-center gap-2 bg-white border border-[#E4E4E7] rounded-xl px-3 py-2.5">
-              <Icon name="Search" size={15} className="text-[#71717A] flex-shrink-0" />
+              <Icon name="Search" size={15} className="text-[var(--texto-secundario)] flex-shrink-0" />
               <input value={busca} onChange={(e) => setBusca(e.target.value)}
                 placeholder="Buscar..."
-                className="flex-1 bg-transparent text-sm text-[#27272A] placeholder-[#71717A] outline-none" />
-              {busca && <button onClick={() => setBusca('')}><Icon name="X" size={13} className="text-[#71717A]" /></button>}
+                className="flex-1 bg-transparent text-sm text-[var(--texto-principal)] placeholder-[#71717A] outline-none" />
+              {busca && <button onClick={() => setBusca('')}><Icon name="X" size={13} className="text-[var(--texto-secundario)]" /></button>}
             </div>
           </div>
 
@@ -1162,13 +1227,17 @@ const MenuCatalogProductBrowse = () => {
             <div className="flex items-center justify-between mb-4 gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-bold text-[#18181B] text-base">
+                  <h2 className="font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 text-base w-fit">
                     {catAtiva === null ? 'Todos os restaurantes' : categoriasParaExibir.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
                   </h2>
                   {catAtiva !== null && (
                     <button
                       onClick={() => setCatAtiva(null)}
-                      className="flex items-center gap-1 text-xs font-semibold text-[#FF441F] bg-[#FF441F]/10 hover:bg-[#FF441F]/20 rounded-full px-2.5 py-1 transition-colors"
+                      className={`flex items-center gap-1 text-xs font-semibold text-[#FF441F] rounded-full px-2.5 py-1 transition-colors ${
+                        marca.texto_principal_bg_color
+                          ? 'bg-[var(--texto-principal-bg)] hover:opacity-80'
+                          : 'bg-[#FF441F]/10 hover:bg-[#FF441F]/20'
+                      }`}
                     >
                       <Icon name="X" size={12} />
                       Limpar filtro
@@ -1176,7 +1245,7 @@ const MenuCatalogProductBrowse = () => {
                   )}
                 </div>
                 {!loading && (
-                  <p className="text-xs text-[#71717A] mt-0.5">
+                  <p className="text-xs text-[var(--texto-secundario)] bg-[var(--texto-secundario-bg)] rounded-lg px-2 py-0.5 -ml-2 mt-0.5 w-fit">
                     {filtrados.length} {filtrados.length === 1 ? 'restaurante' : 'restaurantes'}
                     {busca && ` para "${busca}"`}
                   </p>
@@ -1184,11 +1253,11 @@ const MenuCatalogProductBrowse = () => {
               </div>
               <div className="flex items-center gap-1 bg-white border border-[#E4E4E7] rounded-xl p-1">
                 <button onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[#FF441F] text-white' : 'text-[#71717A]'}`}>
+                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[#FF441F] text-white' : 'text-[var(--texto-secundario)]'}`}>
                   <Icon name="LayoutGrid" size={16} />
                 </button>
                 <button onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[#FF441F] text-white' : 'text-[#71717A]'}`}>
+                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-[#FF441F] text-white' : 'text-[var(--texto-secundario)]'}`}>
                   <Icon name="List" size={16} />
                 </button>
               </div>
@@ -1204,7 +1273,7 @@ const MenuCatalogProductBrowse = () => {
                 <motion.div key="vazio" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                   className="text-center py-14 bg-white rounded-2xl border border-[#E4E4E7]">
                   <Icon name="Store" size={44} className="text-[#E4E4E7] mx-auto mb-3" />
-                  <p className="text-[#27272A] font-bold">
+                  <p className="text-[var(--texto-principal)] font-bold">
                     {busca
                       ? `Sem resultados para "${busca}"`
                       : temFiltroManual || (localizacao && raioKm > 0)
@@ -1215,13 +1284,13 @@ const MenuCatalogProductBrowse = () => {
                     <div className="flex items-center justify-center gap-2 mt-4">
                       {temFiltroManual && (
                         <button onClick={limparFiltrosGeo}
-                          className="px-4 py-2.5 bg-[#F4F4F5] text-[#27272A] text-sm font-bold rounded-xl hover:bg-[#E4E4E7]">
+                          className="px-4 py-2.5 bg-[#F4F4F5] text-[var(--texto-principal)] text-sm font-bold rounded-xl hover:bg-[#E4E4E7]">
                           Limpar filtros
                         </button>
                       )}
                       {!temFiltroManual && localizacao && raioKm > 0 && (
                         <button onClick={() => setRaioKm(0)}
-                          className="px-4 py-2.5 bg-[#F4F4F5] text-[#27272A] text-sm font-bold rounded-xl hover:bg-[#E4E4E7]">
+                          className="px-4 py-2.5 bg-[#F4F4F5] text-[var(--texto-principal)] text-sm font-bold rounded-xl hover:bg-[#E4E4E7]">
                           Ver sem limite de distância
                         </button>
                       )}
@@ -1251,11 +1320,11 @@ const MenuCatalogProductBrowse = () => {
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex-1">
-                  <h2 className="font-bold text-[#18181B] text-base flex items-center gap-2">
+                  <h2 className="font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 text-base flex items-center gap-2 w-fit">
                     <Icon name={mostrandoCombos ? 'Package' : 'BarChart2'} size={16} className="text-[#FF441F]" />
                     {mostrandoCombos ? 'Combos' : 'Compare preços'}
                   </h2>
-                  <p className="text-xs text-[#71717A] mt-0.5">
+                  <p className="text-xs text-[var(--texto-secundario)] bg-[var(--texto-secundario-bg)] rounded-lg px-2 py-0.5 -ml-2 mt-0.5 w-fit">
                     {mostrandoCombos ? 'Combos ativos de todos os restaurantes' : 'Produtos de todos os restaurantes'}
                   </p>
                 </div>
@@ -1264,7 +1333,7 @@ const MenuCatalogProductBrowse = () => {
               {mostrandoCombos ? (
                 combosFiltrados.length === 0 ? (
                   <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
-                    <p className="text-[#71717A] text-sm">Nenhum combo encontrado</p>
+                    <p className="text-[var(--texto-secundario)] text-sm">Nenhum combo encontrado</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -1279,7 +1348,7 @@ const MenuCatalogProductBrowse = () => {
                 </div>
               ) : produtosFiltrados.length === 0 ? (
                 <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
-                  <p className="text-[#71717A] text-sm">Nenhum produto encontrado</p>
+                  <p className="text-[var(--texto-secundario)] text-sm">Nenhum produto encontrado</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -1290,12 +1359,12 @@ const MenuCatalogProductBrowse = () => {
               )}
 
               {!mostrandoCombos && produtosFiltrados.length > 24 && (
-                <p className="text-center text-xs text-[#71717A] mt-4">
+                <p className="text-center text-xs text-[var(--texto-secundario)] mt-4">
                   Mostrando 24 de {produtosFiltrados.length} produtos
                 </p>
               )}
               {mostrandoCombos && combosFiltrados.length > 24 && (
-                <p className="text-center text-xs text-[#71717A] mt-4">
+                <p className="text-center text-xs text-[var(--texto-secundario)] mt-4">
                   Mostrando 24 de {combosFiltrados.length} combos
                 </p>
               )}
@@ -1306,27 +1375,27 @@ const MenuCatalogProductBrowse = () => {
         <SidebarRight restaurantes={filtrados} navigate={navigate} />
       </div>
 
-      <footer className="border-t border-[#E4E4E7] bg-white mt-8 py-6 text-center space-y-2">
+      <footer className="border-t border-[#E4E4E7] mt-8 py-6 text-center space-y-2" style={{ backgroundColor: marca.footer_bg_color }}>
         <div className="flex items-center justify-center gap-2 flex-wrap text-xs">
-          <button onClick={() => navigate('/restaurant-registration-setup')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+          <button onClick={() => navigate('/restaurant-registration-setup')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
             <Icon name="Store" size={12} /> Cadastrar estabelecimento
           </button>
           {(isMotoboy() || (isAuthenticated() && !isAdmin() && !isRestaurantOwner())) && (
             <>
               <span className="text-[#E4E4E7]">·</span>
               {isMotoboy() ? (
-                <button onClick={() => navigate('/motoboy')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+                <button onClick={() => navigate('/motoboy')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
                   <Icon name="Bike" size={12} /> Painel do motoboy
                 </button>
               ) : (
-                <button onClick={() => navigate('/motoboy/cadastro')} className="text-[#FF441F] font-semibold hover:underline flex items-center gap-1">
+                <button onClick={() => navigate('/motoboy/cadastro')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
                   <Icon name="Bike" size={12} /> Seja um entregador
                 </button>
               )}
             </>
           )}
         </div>
-        <p className="text-xs text-[#71717A]">© {new Date().getFullYear()} DeliveryHub · Todos os direitos reservados</p>
+        <p className="text-xs" style={{ color: marca.footer_text_color }}>© {new Date().getFullYear()} {marca.nome_marca} · Todos os direitos reservados</p>
       </footer>
 
       {/* ── Carrinho flutuante ───────────────────────────────────── */}
@@ -1354,7 +1423,7 @@ const MenuCatalogProductBrowse = () => {
             </motion.button>
             <button
               onClick={() => { cartClear(); setBadgeCount(0); setBadgeTotal(0); }}
-              className="flex-shrink-0 w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center text-[#71717A] hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="flex-shrink-0 w-12 h-12 bg-white rounded-2xl shadow-lg flex items-center justify-center text-[var(--texto-secundario)] hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Limpar carrinho"
             >
               <Icon name="Trash2" size={15} />
