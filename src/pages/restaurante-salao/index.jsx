@@ -1372,28 +1372,28 @@ const RestauranteSalao = () => {
 
   const ComandaLinha = ({ c }) => (
     <button onClick={() => setComandaAtiva(c.id)}
-      className={`w-full bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex justify-between items-center text-left ${c.status === 'paga' ? 'opacity-80' : ''}`}>
-      <div>
-        <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
+      className={`w-full min-w-0 rounded-xl border p-3 flex justify-between items-center gap-2 text-left ${c.status === 'paga' ? 'opacity-80 bg-white dark:bg-[#27272A] border-[#E4E4E7] dark:border-[#3F3F46]' : c.status === 'fechada_garcom' ? 'bg-green-50 dark:bg-green-950/40 border-green-300 dark:border-green-800' : 'bg-white dark:bg-[#27272A] border-[#E4E4E7] dark:border-[#3F3F46]'}`}>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">
           #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
         </p>
-        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{responsavelComanda(c)} · {statusLabelComanda(c)}</p>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{responsavelComanda(c)} · {statusLabelComanda(c)}</p>
       </div>
-      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</p>
+      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(c.total)}</p>
     </button>
   );
 
   const ComandaCard = ({ c }) => (
     <button onClick={() => setComandaAtiva(c.id)}
-      className={`w-full min-w-0 bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 text-left ${c.status === 'paga' ? 'opacity-80' : ''}`}>
+      className={`w-full min-w-0 rounded-xl border p-3 text-left ${c.status === 'paga' ? 'opacity-80 bg-white dark:bg-[#27272A] border-[#E4E4E7] dark:border-[#3F3F46]' : c.status === 'fechada_garcom' ? 'bg-green-50 dark:bg-green-950/40 border-green-300 dark:border-green-800' : 'bg-white dark:bg-[#27272A] border-[#E4E4E7] dark:border-[#3F3F46]'}`}>
       <p className="text-xs font-bold text-[#FF441F] truncate">#{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''}</p>
       <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate mt-0.5">{c.cliente_mesa_nome}</p>
       <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] truncate">{responsavelComanda(c)}</p>
       <div className="flex items-center justify-between flex-wrap mt-2 gap-x-1 gap-y-1">
-        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 font-medium whitespace-nowrap">
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium min-w-0 leading-tight ${c.status === 'fechada_garcom' ? 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'}`}>
           {statusLabelComanda(c)}
         </span>
-        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.total)}</span>
+        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(c.total)}</span>
       </div>
     </button>
   );
@@ -1404,7 +1404,7 @@ const RestauranteSalao = () => {
       {lista.length === 0 && <p className="text-sm text-[#A1A1AA]">{vazio}</p>}
     </div>
   ) : (
-    <div className="grid grid-cols-1 xs:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       {lista.map((c) => <ComandaCard key={c.id} c={c} />)}
       {lista.length === 0 && <p className="col-span-full text-sm text-[#A1A1AA]">{vazio}</p>}
     </div>
