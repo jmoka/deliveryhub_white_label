@@ -240,7 +240,7 @@ const RelatorioPanel = ({ restauranteNome }) => {
                   <p className="text-xs text-red-500 dark:text-red-400 truncate">Cancelados</p>
                 </div>
                 <div className="border border-[#FF441F]/20 bg-[#FFF4F1] dark:bg-[#3F2620] rounded-xl p-3 text-center min-w-0">
-                  <p className="text-2xl font-black text-[#FF441F] truncate">{fmt(r.total_vendas)}</p>
+                  <p className="text-lg sm:text-2xl font-black text-[#FF441F] truncate" title={fmt(r.total_vendas)}>{fmt(r.total_vendas)}</p>
                   <p className="text-xs text-[#FF441F]/70 truncate">Total Vendas</p>
                 </div>
               </div>
@@ -253,7 +253,7 @@ const RelatorioPanel = ({ restauranteNome }) => {
                     {Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
                       <div key={k} className="flex items-center justify-between gap-2 text-sm flex-wrap">
                         <span className="text-[#27272A] dark:text-[#F4F4F5] truncate">{PAYMENT_LABELS[k] ?? k} <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">({v.count})</span></span>
-                        <span className="font-bold text-green-700 dark:text-green-400 flex-shrink-0">{fmt(v.total)}</span>
+                        <span className="font-bold text-green-700 dark:text-green-400 flex-shrink-0" title={fmt(v.total)}>{fmt(v.total)}</span>
                       </div>
                     ))}
                     {Object.keys(r.por_pagamento ?? {}).length === 0 && (
@@ -264,7 +264,7 @@ const RelatorioPanel = ({ restauranteNome }) => {
                 <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-4 flex flex-col justify-between">
                   <div>
                     <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase tracking-wide">Ticket Médio</p>
-                    <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.ticket_medio)}</p>
+                    <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate" title={fmt(r.ticket_medio)}>{fmt(r.ticket_medio)}</p>
                   </div>
                   <div className="mt-3">
                     <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-1 uppercase tracking-wide">Em Andamento</p>

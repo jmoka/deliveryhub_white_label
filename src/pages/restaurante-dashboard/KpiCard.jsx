@@ -18,7 +18,7 @@ const KpiCard = ({ icon, label, value, sub, color = 'gray', onClick }) => (
       <Icon name={icon} size={14} className="opacity-70 flex-shrink-0" />
       <p className="text-xs font-medium opacity-75 truncate">{label}</p>
     </div>
-    <p className="text-2xl font-black truncate">{value}</p>
+    <p className="text-lg sm:text-2xl font-black truncate" title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
     {sub && <p className="text-xs opacity-60 mt-0.5 truncate">{sub}</p>}
   </div>
 );

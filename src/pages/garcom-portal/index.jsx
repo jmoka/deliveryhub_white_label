@@ -1263,7 +1263,7 @@ const fmtHoraCurta = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: 
 const MiniCard = ({ label, value, sub }) => (
   <div className="bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl p-2.5 text-center min-w-0">
     <p className="text-[9px] font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide truncate">{label}</p>
-    <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{value}</p>
+    <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5] truncate" title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
     {sub && <p className="text-[9px] text-[#A1A1AA] mt-0.5 truncate">{sub}</p>}
   </div>
 );

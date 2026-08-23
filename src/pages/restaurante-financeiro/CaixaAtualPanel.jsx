@@ -24,7 +24,7 @@ const Kpi = ({ icon, label, value, sub, color = 'gray' }) => {
         <Icon name={icon} size={13} className={`${txt[color]} flex-shrink-0`} />
         <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] truncate">{label}</p>
       </div>
-      <p className={`text-xl font-black truncate ${txt[color]}`}>{value}</p>
+      <p className={`text-base sm:text-xl font-black truncate ${txt[color]}`} title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
       {sub && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 truncate">{sub}</p>}
     </div>
   );

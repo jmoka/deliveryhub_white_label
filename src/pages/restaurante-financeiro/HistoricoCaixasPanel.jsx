@@ -21,7 +21,7 @@ const KpiCard = ({ icon, label, value, accent }) => (
     </div>
     <div className="min-w-0">
       <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium truncate">{label}</p>
-      <p className={`text-lg font-black truncate ${accent ? 'text-[#FF441F]' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>{value}</p>
+      <p className={`text-base sm:text-lg font-black truncate ${accent ? 'text-[#FF441F]' : 'text-[#18181B] dark:text-[#F4F4F5]'}`} title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
     </div>
   </div>
 );

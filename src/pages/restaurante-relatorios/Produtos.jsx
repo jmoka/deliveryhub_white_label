@@ -60,8 +60,8 @@ const DestaqueCard = ({ label, nome, valor, onClick }) => (
   <button onClick={onClick} disabled={!nome}
     className="text-left bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 min-w-0 hover:border-[#FF441F]/40 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-default disabled:hover:border-[#E4E4E7] dark:disabled:hover:border-[#3F3F46]">
     <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">{label}</p>
-    <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{nome ?? '—'}</p>
-    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5 truncate">{valor}</p>}
+    <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate" title={nome ?? undefined}>{nome ?? '—'}</p>
+    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5 truncate" title={valor ?? undefined}>{valor}</p>}
   </button>
 );
 
@@ -236,11 +236,11 @@ const RelatorioProdutos = () => {
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Sem Giro</p>
               </div>
               <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
-                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(dados.receita_total)}</p>
+                <p className="text-lg sm:text-2xl font-black text-green-700 dark:text-green-400 truncate" title={fmt(dados.receita_total)}>{fmt(dados.receita_total)}</p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Receita Período</p>
               </div>
               <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
-                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(dados.lucro_total)}</p>
+                <p className="text-lg sm:text-2xl font-black text-green-700 dark:text-green-400 truncate" title={fmt(dados.lucro_total)}>{fmt(dados.lucro_total)}</p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Lucro Período</p>
               </div>
             </div>

@@ -18,7 +18,7 @@ const Card = ({ label, value, sub, color = 'blue' }) => {
   return (
     <div className={`rounded-xl border p-5 min-w-0 ${colors[color]}`}>
       <p className="text-sm font-medium opacity-75 truncate">{label}</p>
-      <p className="text-2xl font-bold mt-1 truncate">{value}</p>
+      <p className="text-lg sm:text-2xl font-bold mt-1 truncate" title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}>{value}</p>
       {sub && <p className="text-xs mt-1 opacity-60 truncate">{sub}</p>}
     </div>
   );
