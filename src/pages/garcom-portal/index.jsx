@@ -1310,6 +1310,11 @@ const FinanceiroTab = ({ onEncerrarSessao }) => {
         ) : (
           <>
             <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mb-2">Desde {fmtDataHora(ativo.turno.aberto_em)}</p>
+            <div className="bg-[#FF441F] rounded-xl p-3 text-center mb-2">
+              <p className="text-[9px] font-bold text-white/80 uppercase tracking-wide">Total a receber (gorjeta + comissão)</p>
+              <p className="text-xl font-black text-white">{fmt((r.total_gorjeta ?? 0) + (r.total_comissao ?? 0))}</p>
+              <p className="text-[10px] text-white/80 mt-0.5">projeção se tudo em aberto for pago: {fmt((r.gorjeta_projetada ?? 0) + (r.comissao_projetada ?? 0))}</p>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <MiniCard label="Em aberto" value={fmt(r.total_em_aberto)} sub="ainda não pago" />
               <MiniCard label="Vendido" value={fmt(r.total_vendido)} sub="já pago" />
@@ -1461,6 +1466,11 @@ const EncerrarSessaoModal = ({ onFechar, onEncerrado }) => {
           <>
             <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Confira os valores da sua sessão</h2>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">Desde {fmtDataHora(preview?.turno?.aberto_em)}</p>
+            <div className="bg-[#FF441F] rounded-xl p-3 text-center mb-2">
+              <p className="text-[9px] font-bold text-white/80 uppercase tracking-wide">Total a receber (gorjeta + comissão)</p>
+              <p className="text-xl font-black text-white">{fmt((r.total_gorjeta ?? 0) + (r.total_comissao ?? 0))}</p>
+              <p className="text-[10px] text-white/80 mt-0.5">projeção se tudo em aberto for pago: {fmt((r.gorjeta_projetada ?? 0) + (r.comissao_projetada ?? 0))}</p>
+            </div>
             <div className="grid grid-cols-2 gap-2 mb-4">
               <MiniCard label="Em aberto" value={fmt(r.total_em_aberto)} sub="ainda não pago" />
               <MiniCard label="Vendido" value={fmt(r.total_vendido)} sub="já pago" />
