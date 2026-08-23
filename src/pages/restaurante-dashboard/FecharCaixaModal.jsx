@@ -18,10 +18,11 @@ const Row = ({ label, value, bold, accent, muted }) => (
 const ITEM_STATUS_LABEL = { enviado: 'Aguardando', preparando: 'Em preparo' };
 
 const labelComanda = (order) => {
-  if (order?.mesas) return `Mesa ${order.mesas.numero}${order.mesas.nome ? ` - ${order.mesas.nome}` : ''}`;
-  if (order?.numero_comanda) return `Comanda #${order.numero_comanda}`;
-  if (order?.cliente_mesa_nome) return order.cliente_mesa_nome;
-  return 'Comanda';
+  const prefixo = order?.is_venda_balcao ? 'Balcão · ' : '';
+  if (order?.mesas) return `${prefixo}Mesa ${order.mesas.numero}${order.mesas.nome ? ` - ${order.mesas.nome}` : ''}`;
+  if (order?.numero_comanda) return `${prefixo}Comanda #${order.numero_comanda}`;
+  if (order?.cliente_mesa_nome) return `${prefixo}${order.cliente_mesa_nome}`;
+  return `${prefixo}Comanda`;
 };
 
 // Detalhe completo de uma comanda (garçom, cliente, itens, pagamentos, saldo) — reaproveitado
