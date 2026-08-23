@@ -105,3 +105,11 @@ export const enviarItens = (comandaId) =>
 
 export const fecharComanda = (comandaId) =>
   garcomFetch(`/comandas/${comandaId}/fechar`, { method: 'POST' });
+
+// Sessão de trabalho (turno) — abre sozinha na primeira comanda, encerra no "Sair".
+export const getTurnoAtivo = () => garcomFetch('/turno');
+export const getPreviewEncerramento = () => garcomFetch('/turno/preview-encerramento');
+export const encerrarTurno = (conferido, observacao) =>
+  garcomFetch('/turno/encerrar', { method: 'POST', body: JSON.stringify({ conferido, observacao }) });
+export const getTurnosHistorico = (de, ate) =>
+  garcomFetch(`/turnos?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);

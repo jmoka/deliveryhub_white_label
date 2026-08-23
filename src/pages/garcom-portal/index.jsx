@@ -6,6 +6,7 @@ import {
   abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda,
   confirmarEntregaItem, naoEntregarItem, indoBuscarItem, marcarConferenciaVista, dividirComanda, editarObservacaoItem,
+  getTurnoAtivo, getPreviewEncerramento, encerrarTurno, getTurnosHistorico,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
@@ -1256,6 +1257,265 @@ const FilaCozinha = ({ itens, tempoMedioEsperaSegundos, tempoMedioPreparoSegundo
   );
 };
 
+const fmtDataHora = (d) => d ? new Date(d).toLocaleString('pt-BR') : '—';
+const fmtHoraCurta = (d) => d ? new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+
+const MiniCard = ({ label, value, sub }) => (
+  <div className="bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl p-2.5 text-center min-w-0">
+    <p className="text-[9px] font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide truncate">{label}</p>
+    <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{value}</p>
+    {sub && <p className="text-[9px] text-[#A1A1AA] mt-0.5 truncate">{sub}</p>}
+  </div>
+);
+
+// Aba "Financeiro": resumo ao vivo da sessão de trabalho atual + histórico de sessões
+// encerradas por período (filtro pedido explicitamente, mesmo padrão de período curto
+// usado no relatório do dono).
+const FinanceiroTab = ({ onEncerrarSessao }) => {
+  const [ativo, setAtivo] = useState(null);
+  const [carregandoAtivo, setCarregandoAtivo] = useState(true);
+  const [periodo, setPeriodo] = useState('hoje');
+  const [historico, setHistorico] = useState([]);
+  const [carregandoHist, setCarregandoHist] = useState(false);
+
+  useEffect(() => {
+    getTurnoAtivo().then(setAtivo).catch(() => {}).finally(() => setCarregandoAtivo(false));
+  }, []);
+
+  const buscarHistorico = useCallback(async (p) => {
+    setCarregandoHist(true);
+    const agora = new Date();
+    let de = new Date(agora);
+    if (p === 'hoje') de.setHours(0, 0, 0, 0);
+    else if (p === 'semana') de = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
+    else de = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
+    try {
+      setHistorico(await getTurnosHistorico(de.toISOString(), agora.toISOString()));
+    } catch { setHistorico([]); }
+    finally { setCarregandoHist(false); }
+  }, []);
+
+  useEffect(() => { buscarHistorico(periodo); }, [periodo, buscarHistorico]);
+
+  const r = ativo?.resumo ?? {};
+
+  return (
+    <div className="p-4 space-y-5">
+      <div>
+        <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-2">Sessão atual</p>
+        {carregandoAtivo ? (
+          <p className="text-sm text-[#A1A1AA] text-center py-3">Carregando...</p>
+        ) : !ativo?.turno ? (
+          <p className="text-sm text-[#A1A1AA] text-center py-3">Nenhuma sessão aberta ainda — abra a primeira comanda pra começar.</p>
+        ) : (
+          <>
+            <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mb-2">Desde {fmtDataHora(ativo.turno.aberto_em)}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <MiniCard label="Em aberto" value={fmt(r.total_em_aberto)} sub="ainda não pago" />
+              <MiniCard label="Vendido" value={fmt(r.total_vendido)} sub="já pago" />
+              <MiniCard label="Gorjeta" value={fmt(r.total_gorjeta)} sub={`projeção: ${fmt(r.gorjeta_projetada)}`} />
+              <MiniCard label="Comissão" value={fmt(r.total_comissao)} sub={`projeção: ${fmt(r.comissao_projetada)}`} />
+            </div>
+
+            <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mt-4 mb-2">
+              Comandas fechadas nesta sessão ({(r.vendas ?? []).length})
+            </p>
+            {(r.vendas ?? []).length === 0 ? (
+              <p className="text-sm text-[#A1A1AA] text-center py-3">Nenhuma comanda fechada ainda.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                {r.vendas.map((v) => (
+                  <div key={v.order_id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] px-3 py-2">
+                    <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">
+                      #{v.numero_comanda ?? v.order_id}{v.mesa_numero ? ` — Mesa ${v.mesa_numero}` : ''}{v.cliente_nome ? ` — ${v.cliente_nome}` : ''}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                      <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtDataHora(v.data)}</span>
+                      <span className="text-xs text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">
+                        {fmt(v.total)}{v.gorjeta > 0 ? ` + ${fmt(v.gorjeta)} gorjeta` : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button onClick={onEncerrarSessao}
+              className="w-full mt-4 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] flex items-center justify-center gap-1.5">
+              <Icon name="LogOut" size={14} /> Encerrar sessão
+            </button>
+          </>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest">Sessões anteriores</p>
+          <div className="flex gap-1">
+            {[{ v: 'hoje', l: 'Hoje' }, { v: 'semana', l: '7d' }, { v: 'mes', l: '30d' }].map(({ v, l }) => (
+              <button key={v} onClick={() => setPeriodo(v)}
+                className={`px-2 py-1 text-[10px] rounded-lg font-bold ${periodo === v ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        {carregandoHist ? (
+          <p className="text-sm text-[#A1A1AA] text-center py-3">Carregando...</p>
+        ) : historico.length === 0 ? (
+          <p className="text-sm text-[#A1A1AA] text-center py-4">Nenhuma sessão encerrada no período.</p>
+        ) : (
+          <div className="space-y-2">
+            {historico.map((t) => (
+              <div key={t.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">{fmtDataHora(t.aberto_em)} — {fmtHoraCurta(t.fechado_em)}</p>
+                  {t.conferido_pelo_garcom === false ? (
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex-shrink-0">⚠ Não concordei</span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-green-600 dark:text-green-400 flex-shrink-0">✓ Conferido</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-[#18181B] dark:text-[#F4F4F5]">
+                  <span>Vendido: <b>{fmt(t.resumo?.total_vendido)}</b></span>
+                  <span>Gorjeta: <b>{fmt(t.resumo?.total_gorjeta)}</b></span>
+                  <span>Comissão: <b>{fmt(t.resumo?.total_comissao)}</b></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Modal de encerramento de sessão — disparado pelo botão "Sair". Dois passos: revisão
+// das comandas ainda abertas (informativo, não precisa fazer nada) e financeiro com
+// aceite/discordância. Só desloga de verdade (ver GarcomHome) depois de confirmar aqui.
+const EncerrarSessaoModal = ({ onFechar, onEncerrado }) => {
+  const [passo, setPasso] = useState('comandas'); // 'comandas' | 'financeiro' | 'discordar'
+  const [preview, setPreview] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [observacao, setObservacao] = useState('');
+  const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    getPreviewEncerramento()
+      .then(setPreview)
+      .catch((err) => setErro(err.message ?? 'Não foi possível carregar a sessão.'))
+      .finally(() => setCarregando(false));
+  }, []);
+
+  const confirmar = async (conferido) => {
+    setEnviando(true);
+    setErro(null);
+    try {
+      await encerrarTurno(conferido, conferido ? undefined : observacao.trim() || undefined);
+      onEncerrado();
+    } catch (err) {
+      setErro(err.message ?? 'Não foi possível encerrar a sessão.');
+      setEnviando(false);
+    }
+  };
+
+  const comandasAbertas = preview?.comandas_abertas ?? [];
+  const r = preview?.resumo ?? {};
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+        {carregando ? (
+          <p className="text-sm text-[#A1A1AA] text-center py-6">Carregando sua sessão...</p>
+        ) : erro && !preview ? (
+          <>
+            <p className="text-sm text-red-600 dark:text-red-400 mb-4">{erro}</p>
+            <button onClick={onFechar} className="w-full py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">Voltar</button>
+          </>
+        ) : passo === 'comandas' ? (
+          <>
+            <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Encerrar sessão</h2>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Confira suas comandas ainda em aberto antes de encerrar.</p>
+            {comandasAbertas.length === 0 ? (
+              <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhuma comanda em aberto. 🎉</p>
+            ) : (
+              <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
+                {comandasAbertas.map((c) => (
+                  <div key={c.id} className="flex items-center gap-2 text-sm bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+                    <span className="min-w-0 truncate">#{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}</span>
+                    <span className="font-bold flex-shrink-0 ml-auto">{fmt(c.total)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-[#A1A1AA] mb-4">
+              Essas comandas continuam abertas normalmente — você (ou outro garçom) retoma depois. Não precisa fazer nada aqui.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">Cancelar</button>
+              <button onClick={() => setPasso('financeiro')} className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19]">Continuar</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Confira os valores da sua sessão</h2>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">Desde {fmtDataHora(preview?.turno?.aberto_em)}</p>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <MiniCard label="Em aberto" value={fmt(r.total_em_aberto)} sub="ainda não pago" />
+              <MiniCard label="Vendido" value={fmt(r.total_vendido)} sub="já pago" />
+              <MiniCard label="Gorjeta" value={fmt(r.total_gorjeta)} sub={`projeção: ${fmt(r.gorjeta_projetada)}`} />
+              <MiniCard label="Comissão" value={fmt(r.total_comissao)} sub={`projeção: ${fmt(r.comissao_projetada)}`} />
+            </div>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto mb-4">
+              {(r.vendas ?? []).length === 0 ? (
+                <p className="text-xs text-[#A1A1AA] text-center py-3">Nenhuma venda concluída nesta sessão.</p>
+              ) : (r.vendas ?? []).map((v) => (
+                <div key={v.order_id} className="flex items-center gap-2 text-xs py-1 border-b border-[#F4F4F5] dark:border-[#3F3F46] last:border-0">
+                  <span className="min-w-0 truncate text-[#18181B] dark:text-[#F4F4F5]">
+                    #{v.numero_comanda ?? v.order_id}{v.mesa_numero ? ` — Mesa ${v.mesa_numero}` : ''}{v.cliente_nome ? ` — ${v.cliente_nome}` : ''}
+                  </span>
+                  <span className="flex-shrink-0 ml-auto text-[#71717A] dark:text-[#A1A1AA]">
+                    {fmt(v.total)}{v.gorjeta > 0 ? ` + ${fmt(v.gorjeta)}` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {erro && <p className="text-xs text-red-600 dark:text-red-400 mb-2">{erro}</p>}
+
+            {passo === 'discordar' ? (
+              <>
+                <textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={3}
+                  placeholder="O que está errado? (opcional)"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-500 mb-3" />
+                <div className="flex gap-2">
+                  <button onClick={() => setPasso('financeiro')} disabled={enviando} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">Voltar</button>
+                  <button onClick={() => confirmar(false)} disabled={enviando}
+                    className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-red-500 hover:bg-red-600 disabled:opacity-50">
+                    {enviando ? 'Enviando...' : 'Confirmar discordância'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => setPasso('discordar')} disabled={enviando}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-red-600 dark:text-red-400 border border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
+                  Não concordo
+                </button>
+                <button onClick={() => confirmar(true)} disabled={enviando}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-green-600 hover:bg-green-700 disabled:opacity-50">
+                  {enviando ? 'Encerrando...' : 'Concordo, encerrar'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
   const [permissoes, setPermissoes] = useState({});
@@ -1271,6 +1531,7 @@ const GarcomHome = () => {
   const [comandaAtivaId, setComandaAtivaId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [avisoPronto, setAvisoPronto] = useState(null);
+  const [mostrarEncerrarSessao, setMostrarEncerrarSessao] = useState(false);
 
   const tocarAlarmePronto = useNotificacaoSonora('motoboy');
   const idsProntosVistos = useRef(new Set());
@@ -1440,12 +1701,12 @@ const GarcomHome = () => {
       <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Salão</h1>
-          <button onClick={async () => { await logout(); clearGarcomToken(); window.location.reload(); }}
+          <button onClick={() => setMostrarEncerrarSessao(true)}
             className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 px-2 py-1">
             <Icon name="LogOut" size={14} /> Sair
           </button>
         </div>
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-2 mt-3 flex-wrap">
           {salaoModo !== 'comandas' && (
             <button onClick={() => setAba('mesas')}
               className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'mesas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
@@ -1459,6 +1720,10 @@ const GarcomHome = () => {
           <button onClick={() => setAba('cozinha')}
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'cozinha' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             Cozinha
+          </button>
+          <button onClick={() => setAba('financeiro')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'financeiro' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+            Financeiro
           </button>
         </div>
       </div>
@@ -1505,6 +1770,8 @@ const GarcomHome = () => {
           tempoMedioPreparoSegundos={filaCozinha.tempoMedioPreparoSegundos}
           tempoMedioGeralSegundos={filaCozinha.tempoMedioGeralSegundos}
         />
+      ) : aba === 'financeiro' ? (
+        <FinanceiroTab onEncerrarSessao={() => setMostrarEncerrarSessao(true)} />
       ) : (
         <div className="p-4 space-y-2">
           {comandas.map((c) => (
@@ -1544,6 +1811,13 @@ const GarcomHome = () => {
           mesa={mesaParaAbrir}
           onFechar={() => setMesaParaAbrir(undefined)}
           onAberta={(comanda) => { setMesaParaAbrir(undefined); setComandaAtivaId(comanda.id); }}
+        />
+      )}
+
+      {mostrarEncerrarSessao && (
+        <EncerrarSessaoModal
+          onFechar={() => setMostrarEncerrarSessao(false)}
+          onEncerrado={async () => { await logout(); clearGarcomToken(); window.location.reload(); }}
         />
       )}
     </div>

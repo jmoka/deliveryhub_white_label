@@ -84,6 +84,7 @@ const RelatorioGarcom = () => {
   const [filtro, setFiltro] = useState(defaultFiltroState());
   const [garcons, setGarcons] = useState(null);
   const [vendas, setVendas] = useState([]);
+  const [turnos, setTurnos] = useState([]);
   const [label, setLabel] = useState('');
   const [garcomId, setGarcomId] = useState('');
   const [loading, setLoading] = useState(false);
@@ -109,6 +110,7 @@ const RelatorioGarcom = () => {
       const d = await getRelatorioGarcom(range.de, range.ate);
       setGarcons(d.garcons ?? []);
       setVendas(d.vendas ?? []);
+      setTurnos(d.turnos ?? []);
       setLabel(range.label);
       setRangeAtual(range);
     } catch (e) { setErro(e.message); }
@@ -165,6 +167,8 @@ const RelatorioGarcom = () => {
     return [...lista].sort((a, b) => (b[sortCampo] ?? 0) - (a[sortCampo] ?? 0));
   }, [garcons, garcomId, busca, sortCampo]);
   const vendasFiltradas = garcomId ? vendas.filter((v) => String(v.garcom_id) === garcomId) : vendas;
+  const turnosFiltrados = garcomId ? turnos.filter((t) => String(t.garcom_id) === garcomId) : turnos;
+  const nomeGarcomPorId = useMemo(() => Object.fromEntries((garcons ?? []).map((g) => [g.garcom_id, g.nome])), [garcons]);
   const garcomSelecionadoNome = garcomId ? (garcons ?? []).find((g) => String(g.garcom_id) === garcomId)?.nome : null;
 
   const totalVendido = garconsFiltrados.reduce((s, g) => s + g.total_vendido, 0);
@@ -393,6 +397,37 @@ const RelatorioGarcom = () => {
                       </tr>
                     </tfoot>
                   </table>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
+              <div className="px-5 py-3 border-b border-[#F4F4F5] dark:border-[#3F3F46]">
+                <h2 className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5]">Sessões do período</h2>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Cada vez que o garçom encerra a sessão de trabalho, com o aceite dele sobre os valores apurados</p>
+              </div>
+              {turnosFiltrados.length === 0 ? (
+                <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-10">Nenhuma sessão encerrada no período.</p>
+              ) : (
+                <div className="divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
+                  {turnosFiltrados.map((t) => (
+                    <div key={t.id} className="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] min-w-[120px]">{nomeGarcomPorId[t.garcom_id] ?? '—'}</span>
+                      <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{dataHora(t.aberto_em)} — {dataHora(t.fechado_em)}</span>
+                      <span className="text-xs text-[#18181B] dark:text-[#F4F4F5]">Vendido: <b>{fmt(t.resumo?.total_vendido)}</b></span>
+                      <span className="text-xs text-[#18181B] dark:text-[#F4F4F5]">Gorjeta: <b>{fmt(t.resumo?.total_gorjeta)}</b></span>
+                      <span className="text-xs text-[#18181B] dark:text-[#F4F4F5]">Comissão: <b>{fmt(t.resumo?.total_comissao)}</b></span>
+                      {t.conferido_pelo_garcom === false ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 ml-auto" title={t.observacao_garcom || 'Garçom não concordou com os valores'}>
+                          ⚠ Não concordou{t.observacao_garcom ? ': ' + t.observacao_garcom : ''}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700 dark:text-green-400 ml-auto">
+                          ✓ Conferido pelo garçom
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
