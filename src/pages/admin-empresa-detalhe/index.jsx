@@ -316,9 +316,9 @@ const AdminEmpresaDetalhe = () => {
                 { label: 'Faturamento', value: fmt(metricas?.faturamento) },
                 { label: 'Comissão Acumulada', value: fmt(metricas?.comissao_acumulada) },
               ].map((m) => (
-                <div key={m.label} className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4">
-                  <p className="text-xs text-gray-500 dark:text-zinc-400">{m.label}</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-1">{m.value}</p>
+                <div key={m.label} className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 min-w-0">
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">{m.label}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-zinc-100 mt-1 truncate">{m.value}</p>
                 </div>
               ))}
             </div>

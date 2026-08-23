@@ -227,21 +227,21 @@ const RelatorioPanel = ({ restauranteNome }) => {
             <>
               {/* KPIs */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{r.total_pedidos}</p>
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Total Pedidos</p>
+                <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center min-w-0">
+                  <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{r.total_pedidos}</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Total Pedidos</p>
                 </div>
-                <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-green-700 dark:text-green-400">{r.entregues}</p>
-                  <p className="text-xs text-green-600 dark:text-green-400">Entregues</p>
+                <div className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 rounded-xl p-3 text-center min-w-0">
+                  <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{r.entregues}</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 truncate">Entregues</p>
                 </div>
-                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-red-600 dark:text-red-400">{r.cancelados}</p>
-                  <p className="text-xs text-red-500 dark:text-red-400">Cancelados</p>
+                <div className="border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 rounded-xl p-3 text-center min-w-0">
+                  <p className="text-2xl font-black text-red-600 dark:text-red-400 truncate">{r.cancelados}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400 truncate">Cancelados</p>
                 </div>
-                <div className="border border-[#FF441F]/20 bg-[#FFF4F1] dark:bg-[#3F2620] rounded-xl p-3 text-center">
-                  <p className="text-2xl font-black text-[#FF441F]">{fmt(r.total_vendas)}</p>
-                  <p className="text-xs text-[#FF441F]/70">Total Vendas</p>
+                <div className="border border-[#FF441F]/20 bg-[#FFF4F1] dark:bg-[#3F2620] rounded-xl p-3 text-center min-w-0">
+                  <p className="text-2xl font-black text-[#FF441F] truncate">{fmt(r.total_vendas)}</p>
+                  <p className="text-xs text-[#FF441F]/70 truncate">Total Vendas</p>
                 </div>
               </div>
 
@@ -251,9 +251,9 @@ const RelatorioPanel = ({ restauranteNome }) => {
                   <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mb-2 uppercase tracking-wide">Por Forma de Pagamento</p>
                   <div className="space-y-1.5">
                     {Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
-                      <div key={k} className="flex items-center justify-between text-sm">
-                        <span className="text-[#27272A] dark:text-[#F4F4F5]">{PAYMENT_LABELS[k] ?? k} <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">({v.count})</span></span>
-                        <span className="font-bold text-green-700 dark:text-green-400">{fmt(v.total)}</span>
+                      <div key={k} className="flex items-center justify-between gap-2 text-sm flex-wrap">
+                        <span className="text-[#27272A] dark:text-[#F4F4F5] truncate">{PAYMENT_LABELS[k] ?? k} <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">({v.count})</span></span>
+                        <span className="font-bold text-green-700 dark:text-green-400 flex-shrink-0">{fmt(v.total)}</span>
                       </div>
                     ))}
                     {Object.keys(r.por_pagamento ?? {}).length === 0 && (

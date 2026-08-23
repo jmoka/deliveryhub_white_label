@@ -330,25 +330,25 @@ const RestauranteFinanceiro = () => {
         {dados && r && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Faturamento</p>
-                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(r.total_vendas)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{r.entregues} pedidos entregues</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1 truncate">Faturamento</p>
+                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(r.total_vendas)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 truncate">{r.entregues} pedidos entregues</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">Saídas</p>
-                <p className="text-2xl font-black text-red-600 dark:text-red-400">- {fmt(r.total_saidas)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{(dados.saidas ?? []).length} registros</p>
+              <div className="bg-white dark:bg-[#27272A] border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1 truncate">Saídas</p>
+                <p className="text-2xl font-black text-red-600 dark:text-red-400 truncate">- {fmt(r.total_saidas)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 truncate">{(dados.saidas ?? []).length} registros</p>
               </div>
-              <div className={`bg-white dark:bg-[#27272A] border rounded-2xl p-4 text-center ${r.saldo_liquido >= 0 ? 'border-[#FF441F]/30' : 'border-red-200 dark:border-red-800'}`}>
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Saldo Líquido</p>
-                <p className={`text-2xl font-black ${r.saldo_liquido >= 0 ? 'text-[#FF441F]' : 'text-red-600 dark:text-red-400'}`}>{fmt(r.saldo_liquido)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Faturamento − Saídas</p>
+              <div className={`bg-white dark:bg-[#27272A] border rounded-2xl p-4 text-center min-w-0 ${r.saldo_liquido >= 0 ? 'border-[#FF441F]/30' : 'border-red-200 dark:border-red-800'}`}>
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Saldo Líquido</p>
+                <p className={`text-2xl font-black truncate ${r.saldo_liquido >= 0 ? 'text-[#FF441F]' : 'text-red-600 dark:text-red-400'}`}>{fmt(r.saldo_liquido)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 truncate">Faturamento − Saídas</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Ticket Médio</p>
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.ticket_medio)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{r.total_pedidos} pedidos total</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Ticket Médio</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(r.ticket_medio)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 truncate">{r.total_pedidos} pedidos total</p>
               </div>
             </div>
 
@@ -366,10 +366,10 @@ const RestauranteFinanceiro = () => {
                 {Object.entries(r.por_pagamento ?? {}).length === 0
                   ? <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] col-span-4 text-center py-6">Nenhuma entrada no período.</p>
                   : Object.entries(r.por_pagamento ?? {}).map(([k, v]) => (
-                    <div key={k} className={`bg-white dark:bg-[#27272A] border rounded-2xl p-4 ${PAYMENT_COLORS[k] ?? 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40 text-gray-800 dark:text-gray-400'}`}>
-                      <div className="flex items-center gap-2 mb-2"><Icon name={PAYMENT_ICONS[k] ?? 'DollarSign'} size={16} /><p className="text-xs font-bold uppercase tracking-wide">{PAYMENT_LABELS[k] ?? k}</p></div>
-                      <p className="text-2xl font-black">{fmt(v.total)}</p>
-                      <p className="text-xs mt-1 opacity-70">{v.count} pedido{v.count !== 1 ? 's' : ''}</p>
+                    <div key={k} className={`bg-white dark:bg-[#27272A] border rounded-2xl p-4 min-w-0 ${PAYMENT_COLORS[k] ?? 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/40 text-gray-800 dark:text-gray-400'}`}>
+                      <div className="flex items-center gap-2 mb-2"><Icon name={PAYMENT_ICONS[k] ?? 'DollarSign'} size={16} className="flex-shrink-0" /><p className="text-xs font-bold uppercase tracking-wide truncate">{PAYMENT_LABELS[k] ?? k}</p></div>
+                      <p className="text-2xl font-black truncate">{fmt(v.total)}</p>
+                      <p className="text-xs mt-1 opacity-70 truncate">{v.count} pedido{v.count !== 1 ? 's' : ''}</p>
                     </div>
                   ))}
               </div>
@@ -377,21 +377,21 @@ const RestauranteFinanceiro = () => {
 
             {abaAtiva === 'canais' && (
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3"><Icon name="Banknote" size={18} className="text-green-600 dark:text-green-400" /><h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Dinheiro Físico (Caixa)</h3></div>
-                  <p className="text-3xl font-black text-green-700 dark:text-green-400 mb-1">{fmt(cashTotal)}</p>
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{r.por_pagamento?.cash?.count ?? 0} pagamentos em dinheiro</p>
+                <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-5 min-w-0">
+                  <div className="flex items-center gap-2 mb-3 min-w-0"><Icon name="Banknote" size={18} className="text-green-600 dark:text-green-400 flex-shrink-0" /><h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">Dinheiro Físico (Caixa)</h3></div>
+                  <p className="text-3xl font-black text-green-700 dark:text-green-400 mb-1 truncate">{fmt(cashTotal)}</p>
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{r.por_pagamento?.cash?.count ?? 0} pagamentos em dinheiro</p>
                   <div className="mt-4 pt-3 border-t border-green-100 dark:border-green-800">
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400">Estimativa em caixa: {fmt(Math.max(0, cashTotal - r.total_saidas))}</p>
+                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 truncate">Estimativa em caixa: {fmt(Math.max(0, cashTotal - r.total_saidas))}</p>
                   </div>
                 </div>
-                <div className="bg-white dark:bg-[#27272A] border border-blue-200 dark:border-blue-800 rounded-2xl p-5">
-                  <div className="flex items-center gap-2 mb-3"><Icon name="Landmark" size={18} className="text-blue-600 dark:text-blue-400" /><h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Digital / Banco (PagBank)</h3></div>
-                  <p className="text-3xl font-black text-blue-700 dark:text-blue-400 mb-1">{fmt(digitalTotal)}</p>
-                  {taxaPagbank > 0 && <p className="text-xs text-red-500 dark:text-red-400 font-semibold">Taxa est. ({taxaPagbank}%): - {fmt(digitalTotal * taxaPagbank / 100)}</p>}
+                <div className="bg-white dark:bg-[#27272A] border border-blue-200 dark:border-blue-800 rounded-2xl p-5 min-w-0">
+                  <div className="flex items-center gap-2 mb-3 min-w-0"><Icon name="Landmark" size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0" /><h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">Digital / Banco (PagBank)</h3></div>
+                  <p className="text-3xl font-black text-blue-700 dark:text-blue-400 mb-1 truncate">{fmt(digitalTotal)}</p>
+                  {taxaPagbank > 0 && <p className="text-xs text-red-500 dark:text-red-400 font-semibold truncate">Taxa est. ({taxaPagbank}%): - {fmt(digitalTotal * taxaPagbank / 100)}</p>}
                   <div className="mt-4 pt-3 border-t border-blue-100 dark:border-blue-800 space-y-1">
                     {Object.entries(r.por_pagamento ?? {}).filter(([k]) => k !== 'cash').map(([k, v]) => (
-                      <div key={k} className="flex justify-between text-xs"><span className="text-[#71717A] dark:text-[#A1A1AA]">{PAYMENT_LABELS[k] ?? k}</span><span className="font-semibold">{fmt(v.total)} ({v.count})</span></div>
+                      <div key={k} className="flex justify-between gap-2 text-xs flex-wrap"><span className="text-[#71717A] dark:text-[#A1A1AA] truncate">{PAYMENT_LABELS[k] ?? k}</span><span className="font-semibold flex-shrink-0">{fmt(v.total)} ({v.count})</span></div>
                     ))}
                   </div>
                 </div>

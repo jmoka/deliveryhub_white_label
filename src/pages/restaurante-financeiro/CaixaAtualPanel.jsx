@@ -19,13 +19,13 @@ const Kpi = ({ icon, label, value, sub, color = 'gray' }) => {
   };
   const txt = { green: 'text-green-700 dark:text-green-400', blue: 'text-blue-700 dark:text-blue-400', amber: 'text-amber-700 dark:text-amber-400', red: 'text-red-600 dark:text-red-400', gray: 'text-[#18181B] dark:text-[#F4F4F5]' };
   return (
-    <div className={`rounded-xl border p-3 ${colors[color]}`}>
+    <div className={`rounded-xl border p-3 min-w-0 ${colors[color]}`}>
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon name={icon} size={13} className={txt[color]} />
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA]">{label}</p>
+        <Icon name={icon} size={13} className={`${txt[color]} flex-shrink-0`} />
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#71717A] dark:text-[#A1A1AA] truncate">{label}</p>
       </div>
-      <p className={`text-xl font-black ${txt[color]}`}>{value}</p>
-      {sub && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{sub}</p>}
+      <p className={`text-xl font-black truncate ${txt[color]}`}>{value}</p>
+      {sub && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] mt-0.5 truncate">{sub}</p>}
     </div>
   );
 };

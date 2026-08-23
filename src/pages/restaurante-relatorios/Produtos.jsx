@@ -58,10 +58,10 @@ const OrdemToggle = ({ ordem, onChange }) => (
 
 const DestaqueCard = ({ label, nome, valor, onClick }) => (
   <button onClick={onClick} disabled={!nome}
-    className="text-left bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 hover:border-[#FF441F]/40 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-default disabled:hover:border-[#E4E4E7] dark:disabled:hover:border-[#3F3F46]">
-    <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">{label}</p>
+    className="text-left bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 min-w-0 hover:border-[#FF441F]/40 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-default disabled:hover:border-[#E4E4E7] dark:disabled:hover:border-[#3F3F46]">
+    <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">{label}</p>
     <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{nome ?? '—'}</p>
-    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{valor}</p>}
+    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5 truncate">{valor}</p>}
   </button>
 );
 
@@ -211,37 +211,37 @@ const RelatorioProdutos = () => {
         {dados && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{dados.produtos.length}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Total Produtos</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{dados.produtos.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Total Produtos</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-red-600 dark:text-red-400">{dados.sem_estoque.length}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sem Estoque</p>
+              <div className="bg-white dark:bg-[#27272A] border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-red-600 dark:text-red-400 truncate">{dados.sem_estoque.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Sem Estoque</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-green-700 dark:text-green-400">{dados.ativos.length}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Ativos</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{dados.ativos.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Ativos</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-[#71717A] dark:text-[#A1A1AA]">{dados.bloqueados.length}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Bloqueados</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-[#71717A] dark:text-[#A1A1AA] truncate">{dados.bloqueados.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Bloqueados</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{dados.reposicao.length}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">P/ Repor</p>
+              <div className="bg-white dark:bg-[#27272A] border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-amber-600 dark:text-amber-400 truncate">{dados.reposicao.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">P/ Repor</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-[#71717A] dark:text-[#A1A1AA]">{dados.sem_giro.length}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sem Giro</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-[#71717A] dark:text-[#A1A1AA] truncate">{dados.sem_giro.length}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Sem Giro</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(dados.receita_total)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Receita Período</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(dados.receita_total)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Receita Período</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(dados.lucro_total)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Lucro Período</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(dados.lucro_total)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">Lucro Período</p>
               </div>
             </div>
 

@@ -66,10 +66,10 @@ ${printFooterScript}
 };
 
 const DestaqueCard = ({ label, nome, valor }) => (
-  <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4">
-    <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">{label}</p>
+  <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 min-w-0">
+    <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">{label}</p>
     <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{nome ?? '—'}</p>
-    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{valor}</p>}
+    {nome && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5 truncate">{valor}</p>}
   </div>
 );
 
@@ -234,21 +234,21 @@ const RelatorioGarcom = () => {
         {garcons && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Total Vendido</p>
-                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(totalVendido)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1 truncate">Total Vendido</p>
+                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(totalVendido)}</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Comissão Total</p>
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalComissao)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Comissão Total</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(totalComissao)}</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Gorjeta Total</p>
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(totalGorjeta)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Gorjeta Total</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(totalGorjeta)}</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#FF441F]/30 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1">Total a Receber</p>
-                <p className="text-2xl font-black text-[#FF441F]">{fmt(totalAReceber)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#FF441F]/30 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1 truncate">Total a Receber</p>
+                <p className="text-2xl font-black text-[#FF441F] truncate">{fmt(totalAReceber)}</p>
               </div>
             </div>
 

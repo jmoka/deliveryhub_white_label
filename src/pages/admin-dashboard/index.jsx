@@ -16,10 +16,10 @@ const Card = ({ label, value, sub, color = 'blue' }) => {
     orange: 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950/30 dark:border-orange-900 dark:text-orange-300',
   };
   return (
-    <div className={`rounded-xl border p-5 ${colors[color]}`}>
-      <p className="text-sm font-medium opacity-75">{label}</p>
-      <p className="text-2xl font-bold mt-1">{value}</p>
-      {sub && <p className="text-xs mt-1 opacity-60">{sub}</p>}
+    <div className={`rounded-xl border p-5 min-w-0 ${colors[color]}`}>
+      <p className="text-sm font-medium opacity-75 truncate">{label}</p>
+      <p className="text-2xl font-bold mt-1 truncate">{value}</p>
+      {sub && <p className="text-xs mt-1 opacity-60 truncate">{sub}</p>}
     </div>
   );
 };

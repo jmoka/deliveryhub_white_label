@@ -560,46 +560,46 @@ const RestauranteDashboard = () => {
               const temMovimentoPix = (r?.entradas_pix ?? 0) > 0 || (r?.saidas_pix ?? 0) > 0;
               return (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center">
-                    <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">💵 Fundo inicial</p>
-                    <p className="text-lg font-black text-green-700 dark:text-green-400">{fmt(caixa.valor_inicial)}</p>
-                    <p className="text-[10px] text-green-600 dark:text-green-400">em espécie</p>
+                  <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center min-w-0">
+                    <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1 truncate">💵 Fundo inicial</p>
+                    <p className="text-lg font-black text-green-700 dark:text-green-400 truncate">{fmt(caixa.valor_inicial)}</p>
+                    <p className="text-[10px] text-green-600 dark:text-green-400 truncate">em espécie</p>
                   </div>
                   <button onClick={() => setShowVendasEspecieDetalhe(true)}
-                    className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">💵 Vendas espécie</p>
-                    <p className="text-lg font-black text-green-700 dark:text-green-400">{fmt(vendasCash)}</p>
-                    <p className="text-[10px] text-green-600 dark:text-green-400">pagos em dinheiro</p>
+                    className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter] min-w-0">
+                    <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1 truncate">💵 Vendas espécie</p>
+                    <p className="text-lg font-black text-green-700 dark:text-green-400 truncate">{fmt(vendasCash)}</p>
+                    <p className="text-[10px] text-green-600 dark:text-green-400 truncate">pagos em dinheiro</p>
                   </button>
                   <button onClick={() => setShowAdicoesDetalhe(true)}
-                    className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1">➕ Adições</p>
-                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">{fmt(r?.total_entradas)}</p>
-                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400">{caixa?.entradas?.length ?? 0} registros</p>
+                    className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter] min-w-0">
+                    <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 truncate">➕ Adições</p>
+                    <p className="text-lg font-black text-emerald-700 dark:text-emerald-400 truncate">{fmt(r?.total_entradas)}</p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate">{caixa?.entradas?.length ?? 0} registros</p>
                   </button>
                   <button onClick={() => setShowSangriasDetalhe(true)}
-                    className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">➖ Sangrias</p>
-                    <p className="text-lg font-black text-red-700 dark:text-red-400">{fmt(r?.total_saidas)}</p>
-                    <p className="text-[10px] text-red-600 dark:text-red-400">{caixa?.saidas?.length ?? 0} registros</p>
+                    className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter] min-w-0">
+                    <p className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-widest mb-1 truncate">➖ Sangrias</p>
+                    <p className="text-lg font-black text-red-700 dark:text-red-400 truncate">{fmt(r?.total_saidas)}</p>
+                    <p className="text-[10px] text-red-600 dark:text-red-400 truncate">{caixa?.saidas?.length ?? 0} registros</p>
                   </button>
                   <button onClick={() => setShowEspecieDetalhe(true)}
-                    className="bg-[#FF441F]/5 border border-[#FF441F]/30 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1">💵 Espécie no caixa</p>
-                    <p className="text-lg font-black text-[#FF441F]">{fmt(saldoEspecie)}</p>
-                    <p className="text-[10px] text-[#FF441F]">estimativa física</p>
+                    className="bg-[#FF441F]/5 border border-[#FF441F]/30 rounded-xl p-3 text-center hover:brightness-95 transition-[filter] min-w-0">
+                    <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest mb-1 truncate">💵 Espécie no caixa</p>
+                    <p className="text-lg font-black text-[#FF441F] truncate">{fmt(saldoEspecie)}</p>
+                    <p className="text-[10px] text-[#FF441F] truncate">estimativa física</p>
                   </button>
                   <button onClick={() => setShowDigitalDetalhe(true)}
-                    className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter]">
-                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">🏦 Vendas digital</p>
-                    <p className="text-lg font-black text-blue-700 dark:text-blue-400">{fmt(saldoDigital)}</p>
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400">PIX / cartão</p>
+                    className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-center hover:brightness-95 transition-[filter] min-w-0">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1 truncate">🏦 Vendas digital</p>
+                    <p className="text-lg font-black text-blue-700 dark:text-blue-400 truncate">{fmt(saldoDigital)}</p>
+                    <p className="text-[10px] text-blue-600 dark:text-blue-400 truncate">PIX / cartão</p>
                   </button>
                   {temMovimentoPix && (
-                    <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl p-3 text-center">
-                      <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1">📲 Troco pago via Pix</p>
-                      <p className="text-lg font-black text-purple-700 dark:text-purple-400">{fmt(-pixCalculado)}</p>
-                      <p className="text-[10px] text-purple-600 dark:text-purple-400">saiu do seu Pix, não do caixa</p>
+                    <div className="bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl p-3 text-center min-w-0">
+                      <p className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1 truncate">📲 Troco pago via Pix</p>
+                      <p className="text-lg font-black text-purple-700 dark:text-purple-400 truncate">{fmt(-pixCalculado)}</p>
+                      <p className="text-[10px] text-purple-600 dark:text-purple-400 truncate">saiu do seu Pix, não do caixa</p>
                     </div>
                   )}
                 </div>
@@ -621,12 +621,12 @@ const RestauranteDashboard = () => {
                       : metodo === 'pix' ? valor + (r.pix_calculado ?? 0)
                       : valor;
                     return (
-                      <div key={metodo} className="bg-[#FAFAFA] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center">
+                      <div key={metodo} className="bg-[#FAFAFA] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-center min-w-0">
                         <p className="text-2xl">{PAGAMENTO_ICONE[metodo] ?? '💰'}</p>
-                        <p className="text-xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(valorExibido)}</p>
-                        <p className="text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA]">{metodo === 'pix' ? 'Saldo Pix' : (PAGAMENTO_LABEL[metodo] ?? metodo)}</p>
+                        <p className="text-xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(valorExibido)}</p>
+                        <p className="text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] truncate">{metodo === 'pix' ? 'Saldo Pix' : (PAGAMENTO_LABEL[metodo] ?? metodo)}</p>
                         {metodo === 'pix' && (r.pix_calculado ?? 0) !== 0 && (
-                          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1 pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+                          <p className="text-sm text-blue-600 dark:text-blue-400 mt-1 pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46] truncate">
                             Recebido: {fmt(valor)}
                           </p>
                         )}

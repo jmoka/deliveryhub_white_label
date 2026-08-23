@@ -12,14 +12,14 @@ const COLORS = {
 const KpiCard = ({ icon, label, value, sub, color = 'gray', onClick }) => (
   <div
     onClick={onClick}
-    className={`rounded-xl border p-4 ${COLORS[color]} ${onClick ? 'cursor-pointer hover:brightness-95 transition-[filter]' : ''}`}
+    className={`rounded-xl border p-4 min-w-0 ${COLORS[color]} ${onClick ? 'cursor-pointer hover:brightness-95 transition-[filter]' : ''}`}
   >
     <div className="flex items-center gap-1.5 mb-1">
-      <Icon name={icon} size={14} className="opacity-70" />
-      <p className="text-xs font-medium opacity-75">{label}</p>
+      <Icon name={icon} size={14} className="opacity-70 flex-shrink-0" />
+      <p className="text-xs font-medium opacity-75 truncate">{label}</p>
     </div>
-    <p className="text-2xl font-black">{value}</p>
-    {sub && <p className="text-xs opacity-60 mt-0.5">{sub}</p>}
+    <p className="text-2xl font-black truncate">{value}</p>
+    {sub && <p className="text-xs opacity-60 mt-0.5 truncate">{sub}</p>}
   </div>
 );
 

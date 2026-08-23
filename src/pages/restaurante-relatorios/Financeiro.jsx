@@ -150,22 +150,22 @@ const RelatorioFinanceiro = () => {
         {dados && r && (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Vendas</p>
-                <p className="text-2xl font-black text-green-700 dark:text-green-400">{fmt(r.total_vendas)}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">{r.entregues} finalizados</p>
+              <div className="bg-white dark:bg-[#27272A] border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-green-600 dark:text-green-400 uppercase tracking-widest mb-1 truncate">Vendas</p>
+                <p className="text-2xl font-black text-green-700 dark:text-green-400 truncate">{fmt(r.total_vendas)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 truncate">{r.entregues} finalizados</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Comissão Paga</p>
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_comissoes_pagas)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Comissão Paga</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(r.total_comissoes_pagas)}</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Gorjetas Pagas</p>
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_gorjetas_pagas)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Gorjetas Pagas</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(r.total_gorjetas_pagas)}</p>
               </div>
-              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center">
-                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1">Troco</p>
-                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(r.total_troco)}</p>
+              <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 text-center min-w-0">
+                <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-widest mb-1 truncate">Troco</p>
+                <p className="text-2xl font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(r.total_troco)}</p>
               </div>
             </div>
 
@@ -215,11 +215,11 @@ const RelatorioFinanceiro = () => {
                     key={k}
                     type="button"
                     onClick={() => setFiltroForma((atual) => (atual === k ? null : k))}
-                    className={`text-left border rounded-xl p-3 transition-colors ${filtroForma === k ? 'border-green-500 bg-green-50 dark:bg-green-950/30 dark:border-green-600' : 'border-[#F4F4F5] dark:border-[#3F3F46] hover:border-green-300 dark:hover:border-green-800'}`}
+                    className={`text-left border rounded-xl p-3 min-w-0 transition-colors ${filtroForma === k ? 'border-green-500 bg-green-50 dark:bg-green-950/30 dark:border-green-600' : 'border-[#F4F4F5] dark:border-[#3F3F46] hover:border-green-300 dark:hover:border-green-800'}`}
                   >
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1">{PAYMENT_LABELS[k] ?? k}</p>
-                    <p className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(v.total)}</p>
-                    <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{v.count} pagamento{v.count !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1 truncate">{PAYMENT_LABELS[k] ?? k}</p>
+                    <p className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5] truncate">{fmt(v.total)}</p>
+                    <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] truncate">{v.count} pagamento{v.count !== 1 ? 's' : ''}</p>
                   </button>
                 ))}
               </div>
