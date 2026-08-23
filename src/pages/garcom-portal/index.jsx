@@ -1334,10 +1334,10 @@ const FinanceiroTab = ({ onEncerrarSessao }) => {
                     <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">
                       #{v.numero_comanda ?? v.order_id}{v.mesa_numero ? ` — Mesa ${v.mesa_numero}` : ''}{v.cliente_nome ? ` — ${v.cliente_nome}` : ''}
                     </p>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                    <div className="flex items-center justify-between gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtDataHora(v.data)}</span>
                       <span className="text-xs text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">
-                        {fmt(v.total)}{v.gorjeta > 0 ? ` + ${fmt(v.gorjeta)} gorjeta` : ''}
+                        Venda: <b>{fmt(v.total)}</b>{v.gorjeta > 0 && <> · Gorjeta: <b>{fmt(v.gorjeta)}</b></>}
                       </span>
                     </div>
                   </div>
@@ -1486,7 +1486,7 @@ const EncerrarSessaoModal = ({ onFechar, onEncerrado }) => {
                     #{v.numero_comanda ?? v.order_id}{v.mesa_numero ? ` — Mesa ${v.mesa_numero}` : ''}{v.cliente_nome ? ` — ${v.cliente_nome}` : ''}
                   </span>
                   <span className="flex-shrink-0 ml-auto text-[#71717A] dark:text-[#A1A1AA]">
-                    {fmt(v.total)}{v.gorjeta > 0 ? ` + ${fmt(v.gorjeta)}` : ''}
+                    Venda: <b className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(v.total)}</b>{v.gorjeta > 0 && <> · Gorjeta: <b className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(v.gorjeta)}</b></>}
                   </span>
                 </div>
               ))}
