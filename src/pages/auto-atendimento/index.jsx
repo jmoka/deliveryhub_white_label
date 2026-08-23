@@ -180,12 +180,12 @@ const AutoAtendimento = () => {
   };
 
   if (carregando) {
-    return <div className="min-h-screen flex items-center justify-center text-sm text-[#71717A]">Carregando...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</div>;
   }
   if (erro) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center">
-        <p className="text-sm text-red-600">{erro}</p>
+        <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>
       </div>
     );
   }
@@ -195,8 +195,8 @@ const AutoAtendimento = () => {
         <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mb-2">
           <Icon name="Clock" size={26} className="text-[#FF441F]" />
         </div>
-        <p className="text-base font-bold text-[#18181B]">Aguarde o garçom te atender</p>
-        <p className="text-sm text-[#71717A]">
+        <p className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Aguarde o garçom te atender</p>
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
           Mesa {aguardando.numero}{aguardando.nome ? ` - ${aguardando.nome}` : ''} ainda não tem atendimento aberto.
           Assim que o garçom abrir, essa página libera sozinha.
         </p>
@@ -211,21 +211,21 @@ const AutoAtendimento = () => {
   const categoriaSelecionada = cardapio?.cardapio?.find((c) => c.id === categoriaAtiva);
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] p-4 flex flex-col items-center pb-28">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] p-4 flex flex-col items-center pb-28">
       <div className="w-full max-w-sm">
         <div className="text-center mb-4 mt-4">
           <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
             <Icon name="UtensilsCrossed" size={26} className="text-[#FF441F]" />
           </div>
-          <h1 className="text-lg font-black text-[#18181B]">{cardapio?.restaurante?.name ?? 'Auto Atendimento'}</h1>
-          <p className="text-sm text-[#71717A]">
+          <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">{cardapio?.restaurante?.name ?? 'Auto Atendimento'}</h1>
+          <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
             {comanda.mesa ? `Mesa ${comanda.mesa.numero}${comanda.mesa.nome ? ' - ' + comanda.mesa.nome : ''}` : ''}
             {comanda.numeroComanda ? ` — Comanda #${comanda.numeroComanda}` : ''}
           </p>
         </div>
 
         {msg && (
-          <div className={`rounded-xl px-3 py-2 mb-3 text-sm text-center ${msg.tipo === 'ok' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+          <div className={`rounded-xl px-3 py-2 mb-3 text-sm text-center ${msg.tipo === 'ok' ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400'}`}>
             {msg.texto}
           </div>
         )}
@@ -236,38 +236,38 @@ const AutoAtendimento = () => {
         </button>
 
         {itensPendentes.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3">
-            <p className="text-xs font-bold text-[#71717A] uppercase mb-2">No carrinho (ainda não enviado)</p>
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-3">
+            <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">No carrinho (ainda não enviado)</p>
             <div className="space-y-2">
               {itensPendentes.map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="text-[#18181B] min-w-0 truncate">{item.quantity}x {item.products?.name}</span>
+                  <span className="text-[#18181B] dark:text-[#F4F4F5] min-w-0 truncate">{item.quantity}x {item.products?.name}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[#71717A]">{fmt(item.quantity * item.unit_price)}</span>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.quantity * item.unit_price)}</span>
                     <button onClick={() => removerProduto(item)} title="Remover item"
-                      className="w-6 h-6 rounded-lg border border-red-200 text-red-500 flex items-center justify-center flex-shrink-0">
+                      className="w-6 h-6 rounded-lg border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center flex-shrink-0">
                       <Icon name="X" size={12} />
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F4F4F5] font-bold text-sm">
-              <span>Total</span>
+            <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46] font-bold text-sm">
+              <span className="text-[#18181B] dark:text-[#F4F4F5]">Total</span>
               <span className="text-[#FF441F]">{fmt(totalPendente)}</span>
             </div>
           </div>
         )}
 
         {itensEnviados.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3">
-            <p className="text-xs font-bold text-[#71717A] uppercase mb-2">Já enviados</p>
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-3">
+            <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Já enviados</p>
             <div className="space-y-2">
               {itensEnviados.map((item) => (
                 <div key={item.id} className="flex items-center justify-between text-sm">
-                  <span className="text-[#18181B]">{item.quantity}x {item.products?.name}</span>
+                  <span className="text-[#18181B] dark:text-[#F4F4F5]">{item.quantity}x {item.products?.name}</span>
                   <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${
-                    item.status === 'pronto' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                    item.status === 'pronto' ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400'
                   }`}>
                     {STATUS_ITEM_LABEL[item.status] ?? item.status}
                   </span>
@@ -278,61 +278,61 @@ const AutoAtendimento = () => {
         )}
 
         {itensPendentes.length === 0 && itensEnviados.length === 0 && (
-          <p className="text-center text-sm text-[#71717A] mt-6">Nenhum item ainda — toque em "Inserir produto" pra começar.</p>
+          <p className="text-center text-sm text-[#71717A] dark:text-[#A1A1AA] mt-6">Nenhum item ainda — toque em "Inserir produto" pra começar.</p>
         )}
 
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3 space-y-1.5">
-          <p className="text-xs font-bold text-[#71717A] uppercase mb-1">Resumo da conta</p>
-          <div className="flex justify-between text-sm text-[#71717A]">
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-3 space-y-1.5">
+          <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-1">Resumo da conta</p>
+          <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
             <span>Subtotal</span><span>{fmt(comanda.subtotal)}</span>
           </div>
           {comanda.desconto > 0 && (
-            <div className="flex justify-between text-sm text-emerald-600">
+            <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
               <span>Desconto</span><span>-{fmt(comanda.desconto)}</span>
             </div>
           )}
           {comanda.acrescimo > 0 && (
-            <div className="flex justify-between text-sm text-[#71717A]">
+            <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
               <span>Acréscimo</span><span>{fmt(comanda.acrescimo)}</span>
             </div>
           )}
           {comanda.gorjetaPercentual > 0 && (
             <div className="flex items-center justify-between gap-2 py-1">
-              <label className="flex items-center gap-2 text-sm text-[#18181B] cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-[#18181B] dark:text-[#F4F4F5] cursor-pointer">
                 <input type="checkbox" checked={!comanda.semGorjeta} disabled={salvandoGorjeta}
                   onChange={(e) => handleGorjeta(!e.target.checked)}
                   className="w-4 h-4 accent-[#FF441F]" />
-                Gorjeta ({comanda.gorjetaPercentual}%){comanda.gorjetaEstimativa && <span className="text-[10px] text-[#71717A]"> · estimativa</span>}
+                Gorjeta ({comanda.gorjetaPercentual}%){comanda.gorjetaEstimativa && <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]"> · estimativa</span>}
               </label>
-              <span className="text-sm text-[#71717A]">{fmt(comanda.gorjeta)}</span>
+              <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{fmt(comanda.gorjeta)}</span>
             </div>
           )}
           {comanda.taxaCartaoTotal > 0 && (
-            <div className="flex justify-between text-sm text-[#71717A]">
+            <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
               <span>Taxa cartão</span><span>{fmt(comanda.taxaCartaoTotal)}</span>
             </div>
           )}
-          <div className="flex justify-between text-base font-bold text-[#18181B] pt-1.5 border-t border-[#F4F4F5]">
+          <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1.5 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
             <span>Total</span><span>{fmt(comanda.total)}</span>
           </div>
-          <div className="flex justify-between text-sm font-semibold text-[#18181B]">
+          <div className="flex justify-between text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">
             <span>Falta pagar</span><span>{fmt(comanda.saldo)}</span>
           </div>
         </div>
 
         {comanda.pagamentos?.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3 space-y-1.5">
-            <p className="text-xs text-[#71717A] mb-1">Pagamentos já feitos</p>
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-3 space-y-1.5">
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1">Pagamentos já feitos</p>
             {comanda.pagamentos.map((p, i) => (
               <div key={i} className="flex justify-between text-sm">
-                <span className="text-[#18181B]">{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}</span>
-                <span className="text-[#18181B]">
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}</span>
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">
                   {fmt(p.valor)}
-                  {p.taxa_cartao_valor > 0 && <span className="text-[#71717A]"> (+{fmt(p.taxa_cartao_valor)} taxa)</span>}
+                  {p.taxa_cartao_valor > 0 && <span className="text-[#71717A] dark:text-[#A1A1AA]"> (+{fmt(p.taxa_cartao_valor)} taxa)</span>}
                 </span>
               </div>
             ))}
-            <div className="flex justify-between text-sm font-semibold text-[#18181B] pt-1.5 border-t border-[#E4E4E7]">
+            <div className="flex justify-between text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] pt-1.5 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
               <span>Total pago</span><span>{fmt(comanda.totalPago)}</span>
             </div>
           </div>
@@ -341,7 +341,7 @@ const AutoAtendimento = () => {
         <button
           onClick={handleSolicitarConferencia}
           disabled={solicitandoConferencia || !!comanda.conferenciaSolicitadaEm}
-          className="w-full bg-white border border-[#E4E4E7] rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-medium text-[#18181B] disabled:opacity-60"
+          className="w-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] disabled:opacity-60"
         >
           <Icon name={comanda.conferenciaSolicitadaEm ? 'BellRing' : 'Bell'} size={16} />
           {comanda.conferenciaSolicitadaEm ? 'Garçom já foi avisado' : 'Chamar garçom / Solicitar conferência'}
@@ -349,7 +349,7 @@ const AutoAtendimento = () => {
       </div>
 
       {itensPendentes.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#E4E4E7] flex justify-center">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#27272A] border-t border-[#E4E4E7] dark:border-[#3F3F46] flex justify-center">
           <button onClick={handleSolicitarPedido} disabled={solicitando}
             className="w-full max-w-sm py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl disabled:opacity-50 flex items-center justify-center gap-2">
             {solicitando ? 'Enviando...' : `Solicitar pedido (${fmt(totalPendente)})`}
@@ -359,28 +359,28 @@ const AutoAtendimento = () => {
 
       {mostrarPicker && cardapio && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-sm max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-[#E4E4E7]">
-              <p className="font-bold text-[#18181B]">Inserir produto</p>
-              <button onClick={() => setMostrarPicker(false)}><Icon name="X" size={18} /></button>
+          <div className="bg-white dark:bg-[#27272A] rounded-t-2xl sm:rounded-2xl w-full max-w-sm max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
+              <p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Inserir produto</p>
+              <button onClick={() => setMostrarPicker(false)}><Icon name="X" size={18} className="text-[#18181B] dark:text-[#F4F4F5]" /></button>
             </div>
-            <div className="flex gap-2 p-3 overflow-x-auto border-b border-[#E4E4E7]">
+            <div className="flex gap-2 p-3 overflow-x-auto border-b border-[#E4E4E7] dark:border-[#3F3F46]">
               {(cardapio.cardapio ?? []).map((cat) => (
                 <button key={cat.id} onClick={() => setCategoriaAtiva(cat.id)}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${categoriaAtiva === cat.id ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${categoriaAtiva === cat.id ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                   {cat.name}
                 </button>
               ))}
             </div>
             <div className="overflow-y-auto p-3 space-y-2">
               {(categoriaSelecionada?.produtos ?? []).map((produto) => (
-                <div key={produto.id} className="flex items-center gap-2 border border-[#E4E4E7] rounded-xl p-2">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+                <div key={produto.id} className="flex items-center gap-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-2">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
                     {produto.image_url && <img src={imgUrl(produto.image_url)} alt="" className="w-full h-full object-cover" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#18181B] truncate">{produto.name}</p>
-                    <p className="text-xs text-[#71717A]">{fmt(produto.price)}</p>
+                    <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{produto.name}</p>
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>
                   </div>
                   <button onClick={() => adicionarProduto(produto)} disabled={adicionandoId === produto.id}
                     className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#FF441F] text-white flex items-center justify-center disabled:opacity-50">
@@ -389,7 +389,7 @@ const AutoAtendimento = () => {
                 </div>
               ))}
               {!categoriaSelecionada?.produtos?.length && (
-                <p className="text-center text-sm text-[#71717A] py-6">Nenhum produto nessa categoria.</p>
+                <p className="text-center text-sm text-[#71717A] dark:text-[#A1A1AA] py-6">Nenhum produto nessa categoria.</p>
               )}
             </div>
           </div>

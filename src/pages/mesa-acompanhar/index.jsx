@@ -60,25 +60,25 @@ const MesaAcompanhar = () => {
     }
   };
 
-  if (erro) return <div className="min-h-screen flex items-center justify-center p-6 text-sm text-red-600">{erro}</div>;
-  if (!dados) return <div className="min-h-screen flex items-center justify-center text-sm text-[#71717A]">Carregando...</div>;
+  if (erro) return <div className="min-h-screen flex items-center justify-center p-6 text-sm text-red-600 dark:text-red-400">{erro}</div>;
+  if (!dados) return <div className="min-h-screen flex items-center justify-center text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</div>;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] p-4 flex flex-col items-center">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] p-4 flex flex-col items-center">
       <div className="w-full max-w-sm">
         <div className="text-center mb-4 mt-4">
           <div className="w-14 h-14 bg-[#FF441F]/10 rounded-2xl flex items-center justify-center mx-auto mb-2">
             <Icon name="UtensilsCrossed" size={26} className="text-[#FF441F]" />
           </div>
-          <h1 className="text-lg font-black text-[#18181B]">{dados.restaurante}</h1>
-          <p className="text-sm text-[#71717A]">
+          <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5]">{dados.restaurante}</h1>
+          <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
             {dados.mesa}{dados.mesa && dados.numero_comanda ? ' — ' : ''}{dados.numero_comanda ? `Comanda #${dados.numero_comanda}` : ''}
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mb-3 text-center">
-          <p className="text-xs text-[#71717A]">Status</p>
-          <p className="text-base font-bold text-[#18181B]">{STATUS_COMANDA_LABEL[dados.status] ?? dados.status}</p>
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-3 text-center">
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Status</p>
+          <p className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">{STATUS_COMANDA_LABEL[dados.status] ?? dados.status}</p>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-3">
@@ -92,23 +92,23 @@ const MesaAcompanhar = () => {
             const enviadoEm = item.enviado_em ? new Date(item.enviado_em).getTime() : null;
             const tempoPreparo = enviadoEm ? now - enviadoEm : null;
             return (
-              <div key={i} className="bg-white rounded-xl border border-[#E4E4E7] p-3">
+              <div key={i} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#18181B]">{item.quantity}x {item.product_name}</span>
+                  <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">{item.quantity}x {item.product_name}</span>
                   <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                    item.status === 'pronto' ? 'bg-emerald-100 text-emerald-700' : item.status === 'enviado' ? 'bg-orange-100 text-orange-700' : 'bg-zinc-100 text-zinc-600'
+                    item.status === 'pronto' ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400'
                   }`}>
                     {STATUS_ITEM_LABEL[item.status] ?? item.status}
                   </span>
                 </div>
-                <p className="text-xs text-[#71717A] mt-0.5">{fmt(item.unit_price)} un. · {fmt(item.subtotal)}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{fmt(item.unit_price)} un. · {fmt(item.subtotal)}</p>
                 {item.posicao_fila && (
-                  <p className="text-[11px] text-[#71717A] mt-1">
+                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1">
                     {item.posicao_fila}º {item.status === 'preparando' ? 'em preparo' : 'na fila pra entrar em preparo'}
                   </p>
                 )}
                 {enviadoEm && item.status !== 'pronto' && (
-                  <p className="text-[11px] text-[#71717A] font-mono mt-1 flex items-center gap-1">
+                  <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] font-mono mt-1 flex items-center gap-1">
                     <Icon name="Clock" size={11} /> preparando há {formatDuracao(tempoPreparo)}
                   </p>
                 )}
@@ -117,21 +117,21 @@ const MesaAcompanhar = () => {
           })}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mt-3 space-y-1.5">
-          <div className="flex justify-between text-sm text-[#71717A]">
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mt-3 space-y-1.5">
+          <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
             <span>Subtotal</span><span>{fmt(dados.subtotal)}</span>
           </div>
           {dados.desconto > 0 && (
-            <div className="flex justify-between text-sm text-emerald-600">
+            <div className="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
               <span>Desconto</span><span>-{fmt(dados.desconto)}</span>
             </div>
           )}
           {dados.acrescimo > 0 && (
-            <div className="flex justify-between text-sm text-[#71717A]">
+            <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
               <span>Acréscimo</span><span>{fmt(dados.acrescimo)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm text-[#71717A]">
+          <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
             <span>
               Gorjeta {dados.gorjeta_percentual ? `(${dados.gorjeta_percentual}%)` : ''}
               {dados.gorjeta_estimativa && <span className="text-[10px]"> · estimativa</span>}
@@ -139,31 +139,31 @@ const MesaAcompanhar = () => {
             <span>{fmt(dados.gorjeta)}</span>
           </div>
           {dados.taxa_cartao_total > 0 && (
-            <div className="flex justify-between text-sm text-[#71717A]">
+            <div className="flex justify-between text-sm text-[#71717A] dark:text-[#A1A1AA]">
               <span>Taxa cartão</span><span>{fmt(dados.taxa_cartao_total)}</span>
             </div>
           )}
-          <div className="flex justify-between text-base font-bold text-[#18181B] pt-1.5 border-t border-[#E4E4E7]">
+          <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1.5 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
             <span>Total</span><span>{fmt(dados.total)}</span>
           </div>
-          <div className="flex justify-between text-sm font-semibold text-[#18181B]">
+          <div className="flex justify-between text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">
             <span>Falta pagar</span><span>{fmt(dados.saldo)}</span>
           </div>
         </div>
 
         {dados.pagamentos?.length > 0 && (
-          <div className="bg-white rounded-2xl border border-[#E4E4E7] p-4 mt-3 space-y-1.5">
-            <p className="text-xs text-[#71717A] mb-1">Pagamentos já feitos</p>
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mt-3 space-y-1.5">
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1">Pagamentos já feitos</p>
             {dados.pagamentos.map((p, i) => (
               <div key={i} className="flex justify-between text-sm">
-                <span className="text-[#18181B]">{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}</span>
-                <span className="text-[#18181B]">
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">{PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento}</span>
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">
                   {fmt(p.valor)}
-                  {p.taxa_cartao_valor > 0 && <span className="text-[#71717A]"> (+{fmt(p.taxa_cartao_valor)} taxa)</span>}
+                  {p.taxa_cartao_valor > 0 && <span className="text-[#71717A] dark:text-[#A1A1AA]"> (+{fmt(p.taxa_cartao_valor)} taxa)</span>}
                 </span>
               </div>
             ))}
-            <div className="flex justify-between text-sm font-semibold text-[#18181B] pt-1.5 border-t border-[#E4E4E7]">
+            <div className="flex justify-between text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] pt-1.5 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
               <span>Total pago</span><span>{fmt(dados.total_pago)}</span>
             </div>
           </div>
@@ -172,7 +172,7 @@ const MesaAcompanhar = () => {
         <button
           onClick={handleSolicitar}
           disabled={solicitando || conferenciaSolicitada}
-          className="w-full mt-3 bg-white border border-[#E4E4E7] rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-medium text-[#18181B] disabled:opacity-60"
+          className="w-full mt-3 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] disabled:opacity-60"
         >
           <Icon name={conferenciaSolicitada ? 'BellRing' : 'Bell'} size={16} />
           {conferenciaSolicitada
@@ -180,7 +180,7 @@ const MesaAcompanhar = () => {
             : (solicitando ? 'Enviando...' : 'Solicitar conferência')}
         </button>
         {msgSolicitacao && (
-          <p className={`text-xs text-center mt-2 ${msgSolicitacao.tipo === 'ok' ? 'text-emerald-600' : 'text-red-600'}`}>
+          <p className={`text-xs text-center mt-2 ${msgSolicitacao.tipo === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
             {msgSolicitacao.texto}
           </p>
         )}

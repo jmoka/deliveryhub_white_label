@@ -11,14 +11,14 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 
 /* ── Skeleton ────────────────────────────────────────────────────── */
 const SkeletonProduto = () => (
-  <div className="flex gap-4 p-4 bg-white rounded-2xl border border-[#E4E4E7] animate-pulse">
+  <div className="flex gap-4 p-4 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] animate-pulse">
     <div className="flex-1 space-y-2">
-      <div className="h-4 bg-[#E4E4E7] rounded-lg w-3/4" />
-      <div className="h-3 bg-[#F4F4F5] rounded-lg w-full" />
-      <div className="h-3 bg-[#F4F4F5] rounded-lg w-2/3" />
-      <div className="h-7 bg-[#E4E4E7] rounded-xl w-24 mt-3" />
+      <div className="h-4 bg-[#E4E4E7] dark:bg-[#3F3F46] rounded-lg w-3/4" />
+      <div className="h-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg w-full" />
+      <div className="h-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg w-2/3" />
+      <div className="h-7 bg-[#E4E4E7] dark:bg-[#3F3F46] rounded-xl w-24 mt-3" />
     </div>
-    <div className="w-28 h-24 bg-[#F4F4F5] rounded-xl flex-shrink-0" />
+    <div className="w-28 h-24 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl flex-shrink-0" />
   </div>
 );
 
@@ -32,32 +32,32 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVit
     <motion.div
       layout
       whileHover={indisponivel ? {} : { y: -1 }}
-      className={`flex gap-4 p-4 bg-white rounded-2xl border transition-all h-full ${
-        indisponivel ? 'border-[#E4E4E7] opacity-60' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20'
+      className={`flex gap-4 p-4 bg-white dark:bg-[#27272A] rounded-2xl border transition-all h-full ${
+        indisponivel ? 'border-[#E4E4E7] dark:border-[#3F3F46] opacity-60' : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:shadow-md hover:border-[#FF441F]/20'
       }`}
     >
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
           <div className="flex items-start gap-2 flex-wrap">
-            <p className="font-semibold text-[#18181B] text-sm leading-snug flex-1">{produto.name}</p>
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm leading-snug flex-1">{produto.name}</p>
             {produto.destaque && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-yellow-400/20 text-yellow-700 rounded font-bold flex-shrink-0">⭐ Destaque</span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-yellow-400/20 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 rounded font-bold flex-shrink-0">⭐ Destaque</span>
             )}
             {produto.tags?.includes('mais_vendido') && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold flex-shrink-0">🔥 Top</span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded font-bold flex-shrink-0">🔥 Top</span>
             )}
           </div>
           {produto.description && (
-            <p className="text-xs text-[#71717A] mt-1 line-clamp-2">{produto.description}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 line-clamp-2">{produto.description}</p>
           )}
         </div>
 
         <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
           <div>
-            {temPromo && <p className="text-xs line-through text-[#71717A]">{fmt(produto.price)}</p>}
+            {temPromo && <p className="text-xs line-through text-[#71717A] dark:text-[#A1A1AA]">{fmt(produto.price)}</p>}
             <div className="flex items-center gap-1.5">
-              <p className={`text-base font-bold ${temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>{fmt(precoFinal)}</p>
-              {temPromo && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">PROMO</span>}
+              <p className={`text-base font-bold ${temPromo ? 'text-green-600 dark:text-green-400' : 'text-[#FF441F]'}`}>{fmt(precoFinal)}</p>
+              {temPromo && <span className="text-[10px] bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded font-bold">PROMO</span>}
             </div>
           </div>
 
@@ -71,15 +71,15 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVit
               ) : (
                 <div className="flex items-center gap-2">
                   <button onClick={() => onAdicionar(produto, precoFinal, -1)}
-                    className="w-7 h-7 bg-[#F4F4F5] rounded-full font-bold text-[#27272A] flex items-center justify-center hover:bg-[#E4E4E7] text-base">−</button>
-                  <span className="text-sm font-bold text-[#18181B] w-5 text-center">{qtd}</span>
+                    className="w-7 h-7 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center hover:bg-[#E4E4E7] dark:hover:bg-[#52525B] text-base">−</button>
+                  <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] w-5 text-center">{qtd}</span>
                   <button onClick={() => onAdicionar(produto, precoFinal, +1)}
                     className="w-7 h-7 bg-[#FF441F] rounded-full font-bold text-white flex items-center justify-center hover:bg-[#E63A19] text-base">+</button>
                 </div>
               )}
             </div>
           ) : (
-            <span className="text-xs text-[#71717A] bg-[#F4F4F5] px-2 py-1 rounded-lg">Indisponível</span>
+            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#3F3F46] px-2 py-1 rounded-lg">Indisponível</span>
           )}
         </div>
       </div>
@@ -88,8 +88,8 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVit
         <div className="relative flex-shrink-0 w-28 h-24">
           <img src={produto.image_url} alt={produto.name} className="w-full h-full object-cover rounded-xl" />
           {indisponivel && (
-            <div className="absolute inset-0 bg-white/60 rounded-xl flex items-center justify-center">
-              <span className="text-[10px] text-[#71717A] font-semibold">Indisponível</span>
+            <div className="absolute inset-0 bg-white/60 dark:bg-black/60 rounded-xl flex items-center justify-center">
+              <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-semibold">Indisponível</span>
             </div>
           )}
         </div>
@@ -107,21 +107,21 @@ const ComboCarrosselCard = ({ combo, onAdicionar, restauranteFechado, somenteVit
     <button
       onClick={() => !restauranteFechado && !somenteVitrine && onAdicionar(combo, precoFinal)}
       disabled={restauranteFechado || somenteVitrine}
-      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
-        restauranteFechado ? 'border-[#E4E4E7] opacity-60' : somenteVitrine ? 'border-[#E4E4E7] cursor-default' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white dark:bg-[#27272A] rounded-2xl border overflow-hidden text-left relative ${
+        restauranteFechado ? 'border-[#E4E4E7] dark:border-[#3F3F46] opacity-60' : somenteVitrine ? 'border-[#E4E4E7] dark:border-[#3F3F46] cursor-default' : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:shadow-md hover:border-[#FF441F]/30'
       }`}
     >
-      <div className="relative h-28 bg-[#F4F4F5]">
+      <div className="relative h-28 bg-[#F4F4F5] dark:bg-[#3F3F46]">
         {combo.image_url
           ? <img src={combo.image_url} alt={combo.name} className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center"><Icon name="Package" size={28} className="text-[#E4E4E7]" /></div>}
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="Package" size={28} className="text-[#E4E4E7] dark:text-[#3F3F46]" /></div>}
         <span className="absolute top-2 left-2 text-[9px] font-bold bg-[#FF441F] text-white px-1.5 py-0.5 rounded-full shadow">COMBO</span>
       </div>
       <div className="p-2.5">
-        <p className="text-xs font-bold text-[#18181B] line-clamp-2 leading-tight">{combo.name}</p>
+        <p className="text-xs font-bold text-[#18181B] dark:text-[#F4F4F5] line-clamp-2 leading-tight">{combo.name}</p>
         <div className="mt-1.5">
-          {temPromo && <p className="text-[9px] line-through text-[#71717A]">{fmt(combo.price)}</p>}
-          <p className={`text-sm font-black ${temPromo ? 'text-green-600' : 'text-[#FF441F]'}`}>{fmt(precoFinal)}</p>
+          {temPromo && <p className="text-[9px] line-through text-[#71717A] dark:text-[#A1A1AA]">{fmt(combo.price)}</p>}
+          <p className={`text-sm font-black ${temPromo ? 'text-green-600 dark:text-green-400' : 'text-[#FF441F]'}`}>{fmt(precoFinal)}</p>
         </div>
       </div>
     </button>
@@ -137,8 +137,8 @@ const ComboCarrossel = ({ combos, onAdicionar, restauranteFechado, somenteVitrin
   return (
     <div className="relative">
       <button onClick={() => scroll(-1)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
-        <Icon name="ChevronLeft" size={16} className="text-[#27272A]" />
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] -ml-4 hidden sm:flex">
+        <Icon name="ChevronLeft" size={16} className="text-[#27272A] dark:text-[#F4F4F5]" />
       </button>
       <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {combos.map((c) => (
@@ -146,8 +146,8 @@ const ComboCarrossel = ({ combos, onAdicionar, restauranteFechado, somenteVitrin
         ))}
       </div>
       <button onClick={() => scroll(1)}
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
-        <Icon name="ChevronRight" size={16} className="text-[#27272A]" />
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] -mr-4 hidden sm:flex">
+        <Icon name="ChevronRight" size={16} className="text-[#27272A] dark:text-[#F4F4F5]" />
       </button>
     </div>
   );
@@ -160,13 +160,13 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
 
   return (
     <>
-      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E4E4E7] flex-shrink-0">
-        <h3 className="font-bold text-[#18181B] text-base">
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
+        <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] text-base">
           Carrinho <span className="text-[#FF441F]">({totalItens})</span>
         </h3>
         {onFechar && (
-          <button onClick={onFechar} className="p-1.5 hover:bg-[#F4F4F5] rounded-lg">
-            <Icon name="X" size={18} className="text-[#71717A]" />
+          <button onClick={onFechar} className="p-1.5 hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] rounded-lg">
+            <Icon name="X" size={18} className="text-[#71717A] dark:text-[#A1A1AA]" />
           </button>
         )}
       </div>
@@ -180,13 +180,13 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
                 <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#18181B] truncate">{item.name}</p>
-                <p className="text-xs text-[#71717A]">{fmt(item.price)}</p>
+                <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.name}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.price)}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button onClick={() => onAdicionar(item, item.price, -1)}
-                  className="w-6 h-6 bg-[#F4F4F5] rounded-full text-sm font-bold text-[#27272A] flex items-center justify-center">−</button>
-                <span className="text-sm font-bold text-[#18181B] w-4 text-center">{item.qtd}</span>
+                  className="w-6 h-6 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">−</button>
+                <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] w-4 text-center">{item.qtd}</span>
                 <button onClick={() => onAdicionar(item, item.price, +1)}
                   className="w-6 h-6 bg-[#FF441F] rounded-full text-sm font-bold text-white flex items-center justify-center">+</button>
               </div>
@@ -195,13 +195,13 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
         </AnimatePresence>
       </div>
 
-      <div className="px-5 py-4 border-t border-[#E4E4E7] flex-shrink-0">
+      <div className="px-5 py-4 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-[#71717A]">Subtotal</span>
-          <span className="font-medium text-[#27272A]">{fmt(totalValor)}</span>
+          <span className="text-[#71717A] dark:text-[#A1A1AA]">Subtotal</span>
+          <span className="font-medium text-[#27272A] dark:text-[#F4F4F5]">{fmt(totalValor)}</span>
         </div>
         <div className="flex justify-between text-base font-bold mb-4">
-          <span className="text-[#18181B]">Total</span>
+          <span className="text-[#18181B] dark:text-[#F4F4F5]">Total</span>
           <span className="text-[#FF441F]">{fmt(totalValor)}</span>
         </div>
         <motion.button whileTap={{ scale: 0.98 }} onClick={onCheckout}
@@ -221,9 +221,9 @@ const CarrinhoMobile = ({ carrinho, onAdicionar, onFechar, onCheckout }) => (
     <motion.div
       initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
       transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl lg:hidden max-h-[82vh] flex flex-col"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#27272A] rounded-t-3xl shadow-2xl lg:hidden max-h-[82vh] flex flex-col"
     >
-      <div className="w-10 h-1 bg-[#E4E4E7] rounded-full mx-auto mt-3 mb-1 flex-shrink-0" />
+      <div className="w-10 h-1 bg-[#E4E4E7] dark:bg-[#3F3F46] rounded-full mx-auto mt-3 mb-1 flex-shrink-0" />
       <CarrinhoConteudo carrinho={carrinho} onAdicionar={onAdicionar} onFechar={onFechar} onCheckout={onCheckout} />
     </motion.div>
   </>
@@ -232,12 +232,12 @@ const CarrinhoMobile = ({ carrinho, onAdicionar, onFechar, onCheckout }) => (
 /* ── Sidebar desktop ─────────────────────────────────────────────── */
 const CarrinhoDesktop = ({ carrinho, onAdicionar, onCheckout }) => (
   <aside className="hidden lg:block w-80 xl:w-96 flex-shrink-0">
-    <div className="sticky top-28 bg-white rounded-2xl border border-[#E4E4E7] shadow-sm overflow-hidden flex flex-col max-h-[calc(100vh-120px)]">
+    <div className="sticky top-28 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] shadow-sm overflow-hidden flex flex-col max-h-[calc(100vh-120px)]">
       {carrinho.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-          <Icon name="ShoppingCart" size={44} className="text-[#E4E4E7] mb-3" />
-          <p className="text-sm font-semibold text-[#27272A]">Carrinho vazio</p>
-          <p className="text-xs text-[#71717A] mt-1">Adicione itens do cardápio</p>
+          <Icon name="ShoppingCart" size={44} className="text-[#E4E4E7] dark:text-[#3F3F46] mb-3" />
+          <p className="text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5]">Carrinho vazio</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Adicione itens do cardápio</p>
         </div>
       ) : (
         <CarrinhoConteudo carrinho={carrinho} onAdicionar={onAdicionar} onFechar={null} onCheckout={onCheckout} />
@@ -312,7 +312,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <div className="h-64 bg-gradient-to-br from-[#FF441F] to-[#FF7A00] animate-pulse" />
       <div className="max-w-screen-xl mx-auto px-4 py-6 grid grid-cols-1 xl:grid-cols-2 gap-3">
         {[...Array(6)].map((_, i) => <SkeletonProduto key={i} />)}
@@ -321,10 +321,10 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   );
 
   if (erro) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F4F4F5] p-6 text-center">
-      <Icon name="Store" size={56} className="text-[#E4E4E7] mb-4" />
-      <p className="text-lg font-semibold text-[#27272A]">Restaurante não encontrado</p>
-      <p className="text-sm text-[#71717A] mt-1">{erro}</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F4F4F5] dark:bg-[#18181B] p-6 text-center">
+      <Icon name="Store" size={56} className="text-[#E4E4E7] dark:text-[#3F3F46] mb-4" />
+      <p className="text-lg font-semibold text-[#27272A] dark:text-[#F4F4F5]">Restaurante não encontrado</p>
+      <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">{erro}</p>
       <button onClick={() => navigate(-1)} className="mt-6 px-4 py-2.5 bg-[#FF441F] text-white rounded-xl text-sm font-semibold">Voltar</button>
     </div>
   );
@@ -357,14 +357,14 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     : {};
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]" style={bgStyle}>
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]" style={bgStyle}>
 
       {/* ── Header global ──────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7]">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#27272A]/95 backdrop-blur-md border-b border-[#E4E4E7] dark:border-[#3F3F46]">
         <div className="max-w-screen-xl mx-auto px-4 h-14 flex items-center gap-3">
           <button
             onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/'); }}
-            className="p-2 hover:bg-[#F4F4F5] rounded-lg text-[#71717A] hover:text-[#27272A] transition-colors"
+            className="p-2 hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5] transition-colors"
           >
             <Icon name="ArrowLeft" size={18} />
           </button>
@@ -372,10 +372,10 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             <div className="w-7 h-7 bg-[#FF441F] rounded-lg flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
               <Icon name="Utensils" size={14} className="text-white" />
             </div>
-            <span className="font-black text-[#18181B] text-sm hidden sm:block">DeliveryHub</span>
+            <span className="font-black text-[#18181B] dark:text-[#F4F4F5] text-sm hidden sm:block">DeliveryHub</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-[#18181B] text-sm truncate">{restaurante.name}</p>
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm truncate">{restaurante.name}</p>
           </div>
           {/* Botão painel restaurante — visível para dono */}
           {isRestaurantOwner() && (
@@ -387,7 +387,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
           {/* Botões cliente — pedidos e perfil */}
           {isAuthenticated() && !isRestaurantOwner() && !isAdmin() && (
             <button onClick={() => navigate('/customer-account-order-history')}
-              className="p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
+              className="p-2 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg flex-shrink-0 transition-colors"
               title="Meus Pedidos">
               <Icon name="ClipboardList" size={18} />
             </button>
@@ -405,7 +405,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             {/* Carrinho icon mobile */}
             {temDelivery && (
               <button onClick={() => setCarrinhoAberto(true)}
-                className="relative p-2 text-[#71717A] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
+                className="relative p-2 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors lg:hidden">
                 <Icon name="ShoppingCart" size={20} />
                 {totalItens > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF441F] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -436,7 +436,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
               {restaurante.logo_url ? (
                 <img src={imgUrl(restaurante.logo_url)} alt={restaurante.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-[#F4F4F5] flex items-center justify-center">
+                <div className="w-full h-full bg-[#F4F4F5] dark:bg-[#3F3F46] flex items-center justify-center">
                   <Icon name="Store" size={32} className="text-[#FF441F]" />
                 </div>
               )}
@@ -455,24 +455,24 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       </div>
 
       {/* ── Stats bar ──────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-[#E4E4E7]">
+      <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46]">
         <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center gap-5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <Icon name="Star" size={14} className="text-yellow-400 fill-yellow-400" />
-            <span className="text-sm font-bold text-[#18181B]">{ap.nota ?? '4.8'}</span>
-            <span className="text-xs text-[#71717A]">({ap.total_avaliacoes ?? '200+'} avaliações)</span>
+            <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{ap.nota ?? '4.8'}</span>
+            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">({ap.total_avaliacoes ?? '200+'} avaliações)</span>
           </div>
-          <div className="w-px h-4 bg-[#E4E4E7] flex-shrink-0" />
+          <div className="w-px h-4 bg-[#E4E4E7] dark:bg-[#3F3F46] flex-shrink-0" />
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <Icon name="Clock" size={14} className="text-[#FF7A00]" />
-            <span className="text-sm text-[#27272A]">{ap.tempo_entrega ?? '25-40 min'}</span>
+            <span className="text-sm text-[#27272A] dark:text-[#F4F4F5]">{ap.tempo_entrega ?? '25-40 min'}</span>
           </div>
           {restaurante.frete_motoboy != null && (
             <>
-              <div className="w-px h-4 bg-[#E4E4E7] flex-shrink-0" />
+              <div className="w-px h-4 bg-[#E4E4E7] dark:bg-[#3F3F46] flex-shrink-0" />
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <Icon name="Bike" size={14} className="text-[#FF441F]" />
-                <span className="text-sm text-[#27272A]">
+                <span className="text-sm text-[#27272A] dark:text-[#F4F4F5]">
                   {Number(restaurante.frete_motoboy) === 0 ? 'Frete grátis' : fmt(Number(restaurante.frete_motoboy))}
                 </span>
               </div>
@@ -480,10 +480,10 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
           )}
           {ap.pedido_minimo && (
             <>
-              <div className="w-px h-4 bg-[#E4E4E7] flex-shrink-0" />
+              <div className="w-px h-4 bg-[#E4E4E7] dark:bg-[#3F3F46] flex-shrink-0" />
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <Icon name="ShoppingBag" size={14} className="text-[#71717A]" />
-                <span className="text-sm text-[#71717A]">Mín. {fmt(ap.pedido_minimo)}</span>
+                <Icon name="ShoppingBag" size={14} className="text-[#71717A] dark:text-[#A1A1AA]" />
+                <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Mín. {fmt(ap.pedido_minimo)}</span>
               </div>
             </>
           )}
@@ -529,7 +529,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       {/* ── Carrossel de combos ativos ───────────────────────────────── */}
       {combos?.length > 0 && (
         <div className="max-w-screen-xl mx-auto px-4 pt-4">
-          <p className="text-sm font-bold text-[#18181B] mb-3 flex items-center gap-2">
+          <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-3 flex items-center gap-2">
             <Icon name="Package" size={15} className="text-[#FF441F]" />
             Combos em destaque
           </p>
@@ -538,7 +538,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       )}
 
       {/* ── Nav categorias sticky ───────────────────────────────────── */}
-      <div className="sticky top-14 z-20 bg-white/95 backdrop-blur-md border-b border-[#E4E4E7]">
+      <div className="sticky top-14 z-20 bg-white/95 dark:bg-[#27272A]/95 backdrop-blur-md border-b border-[#E4E4E7] dark:border-[#3F3F46]">
         <div className="max-w-screen-xl mx-auto px-4">
           <div className="flex gap-2 overflow-x-auto py-3" style={{ scrollbarWidth: 'none' }}>
             {tabs.map((tab) => (
@@ -546,7 +546,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
                 className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
                   catAtiva === tab.id
                     ? 'bg-[#FF441F] text-white shadow-sm'
-                    : 'bg-[#F4F4F5] text-[#71717A] hover:bg-[#E4E4E7]'
+                    : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#52525B]'
                 }`}>
                 {tab.label}
               </button>
@@ -561,12 +561,12 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
         {/* Produtos */}
         <main className="flex-1 min-w-0">
           {tabs.length === 0 ? (
-            <div className="text-center py-16 text-[#71717A]">
-              <Icon name="UtensilsCrossed" size={44} className="mx-auto mb-3 text-[#E4E4E7]" />
+            <div className="text-center py-16 text-[#71717A] dark:text-[#A1A1AA]">
+              <Icon name="UtensilsCrossed" size={44} className="mx-auto mb-3 text-[#E4E4E7] dark:text-[#3F3F46]" />
               <p className="font-medium">Cardápio em breve</p>
             </div>
           ) : produtosDaTab().length === 0 ? (
-            <div className="text-center py-10 text-[#71717A]">
+            <div className="text-center py-10 text-[#71717A] dark:text-[#A1A1AA]">
               <p className="text-sm">Nenhum produto nesta categoria</p>
             </div>
           ) : (
