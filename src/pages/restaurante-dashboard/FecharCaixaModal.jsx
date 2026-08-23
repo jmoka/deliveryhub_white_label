@@ -24,9 +24,56 @@ const labelComanda = (order) => {
   return 'Comanda';
 };
 
+// Detalhe completo de uma comanda (garçom, cliente, itens, pagamentos, saldo) — reaproveitado
+// tanto na lista de itens em preparo quanto na tela de pendências (comandas/mesas em aberto).
+const DetalheComandaBox = ({ detalhe, carregando }) => (
+  carregando ? (
+    <p className="text-[10px] text-[#A1A1AA]">Carregando...</p>
+  ) : !detalhe ? (
+    <p className="text-[10px] text-red-500">Não foi possível carregar os dados da comanda.</p>
+  ) : (
+    <div className="space-y-2">
+      <div className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] space-y-0.5">
+        <p className="truncate">Garçom: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{detalhe.garcons?.nome ?? '—'}</span></p>
+        <p className="truncate">Cliente: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{detalhe.cliente_mesa_nome || '—'}</span></p>
+        {detalhe.numero_comanda && <p>Comanda nº: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{detalhe.numero_comanda}</span></p>}
+        <p>Aberta em: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmtDate(detalhe.created_at)}</span></p>
+        <p>Total: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmt(detalhe.total)}</span></p>
+      </div>
+
+      <div>
+        <p className="text-[9px] font-black text-[#A1A1AA] uppercase tracking-widest mb-0.5">Itens</p>
+        {detalhe.itens?.length ? detalhe.itens.map((it) => (
+          <div key={it.id} className="flex items-start justify-between gap-2 text-[10px] py-0.5">
+            <span className="text-[#18181B] dark:text-[#F4F4F5] min-w-0 break-words">{it.quantity}x {it.products?.name ?? 'Item'}{it.observacao ? ` (${it.observacao})` : ''}</span>
+            <span className="text-[#A1A1AA] flex-shrink-0">{it.status}</span>
+          </div>
+        )) : <p className="text-[10px] text-green-600 dark:text-green-400">Nenhum item lançado — comanda vazia.</p>}
+      </div>
+
+      <div>
+        <p className="text-[9px] font-black text-[#A1A1AA] uppercase tracking-widest mb-0.5">Pagamentos</p>
+        {detalhe.pagamentos?.length ? detalhe.pagamentos.map((pg) => (
+          <div key={pg.id} className="flex items-start justify-between gap-2 text-[10px] py-0.5">
+            <span className="text-[#18181B] dark:text-[#F4F4F5] min-w-0 truncate">{PL[pg.forma_pagamento] ?? pg.forma_pagamento} · {pg.origem}</span>
+            <span className="text-[#A1A1AA] flex-shrink-0">{fmt(pg.valor)} · {fmtDate(pg.criado_em)}</span>
+          </div>
+        )) : <p className="text-[10px] text-[#A1A1AA]">Nenhum pagamento registrado.</p>}
+      </div>
+
+      {detalhe.saldo > 0 && (
+        <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Saldo devedor: {fmt(detalhe.saldo)}</p>
+      )}
+    </div>
+  )
+);
+
 const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarProntos, marcando, onContinuar, onCancelar }) => {
   const [pedidosSel, setPedidosSel] = useState(new Set());
   const [itensSel, setItensSel] = useState(new Set());
+  const [comandasExpandidas, setComandasExpandidas] = useState(new Set());
+  const [detalhesComanda, setDetalhesComanda] = useState({});
+  const [carregandoComandaIds, setCarregandoComandaIds] = useState(new Set());
 
   const totalItens = pedidosEmPreparo.length + itensEmPreparo.length;
   const totalSel = pedidosSel.size + itensSel.size;
@@ -42,6 +89,22 @@ const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarPron
     setItensSel(new Set(itensEmPreparo.map((i) => i.id)));
   };
   const selecionarNenhum = () => { setPedidosSel(new Set()); setItensSel(new Set()); };
+
+  const toggleExpandirComanda = async (orderId) => {
+    setComandasExpandidas((prev) => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+    if (!detalhesComanda[orderId]) {
+      setCarregandoComandaIds((prev) => new Set(prev).add(orderId));
+      try {
+        const data = await getSalaoComandaDetalhe(orderId);
+        setDetalhesComanda((prev) => ({ ...prev, [orderId]: data }));
+      } catch { /* mostra erro na própria linha */ }
+      finally { setCarregandoComandaIds((prev) => { const next = new Set(prev); next.delete(orderId); return next; }); }
+    }
+  };
 
   const handleMarcar = async () => {
     await onMarcarProntos({ pedidoIds: [...pedidosSel], itemIds: [...itensSel] });
@@ -69,11 +132,11 @@ const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarPron
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Pedidos delivery/balcão</p>
           <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
             {pedidosEmPreparo.map((p) => (
-              <label key={p.id} className="flex items-center gap-2 text-xs py-1 cursor-pointer">
+              <label key={p.id} className="flex items-start gap-2 text-xs py-1 cursor-pointer">
                 <input type="checkbox" checked={pedidosSel.has(p.id)} onChange={() => toggle(setPedidosSel, p.id)}
-                  className="accent-[#FF441F]" />
-                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">#{p.id}</span>
-                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 text-right">{fmt(p.total)} · {PEDIDO_STATUS_LABEL[p.status] ?? p.status}</span>
+                  className="accent-[#FF441F] flex-shrink-0 mt-0.5" />
+                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">#{p.id}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 min-w-0 text-right truncate">{fmt(p.total)} · {PEDIDO_STATUS_LABEL[p.status] ?? p.status}</span>
               </label>
             ))}
           </div>
@@ -83,14 +146,29 @@ const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarPron
       {itensEmPreparo.length > 0 && (
         <div className="mb-3">
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Itens de comanda (salão)</p>
-          <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
+          <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-56 overflow-y-auto">
             {itensEmPreparo.map((i) => (
-              <label key={i.id} className="flex items-center gap-2 text-xs py-1 cursor-pointer">
-                <input type="checkbox" checked={itensSel.has(i.id)} onChange={() => toggle(setItensSel, i.id)}
-                  className="accent-[#FF441F]" />
-                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{i.quantity}x {i.products?.name ?? 'Item'}</span>
-                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 text-right">{labelComanda(i.orders)} · {ITEM_STATUS_LABEL[i.status] ?? i.status}</span>
-              </label>
+              <div key={i.id} className="border-b border-orange-100 dark:border-orange-900/40 last:border-0 py-1.5">
+                <label className="flex items-start gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={itensSel.has(i.id)} onChange={() => toggle(setItensSel, i.id)}
+                    className="accent-[#FF441F] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] break-words">{i.quantity}x {i.products?.name ?? 'Item'}</p>
+                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                      <span className="text-[#71717A] dark:text-[#A1A1AA] text-[11px] truncate">{labelComanda(i.orders)} · {ITEM_STATUS_LABEL[i.status] ?? i.status}</span>
+                      <button type="button" onClick={(e) => { e.preventDefault(); toggleExpandirComanda(i.order_id); }}
+                        className="text-[10px] font-bold text-[#FF441F] hover:underline flex-shrink-0">
+                        {comandasExpandidas.has(i.order_id) ? 'Ocultar' : 'Ver comanda'}
+                      </button>
+                    </div>
+                  </div>
+                </label>
+                {comandasExpandidas.has(i.order_id) && (
+                  <div className="ml-6 mt-1.5 bg-white/70 dark:bg-black/20 rounded-lg p-2">
+                    <DetalheComandaBox detalhe={detalhesComanda[i.order_id]} carregando={carregandoComandaIds.has(i.order_id)} />
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -113,57 +191,21 @@ const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarPron
   );
 };
 
-// ── Tela 1: pedidos/comandas/mesas em aberto ──────────────────────────────────
 const ComandaLinha = ({ comanda, selecionada, onToggle, expandida, onToggleExpandir, detalhe, carregandoDetalhe }) => (
   <div className="border-b border-orange-100 dark:border-orange-900/40 last:border-0">
-    <div className="flex items-center gap-2 text-xs py-1">
+    <div className="flex items-center gap-2 flex-wrap text-xs py-1">
       <input type="checkbox" checked={selecionada} onChange={onToggle} className="accent-red-500 flex-shrink-0" />
-      <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{comanda.mesas ? `Mesa ${comanda.mesas.numero}` : `Comanda #${comanda.id}`}</span>
-      <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 text-right">{comanda.status === 'aberta' ? 'Em aberto' : 'Aguard. pagamento'}</span>
+      <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{comanda.mesas ? `Mesa ${comanda.mesas.numero}` : `Comanda #${comanda.id}`}</span>
+      <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 min-w-0 text-right">{comanda.status === 'aberta' ? 'Em aberto' : 'Aguard. pagamento'}</span>
       <button type="button" onClick={onToggleExpandir} className="text-[10px] font-bold text-[#FF441F] hover:underline flex-shrink-0">
         {expandida ? 'Ocultar' : 'Ver tudo'}
       </button>
     </div>
     {expandida && (
-      <div className="ml-6 mb-1.5 bg-white/70 dark:bg-black/20 rounded-lg p-2 space-y-2">
-        {carregandoDetalhe ? (
-          <p className="text-[10px] text-[#A1A1AA]">Carregando...</p>
-        ) : !detalhe ? (
-          <p className="text-[10px] text-red-500">Não foi possível carregar os dados da comanda.</p>
-        ) : (
-          <>
-            <div className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] space-y-0.5">
-              <p>Garçom: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{detalhe.garcons?.nome ?? '—'}</span></p>
-              <p>Cliente: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{detalhe.cliente_mesa_nome || '—'}</span></p>
-              {detalhe.numero_comanda && <p>Comanda nº: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{detalhe.numero_comanda}</span></p>}
-              <p>Aberta em: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmtDate(detalhe.created_at)}</span></p>
-              <p>Total: <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmt(detalhe.total)}</span></p>
-            </div>
-
-            <div>
-              <p className="text-[9px] font-black text-[#A1A1AA] uppercase tracking-widest mb-0.5">Itens</p>
-              {detalhe.itens?.length ? detalhe.itens.map((it) => (
-                <div key={it.id} className="flex justify-between text-[10px] py-0.5">
-                  <span className="text-[#18181B] dark:text-[#F4F4F5]">{it.quantity}x {it.products?.name ?? 'Item'}{it.observacao ? ` (${it.observacao})` : ''}</span>
-                  <span className="text-[#A1A1AA]">{it.status}</span>
-                </div>
-              )) : <p className="text-[10px] text-green-600 dark:text-green-400">Nenhum item lançado — comanda vazia, pode excluir sem risco.</p>}
-            </div>
-
-            <div>
-              <p className="text-[9px] font-black text-[#A1A1AA] uppercase tracking-widest mb-0.5">Pagamentos</p>
-              {detalhe.pagamentos?.length ? detalhe.pagamentos.map((pg) => (
-                <div key={pg.id} className="flex justify-between text-[10px] py-0.5">
-                  <span className="text-[#18181B] dark:text-[#F4F4F5]">{PL[pg.forma_pagamento] ?? pg.forma_pagamento} · {pg.origem}</span>
-                  <span className="text-[#A1A1AA]">{fmt(pg.valor)} · {fmtDate(pg.criado_em)}</span>
-                </div>
-              )) : <p className="text-[10px] text-[#A1A1AA]">Nenhum pagamento registrado.</p>}
-            </div>
-
-            {detalhe.saldo > 0 && (
-              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Saldo devedor: {fmt(detalhe.saldo)} — excluir estorna os pagamentos já lançados</p>
-            )}
-          </>
+      <div className="ml-6 mb-1.5 bg-white/70 dark:bg-black/20 rounded-lg p-2">
+        <DetalheComandaBox detalhe={detalhe} carregando={carregandoDetalhe} />
+        {detalhe && !detalhe.itens?.length && (
+          <p className="text-[10px] text-green-600 dark:text-green-400 mt-1">Pode excluir sem risco — comanda vazia.</p>
         )}
       </div>
     )}
@@ -252,9 +294,9 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Pedidos delivery</p>
           <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-32 overflow-y-auto">
             {pedidosAbertos.map((p) => (
-              <div key={p.id} className="flex justify-between text-xs py-1 border-b border-orange-100 dark:border-orange-900/40 last:border-0">
-                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">#{p.id}</span>
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">{fmt(p.total)} · {p.status}</span>
+              <div key={p.id} className="flex items-center gap-2 text-xs py-1 border-b border-orange-100 dark:border-orange-900/40 last:border-0">
+                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">#{p.id}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 min-w-0 text-right truncate">{fmt(p.total)} · {p.status}</span>
               </div>
             ))}
           </div>
@@ -295,9 +337,9 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
           <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Mesas ocupadas</p>
           <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-32 overflow-y-auto">
             {mesasAbertas.map((m) => (
-              <div key={m.id} className="flex justify-between text-xs py-1 border-b border-orange-100 dark:border-orange-900/40 last:border-0">
-                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">Mesa {m.numero}{m.nome ? ` - ${m.nome}` : ''}</span>
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">{m.status === 'ocupada' ? 'Ocupada' : 'Aguard. pagamento'}</span>
+              <div key={m.id} className="flex items-center gap-2 text-xs py-1 border-b border-orange-100 dark:border-orange-900/40 last:border-0">
+                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">Mesa {m.numero}{m.nome ? ` - ${m.nome}` : ''}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 min-w-0 text-right truncate">{m.status === 'ocupada' ? 'Ocupada' : 'Aguard. pagamento'}</span>
               </div>
             ))}
           </div>
