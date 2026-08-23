@@ -488,10 +488,13 @@ const RestauranteCozinha = () => {
   );
   const confirmados = pedidos.filter((p) => p.status === 'confirmed' && idsDeliveryRoteadosParaCozinha.has(p.id));
   const preparando = pedidos.filter((p) => p.status === 'preparing' && idsDeliveryRoteadosParaCozinha.has(p.id));
-  const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado');
-  const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando');
+  // Itens de delivery já aparecem via OrderCard (pedido inteiro, confirmados/preparando
+  // acima) — sem esse filtro por tipo, o mesmo item de delivery apareceria de novo aqui
+  // como card avulso duplicado.
+  const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado' && i.tipo !== 'delivery');
+  const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando' && i.tipo !== 'delivery');
   const itensSalaoProntos = itensSalao
-    .filter((i) => i.status === 'pronto')
+    .filter((i) => i.status === 'pronto' && i.tipo !== 'delivery')
     .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
 
   // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.

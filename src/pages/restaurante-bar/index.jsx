@@ -1,147 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
-import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
-
-// Card por item (não por mesa/comanda) — pedido explícito: cada prato tem sua própria
-// ação de Liberado pra Motoboy/Reimpressão/Entregue, ordenados por ordem de chegada.
-// `posicao` numera a fila (1º = próximo a sair) pra equipe saber quem vem primeiro.
-// Cronômetro ao vivo (espera/preparo) igual ao painel de Produção.
-//
-// Alerta de motoboy (só item de delivery, com pedido já despachado): pisca amarelo em
-// trânsito, verde quando entregou, vermelho se o motoboy registrou ocorrência — dados
-// vêm do pedido (orders.status/motoboy_lat/lng/delivery_occurrence) via getKdsSetor.
-const AlertaMotoboy = ({ item }) => {
-  if (item.tipo !== 'delivery') return null;
-  const temOcorrencia = item.delivery_occurrence === 'pendente';
-  const entregue = item.pedido_status === 'delivered';
-  const emTransito = item.pedido_status === 'out_for_delivery' || item.pedido_status === 'motoboy_collecting';
-  const temMapa = item.motoboy_lat != null && item.motoboy_lng != null;
-
-  if (!temOcorrencia && !entregue && !emTransito && !temMapa) return null;
-
-  const cor = temOcorrencia ? 'bg-red-500' : entregue ? 'bg-emerald-500' : emTransito ? 'bg-yellow-400' : null;
-  const label = temOcorrencia ? 'Ocorrência do motoboy' : entregue ? 'Entregue' : emTransito ? 'Motoboy em trânsito' : '';
-
-  return (
-    <div className="flex items-center gap-1.5 flex-shrink-0">
-      {cor && <span className={`w-2.5 h-2.5 rounded-full ${cor} animate-pulse`} title={label} />}
-      {temMapa && (
-        <a href={`https://www.google.com/maps?q=${item.motoboy_lat},${item.motoboy_lng}`} target="_blank" rel="noopener noreferrer"
-          className="p-1 text-[#71717A] hover:text-white rounded-md hover:bg-[#2A2A2A]" title="Localizar motoboy no mapa">
-          <Icon name="MapPin" size={13} />
-        </a>
-      )}
-    </div>
-  );
-};
-
-const ItemCard = ({ item, posicao, now, onIniciarPreparo, onMarcarPronto, onVoltar, highlighted = false }) => {
-  const enviadoEm = new Date(item.enviado_em).getTime();
-  const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
-  const tempoEspera = (preparandoEm ?? now) - enviadoEm;
-  const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
-  const tempoTotal = now - enviadoEm;
-
-  return (
-  <div id={`bar-item-${item.id}`} className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden relative transition-all duration-300 ${
-    highlighted
-      ? 'border-yellow-400 ring-2 ring-yellow-400/60 shadow-xl shadow-yellow-300/20 scale-[1.02]'
-      : item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'
-  }`}>
-    {item.garcom && (
-      <div className="bg-white px-4 py-2">
-        <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
-      </div>
-    )}
-    <div className="p-4">
-    <div className="flex items-start justify-between mb-1 gap-2">
-      <div className="flex items-start gap-2">
-        <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
-          {posicao}
-        </span>
-        <div className="leading-tight">
-          <p className="text-xl font-black text-white">Quantidade: {item.quantity}</p>
-          <p className="text-lg font-bold text-white">Produto: {item.product_name}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <AlertaMotoboy item={item} />
-      </div>
-    </div>
-    {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-    {item.garcom_nao_entregou && (
-      <p className="text-sm font-bold text-white bg-red-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">
-        Esse pedido não foi entregue — garçom não entregou
-      </p>
-    )}
-    {item.is_auto_atendimento && (
-      <p className="text-sm font-bold text-white bg-pink-600 rounded px-1.5 py-0.5 mb-1">
-        Auto Atendimento — Mesa {item.mesa_numero ?? '?'}
-      </p>
-    )}
-    {item.garcom_indo_buscar && (
-      <p className={`text-sm font-bold text-white rounded px-1.5 py-0.5 mb-1 ${item.entregue_garcom ? 'bg-emerald-600' : 'bg-blue-600'}`}>
-        {item.entregue_garcom ? 'Já entregue pelo garçom' : 'Garçom vindo buscar'}
-      </p>
-    )}
-    {item.observacao && <p className="text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">Obs: {item.observacao}</p>}
-    <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
-      <Icon name="MapPin" size={14} />
-      <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
-      {item.numero_comanda && (
-        <>
-          <span className="text-[#71717A]">•</span>
-          <span>Comanda #{item.numero_comanda}</span>
-        </>
-      )}
-      <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${item.tipo === 'delivery' ? 'bg-sky-500/20 text-sky-400' : 'bg-purple-500/20 text-purple-300'}`}>
-        {item.tipo === 'delivery' ? 'Delivery' : 'Salão'}
-      </span>
-    </div>
-    <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
-      <span className="flex items-center gap-1 text-blue-400">
-        <Icon name="Clock" size={11} /> espera {formatDuracao(tempoEspera)}
-      </span>
-      {item.status === 'preparando' && (
-        <span className="flex items-center gap-1 text-orange-400">
-          <Icon name="Flame" size={11} /> preparo {formatDuracao(tempoPreparo)}
-        </span>
-      )}
-      <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
-    </div>
-    <div className="flex gap-2">
-      {item.status !== 'enviado' && (
-        <button onClick={() => onVoltar(item)} title="Desfazer — clicou errado"
-          className="flex-shrink-0 px-3 py-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="Undo2" size={13} /> Voltar
-        </button>
-      )}
-      {item.status === 'enviado' && (
-        <button onClick={() => onIniciarPreparo(item)}
-          className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="ChefHat" size={13} /> Liberado pra Motoboy
-        </button>
-      )}
-      {item.status === 'preparando' && (
-        <button onClick={() => onMarcarPronto(item.id)}
-          className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="Check" size={13} /> Entregue
-        </button>
-      )}
-      {item.status === 'pronto' && (
-        <div className="flex-1 py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="Check" size={13} /> Entregue
-        </div>
-      )}
-    </div>
-    </div>
-  </div>
-  );
-};
+import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 
 // Painel de pedidos do Bar/Copa — mesmo padrão de acesso da tela de Cozinha (dono já
 // logado, sem link/token separado), lista PLANA de itens por setor de impressora (não
@@ -302,7 +165,7 @@ const RestauranteBar = () => {
               <button
                 onClick={() => {
                   const alvo = itens.find((i) => i.numero_comanda === numeroComandaEscaneado);
-                  if (alvo) document.getElementById(`bar-item-${alvo.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (alvo) document.getElementById(`salao-item-${alvo.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }}
                 className="flex-shrink-0 px-3 py-1 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19]">
                 Buscar
@@ -374,7 +237,7 @@ const RestauranteBar = () => {
             ) : (
               <div className="space-y-3">
                 {aguardando.map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                  <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                     highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                 ))}
               </div>
@@ -397,7 +260,7 @@ const RestauranteBar = () => {
             ) : (
               <div className="space-y-3">
                 {preparando.map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                  <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                     highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                 ))}
               </div>
@@ -413,7 +276,7 @@ const RestauranteBar = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(verTodosEntregues ? prontosRecentes : prontosRecentes.slice(0, 2)).map((item, idx) => (
-                  <ItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                  <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                     highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                 ))}
               </div>

@@ -2,165 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
-import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
-
-// Card por item (não por mesa/comanda) com cronômetro ao vivo — mostra há quanto tempo
-// o item chegou (aguardando) e, quando em preparo, há quanto tempo está preparando,
-// pra dar visibilidade do tempo total gasto até ficar pronto.
-const ItemCard = ({ item, posicao, now, ehPrimeiro, ehUltimo, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, onMover, onAbrirComanda, onSalvarObservacao, highlighted = false }) => {
-  const enviadoEm = new Date(item.enviado_em).getTime();
-  const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
-  const tempoEspera = (preparandoEm ?? now) - enviadoEm;
-  const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
-  const tempoTotal = now - enviadoEm;
-  const podeAbrirComanda = item.tipo === 'salao' && !!item.numero_comanda;
-  const podeEditarObs = item.tipo === 'salao';
-  const [editandoObs, setEditandoObs] = useState(false);
-  const [obsInput, setObsInput] = useState(item.observacao ?? '');
-  useEffect(() => { if (!editandoObs) setObsInput(item.observacao ?? ''); }, [item.observacao, editandoObs]);
-
-  const salvarObs = () => {
-    onSalvarObservacao(item, obsInput);
-    setEditandoObs(false);
-  };
-
-  return (
-    <div
-      id={`producao-item-${item.id}`}
-      onClick={podeAbrirComanda ? () => onAbrirComanda(item.order_id) : undefined}
-      title={podeAbrirComanda ? 'Ver comanda completa' : undefined}
-      className={`bg-[#1A1A1A] border rounded-2xl overflow-hidden transition-all duration-300 ${podeAbrirComanda ? 'cursor-pointer hover:border-[#FF441F]/60' : ''} ${
-        highlighted
-          ? 'border-yellow-400 ring-2 ring-yellow-400/60 shadow-xl shadow-yellow-300/20 scale-[1.02]'
-          : item.garcom_nao_entregou ? 'border-red-500 ring-1 ring-red-500/40' : posicao === 1 ? 'border-yellow-400/70 ring-1 ring-yellow-400/30' : item.status === 'enviado' ? 'border-blue-500/40' : 'border-[#2A2A2A]'
-      }`}>
-      {item.garcom && (
-        <div className="bg-white px-4 py-2">
-          <p className="text-center text-lg font-black text-[#18181B] uppercase tracking-wide">{item.garcom}</p>
-        </div>
-      )}
-      <div className="p-4">
-      <div className="flex items-start justify-between mb-1 gap-2">
-        <div className="flex items-start gap-2">
-          <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black mt-0.5 ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#2A2A2A] text-white'}`}>
-            {posicao}
-          </span>
-          {item.status === 'enviado' && onMover && (
-            <div className="flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => onMover(item, 'cima')} disabled={ehPrimeiro} title="Adiantar — subir na fila"
-                className="w-5 h-4 flex items-center justify-center rounded text-[#71717A] enabled:hover:text-white enabled:hover:bg-[#2A2A2A] disabled:opacity-20">
-                <Icon name="ChevronUp" size={13} />
-              </button>
-              <button onClick={() => onMover(item, 'baixo')} disabled={ehUltimo} title="Atrasar — descer na fila"
-                className="w-5 h-4 flex items-center justify-center rounded text-[#71717A] enabled:hover:text-white enabled:hover:bg-[#2A2A2A] disabled:opacity-20">
-                <Icon name="ChevronDown" size={13} />
-              </button>
-            </div>
-          )}
-          <div className="leading-tight">
-            <p className="text-xl font-black text-white">Quantidade: {item.quantity}</p>
-            <p className="text-lg font-bold text-white">Produto: {item.product_name}</p>
-          </div>
-        </div>
-        <button onClick={(e) => { e.stopPropagation(); onReimprimir(item); }}
-          className="text-[10px] font-bold text-orange-400 border border-orange-500/40 rounded-lg px-2 py-1 hover:bg-orange-500/10 flex items-center gap-1 flex-shrink-0">
-          <Icon name="Printer" size={11} /> Reimpressão
-        </button>
-      </div>
-      {posicao === 1 && <p className="text-[10px] font-bold text-yellow-400 uppercase tracking-wide mb-1">Próximo da fila</p>}
-      {item.garcom_nao_entregou && (
-        <p className="text-sm font-bold text-white bg-red-600 rounded px-1.5 py-0.5 mb-1 animate-pulse">
-          Esse pedido não foi entregue — garçom não entregou
-        </p>
-      )}
-      {item.is_auto_atendimento && (
-        <p className="text-sm font-bold text-white bg-pink-600 rounded px-1.5 py-0.5 mb-1">
-          Auto Atendimento — Mesa {item.mesa_numero ?? '?'}
-        </p>
-      )}
-      {item.garcom_indo_buscar && (
-        <p className={`text-sm font-bold text-white rounded px-1.5 py-0.5 mb-1 ${item.entregue_garcom ? 'bg-emerald-600' : 'bg-blue-600'}`}>
-          {item.entregue_garcom ? 'Já entregue pelo garçom' : 'Garçom vindo buscar'}
-        </p>
-      )}
-      {editandoObs ? (
-        <div className="flex items-center gap-1.5 mb-1" onClick={(e) => e.stopPropagation()}>
-          <input value={obsInput} onChange={(e) => setObsInput(e.target.value)} autoFocus
-            placeholder="Observação..." className="flex-1 text-xs bg-[#111111] border border-[#3A3A3A] rounded-lg px-2 py-1 text-white focus:outline-none focus:border-[#FF441F]" />
-          <button onClick={salvarObs} className="text-xs font-bold text-emerald-400">Salvar</button>
-          <button onClick={() => setEditandoObs(false)} className="text-xs text-[#71717A]">Cancelar</button>
-        </div>
-      ) : item.observacao ? (
-        <p onClick={podeEditarObs ? (e) => { e.stopPropagation(); setEditandoObs(true); } : undefined}
-          className={`text-sm font-bold text-white bg-blue-600 rounded px-1.5 py-0.5 mb-1 animate-pulse ${podeEditarObs ? 'cursor-pointer' : ''}`}>
-          Obs: {item.observacao}
-        </p>
-      ) : podeEditarObs ? (
-        <button onClick={(e) => { e.stopPropagation(); setEditandoObs(true); }}
-          className="flex items-center gap-1 mb-1 text-xs text-[#71717A] hover:text-white">
-          <Icon name="MessageSquare" size={11} /> Adicionar observação
-        </button>
-      ) : null}
-      <div className="flex items-center gap-2 text-base font-bold text-yellow-400 mb-2">
-        <Icon name="MapPin" size={14} />
-        <span>{item.mesa && item.cliente ? `${item.mesa} • ${item.cliente}` : item.mesa ?? item.cliente ?? (item.tipo === 'delivery' ? `Pedido #${item.order_id}` : 'Avulsa')}</span>
-        {item.numero_comanda && (
-          <>
-            <span className="text-[#71717A]">•</span>
-            <span>Comanda #{item.numero_comanda}</span>
-          </>
-        )}
-        <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-bold ${item.tipo === 'delivery' ? 'bg-sky-500/20 text-sky-400' : 'bg-purple-500/20 text-purple-300'}`}>
-          {item.tipo === 'delivery' ? 'Delivery' : 'Salão'}
-        </span>
-      </div>
-      <div className="flex items-center gap-3 text-[11px] font-mono mb-3">
-        <span className="flex items-center gap-1 text-blue-400">
-          <Icon name="Clock" size={11} /> espera {formatDuracao(tempoEspera)}
-        </span>
-        {item.status === 'preparando' && (
-          <span className="flex items-center gap-1 text-orange-400">
-            <Icon name="Flame" size={11} /> preparo {formatDuracao(tempoPreparo)}
-          </span>
-        )}
-        <span className="ml-auto text-[#71717A]">total {formatDuracao(tempoTotal)}</span>
-      </div>
-      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-        {item.status !== 'enviado' && (
-          <button onClick={() => onVoltar(item)} title="Desfazer — clicou errado"
-            className="flex-shrink-0 px-3 py-2 bg-[#2A2A2A] hover:bg-[#3A3A3A] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-            <Icon name="Undo2" size={13} /> Voltar
-          </button>
-        )}
-        {item.status === 'enviado' ? (
-          <>
-            <button onClick={() => onCancelar(item)} title="Cancelar item"
-              className="flex-shrink-0 px-3 py-2 bg-red-900/40 hover:bg-red-900/60 text-red-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-              <Icon name="X" size={13} /> Cancelar
-            </button>
-            <button onClick={() => onIniciarPreparo(item)}
-              className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-              <Icon name="ChefHat" size={13} /> Iniciar Preparo
-            </button>
-          </>
-        ) : item.status === 'pronto' ? (
-          <div className="flex-1 py-2 bg-emerald-900/40 text-emerald-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-            <Icon name="Check" size={13} /> {item.entregue_garcom ? 'Entregue pelo garçom' : 'Entregue'}
-          </div>
-        ) : (
-          <button onClick={() => onMarcarPronto(item.id)}
-            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-            <Icon name="Check" size={13} /> Pronto
-          </button>
-        )}
-      </div>
-      </div>
-    </div>
-  );
-};
+import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -412,7 +257,7 @@ const RestauranteProducao = () => {
               <button
                 onClick={() => {
                   const alvo = todosItens.find((i) => i.numero_comanda === numeroComandaEscaneado);
-                  if (alvo) document.getElementById(`producao-item-${alvo.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (alvo) document.getElementById(`salao-item-${alvo.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }}
                 className="flex-shrink-0 px-3 py-1 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19]">
                 Buscar
@@ -499,7 +344,7 @@ const RestauranteProducao = () => {
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((item, idx) => (
-                            <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                            <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
                               highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
@@ -514,7 +359,7 @@ const RestauranteProducao = () => {
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {preparando.map((item, idx) => (
-                            <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                            <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                               onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
                               highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                           ))}
@@ -529,7 +374,7 @@ const RestauranteProducao = () => {
                         <>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                             {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((item, idx) => (
-                              <ItemCard key={item.id} item={item} posicao={idx + 1} now={now}
+                              <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
                                 onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
                                 highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
                             ))}
