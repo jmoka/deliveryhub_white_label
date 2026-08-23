@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import {
   getMinhaEmpresa, getCaixa, abrirCaixa, fecharCaixa, fecharETransferir,
   adicionarSaida, toggleStatusRestaurante, getRelatorioFretes,
+  atualizarStatusPedido, marcarItemProntoRestaurante, cancelarComandaSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RelatorioPanel from './RelatorioPanel';
@@ -51,6 +52,10 @@ const RestauranteDashboard = () => {
   const [pedidosAbertos, setPedidosAbertos] = useState([]);
   const [comandasAbertas, setComandasAbertas] = useState([]);
   const [mesasAbertas, setMesasAbertas] = useState([]);
+  const [pedidosEmPreparo, setPedidosEmPreparo] = useState([]);
+  const [itensEmPreparo, setItensEmPreparo] = useState([]);
+  const [marcandoProntos, setMarcandoProntos] = useState(false);
+  const [excluindoComandas, setExcluindoComandas] = useState(false);
   const [restauranteId, setRestauranteId] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const alertaTimers = useRef({});
@@ -268,15 +273,47 @@ const RestauranteDashboard = () => {
       await recarregarCaixa();
       setShowFechar(false);
       setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]);
+      setPedidosEmPreparo([]); setItensEmPreparo([]);
     } catch (e) {
       if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) {
         setPedidosAbertos(e.data.pedidos ?? []);
         setComandasAbertas(e.data.comandas ?? []);
         setMesasAbertas(e.data.mesas ?? []);
+        setPedidosEmPreparo(e.data.pedidos_em_preparo ?? []);
+        setItensEmPreparo(e.data.itens_em_preparo ?? []);
       } else {
         alert(e.message);
       }
     } finally { setFechando(false); }
+  };
+
+  const handleMarcarProntos = async ({ pedidoIds = [], itemIds = [] }) => {
+    setMarcandoProntos(true);
+    try {
+      await Promise.all([
+        ...pedidoIds.map((id) => atualizarStatusPedido(id, 'ready')),
+        ...itemIds.map((id) => marcarItemProntoRestaurante(id)),
+      ]);
+      setPedidosEmPreparo((prev) => prev.filter((p) => !pedidoIds.includes(p.id)));
+      setItensEmPreparo((prev) => prev.filter((i) => !itemIds.includes(i.id)));
+    } catch (e) { alert(e.message); }
+    finally { setMarcandoProntos(false); }
+  };
+
+  const handleExcluirComandas = async (ids) => {
+    setExcluindoComandas(true);
+    try {
+      const resultados = await Promise.allSettled(ids.map((id) => cancelarComandaSalao(id)));
+      const idsOk = ids.filter((_, i) => resultados[i].status === 'fulfilled');
+      const falhas = resultados.filter((r) => r.status === 'rejected');
+      const mesaIdsLiberados = comandasAbertas
+        .filter((c) => idsOk.includes(c.id))
+        .map((c) => c.mesa_id)
+        .filter(Boolean);
+      setComandasAbertas((prev) => prev.filter((c) => !idsOk.includes(c.id)));
+      setMesasAbertas((prev) => prev.filter((m) => !mesaIdsLiberados.includes(m.id)));
+      if (falhas.length) alert(`${falhas.length} comanda(s) não puderam ser excluídas: ${falhas.map((f) => f.reason?.message ?? 'erro desconhecido').join(', ')}`);
+    } finally { setExcluindoComandas(false); }
   };
 
   const handleFecharETransferir = async ({ nome_operador, valor_inicial }) => {
@@ -682,9 +719,15 @@ const RestauranteDashboard = () => {
           pedidosAbertos={pedidosAbertos}
           comandasAbertas={comandasAbertas}
           mesasAbertas={mesasAbertas}
+          pedidosEmPreparo={pedidosEmPreparo}
+          itensEmPreparo={itensEmPreparo}
+          onMarcarProntos={handleMarcarProntos}
+          marcandoProntos={marcandoProntos}
+          onExcluirComandas={handleExcluirComandas}
+          excluindoComandas={excluindoComandas}
           onConfirmar={handleFecharCaixa}
           onFecharETransferir={handleFecharETransferir}
-          onCancelar={() => { setShowFechar(false); setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]); }}
+          onCancelar={() => { setShowFechar(false); setPedidosAbertos([]); setComandasAbertas([]); setMesasAbertas([]); setPedidosEmPreparo([]); setItensEmPreparo([]); }}
           fechando={fechando}
         />
       )}

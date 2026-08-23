@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
-import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa } from '../../services/restauranteService';
+import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa, atualizarStatusPedido, marcarItemProntoRestaurante, cancelarComandaSalao } from '../../services/restauranteService';
 import FecharCaixaModal from '../restaurante-dashboard/FecharCaixaModal';
 import { printReciboMovimentoCaixa } from '../../utils/printComanda';
 
@@ -90,7 +90,9 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
   const [salvando, setSalvando] = useState(false);
   const [fechando, setFechando] = useState(false);
   const [estornando, setEstornando] = useState(null); // index da saída sendo estornada
-  const [pendencias, setPendencias] = useState(null); // { pedidos, comandas, mesas } vindo do 409 do backend
+  const [pendencias, setPendencias] = useState(null); // { pedidos, comandas, mesas, pedidos_em_preparo, itens_em_preparo } vindo do 409 do backend
+  const [marcandoProntos, setMarcandoProntos] = useState(false);
+  const [excluindoComandas, setExcluindoComandas] = useState(false);
 
   if (!caixa?.aberto) return null;
 
@@ -127,6 +129,46 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
     finally { setEstornando(null); }
   };
 
+  const handleMarcarProntos = async ({ pedidoIds = [], itemIds = [] }) => {
+    setMarcandoProntos(true);
+    try {
+      await Promise.all([
+        ...pedidoIds.map((id) => atualizarStatusPedido(id, 'ready')),
+        ...itemIds.map((id) => marcarItemProntoRestaurante(id)),
+      ]);
+      setPendencias((prev) => prev && {
+        ...prev,
+        pedidos_em_preparo: (prev.pedidos_em_preparo ?? []).filter((p) => !pedidoIds.includes(p.id)),
+        itens_em_preparo: (prev.itens_em_preparo ?? []).filter((i) => !itemIds.includes(i.id)),
+      });
+      await onRefresh();
+    } catch (e) { alert(e.message); }
+    finally { setMarcandoProntos(false); }
+  };
+
+  const handleExcluirComandas = async (ids) => {
+    setExcluindoComandas(true);
+    try {
+      const resultados = await Promise.allSettled(ids.map((id) => cancelarComandaSalao(id)));
+      const idsOk = ids.filter((_, i) => resultados[i].status === 'fulfilled');
+      const falhas = resultados.filter((r) => r.status === 'rejected');
+      setPendencias((prev) => {
+        if (!prev) return prev;
+        const mesaIdsLiberados = (prev.comandas ?? [])
+          .filter((c) => idsOk.includes(c.id))
+          .map((c) => c.mesa_id)
+          .filter(Boolean);
+        return {
+          ...prev,
+          comandas: (prev.comandas ?? []).filter((c) => !idsOk.includes(c.id)),
+          mesas: (prev.mesas ?? []).filter((m) => !mesaIdsLiberados.includes(m.id)),
+        };
+      });
+      await onRefresh();
+      if (falhas.length) alert(`${falhas.length} comanda(s) não puderam ser excluídas: ${falhas.map((f) => f.reason?.message ?? 'erro desconhecido').join(', ')}`);
+    } finally { setExcluindoComandas(false); }
+  };
+
   const handleFechar = async (body) => {
     setFechando(true);
     try {
@@ -136,7 +178,10 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
       setPendencias(null);
     } catch (e) {
       if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) {
-        setPendencias({ pedidos: e.data.pedidos ?? [], comandas: e.data.comandas ?? [], mesas: e.data.mesas ?? [] });
+        setPendencias({
+          pedidos: e.data.pedidos ?? [], comandas: e.data.comandas ?? [], mesas: e.data.mesas ?? [],
+          pedidos_em_preparo: e.data.pedidos_em_preparo ?? [], itens_em_preparo: e.data.itens_em_preparo ?? [],
+        });
       } else {
         alert(e.message);
       }
@@ -281,6 +326,12 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
           pedidosAbertos={pendencias?.pedidos ?? pedidosAbertos}
           comandasAbertas={pendencias?.comandas ?? []}
           mesasAbertas={pendencias?.mesas ?? []}
+          pedidosEmPreparo={pendencias?.pedidos_em_preparo ?? []}
+          itensEmPreparo={pendencias?.itens_em_preparo ?? []}
+          onMarcarProntos={handleMarcarProntos}
+          marcandoProntos={marcandoProntos}
+          onExcluirComandas={handleExcluirComandas}
+          excluindoComandas={excluindoComandas}
           onConfirmar={handleFechar}
           onFecharETransferir={() => {}}
           onCancelar={() => { setPendencias(null); setModal(null); }}
