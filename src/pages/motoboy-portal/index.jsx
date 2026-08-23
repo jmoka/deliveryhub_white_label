@@ -420,6 +420,209 @@ const AbaPerfil = ({ me, onAtualizado }) => {
   );
 };
 
+// Card de pedido ativo (coletando/entregando) — colapsado por padrão pra caber vários
+// na tela do celular sem virar uma parede de informação; expande ao clicar mostrando
+// endereço, itens, pagamento e ações. Só o card com um único pedido ativo já abre
+// expandido, já que aí não tem problema de espaço.
+const PedidoAtivoCard = ({ p, defaultExpandido, confirmando, onEntregar, onOcorrencia, onConfirmado }) => {
+  const [expandido, setExpandido] = useState(defaultExpandido);
+  const temTroco = p.payment_method === 'cash' && p.troco_para > p.total;
+  const temOcorrenciaPendente = p.delivery_occurrence === 'pendente' && p.delivery_notes;
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
+      <button onClick={() => setExpandido((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 text-left p-4 min-w-0">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">Pedido #{p.id}</p>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${p.status === 'motoboy_collecting' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'}`}>
+              {STATUS_LABEL[p.status] ?? p.status}
+            </span>
+            {temTroco && <Icon name="Banknote" size={13} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />}
+            {temOcorrenciaPendente && <Icon name="Clock" size={13} className="text-orange-600 dark:text-orange-400 flex-shrink-0" />}
+          </div>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate mt-0.5">
+            {p.restaurante?.name}{p.cliente?.name ? ` · ${p.cliente.name}` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <p className="text-sm font-bold text-[#FF441F]">{fmt(p.total)}</p>
+          <Icon name={expandido ? 'ChevronUp' : 'ChevronDown'} size={18} className="text-[#71717A] dark:text-[#A1A1AA]" />
+        </div>
+      </button>
+
+      {expandido && (
+        <div className="px-4 pb-4 space-y-3">
+          {(() => {
+            const cli = p.cliente ?? {};
+            const addr = cli.address_json ?? {};
+            const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
+            const linhaCompl = [addr.complemento, addr.bairro].filter(Boolean).join(' — ');
+            const linhaCidade = [addr.cidade, addr.estado, addr.cep].filter(Boolean).join(', ');
+            const enderecoCompleto = [linhaRua, linhaCompl, linhaCidade].filter(Boolean).join(', ');
+            const mapsUrl = enderecoCompleto
+              ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(enderecoCompleto)}`
+              : null;
+            return (
+              <div className="border-2 border-blue-100 dark:border-blue-950/40 bg-blue-50 dark:bg-blue-950/30 rounded-2xl overflow-hidden">
+                <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Icon name="User" size={16} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-blue-500 dark:text-blue-400 uppercase tracking-wide">Entregar para</p>
+                    <p className="text-base font-black text-[#18181B] dark:text-[#F4F4F5] leading-tight truncate">
+                      {cli.name ?? <span className="text-[#A1A1AA] dark:text-[#71717A] font-normal text-sm">Nome não cadastrado</span>}
+                    </p>
+                  </div>
+                  {cli.phone_e164 ? (
+                    <a href={`tel:${cli.phone_e164}`}
+                      className="flex-shrink-0 w-9 h-9 bg-white dark:bg-[#27272A] rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                      <Icon name="Phone" size={16} className="text-blue-600 dark:text-blue-400" />
+                    </a>
+                  ) : (
+                    <span className="flex-shrink-0 w-9 h-9 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center opacity-40">
+                      <Icon name="Phone" size={16} className="text-[#71717A] dark:text-[#A1A1AA]" />
+                    </span>
+                  )}
+                </div>
+
+                {cli.phone_e164 && (
+                  <div className="px-4 pb-1">
+                    <p className="text-xs text-blue-700 dark:text-blue-400 font-semibold">{cli.phone_e164}</p>
+                  </div>
+                )}
+
+                <div className="px-4 pb-3 mt-1">
+                  <div className="bg-white dark:bg-[#27272A] rounded-xl border border-blue-100 dark:border-blue-950/40 p-3 mb-3">
+                    <div className="flex items-start gap-2">
+                      <Icon name="MapPin" size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      {enderecoCompleto ? (
+                        <div>
+                          {linhaRua && <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{linhaRua}</p>}
+                          {linhaCompl && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{linhaCompl}</p>}
+                          {linhaCidade && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{linhaCidade}</p>}
+                          {addr.referencia && (
+                            <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1">
+                              <Icon name="Info" size={11} /> {addr.referencia}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] italic">Endereço não cadastrado</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {mapsUrl ? (
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md shadow-blue-200">
+                      <Icon name="Navigation" size={16} />
+                      Como chegar
+                    </a>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 w-full py-3 bg-[#E4E4E7] dark:bg-[#3F3F46] text-[#A1A1AA] dark:text-[#71717A] text-sm rounded-xl cursor-not-allowed">
+                      <Icon name="Navigation" size={16} />
+                      Endereço não disponível
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {p.itens?.length > 0 && (
+            <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3">
+              <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Itens</p>
+              <div className="space-y-1">
+                {p.itens.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span className="text-[#18181B] dark:text-[#F4F4F5]">
+                      <span className="font-bold text-[#FF441F]">{item.quantity}×</span>{' '}
+                      {item.product_name}
+                    </span>
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.unit_price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between mt-2 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46] text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">
+                <span>Total</span>
+                <span className="text-[#FF441F]">{fmt(p.total)}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+            <Icon name="CreditCard" size={12} />
+            <span>Pagamento: <strong className="text-[#18181B] dark:text-[#F4F4F5]">{p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method}</strong></span>
+            {p.payment_method === 'cash' && (
+              <span className="ml-auto text-orange-600 dark:text-orange-400 font-semibold flex items-center gap-1">
+                <Icon name="Banknote" size={12} /> Cobrar na entrega
+              </span>
+            )}
+          </div>
+
+          {temTroco && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs font-black text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                <Icon name="Banknote" size={14} /> ATENÇÃO — TROCO
+              </p>
+              <p className="text-sm text-amber-900 dark:text-amber-200">
+                Pegar <strong>{fmt(p.troco_para)}</strong> do cliente · Dar <strong>{fmt(Number(p.troco_para) - Number(p.total))}</strong> de troco
+              </p>
+            </div>
+          )}
+
+          {temOcorrenciaPendente && (
+            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl px-3 py-2">
+              <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1 mb-0.5">
+                <Icon name="Clock" size={12} /> Ocorrência registrada
+              </p>
+              <p className="text-xs text-orange-600 dark:text-orange-400">{p.delivery_notes}</p>
+            </div>
+          )}
+
+          {p.status === 'motoboy_collecting' ? (
+            <ColetaBarcode pedidoId={p.id} onConfirmado={onConfirmado} />
+          ) : p.status === 'out_for_delivery' ? (
+            <EntregaBarcode
+              pedido={p}
+              onConfirmado={onConfirmado}
+              chavePix={p.restaurante?.chave_pix ?? null}
+              restauranteNome={p.restaurante?.name ?? null}
+              restauranteCidade={null}
+            />
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => onEntregar(p.id)}
+                disabled={confirmando === p.id}
+                className="flex-1 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Icon name="CheckCircle2" size={14} />
+                {confirmando === p.id ? '...' : 'Entregue'}
+              </button>
+              <button
+                onClick={() => onOcorrencia({ pedido: p, tipo: 'pendente' })}
+                className="flex-1 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Icon name="Clock" size={14} /> Pendente
+              </button>
+              <button
+                onClick={() => onOcorrencia({ pedido: p, tipo: 'cancelada' })}
+                className="flex-1 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Icon name="XCircle" size={14} /> Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const MotoboyPortal = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -745,179 +948,15 @@ const MotoboyPortal = () => {
                 <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Atualizando automaticamente</p>
               </div>
             ) : pedidos.map((p) => (
-              <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Pedido #{p.id}</p>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{p.restaurante?.name} · {STATUS_LABEL[p.status] ?? p.status}</p>
-                  </div>
-                  <p className="text-sm font-bold text-[#FF441F]">{fmt(p.total)}</p>
-                </div>
-
-                {(() => {
-                  const cli = p.cliente ?? {};
-                  const addr = cli.address_json ?? {};
-                  const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
-                  const linhaCompl = [addr.complemento, addr.bairro].filter(Boolean).join(' — ');
-                  const linhaCidade = [addr.cidade, addr.estado, addr.cep].filter(Boolean).join(', ');
-                  const enderecoCompleto = [linhaRua, linhaCompl, linhaCidade].filter(Boolean).join(', ');
-                  const mapsUrl = enderecoCompleto
-                    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(enderecoCompleto)}`
-                    : null;
-                  return (
-                    <div className="border-2 border-blue-100 dark:border-blue-950/40 bg-blue-50 dark:bg-blue-950/30 rounded-2xl overflow-hidden">
-                      <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Icon name="User" size={16} className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-semibold text-blue-500 dark:text-blue-400 uppercase tracking-wide">Entregar para</p>
-                          <p className="text-base font-black text-[#18181B] dark:text-[#F4F4F5] leading-tight truncate">
-                            {cli.name ?? <span className="text-[#A1A1AA] dark:text-[#71717A] font-normal text-sm">Nome não cadastrado</span>}
-                          </p>
-                        </div>
-                        {cli.phone_e164 ? (
-                          <a href={`tel:${cli.phone_e164}`}
-                            className="flex-shrink-0 w-9 h-9 bg-white dark:bg-[#27272A] rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
-                            <Icon name="Phone" size={16} className="text-blue-600 dark:text-blue-400" />
-                          </a>
-                        ) : (
-                          <span className="flex-shrink-0 w-9 h-9 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center justify-center opacity-40">
-                            <Icon name="Phone" size={16} className="text-[#71717A] dark:text-[#A1A1AA]" />
-                          </span>
-                        )}
-                      </div>
-
-                      {cli.phone_e164 && (
-                        <div className="px-4 pb-1">
-                          <p className="text-xs text-blue-700 dark:text-blue-400 font-semibold">{cli.phone_e164}</p>
-                        </div>
-                      )}
-
-                      <div className="px-4 pb-3 mt-1">
-                        <div className="bg-white dark:bg-[#27272A] rounded-xl border border-blue-100 dark:border-blue-950/40 p-3 mb-3">
-                          <div className="flex items-start gap-2">
-                            <Icon name="MapPin" size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                            {enderecoCompleto ? (
-                              <div>
-                                {linhaRua && <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{linhaRua}</p>}
-                                {linhaCompl && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{linhaCompl}</p>}
-                                {linhaCidade && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{linhaCidade}</p>}
-                                {addr.referencia && (
-                                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 flex items-center gap-1">
-                                    <Icon name="Info" size={11} /> {addr.referencia}
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] italic">Endereço não cadastrado</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {mapsUrl ? (
-                          <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-colors shadow-md shadow-blue-200">
-                            <Icon name="Navigation" size={16} />
-                            Como chegar
-                          </a>
-                        ) : (
-                          <div className="flex items-center justify-center gap-2 w-full py-3 bg-[#E4E4E7] dark:bg-[#3F3F46] text-[#A1A1AA] dark:text-[#71717A] text-sm rounded-xl cursor-not-allowed">
-                            <Icon name="Navigation" size={16} />
-                            Endereço não disponível
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {p.itens?.length > 0 && (
-                  <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3">
-                    <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Itens</p>
-                    <div className="space-y-1">
-                      {p.itens.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span className="text-[#18181B] dark:text-[#F4F4F5]">
-                            <span className="font-bold text-[#FF441F]">{item.quantity}×</span>{' '}
-                            {item.product_name}
-                          </span>
-                          <span className="text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.unit_price * item.quantity)}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-between mt-2 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46] text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">
-                      <span>Total</span>
-                      <span className="text-[#FF441F]">{fmt(p.total)}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                  <Icon name="CreditCard" size={12} />
-                  <span>Pagamento: <strong className="text-[#18181B] dark:text-[#F4F4F5]">{p.payment_method === 'cash' ? 'Dinheiro' : p.payment_method}</strong></span>
-                  {p.payment_method === 'cash' && (
-                    <span className="ml-auto text-orange-600 dark:text-orange-400 font-semibold flex items-center gap-1">
-                      <Icon name="Banknote" size={12} /> Cobrar na entrega
-                    </span>
-                  )}
-                </div>
-
-                {p.payment_method === 'cash' && p.troco_para > p.total && (
-                  <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-xl px-4 py-3 space-y-1">
-                    <p className="text-xs font-black text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                      <Icon name="Banknote" size={14} /> ATENÇÃO — TROCO
-                    </p>
-                    <p className="text-sm text-amber-900 dark:text-amber-200">
-                      Pegar <strong>{fmt(p.troco_para)}</strong> do cliente · Dar <strong>{fmt(Number(p.troco_para) - Number(p.total))}</strong> de troco
-                    </p>
-                  </div>
-                )}
-
-                {p.delivery_occurrence === 'pendente' && p.delivery_notes && (
-                  <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl px-3 py-2">
-                    <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-1 mb-0.5">
-                      <Icon name="Clock" size={12} /> Ocorrência registrada
-                    </p>
-                    <p className="text-xs text-orange-600 dark:text-orange-400">{p.delivery_notes}</p>
-                  </div>
-                )}
-
-                {p.status === 'motoboy_collecting' ? (
-                  <ColetaBarcode pedidoId={p.id} onConfirmado={carregarDados} />
-                ) : p.status === 'out_for_delivery' ? (
-                  <EntregaBarcode
-                    pedido={p}
-                    onConfirmado={carregarDados}
-                    chavePix={p.restaurante?.chave_pix ?? null}
-                    restauranteNome={p.restaurante?.name ?? null}
-                    restauranteCidade={null}
-                  />
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEntregar(p.id)}
-                      disabled={confirmando === p.id}
-                      className="flex-1 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Icon name="CheckCircle2" size={14} />
-                      {confirmando === p.id ? '...' : 'Entregue'}
-                    </button>
-                    <button
-                      onClick={() => setOcorrencia({ pedido: p, tipo: 'pendente' })}
-                      className="flex-1 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Icon name="Clock" size={14} /> Pendente
-                    </button>
-                    <button
-                      onClick={() => setOcorrencia({ pedido: p, tipo: 'cancelada' })}
-                      className="flex-1 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Icon name="XCircle" size={14} /> Cancelar
-                    </button>
-                  </div>
-                )}
-              </div>
+              <PedidoAtivoCard
+                key={p.id}
+                p={p}
+                defaultExpandido={pedidos.length === 1}
+                confirmando={confirmando}
+                onEntregar={handleEntregar}
+                onOcorrencia={setOcorrencia}
+                onConfirmado={carregarDados}
+              />
             ))}
 
             <p className="text-center text-xs text-[#A1A1AA] dark:text-[#71717A]">Atualiza a cada 30 segundos</p>
