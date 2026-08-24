@@ -21,7 +21,8 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
   const [uploadandoFoto, setUploadandoFoto] = useState(false);
   const [erro, setErro] = useState(null);
   const scannerRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const fileInputCameraRef = useRef(null);
+  const fileInputGaleriaRef = useRef(null);
   const divId = `entrega-scan-${pedido.id}`;
 
   const expectedCode = String(pedido.id).padStart(8, '0');
@@ -305,12 +306,19 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
         </>
       )}
 
-      {/* Input câmera oculto — compartilhado pelas etapas PIX */}
+      {/* Inputs de foto ocultos — compartilhados pelas etapas PIX e cartão */}
       <input
-        ref={fileInputRef}
+        ref={fileInputCameraRef}
         type="file"
         accept="image/*"
         capture="environment"
+        className="hidden"
+        onChange={handleFotoChange}
+      />
+      <input
+        ref={fileInputGaleriaRef}
+        type="file"
+        accept="image/*"
         className="hidden"
         onChange={handleFotoChange}
       />
@@ -340,11 +348,18 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               <p className="text-xs text-green-700 dark:text-green-400 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
             </div>
           ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
-              <Icon name="Camera" size={16} /> Fotografar comprovante do cliente
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputCameraRef.current?.click()}
+                className="flex-1 py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                <Icon name="Camera" size={16} /> Fotografar
+              </button>
+              <button
+                onClick={() => fileInputGaleriaRef.current?.click()}
+                className="flex-1 py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                <Icon name="Paperclip" size={16} /> Anexar
+              </button>
+            </div>
           )}
 
           {!comprovanteBase64 && (
@@ -397,11 +412,18 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               <p className="text-xs text-green-700 dark:text-green-400 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
             </div>
           ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full py-2.5 border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
-              <Icon name="Camera" size={16} /> Fotografar comprovante da maquininha
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputCameraRef.current?.click()}
+                className="flex-1 py-2.5 border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+                <Icon name="Camera" size={16} /> Fotografar
+              </button>
+              <button
+                onClick={() => fileInputGaleriaRef.current?.click()}
+                className="flex-1 py-2.5 border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+                <Icon name="Paperclip" size={16} /> Anexar
+              </button>
+            </div>
           )}
           {!comprovanteBase64 && (
             <p className="text-xs text-red-500 dark:text-red-400 text-center">Foto do comprovante é obrigatória</p>
