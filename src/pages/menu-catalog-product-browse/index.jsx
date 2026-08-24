@@ -18,26 +18,33 @@ const DEFAULT_MARCA = {
   logo_icon: 'Utensils',
   nome_marca: 'DeliveryHub',
   header_bg_color: '#FFFFFF',
+  header_bg_opacity: 95,
   header_text_color: '#18181B',
   page_fundo_tipo: 'cor',
   page_bg_color: '#F4F4F5',
   page_fundo_imagem_url: '',
+  page_bg_opacity: 100,
   secoes_bg_color: '#FFFFFF',
+  secoes_bg_opacity: 100,
   texto_principal_color: '#18181B',
   texto_principal_bg_color: '',
+  texto_principal_bg_opacity: 100,
   texto_secundario_color: '#71717A',
   texto_secundario_bg_color: '',
+  texto_secundario_bg_opacity: 100,
   hero_tagline: 'Delivery · Rápido · Confiável',
   hero_titulo: 'Seu delivery favorito',
   hero_subtitulo: 'Peça dos melhores restaurantes da sua cidade',
   hero_fundo_tipo: 'gradiente',
   hero_fundo_cor: '#FF441F',
   hero_fundo_imagem_url: '',
+  hero_fundo_opacity: 100,
   stat1_label: 'Restaurantes',
   stat2_label: 'Avaliação média',
   stat3_label: 'Min. entrega',
   stat3_valor: '~30',
   footer_bg_color: '#FFFFFF',
+  footer_bg_opacity: 100,
   footer_text_color: '#71717A',
   footer_link_color: '#FF441F',
 };
@@ -48,6 +55,8 @@ const hexToRgba = (hex, alpha) => {
   const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+// (opacity em 0-100) -> fração 0-1, com 100 (padrão) se vier undefined/null.
+const pct = (opacity) => (opacity ?? 100) / 100;
 // Raios pequenos em km (20m a 2km) na frente dos já existentes — permite achar
 // fornecedor bem pertinho, não só por cidade/bairro. 0 = sem limite.
 const RAIO_OPCOES = [0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 25, 50, 0];
@@ -606,13 +615,13 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota, marca }) => (
     {marca.hero_fundo_tipo === 'imagem' && marca.hero_fundo_imagem_url ? (
       <>
         <div className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${marca.hero_fundo_imagem_url})` }} />
+          style={{ backgroundImage: `url(${marca.hero_fundo_imagem_url})`, opacity: pct(marca.hero_fundo_opacity) }} />
         <div className="absolute inset-0 bg-black/30" />
       </>
     ) : marca.hero_fundo_tipo === 'cor' ? (
-      <div className="absolute inset-0" style={{ background: marca.hero_fundo_cor }} />
+      <div className="absolute inset-0" style={{ backgroundColor: hexToRgba(marca.hero_fundo_cor, pct(marca.hero_fundo_opacity)) }} />
     ) : (
-      <div className="absolute inset-0 bg-gradient-to-br from-[#FF441F] via-[#FF5C30] to-[#FF7A00]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#FF441F] via-[#FF5C30] to-[#FF7A00]" style={{ opacity: pct(marca.hero_fundo_opacity) }} />
     )}
     <div className="absolute inset-0 opacity-10"
       style={{ backgroundImage: 'radial-gradient(circle at 25% 60%, #fff 1px, transparent 1px), radial-gradient(circle at 75% 20%, #fff 1px, transparent 1px)', backgroundSize: '36px 36px' }} />
@@ -917,19 +926,29 @@ const MenuCatalogProductBrowse = () => {
     .filter(({ prods }) => prods.length > 0);
 
   return (
-    <div className="min-h-screen" style={{
+    <div className="min-h-screen relative" style={{
       ...(marca.page_fundo_tipo === 'imagem' && marca.page_fundo_imagem_url
-        ? { backgroundImage: `url(${marca.page_fundo_imagem_url})`, backgroundSize: 'cover', backgroundPosition: 'top center', backgroundAttachment: 'fixed' }
-        : { backgroundColor: marca.page_bg_color }),
+        ? {}
+        : { backgroundColor: hexToRgba(marca.page_bg_color, pct(marca.page_bg_opacity)) }),
       '--texto-principal': marca.texto_principal_color,
-      '--texto-principal-bg': marca.texto_principal_bg_color || 'transparent',
+      '--texto-principal-bg': marca.texto_principal_bg_color
+        ? hexToRgba(marca.texto_principal_bg_color, pct(marca.texto_principal_bg_opacity))
+        : 'transparent',
       '--texto-secundario': marca.texto_secundario_color,
-      '--texto-secundario-bg': marca.texto_secundario_bg_color || 'transparent',
+      '--texto-secundario-bg': marca.texto_secundario_bg_color
+        ? hexToRgba(marca.texto_secundario_bg_color, pct(marca.texto_secundario_bg_opacity))
+        : 'transparent',
     }}>
+      {/* Imagem de fundo da página como camada própria — assim dá pra deixar
+          translúcida (opacity) sem desbotar o conteúdo por cima. */}
+      {marca.page_fundo_tipo === 'imagem' && marca.page_fundo_imagem_url && (
+        <div className="fixed inset-0 -z-10 bg-cover bg-center"
+          style={{ backgroundImage: `url(${marca.page_fundo_imagem_url})`, opacity: pct(marca.page_bg_opacity) }} />
+      )}
 
       {/* ── Header sticky ───────────────────────────────────────── */}
       <header className="sticky top-0 z-50 backdrop-blur-md border-b border-[#E4E4E7] shadow-sm"
-        style={{ backgroundColor: hexToRgba(marca.header_bg_color, 0.95), '--header-text': marca.header_text_color }}>
+        style={{ backgroundColor: hexToRgba(marca.header_bg_color, pct(marca.header_bg_opacity)), '--header-text': marca.header_text_color }}>
         <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 flex-shrink-0">
             <div className="w-9 h-9 bg-[#FF441F] rounded-xl flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
@@ -1016,7 +1035,7 @@ const MenuCatalogProductBrowse = () => {
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} marca={marca} />
 
       {/* ── Filtro geográfico — Estado/Cidade/Bairro/CEP + raio KM ── */}
-      <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
+      <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-3 flex flex-wrap items-center gap-2">
           <button
             onClick={pedirLocalizacao}
@@ -1083,7 +1102,7 @@ const MenuCatalogProductBrowse = () => {
       </div>
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
-      <div className="hidden lg:block border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
+      <div className="hidden lg:block border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto pb-3">
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
             {categoriasParaExibir.map((c, i) => {
@@ -1126,7 +1145,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrossel restaurantes populares ─────────────────────── */}
       {restaurantes.length > 0 && (
-        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
+        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Flame" size={15} className="text-[#FF441F]" />
@@ -1139,7 +1158,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrossel de combos ativos ────────────────────────────── */}
       {combos.length > 0 && (
-        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
+        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Package" size={15} className="text-[#FF441F]" />
@@ -1152,14 +1171,14 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
       {loadProd ? (
-        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
+        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
           </div>
         </div>
       ) : (
         carrosseis.map(({ tag, prods }) => (
-          <div key={tag.id} className="border-b border-[#E4E4E7]" style={{ backgroundColor: marca.secoes_bg_color }}>
+          <div key={tag.id} className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
               <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
                 <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
@@ -1172,7 +1191,7 @@ const MenuCatalogProductBrowse = () => {
       )}
 
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
-      <div className="lg:hidden border-b border-[#E4E4E7] px-4 py-3" style={{ backgroundColor: marca.secoes_bg_color }}>
+      <div className="lg:hidden border-b border-[#E4E4E7] px-4 py-3" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {categoriasParaExibir.map((c, i) => {
             const ativo = catAtiva === c.id;
@@ -1375,7 +1394,7 @@ const MenuCatalogProductBrowse = () => {
         <SidebarRight restaurantes={filtrados} navigate={navigate} />
       </div>
 
-      <footer className="border-t border-[#E4E4E7] mt-8 py-6 text-center space-y-2" style={{ backgroundColor: marca.footer_bg_color }}>
+      <footer className="border-t border-[#E4E4E7] mt-8 py-6 text-center space-y-2" style={{ backgroundColor: hexToRgba(marca.footer_bg_color, pct(marca.footer_bg_opacity)) }}>
         <div className="flex items-center justify-center gap-2 flex-wrap text-xs">
           <button onClick={() => navigate('/restaurant-registration-setup')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
             <Icon name="Store" size={12} /> Cadastrar estabelecimento

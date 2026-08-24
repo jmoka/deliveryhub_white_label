@@ -9,42 +9,34 @@ const ICONES = [
   'ShoppingBag', 'Store', 'Truck', 'Bike', 'Package', 'Star', 'Heart', 'Flame', 'Tag',
 ];
 
-const ColorField = ({ label, value, onChange, allowTransparent = false }) => {
-  const isTransparent = value === 'transparent';
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300">{label}</label>
-        {allowTransparent && (
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isTransparent}
-              onChange={(e) => onChange(e.target.checked ? 'transparent' : '#FFFFFF')}
-              className="rounded border-gray-300 dark:border-zinc-700 text-orange-500 focus:ring-orange-400"
-            />
-            Transparente
-          </label>
-        )}
-      </div>
-      {isTransparent ? (
-        <div className="flex items-center gap-2 border border-dashed border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-xs text-gray-400 dark:text-zinc-500"
-          style={{ backgroundImage: 'repeating-conic-gradient(#e5e7eb 0% 25%, transparent 0% 50%)', backgroundSize: '10px 10px' }}>
-          <Icon name="Eye" size={13} /> Fundo transparente — deixa o que estiver atrás aparecer
-        </div>
-      ) : (
-        <div className="flex items-center gap-3">
-          <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
-            className="w-12 h-10 flex-shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
-          <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
-            className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
-        </div>
-      )}
+const OpacitySlider = ({ label = 'Transparência', value, onChange }) => (
+  <div className="mt-2">
+    <div className="flex items-center justify-between mb-1">
+      <label className="text-xs text-gray-500 dark:text-zinc-400">{label}</label>
+      <span className="text-xs font-mono text-gray-500 dark:text-zinc-400 w-10 text-right">{value ?? 100}%</span>
     </div>
-  );
-};
+    <input
+      type="range" min="0" max="100" value={value ?? 100}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="w-full accent-orange-500 cursor-pointer"
+    />
+  </div>
+);
 
-const OptionalBgField = ({ label, value, onChange }) => {
+const ColorField = ({ label, value, onChange, opacity, onOpacityChange }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">{label}</label>
+    <div className="flex items-center gap-3">
+      <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
+        className="w-12 h-10 flex-shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
+        className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
+    </div>
+    {onOpacityChange && <OpacitySlider value={opacity} onChange={onOpacityChange} />}
+  </div>
+);
+
+const OptionalBgField = ({ label, value, onChange, opacity, onOpacityChange }) => {
   const enabled = !!value;
   return (
     <div>
@@ -58,12 +50,15 @@ const OptionalBgField = ({ label, value, onChange }) => {
         {label}
       </label>
       {enabled && (
-        <div className="flex items-center gap-3">
-          <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
-            className="w-12 h-10 flex-shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
-          <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
-            className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
-        </div>
+        <>
+          <div className="flex items-center gap-3">
+            <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
+              className="w-12 h-10 flex-shrink-0 rounded-lg border border-gray-300 dark:border-zinc-700 cursor-pointer p-0.5 bg-white dark:bg-zinc-800" />
+            <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
+              className="flex-1 min-w-0 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400" />
+          </div>
+          {onOpacityChange && <OpacitySlider value={opacity} onChange={onOpacityChange} />}
+        </>
       )}
     </div>
   );
@@ -174,7 +169,8 @@ const AdminAparencia = () => {
               </p>
             </div>
 
-            <ColorField label="Cor da barra superior" value={form.header_bg_color} onChange={(v) => set('header_bg_color', v)} allowTransparent />
+            <ColorField label="Cor da barra superior" value={form.header_bg_color} onChange={(v) => set('header_bg_color', v)}
+              opacity={form.header_bg_opacity} onOpacityChange={(v) => set('header_bg_opacity', v)} />
             <ColorField label="Cor da fonte da barra superior" value={form.header_text_color} onChange={(v) => set('header_text_color', v)} />
           </Card>
 
@@ -198,20 +194,27 @@ const AdminAparencia = () => {
               </div>
 
               {form.hero_fundo_tipo === 'gradiente' && (
-                <div className="h-16 w-full rounded-xl" style={{ background: 'linear-gradient(135deg, #FF441F, #FF5C30, #FF7A00)' }} />
+                <>
+                  <div className="h-16 w-full rounded-xl" style={{ background: 'linear-gradient(135deg, #FF441F, #FF5C30, #FF7A00)', opacity: (form.hero_fundo_opacity ?? 100) / 100 }} />
+                  <OpacitySlider value={form.hero_fundo_opacity} onChange={(v) => set('hero_fundo_opacity', v)} />
+                </>
               )}
               {form.hero_fundo_tipo === 'cor' && (
-                <ColorField label="Cor do fundo" value={form.hero_fundo_cor} onChange={(v) => set('hero_fundo_cor', v)} allowTransparent />
+                <ColorField label="Cor do fundo" value={form.hero_fundo_cor} onChange={(v) => set('hero_fundo_cor', v)}
+                  opacity={form.hero_fundo_opacity} onOpacityChange={(v) => set('hero_fundo_opacity', v)} />
               )}
               {form.hero_fundo_tipo === 'imagem' && (
-                <ImageUpload
-                  value={form.hero_fundo_imagem_url}
-                  onChange={(url) => set('hero_fundo_imagem_url', url)}
-                  uploadFn={uploadImagemPlataforma}
-                  folder="plataforma"
-                  aspect="banner"
-                  placeholder="https://exemplo.com/fundo-hero.jpg"
-                />
+                <>
+                  <ImageUpload
+                    value={form.hero_fundo_imagem_url}
+                    onChange={(url) => set('hero_fundo_imagem_url', url)}
+                    uploadFn={uploadImagemPlataforma}
+                    folder="plataforma"
+                    aspect="banner"
+                    placeholder="https://exemplo.com/fundo-hero.jpg"
+                  />
+                  <OpacitySlider value={form.hero_fundo_opacity} onChange={(v) => set('hero_fundo_opacity', v)} />
+                </>
               )}
             </div>
           </Card>
@@ -245,16 +248,20 @@ const AdminAparencia = () => {
               </div>
 
               {form.page_fundo_tipo === 'cor' ? (
-                <ColorField label="Cor de fundo da página" value={form.page_bg_color} onChange={(v) => set('page_bg_color', v)} allowTransparent />
+                <ColorField label="Cor de fundo da página" value={form.page_bg_color} onChange={(v) => set('page_bg_color', v)}
+                  opacity={form.page_bg_opacity} onOpacityChange={(v) => set('page_bg_opacity', v)} />
               ) : (
-                <ImageUpload
-                  value={form.page_fundo_imagem_url}
-                  onChange={(url) => set('page_fundo_imagem_url', url)}
-                  uploadFn={uploadImagemPlataforma}
-                  folder="plataforma"
-                  aspect="banner"
-                  placeholder="https://exemplo.com/fundo-pagina.jpg"
-                />
+                <>
+                  <ImageUpload
+                    value={form.page_fundo_imagem_url}
+                    onChange={(url) => set('page_fundo_imagem_url', url)}
+                    uploadFn={uploadImagemPlataforma}
+                    folder="plataforma"
+                    aspect="banner"
+                    placeholder="https://exemplo.com/fundo-pagina.jpg"
+                  />
+                  <OpacitySlider value={form.page_bg_opacity} onChange={(v) => set('page_bg_opacity', v)} />
+                </>
               )}
             </div>
 
@@ -262,7 +269,8 @@ const AdminAparencia = () => {
               label="Cor de fundo das faixas de conteúdo (filtros, categorias, carrosséis)"
               value={form.secoes_bg_color}
               onChange={(v) => set('secoes_bg_color', v)}
-              allowTransparent
+              opacity={form.secoes_bg_opacity}
+              onOpacityChange={(v) => set('secoes_bg_opacity', v)}
             />
             <ColorField
               label="Cor da fonte dos títulos (ex: 'Combos em destaque', 'Todos os restaurantes')"
@@ -273,6 +281,8 @@ const AdminAparencia = () => {
               label="Incluir fundo atrás dos títulos"
               value={form.texto_principal_bg_color}
               onChange={(v) => set('texto_principal_bg_color', v)}
+              opacity={form.texto_principal_bg_opacity}
+              onOpacityChange={(v) => set('texto_principal_bg_opacity', v)}
             />
             <ColorField
               label="Cor da fonte dos textos secundários (ex: contagem de restaurantes, legendas)"
@@ -283,12 +293,15 @@ const AdminAparencia = () => {
               label="Incluir fundo atrás dos textos secundários"
               value={form.texto_secundario_bg_color}
               onChange={(v) => set('texto_secundario_bg_color', v)}
+              opacity={form.texto_secundario_bg_opacity}
+              onOpacityChange={(v) => set('texto_secundario_bg_opacity', v)}
             />
           </Card>
 
           {/* ── Rodapé ────────────────────────────────────────── */}
           <Card title="Rodapé" icon="PanelBottom">
-            <ColorField label="Cor de fundo do rodapé" value={form.footer_bg_color} onChange={(v) => set('footer_bg_color', v)} allowTransparent />
+            <ColorField label="Cor de fundo do rodapé" value={form.footer_bg_color} onChange={(v) => set('footer_bg_color', v)}
+              opacity={form.footer_bg_opacity} onOpacityChange={(v) => set('footer_bg_opacity', v)} />
             <ColorField label="Cor do texto (copyright)" value={form.footer_text_color} onChange={(v) => set('footer_text_color', v)} />
             <ColorField label="Cor dos links" value={form.footer_link_color} onChange={(v) => set('footer_link_color', v)} />
           </Card>
