@@ -130,14 +130,12 @@ const RestauranteDelivery = () => {
   const todosPedidos = (caixa?.pedidos ?? []).filter((p) => p.canal !== 'presencial');
   const contagem = todosPedidos.reduce((acc, p) => { acc[p.status] = (acc[p.status] ?? 0) + 1; return acc; }, {});
   const pedidosFiltrados = filtroStatus === 'todos' ? todosPedidos : todosPedidos.filter((p) => p.status === filtroStatus);
-  const colHeight = 'max-h-[calc(100vh-280px)]';
-
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/delivery" title="Delivery" onRefresh={recarregarCaixa} />
 
-      <main className="p-4 max-w-6xl mx-auto">
-        {erro && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{erro}</p>}
+      <main className="flex-1 min-h-0 flex flex-col p-4 w-full">
+        {erro && <p className="text-sm text-red-600 dark:text-red-400 mb-4 flex-shrink-0">{erro}</p>}
 
         {!caixa?.aberto ? (
           <div className="text-center py-16">
@@ -146,9 +144,9 @@ const RestauranteDelivery = () => {
             <p className="text-[#A1A1AA] text-sm mt-1">Abra o caixa no Dashboard pra começar a receber pedidos.</p>
           </div>
         ) : (
-          <>
+          <div className="flex-1 min-h-0 flex flex-col">
             {/* Mobile: filtros horizontal scroll */}
-            <div className="flex md:hidden gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+            <div className="flex md:hidden gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide flex-shrink-0">
               {FILTER_TABS.map((tab) => {
                 const cnt = tab.value === 'todos' ? todosPedidos.length : (contagem[tab.value] ?? 0);
                 const isActive = filtroStatus === tab.value;
@@ -164,9 +162,11 @@ const RestauranteDelivery = () => {
               })}
             </div>
 
-            <div className="flex gap-4 items-start">
+            {/* 95% da altura disponível abaixo da barra — nunca passa por baixo dela
+                porque está contida numa cadeia flex/min-h-0 travada ao viewport. */}
+            <div className="flex-1 min-h-0 md:h-[calc(95vh_-_85.5px)] md:flex-none flex gap-4 items-stretch">
               {/* Sidebar de filtros — desktop */}
-              <div className="hidden md:block w-44 flex-shrink-0 sticky top-4">
+              <div className="hidden md:block w-44 flex-shrink-0">
                 <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 space-y-1">
                   <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest px-2 pb-1">Filtros</p>
                   {FILTER_TABS.map((tab) => {
@@ -189,16 +189,18 @@ const RestauranteDelivery = () => {
                 </div>
               </div>
 
-              {/* Lista + detalhe: 1 col mobile, 50/50 desktop quando detalhe aberto */}
-              <div className={`flex-1 grid gap-4 ${pedidoDetalhe || loadingDetalhe ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
-                <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex flex-col">
+              {/* Lista + detalhe: 1 col mobile, 50/50 desktop quando detalhe aberto —
+                  ambos esticam pra mesma altura (items-stretch no pai) e o card da
+                  direita ocupa o resto da largura até a borda da tela (sem max-w). */}
+              <div className={`flex-1 min-h-0 grid gap-4 ${pedidoDetalhe || loadingDetalhe ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+                <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex flex-col h-full min-h-0">
                   <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-4 flex-shrink-0">
                     <Icon name="Bike" size={16} className="text-[#FF441F]" />
                     Pedidos delivery
                     <span className="text-xs font-normal text-[#71717A] dark:text-[#A1A1AA]">({todosPedidos.length})</span>
                   </h2>
 
-                  <div className={`overflow-y-auto ${colHeight} pr-1`}>
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
                     {todosPedidos.length === 0 ? (
                       <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-8">Nenhum pedido de delivery nesta sessão ainda.</p>
                     ) : pedidosFiltrados.length === 0 ? (
@@ -253,12 +255,12 @@ const RestauranteDelivery = () => {
 
                 <AnimatePresence>
                   {loadingDetalhe && (
-                    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex items-center justify-center">
+                    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 flex items-center justify-center h-full min-h-0">
                       <div className="w-6 h-6 border-[3px] border-[#FF441F] border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
                   {pedidoDetalhe && !loadingDetalhe && (
-                    <div className={`bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 overflow-y-auto ${colHeight}`}>
+                    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 overflow-y-auto h-full min-h-0 custom-scrollbar">
                       <PedidoDetalhe
                         detalhe={pedidoDetalhe}
                         onAvancar={handleAvancarStatus}
@@ -282,7 +284,7 @@ const RestauranteDelivery = () => {
                 </AnimatePresence>
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>
