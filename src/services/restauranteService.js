@@ -55,6 +55,9 @@ export const atualizarStatusPedido = (id, status) =>
 export const entregarPedidoProprio = (id) =>
   apiFetch(`/pedidos/${id}/entregar-proprio`, { method: 'PATCH' });
 
+export const marcarPedidoPago = (id) =>
+  apiFetch(`/pedidos/${id}/marcar-pago`, { method: 'PATCH' });
+
 export const listarEntregas = () => apiFetch('/entregas');
 
 export const getMeusProdutos = () => apiFetch('/produtos');

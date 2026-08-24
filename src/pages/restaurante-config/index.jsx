@@ -474,6 +474,7 @@ const RestauranteConfig = () => {
     pagbank_seller_account_id: '',
     taxa_pagbank_percent: '',
     chave_pix: '',
+    pagamento_manual: false,
     frete_motoboy: '',
     usa_motoboy: true,
     motoboy_comissao_tipo: 'fixo',
@@ -504,6 +505,7 @@ const RestauranteConfig = () => {
           pagbank_seller_account_id: d.pagbank_seller_account_id ?? '',
           taxa_pagbank_percent: d.taxa_pagbank_percent != null ? String(d.taxa_pagbank_percent) : '',
           chave_pix: d.chave_pix ?? '',
+          pagamento_manual: d.pagamento_manual ?? false,
           frete_motoboy: d.frete_motoboy != null ? String(d.frete_motoboy) : '',
           usa_motoboy: d.usa_motoboy ?? true,
           motoboy_comissao_tipo: d.motoboy_comissao_tipo ?? 'fixo',
@@ -535,6 +537,7 @@ const RestauranteConfig = () => {
         pagbank_seller_account_id: form.pagbank_seller_account_id.trim(),
         taxa_pagbank_percent: form.taxa_pagbank_percent !== '' ? parseFloat(form.taxa_pagbank_percent) : null,
         chave_pix: form.chave_pix.trim() || null,
+        pagamento_manual: form.pagamento_manual,
         frete_motoboy: form.frete_motoboy !== '' ? parseFloat(form.frete_motoboy) : 0,
         usa_motoboy: form.usa_motoboy,
         motoboy_comissao_tipo: form.motoboy_comissao_tipo,
@@ -591,6 +594,22 @@ const RestauranteConfig = () => {
                     ? `Token: ${config.pagbank_token_masked} · ${config.split_ativo ? 'Split ativo ✓' : ''} · ${config.pagbank_sandbox ? 'Sandbox' : 'Produção'}`
                     : 'Configure abaixo para receber pagamentos diretamente'
                   }
+                </p>
+              </div>
+            </div>
+
+            {/* Modo de pagamento — PagBank (API) ou manual (motoboy cobra na entrega) */}
+            <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-start gap-3">
+              <button type="button" onClick={() => setForm((f) => ({ ...f, pagamento_manual: !f.pagamento_manual }))}
+                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${form.pagamento_manual ? 'bg-[#FF441F]' : 'bg-[#D4D4D8] dark:bg-[#3F3F46]'}`}>
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.pagamento_manual ? 'left-5' : 'left-1'}`} />
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">Receber pagamento manualmente</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+                  {form.pagamento_manual
+                    ? 'Ativado: no checkout, o cliente só informa a forma de pagamento (nenhuma tela do PagBank abre). PIX usa a chave cadastrada abaixo e cartão é cobrado pelo motoboy com a maquininha na entrega — em ambos os casos, com foto do comprovante. Você também pode marcar um pedido como pago manualmente no painel.'
+                    : 'Desativado: o checkout cobra automaticamente via PagBank (PIX/cartão), conforme configurado abaixo.'}
                 </p>
               </div>
             </div>

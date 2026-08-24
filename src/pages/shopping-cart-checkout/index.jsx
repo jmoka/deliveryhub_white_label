@@ -8,6 +8,7 @@ import StepEndereco from './StepEndereco';
 import { getPerfil } from '../../services/perfilService';
 import { cartCount, cartByRestaurant, cartClear } from '../../utils/multiCart';
 import MultiCartCheckout from './MultiCartCheckout';
+import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -47,14 +48,63 @@ const ProgressBar = ({ etapa, total }) => (
 const LABELS_ETAPA = ['Seus itens', 'Endereço', 'Pagamento', 'Confirmar'];
 
 /* ── Tela PIX ─────────────────────────────────────────────────────  */
-const PixScreen = ({ pixData, total, onIrAcompanhar }) => {
+const comprimirImagem = (file) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1200;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.src = url;
+  });
+
+const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId }) => {
   const [copiado, setCopiado] = useState(false);
+  const [comprovantePreview, setComprovantePreview] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
+  const [erroUpload, setErroUpload] = useState(null);
+  const fileInputRef = React.useRef(null);
+
   const copiar = () => {
     navigator.clipboard.writeText(pixData.pix_code).then(() => {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2500);
     });
   };
+
+  const handleFotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const base64 = await comprimirImagem(file);
+    setComprovantePreview(base64);
+    setErroUpload(null);
+    setEnviando(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      const res = await fetch(apiPath(`/api/pedidos/${pedidoId}/comprovante`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ base64 }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.message ?? `HTTP ${res.status}`);
+      setEnviado(true);
+    } catch (err) {
+      setErroUpload(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B] flex flex-col items-center justify-center p-6">
       <motion.div
@@ -74,6 +124,26 @@ const PixScreen = ({ pixData, total, onIrAcompanhar }) => {
           <img src={pixData.pix_qr_url} alt="QR Code PIX"
             className="w-48 h-48 mx-auto border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl object-contain" />
         )}
+
+        {manual && (
+          <div className="space-y-2">
+            <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFotoChange} />
+            {comprovantePreview ? (
+              <div className="relative">
+                <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300 dark:border-green-700" />
+                {enviando && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Enviando...</p>}
+                {enviado && <p className="text-xs text-green-700 dark:text-green-400 mt-1 font-semibold">✓ Comprovante anexado</p>}
+                {erroUpload && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{erroUpload}</p>}
+              </div>
+            ) : (
+              <button onClick={() => fileInputRef.current?.click()}
+                className="w-full py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                <Icon name="Camera" size={16} /> Anexar comprovante do pagamento
+              </button>
+            )}
+          </div>
+        )}
+
         {pixData.pix_code && (
           <div className="space-y-2">
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Código PIX (copia e cola)</p>
@@ -89,7 +159,9 @@ const PixScreen = ({ pixData, total, onIrAcompanhar }) => {
           </div>
         )}
         <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-400 text-left">
-          Após o pagamento, seu pedido é confirmado automaticamente. Válido por 24h.
+          {manual
+            ? 'Pague com o app do seu banco. O pagamento será confirmado pelo motoboy na entrega.'
+            : 'Após o pagamento, seu pedido é confirmado automaticamente. Válido por 24h.'}
         </div>
         <button onClick={onIrAcompanhar}
           className="w-full py-3 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
@@ -163,7 +235,7 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
 };
 
 /* ── Step 2: Pagamento ───────────────────────────────────────────── */
-const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, total, onNext, onBack }) => (
+const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, total, onNext, onBack, pagamentoManual = false, chavePix = null }) => (
   <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
     {/* Resumo do valor — sempre visível */}
     <div className="bg-[#18181B] dark:bg-[#3F3F46] rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
@@ -186,36 +258,46 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
     <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
       <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-3">Forma de pagamento</p>
       <div className="space-y-2">
-        {PAYMENT_OPTIONS.map((op) => (
-          <button key={op.key} onClick={() => setPaymentMethod(op.key)}
-            className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
-              paymentMethod === op.key
-                ? 'border-[#FF441F] bg-[#FF441F]/5'
-                : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]/40'
-            }`}>
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              paymentMethod === op.key ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
-            }`}>
-              <Icon name={op.icon} size={18} />
-            </div>
-            <div className="flex-1">
-              <p className={`text-sm font-semibold ${paymentMethod === op.key ? 'text-[#FF441F]' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>
-                {op.label}
-              </p>
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{op.desc}</p>
-            </div>
-            <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-              paymentMethod === op.key ? 'border-[#FF441F] bg-[#FF441F]' : 'border-[#E4E4E7] dark:border-[#3F3F46]'
-            }`}>
-              {paymentMethod === op.key && <div className="w-2 h-2 bg-white rounded-full m-auto mt-0.5" />}
-            </div>
-          </button>
-        ))}
+        {PAYMENT_OPTIONS.map((op) => {
+          const pixIndisponivel = pagamentoManual && op.key === 'pix' && !chavePix;
+          return (
+            <button key={op.key} onClick={() => !pixIndisponivel && setPaymentMethod(op.key)}
+              disabled={pixIndisponivel}
+              className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
+                pixIndisponivel
+                  ? 'border-[#E4E4E7] dark:border-[#3F3F46] opacity-50 cursor-not-allowed'
+                  : paymentMethod === op.key
+                    ? 'border-[#FF441F] bg-[#FF441F]/5'
+                    : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]/40'
+              }`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                paymentMethod === op.key && !pixIndisponivel ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
+              }`}>
+                <Icon name={op.icon} size={18} />
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${paymentMethod === op.key && !pixIndisponivel ? 'text-[#FF441F]' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>
+                  {op.label}
+                </p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  {pixIndisponivel
+                    ? 'Indisponível — restaurante não configurou chave PIX'
+                    : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
+                </p>
+              </div>
+              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                paymentMethod === op.key && !pixIndisponivel ? 'border-[#FF441F] bg-[#FF441F]' : 'border-[#E4E4E7] dark:border-[#3F3F46]'
+              }`}>
+                {paymentMethod === op.key && !pixIndisponivel && <div className="w-2 h-2 bg-white rounded-full m-auto mt-0.5" />}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* CPF para PIX */}
       <AnimatePresence>
-        {paymentMethod === 'pix' && (
+        {paymentMethod === 'pix' && !pagamentoManual && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -386,7 +468,7 @@ const SingleCartCheckout = () => {
     return {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0 } = restored;
+  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null } = restored;
 
   const [itens, setItens] = useState(carrinho);
   const [perfil, setPerfil] = useState(null);
@@ -396,6 +478,7 @@ const SingleCartCheckout = () => {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [pixData, setPixData] = useState(null);
+  const [pixManual, setPixManual] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [etapa, setEtapa] = useState(0); // 0=itens 1=endereço 2=pagamento 3=confirmar
 
@@ -410,8 +493,12 @@ const SingleCartCheckout = () => {
   const irParaStep = (n) => { setErro(null); setEtapa(n); };
 
   const validarPagamento = () => {
-    if (paymentMethod === 'pix' && cpf.replace(/\D/g, '').length !== 11) {
+    if (!pagamentoManual && paymentMethod === 'pix' && cpf.replace(/\D/g, '').length !== 11) {
       setErro('CPF inválido. Informe os 11 dígitos para gerar o PIX.');
+      return false;
+    }
+    if (pagamentoManual && paymentMethod === 'pix' && !chavePix) {
+      setErro('PIX indisponível — o restaurante não configurou uma chave PIX. Escolha outra forma de pagamento.');
       return false;
     }
     return true;
@@ -447,7 +534,16 @@ const SingleCartCheckout = () => {
       const newOrderId = pedido.pedido?.id ?? pedido.id;
       setOrderId(newOrderId);
 
-      if (paymentMethod === 'pix') {
+      if (pagamentoManual && paymentMethod === 'pix' && chavePix) {
+        // Modo manual: QR gerado localmente com a chave PIX cadastrada, sem chamar a
+        // API do PagBank — o motoboy confirma o recebimento na entrega.
+        const payload = gerarPixPayload({ chave: chavePix, nome: restauranteNome, cidade: null, valor: total, txid: `ped${newOrderId}` });
+        setPixManual(true);
+        setPixData({ pix_code: payload, pix_qr_url: qrCodeUrl(payload) });
+        return;
+      }
+
+      if (!pagamentoManual && paymentMethod === 'pix') {
         const user = (await supabase.auth.getUser())?.data?.user;
         const resPix = await fetch(apiPath('/api/pagamentos/pix'), {
           method: 'POST',
@@ -483,6 +579,8 @@ const SingleCartCheckout = () => {
       <PixScreen
         pixData={pixData}
         total={total}
+        manual={pixManual}
+        pedidoId={orderId}
         onIrAcompanhar={() =>
           navigate('/order-tracking-status', { state: { orderId, restauranteSlug }, replace: true })
         }
@@ -564,6 +662,8 @@ const SingleCartCheckout = () => {
               setPaymentMethod={setPaymentMethod}
               cpf={cpf}
               setCpf={setCpf}
+              pagamentoManual={pagamentoManual}
+              chavePix={chavePix}
               trocoPara={trocoPara}
               setTrocoPara={setTrocoPara}
               subtotal={subtotal}
@@ -618,6 +718,9 @@ const ShoppingCartCheckout = () => {
       restauranteId: grupo.restaurante_id,
       restauranteSlug: grupo.slug ?? '',
       freteMotoboy: grupo.frete_motoboy ?? 0,
+      pagamentoManual: !!grupo.pagamento_manual,
+      chavePix: grupo.chave_pix ?? null,
+      restauranteNome: grupo.nome ?? null,
     }));
     cartClear();
     return <SingleCartCheckout />;

@@ -35,6 +35,10 @@ const MultiCartCheckout = () => {
         carrinho,
         restauranteId: grupo.restaurante_id,
         restauranteSlug: grupo.slug ?? '',
+        freteMotoboy: grupo.frete_motoboy ?? 0,
+        pagamentoManual: !!grupo.pagamento_manual,
+        chavePix: grupo.chave_pix ?? null,
+        restauranteNome: grupo.nome ?? null,
       },
     });
   };

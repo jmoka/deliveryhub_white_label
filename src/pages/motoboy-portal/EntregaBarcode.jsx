@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '../../components/AppIcon';
-import { confirmarEntrega, registrarOcorrencia, uploadComprovantePix } from '../../services/motoboyService';
+import { confirmarEntrega, registrarOcorrencia, uploadComprovantePagamento } from '../../services/motoboyService';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-// etapas: scan → pagamento → troco | exato | pix | pix_parcial → acao → ocorrencia
+// etapas: scan → ja_pago | pagamento → troco | exato | pix | pix_parcial | cartao → acao → ocorrencia
 
-const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, restauranteCidade }) => {
+const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, restauranteCidade, pago, taxaCartaoPercentual = 0 }) => {
   const [etapa, setEtapa] = useState('scan');
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState('');
@@ -41,7 +41,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
     stopScan();
     if (!validarCodigo(decoded)) { setErro(`Código não corresponde ao pedido #${pedido.id}`); return; }
     setErro(null);
-    setEtapa('pagamento');
+    setEtapa(pago ? 'ja_pago' : 'pagamento');
   };
 
   const startScan = async () => {
@@ -87,6 +87,8 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
 
   const dinheiroVal = parseFloat(dinheiroInput.replace(',', '.')) || 0;
   const pixParcialVal = dinheiroVal > 0 && dinheiroVal < total ? total - dinheiroVal : 0;
+  const taxaCartaoValor = parseFloat(((total * taxaCartaoPercentual) / 100).toFixed(2));
+  const totalComCartao = total + taxaCartaoValor;
 
   const comprimirImagem = (file) =>
     new Promise((resolve) => {
@@ -119,7 +121,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
     try {
       if (comprovanteBase64) {
         setUploadandoFoto(true);
-        await uploadComprovantePix(pedido.id, comprovanteBase64);
+        await uploadComprovantePagamento(pedido.id, comprovanteBase64);
         setUploadandoFoto(false);
       }
       await confirmarEntrega(pedido.id, entregaPagamento);
@@ -154,11 +156,11 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
           )}
           <div className="flex gap-2">
             <input value={manual} onChange={(e) => setManual(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && validarCodigo(manual) && setEtapa('pagamento')}
+              onKeyDown={(e) => e.key === 'Enter' && validarCodigo(manual) && setEtapa(pago ? 'ja_pago' : 'pagamento')}
               placeholder={`Código manual (${expectedCode})`}
               className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500" />
             <button
-              onClick={() => { if (validarCodigo(manual)) { setErro(null); setEtapa('pagamento'); } else setErro('Código incorreto'); }}
+              onClick={() => { if (validarCodigo(manual)) { setErro(null); setEtapa(pago ? 'ja_pago' : 'pagamento'); } else setErro('Código incorreto'); }}
               disabled={!manual.trim()}
               className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl disabled:opacity-50 hover:bg-green-700">
               OK
@@ -205,7 +207,33 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
                 PIX indisponível — chave não configurada no restaurante
               </p>
             )}
+
+            <button
+              onClick={() => setEtapa('cartao')}
+              className="w-full py-3 border-2 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+              <Icon name="CreditCard" size={16} /> Cliente vai pagar com cartão (maquininha)
+            </button>
           </div>
+          <button onClick={() => setEtapa('ocorrencia')}
+            className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors">
+            <Icon name="Clock" size={14} /> Não consegui entregar (pendência)
+          </button>
+        </>
+      )}
+
+      {/* ETAPA: JÁ PAGO — dono confirmou no painel, só falta confirmar a entrega */}
+      {etapa === 'ja_pago' && (
+        <>
+          <div className="bg-green-50 dark:bg-green-950/30 border-2 border-green-300 dark:border-green-700 rounded-xl p-4 space-y-1 text-center">
+            <p className="text-sm font-black text-green-800 dark:text-green-300">✅ Pagamento já confirmado</p>
+            <p className="text-xs text-green-700 dark:text-green-400">O estabelecimento já marcou esse pedido como pago — não é necessário cobrar nada.</p>
+          </div>
+          <button
+            onClick={() => handleEntregar()}
+            disabled={confirmando}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+            <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Confirmar Entrega'}
+          </button>
           <button onClick={() => setEtapa('ocorrencia')}
             className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-colors">
             <Icon name="Clock" size={14} /> Não consegui entregar (pendência)
@@ -319,12 +347,72 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             </button>
           )}
 
+          {!comprovanteBase64 && (
+            <p className="text-xs text-red-500 dark:text-red-400 text-center">Foto do comprovante é obrigatória</p>
+          )}
           <button
             onClick={() => handleEntregar({ metodo: 'pix', pix: total })}
-            disabled={confirmando}
+            disabled={confirmando || !comprovanteBase64}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} />
             {uploadandoFoto ? 'Enviando foto...' : confirmando ? 'Confirmando...' : 'PIX Recebido — Marcar Entregue'}
+          </button>
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+            ← Voltar
+          </button>
+        </>
+      )}
+
+      {/* ETAPA: CARTÃO (maquininha física) */}
+      {etapa === 'cartao' && (
+        <>
+          <p className="text-sm font-black text-amber-800 dark:text-amber-300 text-center">Cartão — Cobrar na maquininha</p>
+          <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-700 rounded-xl p-4 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-amber-700 dark:text-amber-400">Valor do pedido:</span>
+              <strong className="text-amber-900 dark:text-amber-200">{fmt(total)}</strong>
+            </div>
+            {taxaCartaoValor > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-amber-700 dark:text-amber-400">Taxa do cartão ({taxaCartaoPercentual}%):</span>
+                <strong className="text-amber-900 dark:text-amber-200">{fmt(taxaCartaoValor)}</strong>
+              </div>
+            )}
+            <div className="flex justify-between text-sm pt-1 border-t border-amber-200 dark:border-amber-800">
+              <span className="text-amber-800 dark:text-amber-300 font-bold">Cobrar do cliente:</span>
+              <strong className="text-amber-900 dark:text-amber-200">{fmt(totalComCartao)}</strong>
+            </div>
+          </div>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] text-center">Informe esse valor (com a taxa) ao cliente antes de passar na maquininha.</p>
+
+          {/* Comprovante */}
+          {comprovantePreview ? (
+            <div className="relative">
+              <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300 dark:border-green-700" />
+              <button
+                onClick={() => { setComprovantePreview(null); setComprovanteBase64(null); }}
+                className="absolute top-1 right-1 bg-white dark:bg-[#27272A] rounded-full p-1 shadow">
+                <Icon name="X" size={14} className="text-gray-600" />
+              </button>
+              <p className="text-xs text-green-700 dark:text-green-400 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-2.5 border-2 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors">
+              <Icon name="Camera" size={16} /> Fotografar comprovante da maquininha
+            </button>
+          )}
+          {!comprovanteBase64 && (
+            <p className="text-xs text-red-500 dark:text-red-400 text-center">Foto do comprovante é obrigatória</p>
+          )}
+
+          <button
+            onClick={() => handleEntregar({ metodo: 'cartao', dinheiro: 0 })}
+            disabled={confirmando || !comprovanteBase64}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+            <Icon name="CheckCircle2" size={16} />
+            {uploadandoFoto ? 'Enviando foto...' : confirmando ? 'Confirmando...' : 'Cartão Recebido — Marcar Entregue'}
           </button>
           <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar

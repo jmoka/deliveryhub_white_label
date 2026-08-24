@@ -26,6 +26,8 @@ export const cartAdd = (produto, restaurante) => {
       restaurante_slug: restaurante.slug,
       restaurante_nome: restaurante.name,
       restaurante_frete: parseFloat(restaurante.frete_motoboy ?? 0),
+      restaurante_pagamento_manual: !!restaurante.pagamento_manual,
+      restaurante_chave_pix: restaurante.chave_pix ?? null,
     });
   }
   localStorage.setItem(KEY, JSON.stringify(cart));
@@ -69,6 +71,8 @@ export const cartByRestaurant = () => {
         slug: item.restaurante_slug,
         nome: item.restaurante_nome,
         frete_motoboy: item.restaurante_frete ?? 0,
+        pagamento_manual: !!item.restaurante_pagamento_manual,
+        chave_pix: item.restaurante_chave_pix ?? null,
         items: [],
       };
     }

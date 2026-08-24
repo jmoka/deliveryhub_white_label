@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
-import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin } from '../../services/restauranteService';
+import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago } from '../../services/restauranteService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -63,6 +63,7 @@ const PedidoDetalhe = ({
   const [motoboySelecionado, setMotoboySelecionado] = useState('');
   const [atribuindo, setAtribuindo] = useState(false);
   const [entregandoProprio, setEntregandoProprio] = useState(false);
+  const [confirmandoPagamento, setConfirmandoPagamento] = useState(false);
 
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy } = detalhe;
@@ -108,6 +109,15 @@ const PedidoDetalhe = ({
     try { await onEntregarProprio?.(pedido); onDetalheMudou?.(); }
     catch (e) { alert(e.message); }
     finally { setEntregandoProprio(false); }
+  };
+
+  // Cliente combinou o pagamento por fora (PIX manual, cartão na entrega) — dono
+  // confirma aqui depois de conferir o comprovante, poupando o motoboy de cobrar.
+  const handleConfirmarPagamento = async () => {
+    setConfirmandoPagamento(true);
+    try { await marcarPedidoPago(pedido.id); onDetalheMudou?.(); }
+    catch (e) { alert(e.message); }
+    finally { setConfirmandoPagamento(false); }
   };
 
   const isCanceled = pedido.status === 'canceled';
@@ -369,23 +379,54 @@ const PedidoDetalhe = ({
         </div>
       )}
 
-      {/* Comprovante PIX enviado pelo motoboy */}
-      {pedido.comprovante_pix_url && (
+      {/* Comprovante de pagamento (PIX ou cartão), enviado pelo cliente no checkout
+          manual ou pelo motoboy na entrega — dono confere aqui e confirma o
+          recebimento, o que poupa o motoboy de cobrar de novo (ver etapa "Já pago"
+          no app dele). */}
+      {pedido.comprovante_pagamento_url && (
         <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-blue-100 dark:border-blue-800 flex items-center gap-2">
             <Icon name="Image" size={14} className="text-blue-600 dark:text-blue-400" />
-            <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Comprovante PIX</p>
+            <p className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Comprovante de pagamento</p>
           </div>
           <div className="p-3">
-            <a href={pedido.comprovante_pix_url} target="_blank" rel="noopener noreferrer">
+            <a href={pedido.comprovante_pagamento_url} target="_blank" rel="noopener noreferrer">
               <img
-                src={pedido.comprovante_pix_url}
-                alt="Comprovante PIX"
+                src={pedido.comprovante_pagamento_url}
+                alt="Comprovante de pagamento"
                 className="w-full rounded-xl object-contain max-h-72 border border-blue-100 dark:border-blue-800"
               />
             </a>
             <p className="text-[10px] text-blue-500 dark:text-blue-400 mt-1.5 text-center">Toque para ampliar</p>
           </div>
+        </div>
+      )}
+
+      {pedido.pago_em ? (
+        <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-2xl px-4 py-3 flex items-center gap-2">
+          <Icon name="CheckCircle2" size={15} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+          <p className="text-sm font-bold text-green-700 dark:text-green-400">
+            Pagamento confirmado {new Date(pedido.pago_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+      ) : pedido.canal !== 'presencial' && !isCanceled && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-800 rounded-2xl px-4 py-3 space-y-2">
+          <p className="text-xs font-black text-amber-800 dark:text-amber-400 flex items-center gap-1.5">
+            <Icon name="Clock" size={13} /> Pagamento ainda não confirmado
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {pedido.comprovante_pagamento_url
+              ? 'Confira o comprovante acima antes de confirmar.'
+              : 'Cliente ainda não anexou comprovante — confirme só se já recebeu por outro meio.'}
+          </p>
+          <button
+            onClick={handleConfirmarPagamento}
+            disabled={confirmandoPagamento}
+            className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Icon name="CheckCircle2" size={15} />
+            {confirmandoPagamento ? 'Confirmando...' : 'Confirmar pagamento'}
+          </button>
         </div>
       )}
 
@@ -575,7 +616,7 @@ const PedidoDetalhe = ({
               {onReimprimir && (
                 <button
                   onClick={() => onReimprimir(pedido)}
-                  className="flex-1 py-3 border-2 border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 text-sm font-bold rounded-2xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 border-2 border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 text-sm font-bold rounded-2xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors flex items-center justify-center gap-0.5"
                 >
                   <Icon name="Printer" size={15} />
                   Reimprimir Comanda
@@ -583,7 +624,7 @@ const PedidoDetalhe = ({
               )}
               <button
                 onClick={() => printFichaMotoboy(pedido, itens, cliente, null)}
-                className="flex-1 py-3 border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 text-sm font-bold rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 text-sm font-bold rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center justify-center gap-0.5"
               >
                 <Icon name="Bike" size={15} />
                 Imprimir Motoboy

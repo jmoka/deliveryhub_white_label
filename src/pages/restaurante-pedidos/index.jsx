@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMeusPedidos, atualizarStatusPedido, getMinhaEmpresa } from '../../services/restauranteService';
+import { getMeusPedidos, atualizarStatusPedido, marcarPedidoPago, getMinhaEmpresa } from '../../services/restauranteService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
@@ -86,6 +86,20 @@ const RestaurantePedidos = () => {
     }
   };
 
+  // Cliente combinou o pagamento por fora — dono confirma aqui, poupando o motoboy
+  // de cobrar de novo na entrega.
+  const marcarPago = async (pedido) => {
+    setAtualizando(pedido.id);
+    try {
+      const atualizado = await marcarPedidoPago(pedido.id);
+      setPedidos((prev) => prev.map((p) => (p.id === pedido.id ? { ...p, pago_em: atualizado.pago_em } : p)));
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizando(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/pedidos" title="Pedidos" />
@@ -128,10 +142,20 @@ const RestaurantePedidos = () => {
                     <p className="font-medium text-gray-900 dark:text-gray-400">Pedido #{p.id}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                       {fmt(p.total)} · {p.payment_method} · {new Date(p.created_at).toLocaleString('pt-BR')}
+                      {p.pago_em && <span className="text-green-600 dark:text-green-400 font-medium"> · ✓ Pago</span>}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.color}`}>{s.label}</span>
+                    {p.canal !== 'presencial' && !p.pago_em && p.status !== 'canceled' && (
+                      <button
+                        disabled={atualizando === p.id}
+                        onClick={() => marcarPago(p)}
+                        className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {atualizando === p.id ? '...' : 'Marcar como pago'}
+                      </button>
+                    )}
                     {proximo && (
                       <button
                         disabled={atualizando === p.id}

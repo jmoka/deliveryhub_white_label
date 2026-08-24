@@ -592,6 +592,8 @@ const PedidoAtivoCard = ({ p, defaultExpandido, confirmando, onEntregar, onOcorr
               chavePix={p.restaurante?.chave_pix ?? null}
               restauranteNome={p.restaurante?.name ?? null}
               restauranteCidade={null}
+              pago={p.pago_em}
+              taxaCartaoPercentual={p.restaurante?.taxa_cartao_percentual ?? 0}
             />
           ) : (
             <div className="flex gap-2">
