@@ -17,12 +17,27 @@ const STATUS_LABELS = {
   canceled:         { label: 'Cancelado',  color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
 };
 
+const ORDER_TABS = [
+  { value: 'todos',        label: 'Todos' },
+  { value: 'em_processo',  label: 'Em processo' },
+  { value: 'entregues',    label: 'Entregues' },
+  { value: 'cancelados',   label: 'Cancelados' },
+];
+
+const pedidoNaAba = (p, aba) => {
+  if (aba === 'em_processo') return p.status !== 'delivered' && p.status !== 'canceled';
+  if (aba === 'entregues') return p.status === 'delivered';
+  if (aba === 'cancelados') return p.status === 'canceled';
+  return true;
+};
+
 const CustomerAccountOrderHistory = () => {
   const navigate = useNavigate();
   const { user, userProfile, loading: authLoading, isAuthenticated, signOut } = useAuth();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+  const [abaAtiva, setAbaAtiva] = useState('em_processo');
 
   useEffect(() => {
     if (authLoading) return;
@@ -52,6 +67,8 @@ const CustomerAccountOrderHistory = () => {
 
     carregar();
   }, [authLoading, userProfile]);
+
+  const pedidosFiltrados = pedidos.filter((p) => pedidoNaAba(p, abaAtiva));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18181B]">
@@ -100,6 +117,31 @@ const CustomerAccountOrderHistory = () => {
         {/* Pedidos */}
         <h2 className="font-semibold text-gray-900 dark:text-[#F4F4F5] mb-3">Meus Pedidos</h2>
 
+        <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 -mx-1 px-1 scrollbar-none">
+          {ORDER_TABS.map((tab) => {
+            const cnt = tab.value === 'todos' ? pedidos.length : pedidos.filter((p) => pedidoNaAba(p, tab.value)).length;
+            const isActive = abaAtiva === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setAbaAtiva(tab.value)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  isActive
+                    ? 'bg-orange-500 border-orange-500 text-white'
+                    : 'bg-white dark:bg-[#18181B] border-gray-200 dark:border-[#3F3F46] text-gray-600 dark:text-[#A1A1AA] hover:bg-gray-50 dark:hover:bg-[#27272A]'
+                }`}
+              >
+                {tab.label}
+                {cnt > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-[#27272A]'}`}>
+                    {cnt}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
@@ -119,9 +161,20 @@ const CustomerAccountOrderHistory = () => {
               Ver restaurantes
             </button>
           </div>
+        ) : pedidosFiltrados.length === 0 ? (
+          <div className="bg-white dark:bg-[#18181B] rounded-xl border dark:border-[#3F3F46] p-12 text-center">
+            <Icon name="Inbox" size={40} className="text-gray-300 dark:text-[#3F3F46] mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-[#A1A1AA]">Nenhum pedido em "{ORDER_TABS.find((t) => t.value === abaAtiva)?.label}"</p>
+            <button
+              onClick={() => setAbaAtiva('todos')}
+              className="mt-3 text-xs text-orange-500 font-semibold hover:underline"
+            >
+              Ver todos
+            </button>
+          </div>
         ) : (
           <div className="space-y-3">
-            {pedidos.map((p) => {
+            {pedidosFiltrados.map((p) => {
               const s = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 text-gray-700' };
               const finalizado = p.status === 'delivered' || p.status === 'canceled';
               return (
