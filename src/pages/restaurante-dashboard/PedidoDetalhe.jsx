@@ -376,6 +376,23 @@ const PedidoDetalhe = ({
               Dinheiro <strong>{fmt(pedido.entrega_pagamento.dinheiro)}</strong> + PIX <strong>{fmt(pedido.entrega_pagamento.pix)}</strong>
             </p>
           )}
+          {pedido.entrega_pagamento.metodo === 'cartao' && (
+            <p className="text-sm text-green-800 dark:text-green-400">
+              Cartão (maquininha) — <strong>{fmt(pedido.entrega_pagamento.cartao)}</strong>
+              {pedido.entrega_pagamento.taxa_cartao_valor > 0 && <> + taxa <strong>{fmt(pedido.entrega_pagamento.taxa_cartao_valor)}</strong></>}
+            </p>
+          )}
+          {pedido.entrega_pagamento.metodo === 'combinado' && (
+            <p className="text-sm text-green-800 dark:text-green-400">
+              {[
+                pedido.entrega_pagamento.dinheiro > 0 ? `Dinheiro ${fmt(pedido.entrega_pagamento.dinheiro)}` : null,
+                pedido.entrega_pagamento.pix > 0 ? `PIX ${fmt(pedido.entrega_pagamento.pix)}` : null,
+                pedido.entrega_pagamento.cartao > 0
+                  ? `Cartão ${fmt(pedido.entrega_pagamento.cartao)}${pedido.entrega_pagamento.taxa_cartao_valor > 0 ? ` (+ taxa ${fmt(pedido.entrega_pagamento.taxa_cartao_valor)})` : ''}`
+                  : null,
+              ].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
       )}
 

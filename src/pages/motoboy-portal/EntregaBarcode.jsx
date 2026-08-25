@@ -5,7 +5,7 @@ import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-// etapas: scan → ja_pago | pagamento → troco | exato | pix | pix_parcial | cartao → acao → ocorrencia
+// etapas: scan → ja_pago | pagamento → troco | exato | pix | pix_maquininha | pix_parcial | cartao → acao → ocorrencia
 
 const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, restauranteCidade, pago, taxaCartaoPercentual = 0 }) => {
   const [etapa, setEtapa] = useState('scan');
@@ -16,6 +16,8 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
   const [trocoConfirmado, setTrocoConfirmado] = useState(false);
   const [exatoConfirmado, setExatoConfirmado] = useState(false);
   const [dinheiroInput, setDinheiroInput] = useState('');
+  const [pixCombinadoInput, setPixCombinadoInput] = useState('');
+  const [cartaoCombinadoInput, setCartaoCombinadoInput] = useState('');
   const [comprovantePreview, setComprovantePreview] = useState(null);
   const [comprovanteBase64, setComprovanteBase64] = useState(null);
   const [uploadandoFoto, setUploadandoFoto] = useState(false);
@@ -87,9 +89,18 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
   };
 
   const dinheiroVal = parseFloat(dinheiroInput.replace(',', '.')) || 0;
-  const pixParcialVal = dinheiroVal > 0 && dinheiroVal < total ? total - dinheiroVal : 0;
   const taxaCartaoValor = parseFloat(((total * taxaCartaoPercentual) / 100).toFixed(2));
   const totalComCartao = total + taxaCartaoValor;
+
+  // Pagamento combinado — motoboy digita livremente quanto foi em cada forma,
+  // as três somam pra fechar o total do pedido (taxa do cartão é cobrada à parte,
+  // só sobre a fatia no cartão, não afeta essa conferência).
+  const pixCombinadoVal = parseFloat(pixCombinadoInput.replace(',', '.')) || 0;
+  const cartaoCombinadoVal = parseFloat(cartaoCombinadoInput.replace(',', '.')) || 0;
+  const somaCombinado = parseFloat((dinheiroVal + pixCombinadoVal + cartaoCombinadoVal).toFixed(2));
+  const somaCombinadoOk = Math.abs(somaCombinado - total) < 0.01;
+  const taxaCartaoCombinado = cartaoCombinadoVal > 0 ? parseFloat(((cartaoCombinadoVal * taxaCartaoPercentual) / 100).toFixed(2)) : 0;
+  const precisaComprovanteCombinado = pixCombinadoVal > 0 || cartaoCombinadoVal > 0;
 
   const comprimirImagem = (file) =>
     new Promise((resolve) => {
@@ -197,17 +208,24 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
                   className="w-full py-3 border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
                   <Icon name="QrCode" size={16} /> Cliente quer pagar com PIX
                 </button>
-                <button
-                  onClick={() => setEtapa('pix_parcial')}
-                  className="w-full py-3 border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors">
-                  <Icon name="Split" size={16} /> Dinheiro + PIX (combinado)
-                </button>
               </>
             ) : (
               <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
-                PIX indisponível — chave não configurada no restaurante
+                PIX por QR Code indisponível — chave não configurada no restaurante
               </p>
             )}
+
+            <button
+              onClick={() => setEtapa('combinado')}
+              className="w-full py-3 border-2 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/30 text-purple-800 dark:text-purple-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors">
+              <Icon name="Split" size={16} /> Pagamento combinado (dinheiro + PIX + cartão)
+            </button>
+
+            <button
+              onClick={() => setEtapa('pix_maquininha')}
+              className="w-full py-3 border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+              <Icon name="CreditCard" size={16} /> Cliente vai pagar PIX na maquininha
+            </button>
 
             <button
               onClick={() => setEtapa('cartao')}
@@ -333,7 +351,13 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               <p className="text-xs text-blue-700 dark:text-blue-400 text-center">Cliente escaneia com o app do banco</p>
             </div>
           ) : (
-            <p className="text-xs text-red-500 dark:text-red-400 text-center">Erro ao gerar QR Code</p>
+            <div className="text-center space-y-2">
+              <p className="text-xs text-red-500 dark:text-red-400">Erro ao gerar QR Code</p>
+              <button onClick={() => setEtapa('pix_maquininha')}
+                className="text-xs font-bold text-blue-700 dark:text-blue-400 underline">
+                Cobrar PIX na maquininha em vez disso
+              </button>
+            </div>
           )}
 
           {/* Comprovante */}
@@ -430,7 +454,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
           )}
 
           <button
-            onClick={() => handleEntregar({ metodo: 'cartao', dinheiro: 0 })}
+            onClick={() => handleEntregar({ metodo: 'cartao', cartao: total })}
             disabled={confirmando || !comprovanteBase64}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
             <Icon name="CheckCircle2" size={16} />
@@ -442,43 +466,153 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
         </>
       )}
 
-      {/* ETAPA: PIX PARCIAL (dinheiro + PIX) */}
-      {etapa === 'pix_parcial' && (
+      {/* ETAPA: PIX NA MAQUININHA — fallback pro app não gerar o QR Code (ou o
+          estabelecimento aceitar Pix direto na maquininha) — sem taxa, mesmo tratamento
+          do PIX normal, só que sem depender da geração do QR pelo celular do motoboy. */}
+      {etapa === 'pix_maquininha' && (
         <>
-          <p className="text-sm font-black text-purple-800 dark:text-purple-300 text-center">Dinheiro + PIX — Total {fmt(total)}</p>
-          <div className="space-y-2">
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">Quanto o cliente paga em dinheiro?</p>
-            <input
-              type="number" step="0.01" min="0.01" max={total - 0.01}
-              value={dinheiroInput}
-              onChange={(e) => setDinheiroInput(e.target.value)}
-              placeholder="Ex: 10,00"
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
-            />
-            {pixParcialVal > 0 && (
-              <>
-                <div className="flex justify-between text-sm bg-purple-50 dark:bg-purple-950/30 rounded-xl px-3 py-2">
-                  <span className="text-purple-700 dark:text-purple-400">Dinheiro:</span>
-                  <strong className="text-purple-900 dark:text-purple-200">{fmt(dinheiroVal)}</strong>
-                </div>
-                <div className="flex justify-between text-sm bg-blue-50 dark:bg-blue-950/30 rounded-xl px-3 py-2">
-                  <span className="text-blue-700 dark:text-blue-400">PIX a cobrar:</span>
-                  <strong className="text-blue-900 dark:text-blue-200">{fmt(pixParcialVal)}</strong>
-                </div>
-                {pixQr(pixParcialVal) && (
-                  <div className="flex flex-col items-center gap-2 mt-1">
-                    <img src={pixQr(pixParcialVal)} alt="QR Code PIX parcial" className="w-[200px] h-[200px] rounded-xl border border-blue-200 dark:border-blue-800" />
-                    <p className="text-xs text-blue-700 dark:text-blue-400 text-center">Cliente escaneia para pagar {fmt(pixParcialVal)}</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <p className="text-sm font-black text-blue-800 dark:text-blue-300 text-center">PIX na maquininha — Cobrar {fmt(total)}</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] text-center">Informe esse valor ao cliente e escolha "Pix" na maquininha.</p>
+
+          {/* Comprovante */}
+          {comprovantePreview ? (
+            <div className="relative">
+              <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300 dark:border-green-700" />
+              <button
+                onClick={() => { setComprovantePreview(null); setComprovanteBase64(null); }}
+                className="absolute top-1 right-1 bg-white dark:bg-[#27272A] rounded-full p-1 shadow">
+                <Icon name="X" size={14} className="text-gray-600" />
+              </button>
+              <p className="text-xs text-green-700 dark:text-green-400 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputCameraRef.current?.click()}
+                className="flex-1 py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                <Icon name="Camera" size={16} /> Fotografar
+              </button>
+              <button
+                onClick={() => fileInputGaleriaRef.current?.click()}
+                className="flex-1 py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                <Icon name="Paperclip" size={16} /> Anexar
+              </button>
+            </div>
+          )}
+          {!comprovanteBase64 && (
+            <p className="text-xs text-red-500 dark:text-red-400 text-center">Foto do comprovante é obrigatória</p>
+          )}
+
           <button
-            onClick={() => handleEntregar({ metodo: 'pix_parcial', dinheiro: dinheiroVal, pix: pixParcialVal })}
-            disabled={confirmando || pixParcialVal <= 0}
+            onClick={() => handleEntregar({ metodo: 'pix', pix: total })}
+            disabled={confirmando || !comprovanteBase64}
             className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-            <Icon name="CheckCircle2" size={16} /> {confirmando ? 'Confirmando...' : 'Pagamento Recebido — Entregue'}
+            <Icon name="CheckCircle2" size={16} />
+            {uploadandoFoto ? 'Enviando foto...' : confirmando ? 'Confirmando...' : 'PIX Recebido — Marcar Entregue'}
+          </button>
+          <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+            ← Voltar
+          </button>
+        </>
+      )}
+
+      {/* ETAPA: PAGAMENTO COMBINADO (dinheiro + PIX + cartão, em qualquer combinação) */}
+      {etapa === 'combinado' && (
+        <>
+          <p className="text-sm font-black text-purple-800 dark:text-purple-300 text-center">Pagamento combinado — Total {fmt(total)}</p>
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">Dinheiro</label>
+              <input
+                type="number" step="0.01" min="0" value={dinheiroInput}
+                onChange={(e) => setDinheiroInput(e.target.value)}
+                placeholder="0,00"
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">PIX</label>
+              <input
+                type="number" step="0.01" min="0" value={pixCombinadoInput}
+                onChange={(e) => setPixCombinadoInput(e.target.value)}
+                placeholder="0,00"
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">Cartão (maquininha)</label>
+              <input
+                type="number" step="0.01" min="0" value={cartaoCombinadoInput}
+                onChange={(e) => setCartaoCombinadoInput(e.target.value)}
+                placeholder="0,00"
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+              />
+            </div>
+          </div>
+
+          <div className="bg-purple-50 dark:bg-purple-950/30 rounded-xl p-3 space-y-1 text-sm">
+            {dinheiroVal > 0 && (
+              <div className="flex justify-between"><span className="text-purple-700 dark:text-purple-400">Dinheiro</span><strong className="text-purple-900 dark:text-purple-200">{fmt(dinheiroVal)}</strong></div>
+            )}
+            {pixCombinadoVal > 0 && (
+              <div className="flex justify-between"><span className="text-purple-700 dark:text-purple-400">PIX</span><strong className="text-purple-900 dark:text-purple-200">{fmt(pixCombinadoVal)}</strong></div>
+            )}
+            {cartaoCombinadoVal > 0 && (
+              <div className="flex justify-between">
+                <span className="text-purple-700 dark:text-purple-400">Cartão{taxaCartaoCombinado > 0 ? ` (+ taxa ${fmt(taxaCartaoCombinado)})` : ''}</span>
+                <strong className="text-purple-900 dark:text-purple-200">{fmt(cartaoCombinadoVal + taxaCartaoCombinado)}</strong>
+              </div>
+            )}
+            <div className={`flex justify-between pt-1 border-t border-purple-200 dark:border-purple-800 font-black ${somaCombinadoOk ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+              <span>{somaCombinadoOk ? 'Confere ✓' : 'Falta alocar'}</span>
+              <span>{somaCombinadoOk ? fmt(total) : fmt(total - somaCombinado)}</span>
+            </div>
+          </div>
+
+          {pixCombinadoVal > 0 && pixQr(pixCombinadoVal) && (
+            <div className="flex flex-col items-center gap-2">
+              <img src={pixQr(pixCombinadoVal)} alt="QR Code PIX" className="w-[180px] h-[180px] rounded-xl border border-blue-200 dark:border-blue-800" />
+              <p className="text-xs text-blue-700 dark:text-blue-400 text-center">Cliente escaneia para pagar {fmt(pixCombinadoVal)}</p>
+            </div>
+          )}
+
+          {precisaComprovanteCombinado && (
+            <>
+              {comprovantePreview ? (
+                <div className="relative">
+                  <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300 dark:border-green-700" />
+                  <button
+                    onClick={() => { setComprovantePreview(null); setComprovanteBase64(null); }}
+                    className="absolute top-1 right-1 bg-white dark:bg-[#27272A] rounded-full p-1 shadow">
+                    <Icon name="X" size={14} className="text-gray-600" />
+                  </button>
+                  <p className="text-xs text-green-700 dark:text-green-400 text-center mt-1 font-semibold">✓ Comprovante capturado</p>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fileInputCameraRef.current?.click()}
+                    className="flex-1 py-2.5 border-2 border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors">
+                    <Icon name="Camera" size={16} /> Fotografar
+                  </button>
+                  <button
+                    onClick={() => fileInputGaleriaRef.current?.click()}
+                    className="flex-1 py-2.5 border-2 border-dashed border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors">
+                    <Icon name="Paperclip" size={16} /> Anexar
+                  </button>
+                </div>
+              )}
+              {!comprovanteBase64 && (
+                <p className="text-xs text-red-500 dark:text-red-400 text-center">Foto do comprovante é obrigatória (PIX e/ou cartão)</p>
+              )}
+            </>
+          )}
+
+          <button
+            onClick={() => handleEntregar({ metodo: 'combinado', dinheiro: dinheiroVal, pix: pixCombinadoVal, cartao: cartaoCombinadoVal })}
+            disabled={confirmando || !somaCombinadoOk || (precisaComprovanteCombinado && !comprovanteBase64)}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+            <Icon name="CheckCircle2" size={16} /> {uploadandoFoto ? 'Enviando foto...' : confirmando ? 'Confirmando...' : 'Pagamento Recebido — Entregue'}
           </button>
           <button onClick={() => setEtapa('pagamento')} className="w-full py-2 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             ← Voltar
