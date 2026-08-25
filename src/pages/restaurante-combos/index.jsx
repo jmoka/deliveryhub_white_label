@@ -6,6 +6,7 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import ImageUpload from '../../components/ui/ImageUpload';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -289,12 +290,13 @@ const RestauranteCombos = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">URL da imagem</label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Imagem do combo</label>
+                <ImageUpload
                   value={form.image_url}
-                  onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
-                  placeholder="https://..."
+                  onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
+                  folder="combos"
+                  aspect="square"
+                  placeholder="https://exemplo.com/combo.jpg"
                 />
               </div>
 
