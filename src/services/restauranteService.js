@@ -186,6 +186,11 @@ export const registrarRepasseGarcom = (garcomId, data) =>
   apiFetch(`/relatorio/garcom/${garcomId}/repasse`, { method: 'POST', body: JSON.stringify(data) });
 export const estornarRepasseGarcom = (repasseId) =>
   apiFetch(`/relatorio/garcom/repasse/${repasseId}`, { method: 'DELETE' });
+export const getRelatorioMotoboy = (de, ate) => apiFetch(`/relatorio/motoboy?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
+export const registrarRepasseMotoboy = (motoboyId, data) =>
+  apiFetch(`/relatorio/motoboy/${motoboyId}/repasse`, { method: 'POST', body: JSON.stringify(data) });
+export const estornarRepasseMotoboy = (repasseId) =>
+  apiFetch(`/relatorio/motoboy/repasse/${repasseId}`, { method: 'DELETE' });
 export const getRelatorioProdutos = (de, ate) => apiFetch(`/relatorio/produtos?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 

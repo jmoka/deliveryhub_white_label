@@ -13,6 +13,14 @@ const RELATORIOS = [
     cor: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800',
   },
   {
+    id: 'motoboy',
+    path: '/restaurante/relatorios/motoboy',
+    icon: 'Bike',
+    titulo: 'Motoboy',
+    descricao: 'Entregas, comissão e repasse por motoboy.',
+    cor: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800',
+  },
+  {
     id: 'financeiro',
     path: '/restaurante/relatorios/financeiro',
     icon: 'DollarSign',
@@ -35,7 +43,7 @@ const RestauranteRelatorios = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/relatorios" title="Relatórios" />
+      <RestauranteHeader active="/restaurante/relatorios" title="Conferências" />
 
       <main className="p-6 max-w-4xl mx-auto">
         <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mb-5">Escolha um relatório — cada um tem filtro por período e opção de impressão.</p>

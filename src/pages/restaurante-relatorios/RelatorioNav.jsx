@@ -4,8 +4,9 @@ import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 
 const SUBLINKS = [
-  { label: 'Menu Relatórios', path: '/restaurante/relatorios' },
+  { label: 'Menu Conferências', path: '/restaurante/relatorios' },
   { label: 'Garçom', path: '/restaurante/relatorios/garcom' },
+  { label: 'Motoboy', path: '/restaurante/relatorios/motoboy' },
   { label: 'Financeiro', path: '/restaurante/relatorios/financeiro' },
   { label: 'Produtos', path: '/restaurante/relatorios/produtos' },
 ];

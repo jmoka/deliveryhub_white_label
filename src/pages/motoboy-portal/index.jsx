@@ -4,7 +4,7 @@ import {
   getMe, atualizarPerfil, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
   getPedidosDisponiveis, pegarPedido,
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
-  getGanhosResumo, getGanhosHistorico, solicitarRevisaoPlataforma,
+  getGanhosResumo, getGanhosHistorico, getGanhosPorDia, solicitarRevisaoPlataforma,
 } from '../../services/motoboyService';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -244,14 +244,15 @@ const AbaEstabelecimentos = ({
   );
 };
 
-const AbaGanhos = () => {
+const AbaFinanceiro = () => {
   const [resumo, setResumo] = useState(null);
   const [historico, setHistorico] = useState([]);
+  const [porDia, setPorDia] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getGanhosResumo(), getGanhosHistorico()])
-      .then(([r, h]) => { setResumo(r); setHistorico(h.historico ?? []); })
+    Promise.all([getGanhosResumo(), getGanhosHistorico(), getGanhosPorDia()])
+      .then(([r, h, pd]) => { setResumo(r); setHistorico(h.historico ?? []); setPorDia(pd.por_dia ?? []); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -259,9 +260,34 @@ const AbaGanhos = () => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-to-br from-[#FF441F] to-[#FF7A00] rounded-2xl p-5 text-white">
-        <p className="text-xs text-white/80">Total ganho</p>
-        <p className="text-2xl font-black">{fmt(resumo?.total_geral)}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-[#FF441F] to-[#FF7A00] rounded-2xl p-4 text-white">
+          <p className="text-xs text-white/80">Hoje</p>
+          <p className="text-xl font-black">{fmt(resumo?.hoje?.total)}</p>
+          <p className="text-[10px] text-white/80 mt-0.5">{resumo?.hoje?.entregas ?? 0} entrega(s)</p>
+        </div>
+        <div className="bg-gradient-to-br from-[#18181B] to-[#3F3F46] rounded-2xl p-4 text-white">
+          <p className="text-xs text-white/80">Total ganho</p>
+          <p className="text-xl font-black">{fmt(resumo?.total_geral)}</p>
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Produção diária</p>
+        <div className="space-y-2">
+          {porDia.map((d) => (
+            <div key={d.data} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{d.dia}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{d.entregas} entrega(s)</p>
+              </div>
+              <p className="text-sm font-black text-[#FF441F]">{fmt(d.total)}</p>
+            </div>
+          ))}
+          {porDia.length === 0 && (
+            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhuma entrega nos últimos dias</p>
+          )}
+        </div>
       </div>
 
       <div>
@@ -841,7 +867,7 @@ const MotoboyPortal = () => {
           {[
             { id: 'pedidos', label: 'Pedidos', icon: 'Package' },
             { id: 'estabelecimentos', label: 'Estabelecimentos', icon: 'Store' },
-            { id: 'ganhos', label: 'Ganhos', icon: 'Wallet' },
+            { id: 'financeiro', label: 'Financeiro', icon: 'Wallet' },
           ].map((t) => (
             <button key={t.id} onClick={() => setAba(t.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-colors ${
@@ -867,7 +893,7 @@ const MotoboyPortal = () => {
           />
         )}
 
-        {aba === 'ganhos' && <AbaGanhos />}
+        {aba === 'financeiro' && <AbaFinanceiro />}
 
         {aba === 'perfil' && <AbaPerfil me={me} onAtualizado={carregarDados} />}
 

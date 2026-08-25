@@ -84,3 +84,4 @@ export const getMinhasAfiliacoes = () => motoboyFetch('/estabelecimentos/minhas'
 export const getGanhosResumo = () => motoboyFetch('/ganhos');
 export const getGanhosHistorico = (restaurantId) =>
   motoboyFetch(`/ganhos/historico${restaurantId ? `?restaurant_id=${restaurantId}` : ''}`);
+export const getGanhosPorDia = () => motoboyFetch('/ganhos/por-dia');

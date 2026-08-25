@@ -1,6 +1,6 @@
 const BASE_LINKS = [
   { label: 'Dashboard', path: '/restaurante', icon: 'LayoutDashboard' },
-  { label: 'Relatórios', path: '/restaurante/relatorios', icon: 'BarChart3' },
+  { label: 'Conferências', path: '/restaurante/relatorios', icon: 'BarChart3' },
   { label: 'Produtos', path: '/restaurante/produtos', icon: 'Package' },
   { label: 'Clientes', path: '/restaurante/clientes', icon: 'UserRound' },
   { label: 'Financeiro', path: '/restaurante/financeiro', icon: 'Wallet' },
