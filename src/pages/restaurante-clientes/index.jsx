@@ -149,7 +149,7 @@ const DetalheModal = ({ clienteId, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-white dark:bg-[#27272A] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-xl">
+      <div className="bg-white dark:bg-[#27272A] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-3xl max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-xl">
         <div className="flex items-center justify-between p-5 pb-4 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
           <div className="min-w-0">
             <h3 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{dados?.cliente?.name ?? 'Cliente'}</h3>
@@ -165,7 +165,7 @@ const DetalheModal = ({ clienteId, onClose }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto p-5 space-y-6">
+        <div className="overflow-y-auto pl-5 pr-6 sm:pr-8 py-5 space-y-6">
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="w-7 h-7 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
