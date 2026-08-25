@@ -8,6 +8,7 @@ import {
 } from '../../services/motoboyService';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
+import { buildRange, defaultFiltroState, MODOS, ANOS } from '../../utils/relatorioPrint';
 import ColetaBarcode from './ColetaBarcode';
 import EntregaBarcode from './EntregaBarcode';
 import Icon from '../../components/AppIcon';
@@ -244,19 +245,46 @@ const AbaEstabelecimentos = ({
   );
 };
 
-const AbaFinanceiro = () => {
+const AbaFinanceiro = ({ afiliacoes }) => {
   const [resumo, setResumo] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [porDia, setPorDia] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [buscando, setBuscando] = useState(false);
+  const [filtro, setFiltro] = useState(defaultFiltroState());
+  const [restaurantId, setRestaurantId] = useState('');
+  const [rangeLabel, setRangeLabel] = useState('');
+
+  const estabelecimentos = (afiliacoes ?? [])
+    .filter((a) => a.status === 'aceito' && a.restaurant)
+    .map((a) => a.restaurant);
+
+  const setF = (patch) => setFiltro((f) => ({ ...f, ...patch }));
+
+  const buscar = useCallback(async () => {
+    const range = buildRange(filtro.modo, filtro.dia, filtro.mes, filtro.ano, filtro.periodoIni, filtro.periodoFim);
+    if (!range) return;
+    setBuscando(true);
+    try {
+      const params = { restaurantId: restaurantId || undefined, de: range.de, ate: range.ate };
+      const [h, pd] = await Promise.all([getGanhosHistorico(params), getGanhosPorDia(params)]);
+      setHistorico(h.historico ?? []);
+      setPorDia(pd.por_dia ?? []);
+      setRangeLabel(range.label);
+    } finally {
+      setBuscando(false);
+    }
+  }, [filtro, restaurantId]);
 
   useEffect(() => {
-    Promise.all([getGanhosResumo(), getGanhosHistorico(), getGanhosPorDia()])
-      .then(([r, h, pd]) => { setResumo(r); setHistorico(h.historico ?? []); setPorDia(pd.por_dia ?? []); })
-      .finally(() => setLoading(false));
+    getGanhosResumo().then(setResumo).finally(() => setLoading(false));
+    buscar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-8">Carregando...</p>;
+
+  const totalFiltro = historico.reduce((acc, h) => acc + Number(h.comissao_valor ?? 0), 0);
 
   return (
     <div className="space-y-4">
@@ -272,6 +300,63 @@ const AbaFinanceiro = () => {
         </div>
       </div>
 
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 space-y-2.5">
+        <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl overflow-x-auto">
+          {MODOS.map((m) => (
+            <button key={m.value} onClick={() => setF({ modo: m.value })}
+              className={`flex-1 px-2 py-1.5 text-[11px] font-bold rounded-lg whitespace-nowrap transition-colors ${filtro.modo === m.value ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        {filtro.modo === 'dia' && (
+          <input type="date" value={filtro.dia} onChange={(e) => setF({ dia: e.target.value })}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+        )}
+        {filtro.modo === 'mes' && (
+          <input type="month" value={filtro.mes} onChange={(e) => setF({ mes: e.target.value })}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+        )}
+        {filtro.modo === 'ano' && (
+          <select value={filtro.ano} onChange={(e) => setF({ ano: e.target.value })}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
+            {ANOS.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        )}
+        {filtro.modo === 'periodo' && (
+          <div className="flex gap-2 items-center">
+            <input type="date" value={filtro.periodoIni} onChange={(e) => setF({ periodoIni: e.target.value })}
+              className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">até</span>
+            <input type="date" value={filtro.periodoFim} min={filtro.periodoIni} onChange={(e) => setF({ periodoFim: e.target.value })}
+              className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          </div>
+        )}
+
+        <select value={restaurantId} onChange={(e) => setRestaurantId(e.target.value)}
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
+          <option value="">Todos os estabelecimentos</option>
+          {estabelecimentos.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+        </select>
+
+        <button onClick={buscar} disabled={buscando}
+          className="w-full flex items-center justify-center gap-2 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 transition-colors">
+          {buscando ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Icon name="Search" size={14} />}
+          Buscar
+        </button>
+      </div>
+
+      {rangeLabel && (
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#FF441F]/30 p-3 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black text-[#FF441F] uppercase tracking-widest">{rangeLabel}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{historico.length} entrega(s)</p>
+          </div>
+          <p className="text-lg font-black text-[#FF441F]">{fmt(totalFiltro)}</p>
+        </div>
+      )}
+
       <div>
         <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Produção diária</p>
         <div className="space-y-2">
@@ -285,13 +370,13 @@ const AbaFinanceiro = () => {
             </div>
           ))}
           {porDia.length === 0 && (
-            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhuma entrega nos últimos dias</p>
+            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhuma entrega no período</p>
           )}
         </div>
       </div>
 
       <div>
-        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Por estabelecimento</p>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Por estabelecimento (total geral)</p>
         <div className="space-y-2">
           {(resumo?.resumo ?? []).map((r) => (
             <div key={r.restaurant_id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex items-center justify-between">
@@ -309,7 +394,7 @@ const AbaFinanceiro = () => {
       </div>
 
       <div>
-        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Histórico de entregas</p>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Histórico de entregas no período</p>
         <div className="space-y-2">
           {historico.map((h) => (
             <div key={h.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex items-center justify-between">
@@ -326,6 +411,9 @@ const AbaFinanceiro = () => {
               <p className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(h.comissao_valor)}</p>
             </div>
           ))}
+          {historico.length === 0 && (
+            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhuma entrega no período</p>
+          )}
         </div>
       </div>
     </div>
@@ -893,7 +981,7 @@ const MotoboyPortal = () => {
           />
         )}
 
-        {aba === 'financeiro' && <AbaFinanceiro />}
+        {aba === 'financeiro' && <AbaFinanceiro afiliacoes={afiliacoes} />}
 
         {aba === 'perfil' && <AbaPerfil me={me} onAtualizado={carregarDados} />}
 

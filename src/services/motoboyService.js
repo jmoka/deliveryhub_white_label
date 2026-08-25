@@ -82,6 +82,15 @@ export const getMinhasAfiliacoes = () => motoboyFetch('/estabelecimentos/minhas'
 
 // Ganhos / comissões
 export const getGanhosResumo = () => motoboyFetch('/ganhos');
-export const getGanhosHistorico = (restaurantId) =>
-  motoboyFetch(`/ganhos/historico${restaurantId ? `?restaurant_id=${restaurantId}` : ''}`);
-export const getGanhosPorDia = () => motoboyFetch('/ganhos/por-dia');
+
+const ganhosQuery = ({ restaurantId, de, ate } = {}) => {
+  const params = new URLSearchParams();
+  if (restaurantId) params.set('restaurant_id', restaurantId);
+  if (de) params.set('de', de);
+  if (ate) params.set('ate', ate);
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+};
+
+export const getGanhosHistorico = (filtro) => motoboyFetch(`/ganhos/historico${ganhosQuery(filtro)}`);
+export const getGanhosPorDia = (filtro) => motoboyFetch(`/ganhos/por-dia${ganhosQuery(filtro)}`);
