@@ -61,6 +61,9 @@ export const abrirComanda = ({ mesa_id, cliente_nome, cliente_telefone }) =>
     body: JSON.stringify({ mesa_id: mesa_id ?? null, cliente_nome, cliente_telefone }),
   });
 
+export const buscarClientePorTelefone = (telefone) =>
+  garcomFetch(`/clientes/buscar?telefone=${encodeURIComponent(telefone)}`);
+
 export const adicionarItens = (comandaId, itens) =>
   garcomFetch(`/comandas/${comandaId}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
 

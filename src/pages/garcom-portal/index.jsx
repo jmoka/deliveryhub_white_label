@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import {
   login, logout, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getCombos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
-  abrirComanda, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
+  abrirComanda, buscarClientePorTelefone, adicionarItens, editarItem, removerItem, enviarItens, fecharComanda,
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda,
   confirmarEntregaItem, naoEntregarItem, indoBuscarItem, marcarConferenciaVista, dividirComanda, editarObservacaoItem,
   getTurnoAtivo, getPreviewEncerramento, encerrarTurno, getTurnosHistorico,
@@ -96,6 +96,24 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
   const [telefone, setTelefone] = useState('');
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  const [clienteEncontrado, setClienteEncontrado] = useState(null);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+
+  // Ao digitar o telefone, procura cliente já cadastrado (delivery ou comanda
+  // anterior) — se achar, o garçom só toca pra usar o nome, sem precisar perguntar.
+  useEffect(() => {
+    const digitos = telefone.replace(/\D/g, '');
+    setClienteEncontrado(null);
+    if (digitos.length < 8) return;
+    setBuscandoCliente(true);
+    const t = setTimeout(() => {
+      buscarClientePorTelefone(telefone)
+        .then((d) => setClienteEncontrado(d?.cliente ?? null))
+        .catch(() => setClienteEncontrado(null))
+        .finally(() => setBuscandoCliente(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [telefone]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -121,8 +139,20 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
         <form onSubmit={submit} className="space-y-3">
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do cliente" required
             className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
-            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <div>
+            <input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Telefone do cliente" required
+              className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+            {buscandoCliente && (
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1.5">Procurando cliente...</p>
+            )}
+            {!buscandoCliente && clienteEncontrado && (
+              <button type="button" onClick={() => setNome(clienteEncontrado.name)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2.5 py-1.5 mt-1.5 w-full text-left">
+                <Icon name="UserCheck" size={13} className="flex-shrink-0" />
+                Cliente encontrado: {clienteEncontrado.name} — toque pra usar
+              </button>
+            )}
+          </div>
           {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onFechar}
