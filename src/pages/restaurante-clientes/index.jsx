@@ -74,7 +74,7 @@ const Modal = ({ cliente, onClose, onSave }) => {
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               placeholder="Nome completo"
             />
           </div>
@@ -84,7 +84,7 @@ const Modal = ({ cliente, onClose, onSave }) => {
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               placeholder="email@exemplo.com"
             />
           </div>
@@ -93,7 +93,7 @@ const Modal = ({ cliente, onClose, onSave }) => {
             <input
               value={form.phone_e164}
               onChange={(e) => setForm((f) => ({ ...f, phone_e164: e.target.value }))}
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               placeholder="+5511999999999"
             />
           </div>
@@ -102,7 +102,7 @@ const Modal = ({ cliente, onClose, onSave }) => {
             <textarea
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/20 focus:border-[#FF441F]"
               rows={2}
               placeholder="Preferências, restrições alimentares..."
             />
