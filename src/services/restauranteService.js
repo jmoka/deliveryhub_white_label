@@ -112,6 +112,8 @@ export const criarCliente = (data) =>
 export const atualizarCliente = (id, data) =>
   apiFetch(`/clientes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 
+export const getDetalheCliente = (id) => apiFetch(`/clientes/${id}`);
+
 export const updateEmpresa = (data) =>
   apiFetch('/minha-empresa', { method: 'PATCH', body: JSON.stringify(data) });
 
