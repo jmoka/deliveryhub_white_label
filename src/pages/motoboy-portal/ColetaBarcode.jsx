@@ -83,7 +83,7 @@ const ColetaBarcode = ({ pedidoId, onConfirmado }) => {
           onChange={(e) => setManual(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleConfirmar(manual)}
           placeholder="Digitar código manualmente"
-          className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
+          className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
         />
         <button
           onClick={() => handleConfirmar(manual)}

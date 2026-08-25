@@ -159,7 +159,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
             <input value={manual} onChange={(e) => setManual(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && validarCodigo(manual) && setEtapa(pago ? 'ja_pago' : 'pagamento')}
               placeholder={`Código manual (${expectedCode})`}
-              className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500" />
+              className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-green-500" />
             <button
               onClick={() => { if (validarCodigo(manual)) { setErro(null); setEtapa(pago ? 'ja_pago' : 'pagamento'); } else setErro('Código incorreto'); }}
               disabled={!manual.trim()}
@@ -453,7 +453,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
               value={dinheiroInput}
               onChange={(e) => setDinheiroInput(e.target.value)}
               placeholder="Ex: 10,00"
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
             />
             {pixParcialVal > 0 && (
               <>
@@ -515,7 +515,7 @@ const EntregaBarcode = ({ pedido, onConfirmado, chavePix, restauranteNome, resta
           <p className="text-xs font-bold text-orange-700 dark:text-orange-400 mb-1">Descreva o motivo da pendência:</p>
           <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3}
             placeholder="Ex: Cliente não atendeu, endereço incorreto..."
-            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 resize-none" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 resize-none" />
           <div className="flex gap-2">
             <button onClick={() => setEtapa('acao')}
               className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">

@@ -17,6 +17,7 @@ import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import QuickAddProdutoModal from '../../components/restaurante/QuickAddProdutoModal';
+import PagamentoParcialModal from '../../components/salao/PagamentoParcialModal';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -310,6 +311,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [mostrarEditarCliente, setMostrarEditarCliente] = useState(false);
   const [mostrarAvisoPendente, setMostrarAvisoPendente] = useState(false);
 
+  const [mostrarPagamentoModal, setMostrarPagamentoModal] = useState(false);
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
@@ -662,7 +664,6 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   // que antes só contavam a taxa da forma de pagamento selecionada agora pro fechamento.
   const taxaCartaoRegistrada = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor || 0), 0);
   const taxaCartaoTotalExibida = taxaCartaoValorFinal + taxaCartaoRegistrada;
-  const taxaCartaoValorParcial = isCartao(formaPagamentoParcial) ? parseFloat((Number(valorPagamento || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
   const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
   const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
@@ -671,7 +672,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md sm:max-w-2xl lg:w-4/5 lg:max-w-4xl pl-6 pr-7 lg:pr-9 py-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-3">
           <div>
             <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">
@@ -985,114 +986,49 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               {fmt(comanda.saldo?.saldo ?? totalFinal)}
             </strong>
           </div>
-          {(comanda.pagamentos ?? []).length > 0 && (
-            <div className="space-y-1">
-              {comanda.pagamentos.map((p) => (
-                pagamentoEditandoId === p.id ? (
-                  <div key={p.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-lg p-1.5">
-                    <input type="number" value={valorEdicao} onChange={(e) => setValorEdicao(e.target.value)}
-                      disabled={comanda.status === 'paga'} title={comanda.status === 'paga' ? 'Comanda paga: só a forma de pagamento pode ser corrigida' : undefined}
-                      className="w-16 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-1.5 py-1 text-xs bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] disabled:opacity-50 disabled:bg-[#F4F4F5] dark:disabled:bg-[#3F3F46]" />
-                    <select value={formaEdicao} onChange={(e) => setFormaEdicao(e.target.value)}
-                      className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1.5 py-1 text-xs">
-                      <option value="pix">PIX</option>
-                      <option value="credit_card">Cartão de crédito</option>
-                      <option value="debit_card">Cartão de débito</option>
-                      <option value="cash">Dinheiro</option>
-                    </select>
-                    <button onClick={salvarEdicaoPagamento} disabled={!valorEdicao || salvando}
-                      className="text-xs font-bold text-emerald-700 dark:text-emerald-400 disabled:opacity-40 flex-shrink-0">Salvar</button>
-                    <button onClick={() => setPagamentoEditandoId(null)}
-                      className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">Cancelar</button>
-                  </div>
-                ) : (
-                  <div key={p.id}>
-                  <div className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex justify-between items-center gap-2">
-                    <span>
-                      {PAGAMENTO_LABEL[p.forma_pagamento] ?? p.forma_pagamento} ({p.origem === 'garcom' ? 'garçom' : 'caixa'})
-                      {p.taxa_cartao_valor > 0 && <span className="text-[#FF441F]"> + taxa {fmt(p.taxa_cartao_valor)}</span>}
-                    </span>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span>{fmt(p.valor + (p.taxa_cartao_valor || 0))}</span>
-                      {podeCorrigirFormaPagamento && p.forma_pagamento === 'cash' && (p.troco ?? 0) > 0 && (
-                        <button onClick={() => alterarTrocoPix(p)} title={p.troco_via_pix ? 'Voltar troco pra espécie' : 'Marcar troco como pago via Pix'}
-                          className={`px-1.5 h-6 rounded-md border text-[10px] font-bold flex items-center justify-center flex-shrink-0 ${
-                            p.troco_via_pix
-                              ? 'border-[#FF441F]/40 bg-[#FF441F]/10 text-[#FF441F]'
-                              : 'border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-950/40'
-                          }`}>
-                          Troco Pix
-                        </button>
-                      )}
-                      {podeCorrigirFormaPagamento && (
-                        <button onClick={() => iniciarEdicaoPagamento(p)} title="Corrigir forma de pagamento"
-                          className="w-6 h-6 rounded-md border border-zinc-300 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 text-zinc-600 dark:text-zinc-400 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-950/40 flex-shrink-0">
-                          <Icon name="Pencil" size={13} strokeWidth={2.5} />
-                        </button>
-                      )}
-                      {podeEditar && (
-                        <button onClick={() => removerPagamento(p)} className="w-6 h-6 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-950/40 flex-shrink-0">
-                          <Icon name="X" size={14} strokeWidth={2.5} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
-                    <p className="text-[10px] text-[#A1A1AA] pl-0.5">
-                      Dinheiro: {fmt(p.valor_recebido)} · Troco{p.troco_via_pix ? ' (Pix)' : ''}: {fmt(p.troco || 0)} · Venda: {fmt(p.valor)}
-                    </p>
-                  )}
-                  </div>
-                )
-              ))}
+          {(comanda.saldo?.total_pago ?? 0) > 0 && (
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">Já pago</span>
+              <strong className="text-emerald-600 dark:text-emerald-400">{fmt(comanda.saldo?.total_pago)}</strong>
             </div>
           )}
-          {podeEditar && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <input type="number" value={valorPagamento} onChange={(e) => setValorPagamento(e.target.value)} placeholder="Valor"
-              className="w-20 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
-            <select value={formaPagamentoParcial} onChange={(e) => setFormaPagamentoParcial(e.target.value)}
-              className="flex-1 min-w-[100px] border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
-              <option value="pix">PIX</option>
-              <option value="credit_card">Cartão de crédito</option>
-              <option value="debit_card">Cartão de débito</option>
-              <option value="cash">Dinheiro</option>
-            </select>
-          </div>
-          )}
-          {podeEditar && taxaCartaoValorParcial > 0 && (
-            <p className="text-[11px] text-[#FF441F] font-medium">
-              + taxa cartão ({taxaCartaoPercentual}%): {fmt(taxaCartaoValorParcial)} — cobrar {fmt(Number(valorPagamento || 0) + taxaCartaoValorParcial)}
-            </p>
-          )}
-          {podeEditar && formaPagamentoParcial === 'cash' && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <input type="number" value={valorRecebidoParcial} onChange={(e) => setValorRecebidoParcial(e.target.value)}
-                  placeholder="Informe o valor pago pelo cliente"
-                  className="flex-1 border-2 border-red-500 dark:border-red-500 bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs" />
-                {trocoParcial !== null && (
-                  <span className={`text-xs font-bold flex-shrink-0 ${trocoParcial < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                    Troco: {fmt(Math.max(trocoParcial, 0))}
-                  </span>
-                )}
-              </div>
-              {trocoParcial > 0 && (
-                <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                  <input type="checkbox" checked={trocoViaPixParcial} onChange={(e) => setTrocoViaPixParcial(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded accent-[#FF441F]" />
-                  <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix (não sai do caixa em espécie)</span>
-                </label>
-              )}
-            </div>
-          )}
-          {podeEditar && (
-            <button onClick={registrarPagamento} disabled={!valorPagamento || salvando}
-              className="w-full px-2.5 py-1.5 bg-zinc-800 text-white rounded-lg text-xs font-bold disabled:opacity-40">
-              Pagar parcial
-            </button>
-          )}
+          <button onClick={() => setMostrarPagamentoModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-2.5 py-2 bg-zinc-800 text-white rounded-lg text-sm font-bold">
+            <Icon name="Wallet" size={15} />
+            {(comanda.saldo?.saldo ?? 0) > 0.01 ? 'Pagar parcial' : 'Ver pagamentos'}
+          </button>
         </div>
+
+        {mostrarPagamentoModal && (
+          <PagamentoParcialModal
+            onFechar={() => setMostrarPagamentoModal(false)}
+            saldo={comanda.saldo?.saldo ?? totalFinal}
+            faltaPagar={comanda.saldo?.saldo ?? totalFinal}
+            totalPago={comanda.saldo?.total_pago}
+            pagamentos={comanda.pagamentos ?? []}
+            podeRegistrar={podeEditar}
+            taxaCartaoPercentual={taxaCartaoPercentual}
+            valor={valorPagamento} setValor={setValorPagamento}
+            forma={formaPagamentoParcial} setForma={setFormaPagamentoParcial}
+            valorRecebido={valorRecebidoParcial} setValorRecebido={setValorRecebidoParcial}
+            trocoViaPix={trocoViaPixParcial} setTrocoViaPix={setTrocoViaPixParcial}
+            onRegistrar={registrarPagamento}
+            salvando={salvando}
+            erro={erro}
+            editandoId={pagamentoEditandoId}
+            valorEdicao={valorEdicao} setValorEdicao={setValorEdicao}
+            formaEdicao={formaEdicao} setFormaEdicao={setFormaEdicao}
+            onIniciarEdicao={iniciarEdicaoPagamento}
+            onSalvarEdicao={salvarEdicaoPagamento}
+            onCancelarEdicao={() => setPagamentoEditandoId(null)}
+            valorEdicaoDesabilitado={comanda.status === 'paga'}
+            podeEditarPagamento={() => podeCorrigirFormaPagamento}
+            podeRemoverPagamento={() => podeEditar}
+            podeTrocoPix={(p) => podeCorrigirFormaPagamento && p.forma_pagamento === 'cash' && (p.troco ?? 0) > 0}
+            onRemoverPagamento={removerPagamento}
+            onAlterarTrocoPix={alterarTrocoPix}
+          />
+        )}
 
         {podeEditar && (
         <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">

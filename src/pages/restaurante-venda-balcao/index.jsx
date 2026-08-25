@@ -5,7 +5,7 @@ import {
   adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
   registrarPagamentoParcialSalao, alterarTrocoPixComandaSalao, removerPagamentoParcialSalao,
-  editarClienteComandaSalao, getConfig,
+  editarClienteComandaSalao, buscarClientePorTelefoneSalao, getConfig,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente } from '../../utils/printComanda';
@@ -36,6 +36,9 @@ const RestauranteVendaBalcao = () => {
   const [acrescimoInput, setAcrescimoInput] = useState('');
   const [taxaCartaoPercentual, setTaxaCartaoPercentual] = useState(0);
   const [nomeCliente, setNomeCliente] = useState('');
+  const [telefoneCliente, setTelefoneCliente] = useState('');
+  const [clienteEncontrado, setClienteEncontrado] = useState(null);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
 
   const [valorPagamento, setValorPagamento] = useState('');
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
@@ -70,6 +73,8 @@ const RestauranteVendaBalcao = () => {
     setComanda(null);
     setComandaId(null);
     setNomeCliente('');
+    setTelefoneCliente('');
+    setClienteEncontrado(null);
     setDescontoInput('');
     setAcrescimoInput('');
     setValorPagamento('');
@@ -112,6 +117,7 @@ const RestauranteVendaBalcao = () => {
     setDescontoInput(String(c.desconto_valor ?? 0));
     setAcrescimoInput(String(c.acrescimo_valor ?? 0));
     setNomeCliente((atual) => (atual ? atual : (c.cliente_mesa_nome === 'Venda balcão' ? '' : (c.cliente_mesa_nome ?? ''))));
+    setTelefoneCliente((atual) => (atual ? atual : (c.cliente_mesa_telefone ?? '')));
     // Refaz a lista de produtos toda vez que a comanda recarrega — senão a quantidade
     // em estoque mostrada no picker fica desatualizada depois de incluir/editar item.
     setProdutos([
@@ -124,6 +130,22 @@ const RestauranteVendaBalcao = () => {
   useEffect(() => {
     getConfig().then((c) => setTaxaCartaoPercentual(c.taxa_cartao_percentual ?? 0)).catch(() => {});
   }, []);
+
+  // Ao digitar o telefone, procura cliente já cadastrado (delivery ou comanda/venda
+  // anterior) — se achar, o operador só toca pra usar o nome, sem precisar perguntar.
+  useEffect(() => {
+    const digitos = telefoneCliente.replace(/\D/g, '');
+    setClienteEncontrado(null);
+    if (digitos.length < 8) return;
+    setBuscandoCliente(true);
+    const t = setTimeout(() => {
+      buscarClientePorTelefoneSalao(telefoneCliente)
+        .then((d) => setClienteEncontrado(d?.cliente ?? null))
+        .catch(() => setClienteEncontrado(null))
+        .finally(() => setBuscandoCliente(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [telefoneCliente]);
 
   const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 
@@ -162,7 +184,7 @@ const RestauranteVendaBalcao = () => {
   const aplicarDesconto = () => acao(() => aplicarDescontoComanda(comandaId, Number(descontoInput || 0)));
   const aplicarAcrescimo = () => acao(() => aplicarAcrescimoComanda(comandaId, Number(acrescimoInput || 0)));
 
-  const salvarNomeCliente = () => acao(() => editarClienteComandaSalao(comandaId, nomeCliente.trim() || 'Venda balcão'));
+  const salvarClienteBalcao = () => acao(() => editarClienteComandaSalao(comandaId, nomeCliente.trim() || 'Venda balcão', telefoneCliente.trim() || undefined));
 
   const registrarPagamento = () => {
     const v = Number(valorPagamento);
@@ -298,16 +320,41 @@ const RestauranteVendaBalcao = () => {
         <button onClick={cancelar} disabled={salvando} className="p-1 text-[#71717A] dark:text-[#A1A1AA] disabled:opacity-50"><Icon name="X" size={22} /></button>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
-        <Icon name="User" size={15} className="text-[#A1A1AA] flex-shrink-0" />
-        <input
-          value={nomeCliente}
-          onChange={(e) => setNomeCliente(e.target.value)}
-          onBlur={salvarNomeCliente}
-          placeholder="Nome do cliente (opcional)"
-          disabled={salvando}
-          className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
-        />
+      <div className="px-4 py-2 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0 space-y-1.5">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+            <Icon name="User" size={15} className="text-[#A1A1AA] flex-shrink-0" />
+            <input
+              value={nomeCliente}
+              onChange={(e) => setNomeCliente(e.target.value)}
+              onBlur={salvarClienteBalcao}
+              placeholder="Nome do cliente (opcional)"
+              disabled={salvando}
+              className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+            <Icon name="Phone" size={15} className="text-[#A1A1AA] flex-shrink-0" />
+            <input
+              value={telefoneCliente}
+              onChange={(e) => setTelefoneCliente(e.target.value)}
+              onBlur={salvarClienteBalcao}
+              placeholder="Telefone do cliente (opcional)"
+              disabled={salvando}
+              className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
+            />
+          </div>
+        </div>
+        {buscandoCliente && (
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Procurando cliente...</p>
+        )}
+        {!buscandoCliente && clienteEncontrado && (
+          <button type="button" onClick={() => { setNomeCliente(clienteEncontrado.name); salvarClienteBalcao(); }}
+            className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2.5 py-1.5">
+            <Icon name="UserCheck" size={13} className="flex-shrink-0" />
+            Cliente encontrado: {clienteEncontrado.name} — toque pra usar
+          </button>
+        )}
       </div>
 
       <div className="flex-1 flex overflow-hidden flex-col sm:flex-row">

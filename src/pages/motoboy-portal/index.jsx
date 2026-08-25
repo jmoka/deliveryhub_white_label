@@ -47,7 +47,7 @@ const OcorrenciaModal = ({ pedido, tipo, onConfirmar, onFechar, salvando }) => {
           placeholder={isPendente
             ? 'Ex: Cliente não atendeu o interfone. Aguardando retorno do restaurante...'
             : 'Ex: Endereço não encontrado após 3 tentativas. CEP diverge do cadastro...'}
-          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] resize-none"
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] resize-none"
         />
 
         {isPendente && (

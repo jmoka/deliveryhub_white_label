@@ -384,6 +384,8 @@ export const dividirComandaSalao = (id, item_ids, cliente_nome, cliente_telefone
   apiFetch(`/salao/comandas/${id}/dividir`, { method: 'POST', body: JSON.stringify({ item_ids, cliente_nome, cliente_telefone }) });
 export const editarClienteComandaSalao = (id, cliente_nome, cliente_telefone) =>
   apiFetch(`/salao/comandas/${id}/cliente`, { method: 'PATCH', body: JSON.stringify({ cliente_nome, cliente_telefone }) });
+export const buscarClientePorTelefoneSalao = (telefone) =>
+  apiFetch(`/salao/clientes/buscar?telefone=${encodeURIComponent(telefone)}`);
 export const getSugestaoGorjeta = (id) => apiFetch(`/salao/comandas/${id}/sugestao-gorjeta`);
 
 // Módulo Salão — mesas (CRUD simples pelo dono, cadastro inicial das mesas físicas)
