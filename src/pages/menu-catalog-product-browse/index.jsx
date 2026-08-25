@@ -37,6 +37,8 @@ const DEFAULT_MARCA = {
   hero_subtitulo: 'Peça dos melhores restaurantes da sua cidade',
   hero_fundo_tipo: 'gradiente',
   hero_fundo_cor: '#FF441F',
+  hero_fundo_gradient_from: '#FF441F',
+  hero_fundo_gradient_to: '#FF7A00',
   hero_fundo_imagem_url: '',
   hero_fundo_opacity: 100,
   stat1_label: 'Restaurantes',
@@ -621,7 +623,10 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota, marca }) => (
     ) : marca.hero_fundo_tipo === 'cor' ? (
       <div className="absolute inset-0" style={{ backgroundColor: hexToRgba(marca.hero_fundo_cor, pct(marca.hero_fundo_opacity)) }} />
     ) : (
-      <div className="absolute inset-0 bg-gradient-to-br from-[#FF441F] via-[#FF5C30] to-[#FF7A00]" style={{ opacity: pct(marca.hero_fundo_opacity) }} />
+      <div className="absolute inset-0" style={{
+        background: `linear-gradient(135deg, ${marca.hero_fundo_gradient_from || '#FF441F'}, ${marca.hero_fundo_gradient_to || '#FF7A00'})`,
+        opacity: pct(marca.hero_fundo_opacity),
+      }} />
     )}
     <div className="absolute inset-0 opacity-10"
       style={{ backgroundImage: 'radial-gradient(circle at 25% 60%, #fff 1px, transparent 1px), radial-gradient(circle at 75% 20%, #fff 1px, transparent 1px)', backgroundSize: '36px 36px' }} />

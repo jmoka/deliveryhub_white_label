@@ -24,12 +24,30 @@ const ToggleSwitch = ({ value, onChange, label, desc }) => (
   </div>
 );
 
-const Section = ({ icon, title, children }) => (
+const Section = ({ icon, title, actions, children }) => (
   <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5">
-    <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4 flex items-center gap-2 text-sm">
-      <Icon name={icon} size={16} className="text-[#FF441F]" /> {title}
-    </h2>
+    <div className="flex items-center justify-between gap-2 mb-4">
+      <h2 className="font-bold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 text-sm">
+        <Icon name={icon} size={16} className="text-[#FF441F]" /> {title}
+      </h2>
+      {actions}
+    </div>
     {children}
+  </div>
+);
+
+/* ── Transparência do fundo ──────────────────────────────────────── */
+const OpacitySlider = ({ value, onChange }) => (
+  <div className="mt-3">
+    <div className="flex items-center justify-between mb-1">
+      <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Transparência</label>
+      <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] w-10 text-right">{value ?? 100}%</span>
+    </div>
+    <input
+      type="range" min="0" max="100" value={value ?? 100}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="w-full accent-[#FF441F] cursor-pointer"
+    />
   </div>
 );
 
@@ -53,12 +71,16 @@ const RestauranteAparencia = () => {
   const [msgDominio, setMsgDominio] = useState(null); // { tipo: 'ok'|'erro', texto }
   const [ipCopiado, setIpCopiado] = useState(false);
   const [fundoTipo, setFundoTipo] = useState('gradient'); // gradient | cor | imagem
+  const [carrosselAberto, setCarrosselAberto] = useState(true);
 
   const [form, setForm] = useState({
     logo_url: '',
     descricao: '',
     background_url: '',
     background_color: '#FF441F',
+    background_gradient_from: '#FF441F',
+    background_gradient_to: '#FF7A00',
+    background_opacity: 100,
     banner_url: '',
     carousel_images: [],
   });
@@ -77,12 +99,16 @@ const RestauranteAparencia = () => {
           descricao: ap.descricao ?? '',
           background_url: ap.background_url ?? '',
           background_color: ap.background_color ?? '#FF441F',
+          background_gradient_from: ap.background_gradient_from ?? '#FF441F',
+          background_gradient_to: ap.background_gradient_to ?? '#FF7A00',
+          background_opacity: ap.background_opacity ?? 100,
           banner_url: ap.banner_url ?? '',
           carousel_images: ap.carousel_images ?? [],
         });
         if (ap.background_url) setFundoTipo('imagem');
         else if (ap.background_color && ap.background_color !== '#FF441F') setFundoTipo('cor');
         else setFundoTipo('gradient');
+        setCarrosselAberto((ap.carousel_images ?? []).length <= 4);
       })
       .catch((e) => setMsg({ tipo: 'erro', texto: e.message }))
       .finally(() => setLoading(false));
@@ -199,7 +225,7 @@ const RestauranteAparencia = () => {
               {editandoSlug ? (
                 <>
                   <div className="flex items-center gap-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2.5 focus-within:ring-2 focus-within:ring-[#FF441F]">
-                    <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono flex-shrink-0">{window.location.origin}/r/</span>
+                    <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-mono flex-shrink-0 truncate max-w-[35%] sm:max-w-none">{window.location.origin}/r/</span>
                     <input
                       type="text"
                       value={slugInput}
@@ -408,42 +434,76 @@ const RestauranteAparencia = () => {
             </div>
 
             {fundoTipo === 'gradient' && (
-              <div className="h-16 w-full rounded-xl" style={{ background: 'linear-gradient(135deg, #FF441F, #FF7A00)' }} />
+              <div className="space-y-3">
+                <div className="h-16 w-full rounded-xl" style={{ background: `linear-gradient(135deg, ${form.background_gradient_from}, ${form.background_gradient_to})`, opacity: (form.background_opacity ?? 100) / 100 }} />
+                <div className="flex items-center gap-3">
+                  <input type="color" value={form.background_gradient_from}
+                    onChange={(e) => set('background_gradient_from', e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] cursor-pointer p-0.5" />
+                  <input type="text" value={form.background_gradient_from}
+                    onChange={(e) => set('background_gradient_from', e.target.value)}
+                    className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#FF441F]" />
+                  <span className="text-[10px] text-[#A1A1AA] flex-shrink-0">início</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={form.background_gradient_to}
+                    onChange={(e) => set('background_gradient_to', e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] cursor-pointer p-0.5" />
+                  <input type="text" value={form.background_gradient_to}
+                    onChange={(e) => set('background_gradient_to', e.target.value)}
+                    className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#FF441F]" />
+                  <span className="text-[10px] text-[#A1A1AA] flex-shrink-0">fim</span>
+                </div>
+                <OpacitySlider value={form.background_opacity} onChange={(v) => set('background_opacity', v)} />
+              </div>
             )}
 
             {fundoTipo === 'cor' && (
-              <div className="flex items-center gap-3">
-                <input type="color" value={form.background_color}
-                  onChange={(e) => set('background_color', e.target.value)}
-                  className="w-12 h-10 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] cursor-pointer p-0.5" />
-                <input type="text" value={form.background_color}
-                  onChange={(e) => set('background_color', e.target.value)}
-                  className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#FF441F]" />
-                <div className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0"
-                  style={{ background: form.background_color }} />
+              <div>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={form.background_color}
+                    onChange={(e) => set('background_color', e.target.value)}
+                    className="w-12 h-10 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] cursor-pointer p-0.5" />
+                  <input type="text" value={form.background_color}
+                    onChange={(e) => set('background_color', e.target.value)}
+                    className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#FF441F]" />
+                  <div className="w-10 h-10 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0"
+                    style={{ background: form.background_color, opacity: (form.background_opacity ?? 100) / 100 }} />
+                </div>
+                <OpacitySlider value={form.background_opacity} onChange={(v) => set('background_opacity', v)} />
               </div>
             )}
 
             {fundoTipo === 'imagem' && (
-              <ImageUpload
-                value={form.background_url}
-                onChange={(url) => set('background_url', url)}
-                folder="fundos"
-                aspect="banner"
-                placeholder="https://exemplo.com/fundo.jpg"
-              />
-            )}
-            {fundoTipo === 'imagem' && (
-              <p className="text-[10px] text-[#A1A1AA] mt-1.5">
-                Ideal: <strong>1920×1080px</strong> — cobre a tela toda atrás do conteúdo.
-              </p>
+              <div>
+                <ImageUpload
+                  value={form.background_url}
+                  onChange={(url) => set('background_url', url)}
+                  folder="fundos"
+                  aspect="banner"
+                  placeholder="https://exemplo.com/fundo.jpg"
+                  previewOpacity={(form.background_opacity ?? 100) / 100}
+                />
+                <p className="text-[10px] text-[#A1A1AA] mt-1.5">
+                  Ideal: <strong>1920×1080px</strong> — cobre a tela toda atrás do conteúdo.
+                </p>
+                <OpacitySlider value={form.background_opacity} onChange={(v) => set('background_opacity', v)} />
+              </div>
             )}
           </Section>
 
           {/* ── Carrossel ─────────────────────────────────────────── */}
-          <Section icon="Images" title="Carrossel de imagens">
+          <Section icon="Images" title="Carrossel de imagens" actions={
+            form.carousel_images.length > 0 && (
+              <button type="button" onClick={() => setCarrosselAberto((v) => !v)}
+                className="flex items-center gap-1 text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5] flex-shrink-0">
+                {form.carousel_images.length} {form.carousel_images.length === 1 ? 'imagem' : 'imagens'}
+                <Icon name={carrosselAberto ? 'ChevronUp' : 'ChevronDown'} size={14} />
+              </button>
+            )
+          }>
             <div className="space-y-2.5">
-              {form.carousel_images.map((url, i) => (
+              {carrosselAberto && form.carousel_images.map((url, i) => (
                 <div key={i} className="flex items-center gap-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl p-2">
                   <img src={url} alt="" onError={(e) => (e.target.style.display = 'none')}
                     className="w-14 h-10 object-cover rounded-lg flex-shrink-0" />

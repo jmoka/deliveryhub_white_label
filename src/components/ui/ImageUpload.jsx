@@ -15,8 +15,9 @@ const ACCEPT = 'image/jpeg,image/jpg,image/png,image/webp,image/gif';
  *  uploadFn   — (file, folder) => Promise<{ url }> — default é o upload do dono de
  *               restaurante; passe outra função (ex. upload de admin) quando o contexto
  *               não for uma loja (ex. branding da plataforma).
+ *  previewOpacity — 0-1, aplicada na miniatura pra refletir transparência configurável.
  */
-const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', placeholder = 'https://...', uploadFn = uploadImagem }) => {
+const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', placeholder = 'https://...', uploadFn = uploadImagem, previewOpacity }) => {
   const [tab, setTab] = useState('upload');
   const [urlInput, setUrlInput] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -58,7 +59,7 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
       <div className="space-y-2">
         <div className={`relative rounded-xl overflow-hidden border border-[#E4E4E7] dark:border-[#3F3F46] bg-[#F4F4F5] dark:bg-[#27272A] ${previewH}`}>
           <img src={value} alt="" onError={(e) => (e.target.style.display = 'none')}
-            className="w-full h-full object-cover" />
+            className="w-full h-full object-cover" style={previewOpacity != null ? { opacity: previewOpacity } : undefined} />
           <button type="button" onClick={() => onChange('')}
             className="absolute top-2 right-2 w-7 h-7 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center transition-colors">
             <Icon name="X" size={13} />

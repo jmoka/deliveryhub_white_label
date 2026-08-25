@@ -357,10 +357,14 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     ? { backgroundImage: `url(${ap.background_url})`, backgroundSize: 'cover', backgroundAttachment: 'fixed' }
     : ap.background_color
     ? { backgroundColor: ap.background_color }
-    : {};
+    : { backgroundImage: `linear-gradient(135deg, ${ap.background_gradient_from || '#FF441F'}, ${ap.background_gradient_to || '#FF7A00'})` };
+  const bgOpacity = (ap.background_opacity ?? 100) / 100;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]" style={bgStyle}>
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
+      {/* Camada própria pro fundo — assim dá pra deixar translúcido (opacity)
+          sem desbotar o conteúdo por cima. */}
+      <div className="fixed inset-0 -z-10" style={{ ...bgStyle, opacity: bgOpacity }} />
 
       {/* ── Header global ──────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#27272A]/95 backdrop-blur-md border-b border-[#E4E4E7] dark:border-[#3F3F46]">

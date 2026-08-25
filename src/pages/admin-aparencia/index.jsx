@@ -195,7 +195,11 @@ const AdminAparencia = () => {
 
               {form.hero_fundo_tipo === 'gradiente' && (
                 <>
-                  <div className="h-16 w-full rounded-xl" style={{ background: 'linear-gradient(135deg, #FF441F, #FF5C30, #FF7A00)', opacity: (form.hero_fundo_opacity ?? 100) / 100 }} />
+                  <div className="h-16 w-full rounded-xl" style={{ background: `linear-gradient(135deg, ${form.hero_fundo_gradient_from}, ${form.hero_fundo_gradient_to})`, opacity: (form.hero_fundo_opacity ?? 100) / 100 }} />
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <ColorField label="Cor inicial" value={form.hero_fundo_gradient_from} onChange={(v) => set('hero_fundo_gradient_from', v)} />
+                    <ColorField label="Cor final" value={form.hero_fundo_gradient_to} onChange={(v) => set('hero_fundo_gradient_to', v)} />
+                  </div>
                   <OpacitySlider value={form.hero_fundo_opacity} onChange={(v) => set('hero_fundo_opacity', v)} />
                 </>
               )}

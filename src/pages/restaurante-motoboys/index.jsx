@@ -453,29 +453,31 @@ const RestauranteMotoboys = () => {
                   Nenhum motoboy afiliado ainda. Cadastre o seu próprio acima, ou aguarde um entregador se cadastrar pelo app e solicitar atender aqui.
                 </p>
               ) : motoboys.map((mb) => (
-                <div key={mb.id} className="p-4 flex flex-wrap items-center gap-3">
-                  <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
-                    {mb.foto_perfil_url && !isPdfUrl(mb.foto_perfil_url)
-                      ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{mb.name}</p>
-                    {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{mb.phone}</p>}
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {mb.bloqueado && (
-                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
-                          Bloqueado
-                        </span>
-                      )}
-                      {mb.gerenciado_por_mim && (
-                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
-                          Cadastrado por você
-                        </span>
-                      )}
+                <div key={mb.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
+                      {mb.foto_perfil_url && !isPdfUrl(mb.foto_perfil_url)
+                        ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
+                        : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{mb.name}</p>
+                      {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{mb.phone}</p>}
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {mb.bloqueado && (
+                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+                            Bloqueado
+                          </span>
+                        )}
+                        {mb.gerenciado_por_mim && (
+                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
+                            Cadastrado por você
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 flex-shrink-0">
+                  <div className="flex flex-wrap gap-2 sm:ml-auto sm:flex-shrink-0">
                     {mb.gerenciado_por_mim && (
                       <button
                         onClick={() => { setErroForm(null); setFormModal(mb); }}
