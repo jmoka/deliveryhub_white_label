@@ -7,7 +7,7 @@ import {
   listarGarcons, getMeusProdutos, getMeusCombos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, alterarTrocoPixComandaSalao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
-  reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao,
+  reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao, confirmarEntregaItemSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda, printTicketSetor } from '../../utils/printComanda';
@@ -503,6 +503,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     acao(() => editarItemComandaSalao(comandaId, item.id, { quantity: novaQtd }));
   };
 
+  // Caixa confirma a entrega direto pelo painel — mesma ação que o garçom faz no app
+  // dele, útil quando ele não está disponível pra confirmar e a comanda fica travada
+  // pra fechar/pagar (ver temEntregaPendente).
+  const confirmarEntregaItem = (item) => acao(() => confirmarEntregaItemSalao(comandaId, item.id));
+
   const abrirEdicaoObservacao = (item) => {
     setObservacaoEditandoId(item.id);
     setObservacaoInput(item.observacao ?? '');
@@ -554,6 +559,17 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         <p onClick={() => ['aberta', 'fechada_garcom'].includes(comanda.status) && abrirEdicaoObservacao(item)}
           className="text-sm text-blue-600 dark:text-blue-400 pl-11 cursor-pointer">Obs: {item.observacao}</p>
       ) : null}
+      {['preparando', 'pronto'].includes(item.status) && !item.entregue_garcom && (
+        <div className="flex items-center justify-between gap-2 mt-1 pl-11">
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+            {item.status === 'pronto' ? 'Pronto — aguardando entrega' : 'Em preparo'}
+          </span>
+          <button onClick={() => confirmarEntregaItem(item)}
+            className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2 py-1 hover:bg-emerald-100 dark:hover:bg-emerald-950/60">
+            <Icon name="Check" size={12} /> Confirmar entrega
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -624,6 +640,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   const podeEditar = comanda.status === 'aberta' || comanda.status === 'fechada_garcom';
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
+  // Mesma barreira do app do garçom (fecharComanda) — aqui protege o caixa de fechar/
+  // pagar a comanda com prato pronto sem confirmar entrega. Venda balcão nunca cai
+  // aqui: os itens só são enviados (e só então podem virar 'pronto') no pagamento.
+  const temEntregaPendente = !comanda.is_venda_balcao
+    && (comanda.itens ?? []).some((i) => ['preparando', 'pronto'].includes(i.status) && !i.entregue_garcom);
 
   // Fechar pelo X (sem passar por "Confirmar pagamento"/"Cancelar comanda" explícito):
   // comanda vazia (mesa aberta e ninguém pediu nada) não pode ficar "esquecida" ocupando
@@ -1142,6 +1163,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             Ainda falta {fmt(saldoDevedor)} de saldo devedor. Registre os pagamentos acima (com a forma de cada um) até zerar pra poder fechar a comanda.
           </p>
         )}
+        {podeEditar && temEntregaPendente && (
+          <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 mt-2">
+            Tem item pronto sem confirmar entrega. Confirme a entrega antes de fechar/pagar a comanda.
+          </p>
+        )}
 
         {podeEditar && (
         <div className="flex gap-2 mt-4">
@@ -1149,8 +1175,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
             Cancelar comanda
           </button>
-          <button onClick={pagar} disabled={salvando || saldoDevedor > 0.01 || temPendente}
-            title={temPendente ? 'Envie os produtos pendentes antes de pagar' : saldoDevedor > 0.01 ? 'Registre os pagamentos até o saldo zerar' : undefined}
+          <button onClick={pagar} disabled={salvando || saldoDevedor > 0.01 || temPendente || temEntregaPendente}
+            title={temPendente ? 'Envie os produtos pendentes antes de pagar' : saldoDevedor > 0.01 ? 'Registre os pagamentos até o saldo zerar' : temEntregaPendente ? 'Confirme a entrega dos itens prontos antes de pagar' : undefined}
             className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
             {salvando ? 'Processando...' : 'Confirmar pagamento'}
           </button>
