@@ -6,6 +6,7 @@ import { ThemeToggle } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import AdminMobileMenu from './AdminMobileMenu';
 import { ADMIN_NAV_LINKS } from '../../config/adminNavLinks';
+import { useMotoboysPendentesAdmin } from '../../hooks/useMotoboysPendentesAdmin';
 
 // Header compartilhado de toda a área /admin/*. Substitui o header/nav
 // duplicado (e divergente) que cada página tinha antes — mesmo padrão do
@@ -15,6 +16,7 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [menuAberto, setMenuAberto] = useState(false);
+  const motoboysPendentes = useMotoboysPendentesAdmin();
 
   const handleSair = async () => {
     await signOut();
@@ -33,12 +35,17 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
         <nav className="hidden lg:flex gap-1.5 items-center flex-wrap justify-end">
           {ADMIN_NAV_LINKS.map((l) => (
             <button key={l.path} onClick={() => navigate(l.path)}
-              className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+              className={`relative px-3 py-2 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
                 active === l.path
                   ? 'text-white bg-blue-600 shadow-sm'
                   : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
               }`}>
               {l.label}
+              {l.path === '/admin/motoboys' && motoboysPendentes > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
+                  {motoboysPendentes}
+                </span>
+              )}
             </button>
           ))}
           <ThemeToggle inline />
@@ -66,6 +73,7 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
             currentPath={active}
             onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
             onSair={handleSair}
+            motoboysPendentes={motoboysPendentes}
           />
         )}
       </AnimatePresence>

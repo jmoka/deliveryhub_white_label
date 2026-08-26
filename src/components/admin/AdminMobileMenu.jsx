@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const AdminMobileMenu = ({ links, currentPath, onNavigate, onSair }) => (
+const AdminMobileMenu = ({ links, currentPath, onNavigate, onSair, motoboysPendentes = 0 }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
     animate={{ opacity: 1, y: 0 }}
@@ -10,10 +10,15 @@ const AdminMobileMenu = ({ links, currentPath, onNavigate, onSair }) => (
   >
     {links.map((l) => (
       <button key={l.path} onClick={() => onNavigate(l.path)}
-        className={`w-full text-left px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
+        className={`w-full flex items-center justify-between text-left px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
           l.path === currentPath ? 'text-white bg-blue-600' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
         }`}>
         {l.label}
+        {l.path === '/admin/motoboys' && motoboysPendentes > 0 && (
+          <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full ml-2">
+            {motoboysPendentes}
+          </span>
+        )}
       </button>
     ))}
     <button onClick={onSair}
