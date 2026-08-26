@@ -21,6 +21,15 @@ import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
 // (vencendo em breve ou vencida mas dentro da tolerância), vermelha (bloqueado).
 const DIAS_ALERTA_VENCIMENTO = 5;
 
+// Ícones dos favoritos começam grandes/bem visíveis e só encolhem conforme a
+// quantidade aumenta, pra continuar cabendo numa linha só na topbar.
+const tamanhoFavoritos = (qtd) => {
+  if (qtd <= 3) return { icone: 50, padding: 'p-4' };
+  if (qtd <= 5) return { icone: 44, padding: 'p-3.5' };
+  if (qtd <= 7) return { icone: 38, padding: 'p-3' };
+  return { icone: 33, padding: 'p-2.5' };
+};
+
 const PlanoStatusDot = ({ planoStatus, onClick }) => {
   if (!planoStatus || !planoStatus.plano_nome) return null;
 
@@ -57,7 +66,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
   const { moduloDelivery, moduloSalao } = useModulosEmpresa();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const pontosPreparoLinks = usePontosPreparoLinks();
-  const { favoritos, toggleFavorito, isFavorito } = useRestauranteFavoritos();
+  const { favoritos, toggleFavorito, isFavorito, mostrarNomes, toggleMostrarNomes } = useRestauranteFavoritos();
   const [sidebarAberto, setSidebarAberto] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const [atualizando, setAtualizando] = useState(false);
@@ -91,15 +100,24 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
         </div>
 
         {linksFavoritos.length > 0 && (
-          <div className="hidden md:flex items-center gap-1.5 overflow-x-auto">
-            {linksFavoritos.map((l) => (
-              <button key={l.path} onClick={() => navigate(l.path)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition-colors ${
-                  l.path === active ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'
-                }`}>
-                <Icon name={l.icon} size={13} /> {l.label}
-              </button>
-            ))}
+          <div className="hidden md:flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              {linksFavoritos.map((l) => {
+                const { icone, padding } = mostrarNomes ? { icone: 13, padding: 'px-3 py-1.5' } : tamanhoFavoritos(linksFavoritos.length);
+                return (
+                  <button key={l.path} onClick={() => navigate(l.path)} title={l.label}
+                    className={`flex items-center gap-1.5 ${padding} text-xs font-semibold rounded-full whitespace-nowrap transition-colors ${
+                      l.path === active ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'
+                    }`}>
+                    <Icon name={l.icon} size={icone} /> {mostrarNomes && l.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={toggleMostrarNomes} title={mostrarNomes ? 'Mostrar só ícones' : 'Mostrar nomes'}
+              className="p-1.5 rounded-full flex-shrink-0 text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A]">
+              <Icon name={mostrarNomes ? 'ChevronsLeftRight' : 'ChevronsRightLeft'} size={13} />
+            </button>
           </div>
         )}
 

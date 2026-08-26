@@ -2,17 +2,25 @@ import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const keyFor = (userId) => `favoritos_restaurante_${userId}`;
+const keyForNomes = (userId) => `favoritos_restaurante_nomes_${userId}`;
 
 const readFavoritos = (userId) => {
   if (!userId) return [];
   try { return JSON.parse(localStorage.getItem(keyFor(userId)) ?? '[]'); } catch { return []; }
 };
 
+const readMostrarNomes = (userId) => {
+  if (!userId) return true;
+  return localStorage.getItem(keyForNomes(userId)) !== 'false';
+};
+
 export const useRestauranteFavoritos = () => {
   const { user } = useAuth();
   const [favoritos, setFavoritos] = useState(() => readFavoritos(user?.id));
+  const [mostrarNomes, setMostrarNomes] = useState(() => readMostrarNomes(user?.id));
 
   useEffect(() => { setFavoritos(readFavoritos(user?.id)); }, [user?.id]);
+  useEffect(() => { setMostrarNomes(readMostrarNomes(user?.id)); }, [user?.id]);
 
   const toggleFavorito = useCallback((path) => {
     if (!user?.id) return;
@@ -25,5 +33,14 @@ export const useRestauranteFavoritos = () => {
 
   const isFavorito = useCallback((path) => favoritos.includes(path), [favoritos]);
 
-  return { favoritos, toggleFavorito, isFavorito };
+  const toggleMostrarNomes = useCallback(() => {
+    if (!user?.id) return;
+    setMostrarNomes((prev) => {
+      const next = !prev;
+      localStorage.setItem(keyForNomes(user.id), String(next));
+      return next;
+    });
+  }, [user?.id]);
+
+  return { favoritos, toggleFavorito, isFavorito, mostrarNomes, toggleMostrarNomes };
 };
