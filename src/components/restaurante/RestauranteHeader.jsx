@@ -129,6 +129,10 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
               <Icon name="RefreshCw" size={18} className={atualizando ? 'animate-spin' : ''} />
             </button>
           )}
+          <button onClick={() => navigate('/restaurante/config')} title="Configurações"
+            className="hidden md:flex p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5]">
+            <Icon name="Settings" size={18} />
+          </button>
           <button onClick={() => navigate('/restaurante/meu-perfil')} title="Meu perfil"
             className="hidden md:flex p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5]">
             <Icon name="UserCircle" size={18} />

@@ -62,6 +62,10 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
                     <Icon name="ExternalLink" size={14} /> Loja
                   </button>
                 )}
+                <button onClick={() => ir('/restaurante/config')}
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center gap-2">
+                  <Icon name="Settings" size={14} /> Config
+                </button>
                 {onMeuPerfil && (
                   <button onClick={onMeuPerfil}
                     className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center gap-2">

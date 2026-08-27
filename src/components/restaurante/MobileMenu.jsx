@@ -27,6 +27,10 @@ const MobileMenu = ({ links, currentPath, onNavigate, onSair, onMeuPerfil, pende
         Loja
       </button>
     )}
+    <button onClick={() => onNavigate('/restaurante/config')}
+      className="w-full text-left px-4 py-3 text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46]">
+      Config
+    </button>
     {onMeuPerfil && (
       <button onClick={onMeuPerfil}
         className="w-full text-left px-4 py-3 text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46]">
