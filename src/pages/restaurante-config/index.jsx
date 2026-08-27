@@ -5,6 +5,7 @@ import {
   atualizarLocalizacaoManual,
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
   gerarTokenGdoor, getStatusGdoor, salvarCnpjEsperadoGdoor,
+  getEstoqueGdoor, getMapeamentoGdoor, salvarMapeamentoProdutoGdoor,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -208,6 +209,7 @@ const GdoorAgentePanel = () => {
         <li>Clique em <strong>"Gerar token de conexão"</strong> abaixo, copie a chave.</li>
         <li>Na pasta do agente, dê duplo clique em <strong>parear.bat</strong> — vai abrir uma janela mostrando se o GDOOR foi encontrado e o CNPJ cadastrado nele. Cole o token no campo, confirme que o CNPJ bate com o do estabelecimento e clique em <strong>Conectar</strong>.</li>
         <li>Rode (ou reinicie) o agente com <strong>iniciar.bat</strong>.</li>
+        <li>Abra <strong>"Mapeamento de produtos GDOOR"</strong> abaixo e escolha o código do GDOOR pra cada produto — sem isso a pré-venda desse item não sai.</li>
       </ol>
 
       <button onClick={gerar} disabled={gerando}
@@ -218,6 +220,99 @@ const GdoorAgentePanel = () => {
         <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
           <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{token}</span>
           <button onClick={copiar} className="text-xs font-bold text-[#FF441F]">{copiado ? 'Copiado!' : 'Copiar'}</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Mapeia cada produto do DeliveryHub pro código correspondente no ESTOQUE do
+// GDOOR — sem isso a pré-venda trava no item (job fica em erro, agente pede pra
+// mapear). Estoque vem do cache que o agente reporta a cada poll (não é live).
+const GdoorMapeamentoPanel = () => {
+  const [aberto, setAberto] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [produtos, setProdutos] = useState([]);
+  const [estoque, setEstoque] = useState([]);
+  const [salvandoId, setSalvandoId] = useState(null);
+
+  const carregar = useCallback(() => {
+    setCarregando(true);
+    Promise.all([getMapeamentoGdoor(), getEstoqueGdoor()])
+      .then(([m, e]) => {
+        setProdutos(m.produtos ?? []);
+        setEstoque(e.itens ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setCarregando(false));
+  }, []);
+
+  useEffect(() => {
+    if (aberto) carregar();
+  }, [aberto, carregar]);
+
+  const escolherCodigo = async (produto, codigo) => {
+    setSalvandoId(produto.id);
+    const item = estoque.find((e) => e.codigo === codigo);
+    try {
+      await salvarMapeamentoProdutoGdoor(produto.id, codigo || null, item?.descricao ?? '');
+      setProdutos((lista) => lista.map((p) => (p.id === produto.id ? { ...p, codigo_gdoor: codigo || null, descricao_gdoor: item?.descricao ?? null } : p)));
+    } finally {
+      setSalvandoId(null);
+    }
+  };
+
+  const faltam = produtos.filter((p) => !p.codigo_gdoor).length;
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+      <button onClick={() => setAberto((a) => !a)} className="w-full flex items-center justify-between">
+        <div className="text-left">
+          <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Mapeamento de produtos GDOOR</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Diz qual código do ESTOQUE do GDOOR corresponde a cada produto — sem isso a pré-venda não sai.</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {produtos.length > 0 && (
+            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${faltam > 0 ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'}`}>
+              {faltam > 0 ? `${faltam} sem mapear` : 'Tudo mapeado'}
+            </span>
+          )}
+          <Icon name={aberto ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-[#A1A1AA]" />
+        </div>
+      </button>
+
+      {aberto && (
+        <div className="mt-3">
+          {estoque.length === 0 && !carregando && (
+            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-3 py-2 mb-3">
+              Nenhum produto do GDOOR encontrado ainda — confirme que o agente está pareado e online (ele reporta o catálogo a cada ~1 minuto).
+            </p>
+          )}
+          {carregando ? (
+            <p className="text-xs text-[#A1A1AA]">Carregando...</p>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+              {produtos.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
+                    <p className="text-[11px] text-[#A1A1AA] truncate">{p.category_name}</p>
+                  </div>
+                  <select
+                    value={p.codigo_gdoor ?? ''}
+                    onChange={(e) => escolherCodigo(p, e.target.value)}
+                    disabled={salvandoId === p.id}
+                    className="w-52 flex-shrink-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]"
+                  >
+                    <option value="">— não mapeado —</option>
+                    {estoque.map((e) => (
+                      <option key={e.codigo} value={e.codigo}>{e.codigo} — {e.descricao}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -743,6 +838,7 @@ const RestauranteConfig = () => {
 
             {/* Agente GDOOR local — sincroniza pedidos entregues como pré-venda fiscal */}
             <GdoorAgentePanel />
+            <GdoorMapeamentoPanel />
 
             {/* Formulário — limpo */}
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">

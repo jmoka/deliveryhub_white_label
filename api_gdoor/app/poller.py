@@ -4,9 +4,13 @@ import time
 
 import requests
 
-from . import config, firebird_client, mapping
+from . import config, firebird_client
 
 logger = logging.getLogger("gdoor_delivery_sync.poller")
+
+# Catálogo do ESTOQUE só muda quando alguém mexe no GDOOR — não precisa reportar
+# a cada ciclo de 5s. A cada N ciclos é o suficiente pro painel ficar atualizado.
+_CICLOS_POR_REPORT_ESTOQUE = 12
 
 
 def _headers() -> dict:
@@ -26,6 +30,23 @@ def _reportar_cnpj() -> None:
         )
     except Exception:
         logger.warning("falha ao reportar CNPJ pro server_delivery", exc_info=True)
+
+
+def _reportar_estoque() -> None:
+    try:
+        itens = firebird_client.listar_produtos_estoque()
+    except Exception:
+        logger.warning("falha ao ler ESTOQUE do GDOOR local", exc_info=True)
+        return
+    try:
+        requests.post(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/estoque",
+            json={"itens": itens},
+            headers=_headers(),
+            timeout=15,
+        )
+    except Exception:
+        logger.warning("falha ao reportar estoque pro server_delivery", exc_info=True)
 
 
 def _marcar_concluido(job_id: int, venda_id_gdoor: str) -> None:
@@ -58,15 +79,22 @@ def _processar_job(job: dict) -> None:
     cliente = payload.get("cliente") or {}
     itens = payload.get("itens") or []
 
-    nao_mapeados = [i["product_id"] for i in itens if mapping.get_codigo_gdoor(i["product_id"]) is None]
+    # codigo_gdoor já vem resolvido no payload — o server_delivery mapeia
+    # product_id -> codigo_gdoor com o cadastro feito pelo dono no painel, antes
+    # de enfileirar o job (gdoor.service.ts, criarJob). O agente só executa.
+    nao_mapeados = [i["product_id"] for i in itens if not i.get("codigo_gdoor")]
     if nao_mapeados:
         logger.warning("job %s tem produto(s) sem mapeamento: %s", job_id, nao_mapeados)
-        _marcar_erro(job_id, f"produto(s) sem mapeamento para o codigo do GDOOR: {nao_mapeados}")
+        _marcar_erro(
+            job_id,
+            f"produto(s) sem mapeamento para o codigo do GDOOR: {nao_mapeados}. "
+            "Mapeie em Configuracoes > Integracao GDOOR no painel.",
+        )
         return
 
     itens_para_gravar = [
         firebird_client.ItemParaGravar(
-            codigo_gdoor=mapping.get_codigo_gdoor(i["product_id"]),
+            codigo_gdoor=i["codigo_gdoor"],
             descricao=i.get("product_name") or "",
             quantidade=i["quantity"],
             valor_unitario=i["unit_price"],
@@ -113,11 +141,15 @@ def _ciclo() -> None:
 
 
 def _loop() -> None:
+    ciclo_num = 0
     while True:
         try:
             _ciclo()
+            if ciclo_num % _CICLOS_POR_REPORT_ESTOQUE == 0:
+                _reportar_estoque()
         except Exception:
             logger.exception("erro inesperado no ciclo do poller")
+        ciclo_num += 1
         time.sleep(config.POLLER_INTERVALO_SEG)
 
 

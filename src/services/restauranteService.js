@@ -336,6 +336,10 @@ export const getStatusAgente = () => apiFetch('/agente-impressao/status');
 export const gerarTokenGdoor = () => apiFetch('/gdoor/gerar-token', { method: 'POST' });
 export const getStatusGdoor = () => apiFetch('/gdoor/status');
 export const salvarCnpjEsperadoGdoor = (cnpj) => apiFetch('/gdoor/cnpj-esperado', { method: 'PATCH', body: JSON.stringify({ cnpj }) });
+export const getEstoqueGdoor = () => apiFetch('/gdoor/estoque');
+export const getMapeamentoGdoor = () => apiFetch('/gdoor/mapeamento');
+export const salvarMapeamentoProdutoGdoor = (productId, codigoGdoor, descricaoGdoor) =>
+  apiFetch(`/gdoor/mapeamento/${productId}`, { method: 'PUT', body: JSON.stringify({ codigo_gdoor: codigoGdoor, descricao_gdoor: descricaoGdoor }) });
 
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');

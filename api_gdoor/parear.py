@@ -1,25 +1,13 @@
-"""Pareamento do agente GDOOR — cole aqui o token gerado em Configurações >
-Integração GDOOR no painel do restaurante. Ele é salvo direto no arquivo
-.env (campo GDOOR_AGENTE_TOKEN), sem precisar abrir o arquivo na mão.
+"""Pareamento do agente GDOOR via console (legado — prefira parear_gui.py).
+Cole aqui o token gerado em Configurações > Integração GDOOR no painel do
+restaurante. Salvo em local_config.json (%APPDATA%\\DeliveryHubAgenteGdoor),
+mesmo padrão do print-agent — nunca precisa editar arquivo na mão, e funciona
+mesmo numa instalação empacotada sem .env nenhum.
 
 Uso: dê duplo clique em parear.bat, ou rode "python parear.py" com o venv
 32-bit ativado. Depois é só reiniciar o agente (iniciar.bat) pra aplicar.
 """
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent
-ENV_PATH = BASE_DIR / ".env"
-ENV_EXAMPLE_PATH = BASE_DIR / ".env.example"
-
-
-def _linhas_atuais() -> list[str]:
-    if ENV_PATH.exists():
-        return ENV_PATH.read_text(encoding="utf-8").splitlines()
-    if ENV_EXAMPLE_PATH.exists():
-        # Primeira vez rodando aqui — parte do exemplo em vez de criar um .env vazio.
-        print(f".env ainda não existia, criando a partir de {ENV_EXAMPLE_PATH.name}...")
-        return ENV_EXAMPLE_PATH.read_text(encoding="utf-8").splitlines()
-    return []
+from app import local_config
 
 
 def salvar_token(token: str) -> None:
@@ -28,20 +16,8 @@ def salvar_token(token: str) -> None:
         print("Token vazio — nada foi salvo.")
         return
 
-    linhas = _linhas_atuais()
-    novas: list[str] = []
-    encontrado = False
-    for linha in linhas:
-        if linha.startswith("GDOOR_AGENTE_TOKEN="):
-            novas.append(f"GDOOR_AGENTE_TOKEN={token}")
-            encontrado = True
-        else:
-            novas.append(linha)
-    if not encontrado:
-        novas.append(f"GDOOR_AGENTE_TOKEN={token}")
-
-    ENV_PATH.write_text("\n".join(novas) + "\n", encoding="utf-8")
-    print(f"\nToken salvo em {ENV_PATH}")
+    local_config.definir_token(token)
+    print(f"\nToken salvo em {local_config._config_path()}")
     print("Agora reinicie o agente (feche a janela e rode iniciar.bat de novo) pra aplicar.")
 
 

@@ -2,13 +2,8 @@
 (print-agent): uma caixa mostrando se o GDOOR foi detectado e qual CNPJ ele tem
 cadastrado, um campo pra colar o token gerado no painel, e um botão Conectar."""
 import tkinter as tk
-from pathlib import Path
 
-from app import firebird_client
-
-BASE_DIR = Path(__file__).resolve().parent
-ENV_PATH = BASE_DIR / ".env"
-ENV_EXAMPLE_PATH = BASE_DIR / ".env.example"
+from app import firebird_client, local_config
 
 COR_FUNDO = "#18181B"
 COR_CAIXA = "#27272A"
@@ -31,33 +26,11 @@ def _detectar_gdoor():
 
 
 def _token_atual() -> str:
-    if not ENV_PATH.exists():
-        return ""
-    for linha in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        if linha.startswith("GDOOR_AGENTE_TOKEN="):
-            return linha.split("=", 1)[1].strip()
-    return ""
+    return local_config.carregar().get("token") or ""
 
 
 def _salvar_token(token: str) -> None:
-    if ENV_PATH.exists():
-        linhas = ENV_PATH.read_text(encoding="utf-8").splitlines()
-    elif ENV_EXAMPLE_PATH.exists():
-        linhas = ENV_EXAMPLE_PATH.read_text(encoding="utf-8").splitlines()
-    else:
-        linhas = []
-
-    novas, encontrado = [], False
-    for linha in linhas:
-        if linha.startswith("GDOOR_AGENTE_TOKEN="):
-            novas.append(f"GDOOR_AGENTE_TOKEN={token}")
-            encontrado = True
-        else:
-            novas.append(linha)
-    if not encontrado:
-        novas.append(f"GDOOR_AGENTE_TOKEN={token}")
-
-    ENV_PATH.write_text("\n".join(novas) + "\n", encoding="utf-8")
+    local_config.definir_token(token)
 
 
 class JanelaPareamento(tk.Tk):

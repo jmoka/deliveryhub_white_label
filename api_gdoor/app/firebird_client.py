@@ -120,6 +120,23 @@ def criar_pre_venda(
         con.close()
 
 
+def listar_produtos_estoque(limite: int = 3000) -> list[dict]:
+    """Catálogo de produtos do GDOOR (tabela ESTOQUE) — só alimenta o seletor de
+    código no painel (mapeamento produto->código), o agente nunca decide sozinho
+    qual código usar."""
+    con = _conectar()
+    try:
+        cur = con.cursor()
+        cur.execute(f"SELECT FIRST {limite} CODIGO, DESCRICAO FROM ESTOQUE ORDER BY DESCRICAO")
+        return [
+            {"codigo": row[0].strip(), "descricao": (row[1] or "").strip()}
+            for row in cur.fetchall()
+            if row[0]
+        ]
+    finally:
+        con.close()
+
+
 def produto_existe(codigo_gdoor: str) -> bool:
     con = _conectar()
     try:
