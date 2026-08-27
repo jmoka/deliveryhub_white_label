@@ -484,6 +484,7 @@ const RestauranteConfig = () => {
     motoboy_comissao_km_fallback: '',
     km_incluso_frete: '',
     valor_km_excedente: '',
+    raio_maximo_entrega_km: '',
     gorjeta_percentual: '',
     taxa_cartao_percentual: '',
     salao_modo: 'ambos',
@@ -517,6 +518,7 @@ const RestauranteConfig = () => {
           motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
           km_incluso_frete: d.km_incluso_frete != null ? String(d.km_incluso_frete) : '1',
           valor_km_excedente: d.valor_km_excedente != null ? String(d.valor_km_excedente) : '',
+          raio_maximo_entrega_km: d.raio_maximo_entrega_km != null ? String(d.raio_maximo_entrega_km) : '',
           gorjeta_percentual: d.gorjeta_percentual != null ? String(d.gorjeta_percentual) : '',
           taxa_cartao_percentual: d.taxa_cartao_percentual != null ? String(d.taxa_cartao_percentual) : '',
           salao_modo: d.salao_modo ?? 'ambos',
@@ -551,6 +553,7 @@ const RestauranteConfig = () => {
         motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
         km_incluso_frete: form.km_incluso_frete !== '' ? parseFloat(form.km_incluso_frete) : 1,
         valor_km_excedente: form.valor_km_excedente !== '' ? parseFloat(form.valor_km_excedente) : 0,
+        raio_maximo_entrega_km: form.raio_maximo_entrega_km !== '' ? parseFloat(form.raio_maximo_entrega_km) : null,
         gorjeta_percentual: form.gorjeta_percentual !== '' ? parseFloat(form.gorjeta_percentual) : 0,
         taxa_cartao_percentual: form.taxa_cartao_percentual !== '' ? parseFloat(form.taxa_cartao_percentual) : 0,
         salao_modo: form.salao_modo,
@@ -743,6 +746,16 @@ const RestauranteConfig = () => {
                       ⚠️ O endereço do seu estabelecimento não foi localizado — sem isso, o excedente de distância nunca é cobrado (fica sempre R$0). Confira o endereço no topo desta página.
                     </p>
                   )}
+
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Raio máximo de entrega (km)</label>
+                    <input type="number" min="0" step="0.1"
+                      value={form.raio_maximo_entrega_km}
+                      onChange={(e) => setForm((f) => ({ ...f, raio_maximo_entrega_km: e.target.value }))}
+                      placeholder="Sem limite"
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                    <p className="text-xs text-gray-400 mt-1">Bloqueia o pedido se o endereço do cliente ficar mais longe do que isso. Deixe em branco pra não ter limite.</p>
+                  </div>
                 </div>
 
                 {/* Como a entrega é feita */}

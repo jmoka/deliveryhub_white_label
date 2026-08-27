@@ -405,7 +405,16 @@ const AbaFinanceiro = ({ afiliacoes }) => {
                   {h.distancia_km != null && ` · ${h.distancia_km} km`}
                 </p>
                 <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A]">
-                  Frete {fmt(h.frete_repassado)} + adicional {fmt(h.valor_base ?? h.comissao_valor - h.frete_repassado)}
+                  {/* Adicional = total - repasse base, sempre — h.valor_base é só o valor
+                      base usado pra calcular o percentual (tipo 'percentual'), não é o
+                      bônus em si, então não pode ser exibido direto como "adicional". */}
+                  {h.frete_excedente_repassado > 0 ? (
+                    <>Frete {fmt(h.frete_repassado - h.frete_excedente_repassado)} + excedente {fmt(h.frete_excedente_repassado)} + adicional {fmt(h.comissao_valor - h.frete_repassado)}</>
+                  ) : (
+                    <>Frete {fmt(h.frete_repassado)} + adicional {fmt(h.comissao_valor - h.frete_repassado)}</>
+                  )}
+                  {h.tipo === 'percentual' && h.percentual != null && ` (${h.percentual}% de ${fmt(h.frete_repassado)})`}
+                  {(h.tipo === 'km') && h.valor_por_km != null && ` (${fmt(h.valor_por_km)}/km × ${h.distancia_km}km)`}
                 </p>
               </div>
               <p className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(h.comissao_valor)}</p>
@@ -660,6 +669,18 @@ const PedidoAtivoCard = ({ p, defaultExpandido, confirmando, onEntregar, onOcorr
                   </div>
                 ))}
               </div>
+              {p.frete_cobrado > 0 && (
+                <div className="flex justify-between mt-2 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46] text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  <span className="flex items-center gap-1"><Icon name="Truck" size={12} /> Frete</span>
+                  <span>{fmt(p.frete_cobrado)}</span>
+                </div>
+              )}
+              {p.frete_excedente_cobrado > 0 && (
+                <div className="flex justify-between text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                  <span className="flex items-center gap-1"><Icon name="MapPin" size={12} /> Excedente distância{p.distancia_entrega_km != null ? ` (${p.distancia_entrega_km}km)` : ''}</span>
+                  <span>{fmt(p.frete_excedente_cobrado)}</span>
+                </div>
+              )}
               <div className="flex justify-between mt-2 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46] text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">
                 <span>Total</span>
                 <span className="text-[#FF441F]">{fmt(p.total)}</span>

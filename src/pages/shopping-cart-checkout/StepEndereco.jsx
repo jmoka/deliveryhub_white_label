@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { updatePerfil } from '../../services/perfilService';
+import { updatePerfil, atualizarLocalizacaoPerfil } from '../../services/perfilService';
 import { buscarCep } from '../../utils/viaCep';
 import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
+import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -34,8 +35,11 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const [buscandoCep, setBuscandoCep] = useState(false);
-  const [previewDistancia, setPreviewDistancia] = useState(null); // { distanciaKm, valorExcedente } | null
+  const [previewDistancia, setPreviewDistancia] = useState(null); // { distanciaKm, valorExcedente, lat, lng, suspeito, foraDoRaio } | null
   const [calculandoPreview, setCalculandoPreview] = useState(false);
+  const [mostrarMapa, setMostrarMapa] = useState(false);
+  const [pinAjustado, setPinAjustado] = useState(null); // { lat, lng } | null — setado quando o cliente arrasta o pino
+  const [ajustandoPino, setAjustandoPino] = useState(false);
 
   useEffect(() => {
     if (!perfil) return;
@@ -60,6 +64,8 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
     const formatted = formatCEP(v);
     setForm((f) => ({ ...f, cep: formatted }));
     setPreviewDistancia(null);
+    setPinAjustado(null);
+    setMostrarMapa(false);
 
     const digitos = formatted.replace(/\D/g, '');
     if (digitos.length !== 8) return;
@@ -104,17 +110,53 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
           },
         }),
       });
-      if (!res.ok) return;
-      setPreviewDistancia(await res.json());
+      if (!res.ok) { setErro(`Não foi possível calcular a distância (HTTP ${res.status}).`); return; }
+      const dados = await res.json();
+      setPreviewDistancia(dados);
+      setErro(null);
+      // Distância implausível ou fora do raio de entrega — abre o mapa direto pro
+      // cliente já ver o pino e poder corrigir, em vez de só mostrar um aviso.
+      if (dados.suspeito || dados.foraDoRaio) setMostrarMapa(true);
     } catch {
     } finally {
       setCalculandoPreview(false);
     }
   };
 
+  // Cliente arrastou o pino no mapa — recalcula a distância com a coordenada
+  // confirmada por ele, sem passar pelo teto de plausibilidade (não é mais
+  // geocodificação automática).
+  const moverPino = async (lat, lng) => {
+    setPinAjustado({ lat, lng });
+    if (!restauranteId) return;
+    setAjustandoPino(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      if (!token) return;
+      const res = await fetch(apiPath('/api/pedidos/estimativa-frete-pino'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ restaurant_id: restauranteId, lat, lng }),
+      });
+      if (!res.ok) { setErro(`Não foi possível recalcular a distância (HTTP ${res.status}).`); return; }
+      const dados = await res.json();
+      setPreviewDistancia({ ...dados, lat, lng, suspeito: false });
+      setErro(null);
+    } catch (e) {
+      setErro(`Não foi possível recalcular a distância: ${e.message}`);
+    } finally {
+      setAjustandoPino(false);
+    }
+  };
+
   const handleNext = async () => {
     if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim() || !form.numero.trim() || !form.cidade.trim() || !form.estado.trim()) {
       setErro('Preencha nome, telefone, endereço, número, cidade e estado.');
+      return;
+    }
+    if (previewDistancia?.foraDoRaio) {
+      setErro('Esse endereço está fora da área de entrega do estabelecimento.');
       return;
     }
     setSalvando(true);
@@ -134,6 +176,11 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
           referencia: form.referencia.trim(),
         },
       });
+      // Pino ajustado manualmente no mapa tem prioridade sobre a geocodificação
+      // automática do endereço que acabou de ser salvo.
+      if (pinAjustado) {
+        try { await atualizarLocalizacaoPerfil(pinAjustado.lat, pinAjustado.lng); } catch {}
+      }
       await onNext(updated);
     } catch (e) {
       setErro(e.message);
@@ -158,12 +205,37 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
         </p>
         <Campo label="Informe o CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
         {buscandoCep && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Buscando endereço...</p>}
-        {calculandoPreview && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Calculando distância...</p>}
-        {!calculandoPreview && previewDistancia?.distanciaKm != null && (
+        {(calculandoPreview || ajustandoPino) && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Calculando distância...</p>}
+        {!calculandoPreview && !ajustandoPino && previewDistancia?.distanciaKm != null && !previewDistancia.suspeito && !previewDistancia.foraDoRaio && (
           <p className="text-[11px] text-[#FF441F] font-semibold -mt-2 flex items-center gap-1">
             <Icon name="MapPin" size={12} /> {previewDistancia.distanciaKm}km até você
             {previewDistancia.valorExcedente > 0 && <> — excedente estimado: {fmt(previewDistancia.valorExcedente)}</>}
           </p>
+        )}
+        {!calculandoPreview && !ajustandoPino && previewDistancia?.foraDoRaio && (
+          <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold -mt-2 flex items-center gap-1">
+            <Icon name="AlertTriangle" size={12} /> {previewDistancia.distanciaKm}km — fora da área de entrega
+          </p>
+        )}
+        {!calculandoPreview && !ajustandoPino && previewDistancia?.suspeito && (
+          <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold -mt-2 flex items-center gap-1">
+            <Icon name="AlertTriangle" size={12} /> Distância parece incorreta ({previewDistancia.distanciaKm}km) — confirme sua localização no mapa abaixo
+          </p>
+        )}
+        {previewDistancia?.distanciaKm != null && (
+          <button type="button" onClick={() => setMostrarMapa((v) => !v)}
+            className="text-[11px] font-semibold text-[#FF441F] -mt-1 flex items-center gap-1">
+            <Icon name={mostrarMapa ? 'ChevronUp' : 'MapPinned'} size={12} />
+            {mostrarMapa ? 'Ocultar mapa' : 'A distância não está certa? Ajustar no mapa'}
+          </button>
+        )}
+        {mostrarMapa && (
+          <div className="-mt-1">
+            <MapaLocalizacaoPicker
+              lat={pinAjustado?.lat ?? previewDistancia?.lat} lng={pinAjustado?.lng ?? previewDistancia?.lng}
+              onChange={moverPino}
+            />
+          </div>
         )}
         <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-1">Preenche rua, bairro, cidade e estado automaticamente</p>
         <Campo label="Logradouro (Rua / Av.)" value={form.logradouro} onChange={set('logradouro')} placeholder="Rua das Flores" required />
@@ -189,9 +261,9 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
           className="flex-1 py-3.5 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] font-semibold rounded-2xl hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] text-sm">
           Voltar
         </button>
-        <button onClick={handleNext} disabled={salvando}
+        <button onClick={handleNext} disabled={salvando || previewDistancia?.foraDoRaio}
           className="flex-[2] py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] disabled:opacity-50">
-          {salvando ? 'Calculando distância...' : 'Usar este endereço'}
+          {salvando ? 'Calculando distância...' : previewDistancia?.foraDoRaio ? 'Fora da área de entrega' : 'Usar este endereço'}
         </button>
       </div>
     </motion.div>

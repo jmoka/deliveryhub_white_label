@@ -27,6 +27,11 @@ export const getPerfil = () => apiFetch();
 export const updatePerfil = (data) =>
   apiFetch({ method: 'PATCH', body: JSON.stringify(data) });
 
+// Pino ajustado manualmente no mapa (checkout, quando a geocodificação automática
+// erra o endereço) — sobrescreve lat/lng e trava contra re-geocodificação futura.
+export const atualizarLocalizacaoPerfil = (lat, lng) =>
+  apiFetch({ method: 'PATCH', body: JSON.stringify({ lat, lng }) }, '/localizacao');
+
 // Detecta conta de cliente cujo email também tem cadastro de motoboy (identidades
 // separadas que coincidem no email) — usado pra barrar telas de cliente pra ela.
 export const ehMotoboy = () => apiFetch({}, '/e-motoboy');
