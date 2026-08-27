@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
+import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
 import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago } from '../../services/restauranteService';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -66,7 +67,7 @@ const PedidoDetalhe = ({
   const [confirmandoPagamento, setConfirmandoPagamento] = useState(false);
 
   if (!detalhe) return null;
-  const { pedido, itens, cliente, motoboy } = detalhe;
+  const { pedido, itens, cliente, motoboy, empresa } = detalhe;
 
   const troco = pedido.troco_para > pedido.total ? Number(pedido.troco_para) - Number(pedido.total) : 0;
 
@@ -491,6 +492,25 @@ const PedidoDetalhe = ({
               )}
             </div>
           </div>
+
+          {pedido.distancia_entrega_km != null && (
+            <>
+              <div className="flex items-center justify-between pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-2">
+                <div className="flex items-center gap-1.5">
+                  <Icon name="MapPin" size={13} className="text-[#71717A] dark:text-[#A1A1AA]" />
+                  <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Excedente distância ({pedido.distancia_entrega_km}km)</span>
+                </div>
+                <span className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">{fmt(pedido.frete_excedente_cobrado)}</span>
+              </div>
+              <div className="pt-2">
+                <MapaDistanciaEntrega
+                  restauranteLat={empresa?.lat} restauranteLng={empresa?.lng}
+                  clienteLat={cliente?.lat} clienteLng={cliente?.lng}
+                  distanciaKm={pedido.distancia_entrega_km}
+                />
+              </div>
+            </>
+          )}
 
           <div className="flex justify-between pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-2">
             <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Total</span>

@@ -6,6 +6,7 @@ import { formatDuracao } from '../../utils/formatDuracao';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import OrderActions from './components/OrderActions';
+import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -28,6 +29,7 @@ const OrderTrackingStatus = () => {
   const { orderId, restauranteSlug } = location.state ?? {};
 
   const [pedido, setPedido] = useState(null);
+  const [pontos, setPontos] = useState({ restaurante: null, cliente: null });
   const [pagamentoPago, setPagamentoPago] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -49,6 +51,10 @@ const OrderTrackingStatus = () => {
       const data = await res.json();
       // API returns { pedido:{...}, itens:[], cliente:{...}, empresa:{...}, pagamento_pago }
       setPedido({ ...data.pedido, itens: data.itens ?? [] });
+      setPontos({
+        restaurante: { lat: data.empresa?.lat, lng: data.empresa?.lng },
+        cliente: { lat: data.cliente?.lat, lng: data.cliente?.lng },
+      });
       setPagamentoPago(data.pagamento_pago ?? null);
     } catch (e) {
       setErro(e.message);
@@ -231,6 +237,7 @@ const OrderTrackingStatus = () => {
             <div className="border-t pt-2 mt-2 space-y-1.5">
               {(() => {
                 const frete = parseFloat(pedido.frete_cobrado ?? 0);
+                const excedente = parseFloat(pedido.frete_excedente_cobrado ?? 0);
                 const subtotal = pedido.itens.reduce((acc, i) => acc + i.unit_price * i.quantity, 0);
                 return (
                   <>
@@ -244,6 +251,14 @@ const OrderTrackingStatus = () => {
                       </span>
                       <span>{fmt(frete)}</span>
                     </div>
+                    {pedido.distancia_entrega_km != null && (
+                      <div className="flex justify-between text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Icon name="MapPin" size={13} /> Excedente distância{pedido.distancia_entrega_km != null ? ` (${pedido.distancia_entrega_km}km)` : ''}
+                        </span>
+                        <span>{fmt(excedente)}</span>
+                      </div>
+                    )}
                     <div className="border-t pt-1.5 flex justify-between font-bold text-gray-900">
                       <span>Total</span>
                       <span className="text-orange-600">{fmt(pedido.total)}</span>
@@ -252,6 +267,15 @@ const OrderTrackingStatus = () => {
                 );
               })()}
             </div>
+            {pedido.distancia_entrega_km != null && (
+              <div className="mt-3">
+                <MapaDistanciaEntrega
+                  restauranteLat={pontos.restaurante?.lat} restauranteLng={pontos.restaurante?.lng}
+                  clienteLat={pontos.cliente?.lat} clienteLng={pontos.cliente?.lng}
+                  distanciaKm={pedido.distancia_entrega_km}
+                />
+              </div>
+            )}
           </div>
         )}
 

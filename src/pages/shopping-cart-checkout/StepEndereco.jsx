@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { updatePerfil } from '../../services/perfilService';
 import { buscarCep } from '../../utils/viaCep';
+import { supabase } from '../../lib/supabase';
+import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
+
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const formatCEP = (v) => {
   const n = (v ?? '').replace(/\D/g, '');
@@ -21,7 +25,7 @@ const Campo = ({ label, value, onChange, placeholder, required, half }) => (
   </div>
 );
 
-const StepEndereco = ({ perfil, onNext, onBack }) => {
+const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
   const [form, setForm] = useState({
     name: '', phone_e164: '',
     logradouro: '', numero: '', complemento: '',
@@ -30,6 +34,8 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [previewDistancia, setPreviewDistancia] = useState(null); // { distanciaKm, valorExcedente } | null
+  const [calculandoPreview, setCalculandoPreview] = useState(false);
 
   useEffect(() => {
     if (!perfil) return;
@@ -53,6 +59,7 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
   const handleCepChange = async (v) => {
     const formatted = formatCEP(v);
     setForm((f) => ({ ...f, cep: formatted }));
+    setPreviewDistancia(null);
 
     const digitos = formatted.replace(/\D/g, '');
     if (digitos.length !== 8) return;
@@ -60,18 +67,54 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
     const endereco = await buscarCep(digitos);
     setBuscandoCep(false);
     if (!endereco) return;
-    setForm((f) => ({
-      ...f,
-      logradouro: endereco.logradouro || f.logradouro,
-      bairro: endereco.bairro || f.bairro,
-      cidade: endereco.cidade || f.cidade,
-      estado: endereco.estado || f.estado,
-    }));
+    const novoForm = {
+      ...form,
+      cep: formatted,
+      logradouro: endereco.logradouro || form.logradouro,
+      bairro: endereco.bairro || form.bairro,
+      cidade: endereco.cidade || form.cidade,
+      estado: endereco.estado || form.estado,
+    };
+    setForm((f) => ({ ...f, ...novoForm }));
+    buscarPreviewDistancia(novoForm);
+  };
+
+  // Preview em tempo real assim que o CEP resolve — geocodifica o endereço direto
+  // (sem depender de número, que ainda não foi digitado) só pra dar uma ideia da
+  // distância antes de avançar. O cálculo final/autoritativo acontece de novo ao
+  // salvar o endereço (mais preciso, já com número) e na hora de criar o pedido.
+  const buscarPreviewDistancia = async (dadosEndereco) => {
+    if (!restauranteId || !dadosEndereco.cidade?.trim() || !dadosEndereco.estado?.trim()) return;
+    setCalculandoPreview(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      if (!token) return;
+      const res = await fetch(apiPath('/api/pedidos/estimativa-frete-endereco'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          restaurant_id: restauranteId,
+          address_json: {
+            logradouro: dadosEndereco.logradouro,
+            bairro: dadosEndereco.bairro,
+            cidade: dadosEndereco.cidade,
+            estado: dadosEndereco.estado,
+            cep: dadosEndereco.cep,
+          },
+        }),
+      });
+      if (!res.ok) return;
+      setPreviewDistancia(await res.json());
+    } catch {
+    } finally {
+      setCalculandoPreview(false);
+    }
   };
 
   const handleNext = async () => {
-    if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim() || !form.numero.trim()) {
-      setErro('Preencha nome, telefone, endereço e número.');
+    if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim() || !form.numero.trim() || !form.cidade.trim() || !form.estado.trim()) {
+      setErro('Preencha nome, telefone, endereço, número, cidade e estado.');
       return;
     }
     setSalvando(true);
@@ -91,7 +134,7 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
           referencia: form.referencia.trim(),
         },
       });
-      onNext(updated);
+      await onNext(updated);
     } catch (e) {
       setErro(e.message);
     } finally {
@@ -113,6 +156,16 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
         <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-1">
           <Icon name="MapPin" size={15} className="text-[#FF441F]" /> Endereço de entrega
         </p>
+        <Campo label="Informe o CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
+        {buscandoCep && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Buscando endereço...</p>}
+        {calculandoPreview && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Calculando distância...</p>}
+        {!calculandoPreview && previewDistancia?.distanciaKm != null && (
+          <p className="text-[11px] text-[#FF441F] font-semibold -mt-2 flex items-center gap-1">
+            <Icon name="MapPin" size={12} /> {previewDistancia.distanciaKm}km até você
+            {previewDistancia.valorExcedente > 0 && <> — excedente estimado: {fmt(previewDistancia.valorExcedente)}</>}
+          </p>
+        )}
+        <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-1">Preenche rua, bairro, cidade e estado automaticamente</p>
         <Campo label="Logradouro (Rua / Av.)" value={form.logradouro} onChange={set('logradouro')} placeholder="Rua das Flores" required />
         <div className="flex gap-2">
           <Campo label="Número" value={form.numero} onChange={set('numero')} placeholder="123" half required />
@@ -120,11 +173,10 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
         </div>
         <Campo label="Bairro" value={form.bairro} onChange={set('bairro')} placeholder="Centro" />
         <div className="flex gap-2">
-          <Campo label="Cidade" value={form.cidade} onChange={set('cidade')} placeholder="São Paulo" half />
-          <Campo label="Estado" value={form.estado} onChange={set('estado')} placeholder="SP" half />
+          <Campo label="Cidade" value={form.cidade} onChange={set('cidade')} placeholder="São Paulo" half required />
+          <Campo label="Estado" value={form.estado} onChange={set('estado')} placeholder="SP" half required />
         </div>
-        <Campo label="CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
-        {buscandoCep && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Buscando endereço...</p>}
+        <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-1">Cidade e estado corretos são necessários pra calcular a distância de entrega</p>
         <Campo label="Ponto de referência" value={form.referencia} onChange={set('referencia')} placeholder="Próximo ao mercado..." />
       </div>
 
@@ -139,7 +191,7 @@ const StepEndereco = ({ perfil, onNext, onBack }) => {
         </button>
         <button onClick={handleNext} disabled={salvando}
           className="flex-[2] py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] disabled:opacity-50">
-          {salvando ? 'Salvando...' : 'Usar este endereço'}
+          {salvando ? 'Calculando distância...' : 'Usar este endereço'}
         </button>
       </div>
     </motion.div>

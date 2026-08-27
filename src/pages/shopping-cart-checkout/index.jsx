@@ -45,7 +45,7 @@ const ProgressBar = ({ etapa, total }) => (
   </div>
 );
 
-const LABELS_ETAPA = ['Seus itens', 'Endereço', 'Pagamento', 'Confirmar'];
+const LABELS_ETAPA = ['Endereço', 'Seus itens', 'Pagamento', 'Confirmar'];
 
 /* ── Tela PIX ─────────────────────────────────────────────────────  */
 const comprimirImagem = (file) =>
@@ -173,7 +173,7 @@ const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId })
 };
 
 /* ── Step 1: Itens ───────────────────────────────────────────────── */
-const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
+const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total }) => {
   const remover = (id) => setItens((p) => p.filter((i) => i.id !== id));
   const altQtd = (id, delta) =>
     setItens((p) => p.map((i) => i.id === id ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
@@ -220,6 +220,14 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
           </span>
           <span className="font-medium text-[#18181B] dark:text-[#F4F4F5]">{fmt(frete)}</span>
         </div>
+        {excedente?.distanciaKm != null && (
+          <div className="flex justify-between text-sm">
+            <span className="text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1">
+              <Icon name="MapPin" size={13} /> Excedente distância ({excedente.distanciaKm}km)
+            </span>
+            <span className="font-medium text-[#18181B] dark:text-[#F4F4F5]">{fmt(excedente.valorExcedente)}</span>
+          </div>
+        )}
         <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-2 flex justify-between font-bold">
           <span className="text-[#18181B] dark:text-[#F4F4F5]">Total</span>
           <span className="text-[#FF441F]">{fmt(total)}</span>
@@ -235,10 +243,10 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, total }) => {
 };
 
 /* ── Step 2: Pagamento ───────────────────────────────────────────── */
-const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, total, onNext, onBack, pagamentoManual = false, chavePix = null }) => (
+const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, excedente, total, onNext, onBack, pagamentoManual = false, chavePix = null }) => (
   <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
     {/* Resumo do valor — sempre visível */}
-    <div className="bg-[#18181B] dark:bg-[#3F3F46] rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
+    <div className="bg-[#18181B] dark:bg-[#3F3F46] rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-col">
         <span className="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">Subtotal</span>
         <span className="text-sm font-semibold text-white">{fmt(subtotal)}</span>
@@ -247,6 +255,12 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
         <div className="flex flex-col items-center">
           <span className="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">Frete</span>
           <span className="text-sm font-semibold text-white">{fmt(frete)}</span>
+        </div>
+      )}
+      {excedente?.distanciaKm != null && (
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">Excedente ({excedente.distanciaKm}km)</span>
+          <span className="text-sm font-semibold text-white">{fmt(excedente.valorExcedente)}</span>
         </div>
       )}
       <div className="flex flex-col items-end">
@@ -370,7 +384,7 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
 );
 
 /* ── Step 3: Confirmar ───────────────────────────────────────────── */
-const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, total, perfil, loading, erro, onConfirmar, onBack }) => {
+const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, excedente, total, perfil, loading, erro, onConfirmar, onBack }) => {
   const payOpt = PAYMENT_OPTIONS.find((o) => o.key === paymentMethod);
   const addr = perfil?.address_json ?? {};
   const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
@@ -409,6 +423,14 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, total
             </span>
             <span className="font-medium text-[#27272A] dark:text-[#F4F4F5]">{fmt(frete)}</span>
           </div>
+          {excedente?.distanciaKm != null && (
+            <div className="flex justify-between text-sm">
+              <span className="text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1">
+                <Icon name="MapPin" size={13} /> Excedente distância ({excedente.distanciaKm}km)
+              </span>
+              <span className="font-medium text-[#27272A] dark:text-[#F4F4F5]">{fmt(excedente.valorExcedente)}</span>
+            </div>
+          )}
           <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-2 flex justify-between font-bold">
             <span className="text-[#18181B] dark:text-[#F4F4F5]">Total</span>
             <span className="text-[#FF441F] text-lg">{fmt(total)}</span>
@@ -480,15 +502,40 @@ const SingleCartCheckout = () => {
   const [pixData, setPixData] = useState(null);
   const [pixManual, setPixManual] = useState(false);
   const [orderId, setOrderId] = useState(null);
-  const [etapa, setEtapa] = useState(0); // 0=itens 1=endereço 2=pagamento 3=confirmar
+  const [etapa, setEtapa] = useState(0); // 0=endereço 1=itens 2=pagamento 3=confirmar
+  const [excedente, setExcedente] = useState(null); // { distanciaKm, valorExcedente } | null
+  const [calculandoDistancia, setCalculandoDistancia] = useState(false);
 
   useEffect(() => {
     getPerfil().then(setPerfil).catch(() => {});
   }, []);
 
+  // Preview do excedente de km assim que o endereço é salvo — o backend recalcula
+  // tudo de novo (autoritativo) na hora de criar o pedido, isso aqui é só pra
+  // mostrar o valor pro cliente antes de confirmar. Aguardado (não fire-and-forget)
+  // pra já aparecer confirmado assim que o passo seguinte abrir.
+  const buscarEstimativaExcedente = async () => {
+    if (!restauranteId) return;
+    setCalculandoDistancia(true);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      if (!token) return;
+      const res = await fetch(apiPath(`/api/pedidos/estimativa-frete?restaurant_id=${restauranteId}`), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setExcedente(data);
+    } catch {
+    } finally {
+      setCalculandoDistancia(false);
+    }
+  };
+
   const frete = parseFloat(freteMotoboy) || 0;
   const subtotal = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
-  const total = subtotal + frete;
+  const total = subtotal + frete + (excedente?.valorExcedente ?? 0);
 
   const irParaStep = (n) => { setErro(null); setEtapa(n); };
 
@@ -637,22 +684,24 @@ const SingleCartCheckout = () => {
       <main className="p-4 max-w-lg mx-auto">
         <AnimatePresence mode="wait">
           {etapa === 0 && (
+            <StepEndereco
+              key="endereco"
+              perfil={perfil}
+              restauranteId={restauranteId}
+              onNext={async (updated) => { setPerfil(updated); await buscarEstimativaExcedente(); irParaStep(1); }}
+              onBack={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : -1)}
+            />
+          )}
+          {etapa === 1 && (
             <StepItens
               key="itens"
               itens={itens}
               setItens={setItens}
               subtotal={subtotal}
               frete={frete}
+              excedente={excedente}
               total={total}
-              onNext={() => irParaStep(1)}
-            />
-          )}
-          {etapa === 1 && (
-            <StepEndereco
-              key="endereco"
-              perfil={perfil}
-              onNext={(updated) => { setPerfil(updated); irParaStep(2); }}
-              onBack={() => irParaStep(0)}
+              onNext={() => irParaStep(2)}
             />
           )}
           {etapa === 2 && (
@@ -668,6 +717,7 @@ const SingleCartCheckout = () => {
               setTrocoPara={setTrocoPara}
               subtotal={subtotal}
               frete={frete}
+              excedente={excedente}
               total={total}
               onNext={() => { if (!validarPagamento()) return; irParaStep(3); }}
               onBack={() => irParaStep(1)}
@@ -681,6 +731,7 @@ const SingleCartCheckout = () => {
               trocoPara={parseFloat(trocoPara) || 0}
               subtotal={subtotal}
               frete={frete}
+              excedente={excedente}
               total={total}
               perfil={perfil}
               loading={loading}

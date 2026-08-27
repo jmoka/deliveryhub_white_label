@@ -197,6 +197,11 @@ const CustomerAccountOrderHistory = () => {
                           <Icon name="Truck" size={11} /> Frete: {fmt(p.frete_cobrado)}
                         </p>
                       )}
+                      {p.distancia_entrega_km != null && (
+                        <p className="text-xs text-gray-400 dark:text-[#71717A] mt-0.5 flex items-center justify-end gap-1">
+                          <Icon name="MapPin" size={11} /> Excedente{p.distancia_entrega_km != null ? ` (${p.distancia_entrega_km}km)` : ''}: {fmt(p.frete_excedente_cobrado)}
+                        </p>
+                      )}
                       <p className="text-base font-bold text-orange-600 dark:text-orange-400 mt-0.5">{fmt(p.total)}</p>
                     </div>
                   </div>

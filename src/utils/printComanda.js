@@ -44,8 +44,10 @@ export const printFichaMotoboy = (pedido, itens, cliente, restauranteNome) => {
   const isCash = pedido.payment_method === 'cash';
   const bc = barcodeValue(pedido.id);
   const barcodeSvg = renderBarcodeSvg('bc', bc, `#${pedido.id}`);
+  const subtotal = itens.reduce((s, i) => s + (i.unit_price ?? 0) * (i.quantity ?? 0), 0);
+  const freteExcedente = parseFloat(pedido.frete_excedente_cobrado ?? 0);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha Motoboy #${pedido.id}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}@media print{button{display:none!important}}</style>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.linha{display:flex;justify-content:space-between;font-size:12px;padding:1px 0}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}@media print{button{display:none!important}}</style>
 </head><body>
 <div class="c bold" style="font-size:11px;letter-spacing:1px">FICHA DE ENTREGA</div>
 <div class="c" style="font-size:12px">${esc(restauranteNome ?? '')}</div>
@@ -57,6 +59,10 @@ ${cliente?.phone_e164 ? `<div>${esc(cliente.phone_e164)}</div>` : ''}
 <div class="addr" style="margin-top:4px">${rua ? `<div>${esc(rua)}</div>` : ''}${compl ? `<div>${esc(compl)}</div>` : ''}${cidade ? `<div>${esc(cidade)}</div>` : ''}${ref ? `<div style="font-weight:bold">Ref: ${esc(ref)}</div>` : ''}</div>
 <hr/>
 ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>`).join('')}
+<hr/>
+<div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+<div class="linha"><span>Frete</span><span>${fmt(pedido.frete_cobrado)}</span></div>
+${pedido.distancia_entrega_km != null ? `<div class="linha"><span>Excedente ${esc(String(pedido.distancia_entrega_km))}km</span><span>${fmt(freteExcedente)}</span></div>` : ''}
 <hr/>
 <div class="c bold" style="font-size:16px">TOTAL: ${fmt(pedido.total)}</div>
 <div class="c">${isCash ? '<span style="font-size:13px;font-weight:bold">⚠ COBRAR NA ENTREGA</span>' : `Pago: ${pgto}`}</div>

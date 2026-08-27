@@ -482,6 +482,8 @@ const RestauranteConfig = () => {
     motoboy_comissao_percentual: '',
     motoboy_comissao_valor_km: '',
     motoboy_comissao_km_fallback: '',
+    km_incluso_frete: '',
+    valor_km_excedente: '',
     gorjeta_percentual: '',
     taxa_cartao_percentual: '',
     salao_modo: 'ambos',
@@ -513,6 +515,8 @@ const RestauranteConfig = () => {
           motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
           motoboy_comissao_valor_km: d.motoboy_comissao_valor_km != null ? String(d.motoboy_comissao_valor_km) : '',
           motoboy_comissao_km_fallback: d.motoboy_comissao_km_fallback != null ? String(d.motoboy_comissao_km_fallback) : '',
+          km_incluso_frete: d.km_incluso_frete != null ? String(d.km_incluso_frete) : '1',
+          valor_km_excedente: d.valor_km_excedente != null ? String(d.valor_km_excedente) : '',
           gorjeta_percentual: d.gorjeta_percentual != null ? String(d.gorjeta_percentual) : '',
           taxa_cartao_percentual: d.taxa_cartao_percentual != null ? String(d.taxa_cartao_percentual) : '',
           salao_modo: d.salao_modo ?? 'ambos',
@@ -545,6 +549,8 @@ const RestauranteConfig = () => {
         motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
         motoboy_comissao_valor_km: form.motoboy_comissao_valor_km !== '' ? parseFloat(form.motoboy_comissao_valor_km) : 0,
         motoboy_comissao_km_fallback: form.motoboy_comissao_km_fallback !== '' ? parseFloat(form.motoboy_comissao_km_fallback) : 0,
+        km_incluso_frete: form.km_incluso_frete !== '' ? parseFloat(form.km_incluso_frete) : 1,
+        valor_km_excedente: form.valor_km_excedente !== '' ? parseFloat(form.valor_km_excedente) : 0,
         gorjeta_percentual: form.gorjeta_percentual !== '' ? parseFloat(form.gorjeta_percentual) : 0,
         taxa_cartao_percentual: form.taxa_cartao_percentual !== '' ? parseFloat(form.taxa_cartao_percentual) : 0,
         salao_modo: form.salao_modo,
@@ -696,6 +702,47 @@ const RestauranteConfig = () => {
                     />
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Valor somado ao pedido e exibido ao cliente no checkout (independente de usar motoboy ou não)</p>
+                </div>
+
+                {/* Excedente de distância */}
+                <div className="border-t pt-4 mt-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
+                    Excedente de distância
+                  </label>
+                  <p className="text-xs text-gray-400 mb-2">
+                    Cobra um adicional do cliente quando a distância de entrega passar do km já incluso no frete. Deixe "Valor por KM excedente" em 0 pra manter desligado (comportamento atual).
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">KM incluso no frete</label>
+                      <input type="number" min="0" step="0.1"
+                        value={form.km_incluso_frete}
+                        onChange={(e) => setForm((f) => ({ ...f, km_incluso_frete: e.target.value }))}
+                        placeholder="1"
+                        className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Valor por KM excedente</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$</span>
+                        <input type="number" min="0" step="0.01"
+                          value={form.valor_km_excedente}
+                          onChange={(e) => setForm((f) => ({ ...f, valor_km_excedente: e.target.value }))}
+                          placeholder="0,00"
+                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                      </div>
+                    </div>
+                  </div>
+                  {parseFloat(form.valor_km_excedente || 0) > 0 && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-950/40 rounded-lg px-3 py-2 mt-2">
+                      Exemplo: 3km de distância, {form.km_incluso_frete || '1'}km incluso → {Math.max(0, 3 - parseFloat(form.km_incluso_frete || 1)).toFixed(1)}km × R$ {parseFloat(form.valor_km_excedente).toFixed(2)} = R$ {(Math.max(0, 3 - parseFloat(form.km_incluso_frete || 1)) * parseFloat(form.valor_km_excedente)).toFixed(2)} de excedente somado ao frete.
+                    </p>
+                  )}
+                  {parseFloat(form.valor_km_excedente || 0) > 0 && config?.geocode_falhou && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/40 rounded-lg px-3 py-2 mt-2">
+                      ⚠️ O endereço do seu estabelecimento não foi localizado — sem isso, o excedente de distância nunca é cobrado (fica sempre R$0). Confira o endereço no topo desta página.
+                    </p>
+                  )}
                 </div>
 
                 {/* Como a entrega é feita */}
