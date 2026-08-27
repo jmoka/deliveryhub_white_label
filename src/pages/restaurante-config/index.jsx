@@ -5,7 +5,7 @@ import {
   atualizarLocalizacaoManual,
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
   gerarTokenGdoor, getStatusGdoor, salvarCnpjEsperadoGdoor,
-  getEstoqueGdoor, getMapeamentoGdoor, salvarMapeamentoProdutoGdoor,
+  getCatalogoGdoor, bloquearSyncGdoor, importarDeGdoor, exportarParaGdoor, getStatusExportacaoGdoor,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -240,92 +240,276 @@ const GdoorAgentePanel = () => {
 // Mapeia cada produto do DeliveryHub pro código correspondente no ESTOQUE do
 // GDOOR — sem isso a pré-venda trava no item (job fica em erro, agente pede pra
 // mapear). Estoque vem do cache que o agente reporta a cada poll (não é live).
-const GdoorMapeamentoPanel = () => {
-  const [aberto, setAberto] = useState(false);
-  const [carregando, setCarregando] = useState(false);
-  const [produtos, setProdutos] = useState([]);
-  const [estoque, setEstoque] = useState([]);
-  const [salvandoId, setSalvandoId] = useState(null);
+const formatarMoeda = (v) => (v == null ? '—' : `R$ ${Number(v).toFixed(2)}`);
+
+/* Linha de item dentro do modal de mapeamento — usada tanto pro lado GDOOR
+   quanto pro lado DeliveryHub, só muda o conteúdo passado via props. */
+const LinhaMapeamento = ({ selecionavel, selecionado, onToggle, titulo, subtitulo, mapeado, diverge, extra }) => (
+  <div className={`flex items-center gap-3 border rounded-xl px-3 py-2 ${diverge ? 'border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20' : 'border-[#E4E4E7] dark:border-[#3F3F46]'}`}>
+    {selecionavel && (
+      <input type="checkbox" checked={selecionado} onChange={onToggle} className="w-4 h-4 flex-shrink-0 accent-[#FF441F]" />
+    )}
+    <div className="flex-1 min-w-0">
+      <p className="text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{titulo}</p>
+      <p className="text-[11px] text-[#A1A1AA] truncate">{subtitulo}</p>
+    </div>
+    <div className="flex-shrink-0 flex items-center gap-2">
+      {mapeado ? (
+        diverge ? (
+          <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400" title="Nome, preço ou quantidade diferentes entre os dois cadastros">⚠ Diverge</span>
+        ) : (
+          <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">✓ Mapeado</span>
+        )
+      ) : (
+        <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400">— Não mapeado</span>
+      )}
+      {extra}
+    </div>
+  </div>
+);
+
+const GdoorMapeamentoModal = ({ onClose, onFechado }) => {
+  const [carregando, setCarregando] = useState(true);
+  const [catalogo, setCatalogo] = useState({ produtos_delivery: [], estoque_gdoor: [] });
+  const [aba, setAba] = useState('gdoor');
+  const [filtro, setFiltro] = useState('nao_mapeados');
+  const [selecionados, setSelecionados] = useState(new Set());
+  const [processando, setProcessando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [exportandoStatus, setExportandoStatus] = useState(null);
 
   const carregar = useCallback(() => {
     setCarregando(true);
-    Promise.all([getMapeamentoGdoor(), getEstoqueGdoor()])
-      .then(([m, e]) => {
-        setProdutos(m.produtos ?? []);
-        setEstoque(e.itens ?? []);
-      })
+    return getCatalogoGdoor()
+      .then(setCatalogo)
       .catch(() => {})
       .finally(() => setCarregando(false));
   }, []);
 
-  useEffect(() => {
-    if (aberto) carregar();
-  }, [aberto, carregar]);
+  useEffect(() => { carregar(); }, [carregar]);
 
-  const escolherCodigo = async (produto, codigo) => {
-    setSalvandoId(produto.id);
-    const item = estoque.find((e) => e.codigo === codigo);
+  useEffect(() => {
+    setSelecionados(new Set());
+    setResultado(null);
+  }, [aba, filtro]);
+
+  const listaAtual = aba === 'gdoor' ? catalogo.estoque_gdoor : catalogo.produtos_delivery;
+  const chave = (item) => (aba === 'gdoor' ? item.codigo : item.id);
+  const mapeadoOk = (item) => (aba === 'gdoor' ? !!item.product_id : !!item.codigo_gdoor);
+
+  const filtrada = (listaAtual ?? []).filter((item) => {
+    if (aba === 'gdoor' && item.bloqueado_sync && filtro !== 'todos') return false;
+    if (filtro === 'nao_mapeados') return !mapeadoOk(item);
+    if (filtro === 'mapeados') return mapeadoOk(item);
+    return true;
+  });
+
+  const selecionaveis = filtrada.filter((item) => !mapeadoOk(item) && !(aba === 'gdoor' && item.bloqueado_sync));
+
+  const toggleSelecionado = (id) => {
+    setSelecionados((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(id)) novo.delete(id); else novo.add(id);
+      return novo;
+    });
+  };
+
+  const selecionarTodos = () => {
+    setSelecionados((atual) =>
+      atual.size === selecionaveis.length ? new Set() : new Set(selecionaveis.map(chave)),
+    );
+  };
+
+  const bloquear = async (codigo, bloqueado) => {
+    await bloquearSyncGdoor(codigo, bloqueado);
+    setCatalogo((c) => ({ ...c, estoque_gdoor: c.estoque_gdoor.map((e) => (e.codigo === codigo ? { ...e, bloqueado_sync: bloqueado } : e)) }));
+  };
+
+  const importar = async () => {
+    setProcessando(true);
+    setResultado(null);
     try {
-      await salvarMapeamentoProdutoGdoor(produto.id, codigo || null, item?.descricao ?? '');
-      setProdutos((lista) => lista.map((p) => (p.id === produto.id ? { ...p, codigo_gdoor: codigo || null, descricao_gdoor: item?.descricao ?? null } : p)));
+      const r = await importarDeGdoor([...selecionados]);
+      setResultado({ tipo: 'importar', ...r });
+      await carregar();
+      setSelecionados(new Set());
     } finally {
-      setSalvandoId(null);
+      setProcessando(false);
     }
   };
 
-  const faltam = produtos.filter((p) => !p.codigo_gdoor).length;
+  const exportar = async () => {
+    setProcessando(true);
+    setResultado(null);
+    try {
+      const r = await exportarParaGdoor([...selecionados]);
+      setResultado({ tipo: 'exportar', ...r });
+      setSelecionados(new Set());
+      if (r.enfileirados?.length) {
+        setExportandoStatus({ pendentes: r.enfileirados.length });
+        const interval = setInterval(async () => {
+          const status = await getStatusExportacaoGdoor().catch(() => null);
+          if (!status) return;
+          const pendentes = status.jobs.filter((j) => j.status === 'pendente' && r.enfileirados.includes(j.product_id));
+          setExportandoStatus({ pendentes: pendentes.length });
+          if (pendentes.length === 0) {
+            clearInterval(interval);
+            setExportandoStatus(null);
+            carregar();
+          }
+        }, 3000);
+      } else {
+        await carregar();
+      }
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const fechar = () => {
+    onClose();
+    onFechado?.();
+  };
 
   return (
-    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
-      <button onClick={() => setAberto((a) => !a)} className="w-full flex items-center justify-between">
-        <div className="text-left">
-          <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Mapeamento de produtos GDOOR</p>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Diz qual código do ESTOQUE do GDOOR corresponde a cada produto — sem isso a pré-venda não sai.</p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
+          <div>
+            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Mapeamento de produtos GDOOR</h2>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Liga o cadastro do GDOOR com o do DeliveryHub — sem mapear, a pré-venda desse produto não sai.</p>
+          </div>
+          <button onClick={fechar} className="text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+            <Icon name="X" size={20} />
+          </button>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {produtos.length > 0 && (
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${faltam > 0 ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'}`}>
-              {faltam > 0 ? `${faltam} sem mapear` : 'Tudo mapeado'}
-            </span>
-          )}
-          <Icon name={aberto ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-[#A1A1AA]" />
-        </div>
-      </button>
 
-      {aberto && (
-        <div className="mt-3">
-          {estoque.length === 0 && !carregando && (
-            <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded-lg px-3 py-2 mb-3">
-              Nenhum produto do GDOOR encontrado ainda — confirme que o agente está pareado e online (ele reporta o catálogo a cada ~1 minuto).
-            </p>
-          )}
-          {carregando ? (
-            <p className="text-xs text-[#A1A1AA]">Carregando...</p>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-              {produtos.map((p) => (
-                <div key={p.id} className="flex items-center gap-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{p.name}</p>
-                    <p className="text-[11px] text-[#A1A1AA] truncate">{p.category_name}</p>
-                  </div>
-                  <select
-                    value={p.codigo_gdoor ?? ''}
-                    onChange={(e) => escolherCodigo(p, e.target.value)}
-                    disabled={salvandoId === p.id}
-                    className="w-52 flex-shrink-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]"
-                  >
-                    <option value="">— não mapeado —</option>
-                    {estoque.map((e) => (
-                      <option key={e.codigo} value={e.codigo}>{e.codigo} — {e.descricao}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+        <div className="flex border-b border-[#E4E4E7] dark:border-[#3F3F46] px-6">
+          {[['gdoor', 'Produtos GDOOR'], ['delivery', 'Produtos DeliveryHub']].map(([valor, label]) => (
+            <button key={valor} onClick={() => setAba(valor)}
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px ${aba === valor ? 'border-[#FF441F] text-[#FF441F]' : 'border-transparent text-[#71717A] dark:text-[#A1A1AA]'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-3 gap-3 flex-wrap">
+          <div className="flex gap-1.5">
+            {[['nao_mapeados', 'Não mapeados'], ['mapeados', 'Mapeados'], ['todos', 'Todos']].map(([valor, label]) => (
+              <button key={valor} onClick={() => setFiltro(valor)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium ${filtro === valor ? 'bg-zinc-800 text-white' : 'bg-[#F4F4F5] dark:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {selecionaveis.length > 0 && (
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] cursor-pointer">
+                <input type="checkbox" checked={selecionados.size === selecionaveis.length} onChange={selecionarTodos} className="w-4 h-4 accent-[#FF441F]" />
+                Selecionar todos ({selecionaveis.length})
+              </label>
+              <button
+                onClick={aba === 'gdoor' ? importar : exportar}
+                disabled={selecionados.size === 0 || processando}
+                className="px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg disabled:opacity-40"
+              >
+                {processando ? 'Enviando...' : aba === 'gdoor' ? `Importar ${selecionados.size} para o Delivery` : `Enviar ${selecionados.size} para o GDOOR`}
+              </button>
             </div>
           )}
         </div>
-      )}
+
+        {exportandoStatus && (
+          <div className="mx-6 mb-2 text-xs text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-lg px-3 py-2">
+            Aguardando o agente criar {exportandoStatus.pendentes} produto(s) no GDOOR...
+          </div>
+        )}
+        {resultado && (
+          <div className="mx-6 mb-2 text-xs bg-[#F4F4F5] dark:bg-[#18181B] rounded-lg px-3 py-2 text-[#18181B] dark:text-[#F4F4F5]">
+            {resultado.tipo === 'importar' && <p>{resultado.importados?.length ?? 0} importado(s){resultado.ignorados?.length ? `, ${resultado.ignorados.length} ignorado(s)` : ''}.</p>}
+            {resultado.tipo === 'exportar' && <p>{resultado.enfileirados?.length ?? 0} enviado(s) pro agente processar{resultado.ignorados?.length ? `, ${resultado.ignorados.length} ignorado(s)` : ''}.</p>}
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-2">
+          {carregando ? (
+            <p className="text-xs text-[#A1A1AA] py-8 text-center">Carregando...</p>
+          ) : filtrada.length === 0 ? (
+            <p className="text-xs text-[#A1A1AA] py-8 text-center">Nenhum produto {filtro === 'nao_mapeados' ? 'pendente de mapear' : filtro === 'mapeados' ? 'mapeado ainda' : 'encontrado'}.</p>
+          ) : (
+            filtrada.map((item) => (
+              aba === 'gdoor' ? (
+                <LinhaMapeamento
+                  key={item.codigo}
+                  selecionavel={!mapeadoOk(item) && !item.bloqueado_sync}
+                  selecionado={selecionados.has(item.codigo)}
+                  onToggle={() => toggleSelecionado(item.codigo)}
+                  titulo={`${item.codigo} — ${item.descricao}`}
+                  subtitulo={`${formatarMoeda(item.preco_venda)} · ${item.qtd ?? 0} ${item.unidade ?? ''}${item.nome_delivery ? ` · mapeado com "${item.nome_delivery}"` : ''}`}
+                  mapeado={mapeadoOk(item)}
+                  diverge={item.diverge}
+                  extra={
+                    !mapeadoOk(item) && (
+                      <button onClick={() => bloquear(item.codigo, !item.bloqueado_sync)}
+                        className="text-[10px] px-2 py-1 rounded-full font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700">
+                        {item.bloqueado_sync ? 'Voltar a sincronizar' : 'Não sincronizar'}
+                      </button>
+                    )
+                  }
+                />
+              ) : (
+                <LinhaMapeamento
+                  key={item.id}
+                  selecionavel={!mapeadoOk(item)}
+                  selecionado={selecionados.has(item.id)}
+                  onToggle={() => toggleSelecionado(item.id)}
+                  titulo={item.name}
+                  subtitulo={`${item.category_name} · ${formatarMoeda(item.price)}${item.codigo_gdoor ? ` · GDOOR ${item.codigo_gdoor}` : ''}`}
+                  mapeado={mapeadoOk(item)}
+                  diverge={item.diverge}
+                />
+              )
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GdoorMapeamentoPanel = () => {
+  const [modalAberto, setModalAberto] = useState(false);
+  const [resumo, setResumo] = useState(null);
+
+  useEffect(() => {
+    getCatalogoGdoor()
+      .then((c) => {
+        const naoMapeados = (c.estoque_gdoor ?? []).filter((e) => !e.product_id && !e.bloqueado_sync).length;
+        setResumo({ naoMapeados });
+      })
+      .catch(() => {});
+  }, [modalAberto]);
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Mapeamento de produtos GDOOR</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Diz qual produto do GDOOR corresponde a qual produto do DeliveryHub — sem isso a pré-venda não sai.</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {resumo && (
+            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${resumo.naoMapeados > 0 ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'}`}>
+              {resumo.naoMapeados > 0 ? `${resumo.naoMapeados} sem mapear` : 'Tudo mapeado'}
+            </span>
+          )}
+          <button onClick={() => setModalAberto(true)}
+            className="px-3 py-1.5 bg-zinc-800 text-white text-xs font-bold rounded-xl">
+            Abrir mapeamento de produtos
+          </button>
+        </div>
+      </div>
+      {modalAberto && <GdoorMapeamentoModal onClose={() => setModalAberto(false)} />}
     </div>
   );
 };

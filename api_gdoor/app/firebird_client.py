@@ -121,18 +121,80 @@ def criar_pre_venda(
 
 
 def listar_produtos_estoque(limite: int = 3000) -> list[dict]:
-    """Catálogo de produtos do GDOOR (tabela ESTOQUE) — só alimenta o seletor de
-    código no painel (mapeamento produto->código), o agente nunca decide sozinho
-    qual código usar."""
+    """Catálogo de produtos do GDOOR (tabela ESTOQUE) — alimenta o modal de
+    mapeamento no painel (seletor de código + comparação de divergência de
+    nome/preço/qtd), o agente nunca decide sozinho qual código usar."""
     con = _conectar()
     try:
         cur = con.cursor()
-        cur.execute(f"SELECT FIRST {limite} CODIGO, DESCRICAO FROM ESTOQUE ORDER BY DESCRICAO")
-        return [
-            {"codigo": row[0].strip(), "descricao": (row[1] or "").strip()}
-            for row in cur.fetchall()
-            if row[0]
-        ]
+        cur.execute(
+            f"SELECT FIRST {limite} CODIGO, DESCRICAO, PRECO_VENDA, QTD, UND FROM ESTOQUE ORDER BY DESCRICAO"
+        )
+        itens = []
+        for codigo, descricao, preco_venda, qtd, und in cur.fetchall():
+            if not codigo:
+                continue
+            itens.append({
+                "codigo": codigo.strip(),
+                "descricao": (descricao or "").strip(),
+                "preco_venda": float(preco_venda) if preco_venda is not None else None,
+                "qtd": float(qtd) if qtd is not None else None,
+                "unidade": (und or "").strip() or None,
+            })
+        return itens
+    finally:
+        con.close()
+
+
+def proximo_codigo_estoque() -> str:
+    """ESTOQUE.CODIGO não tem gerador (é digitado manualmente hoje, ex. '000001').
+    Calcula o próximo sequencial numérico com o mesmo padding dos códigos já
+    existentes. Seguro porque o poller processa um job de cada vez, nunca em
+    paralelo — sem risco de duas criações pegarem o mesmo código."""
+    con = _conectar()
+    try:
+        cur = con.cursor()
+        cur.execute("SELECT CODIGO FROM ESTOQUE")
+        numericos = []
+        largura = 6
+        for (codigo,) in cur.fetchall():
+            if not codigo:
+                continue
+            codigo = codigo.strip()
+            if codigo.isdigit():
+                numericos.append(int(codigo))
+                largura = max(largura, len(codigo))
+        proximo = (max(numericos) + 1) if numericos else 1
+        return str(proximo).zfill(largura)
+    finally:
+        con.close()
+
+
+def criar_produto_estoque(
+    descricao: str, preco_venda: float, qtd: float, unidade: str = "UN"
+) -> str:
+    """Cria um item mínimo em ESTOQUE (código, descrição, unidade, preço de
+    venda, quantidade, situação) — mesmo estado em que ficaria um cadastro
+    rápido manual pela tela do GDOOR. Campos fiscais (NCM, ICMS, PIS/COFINS
+    etc.) ficam em branco; o dono completa depois no GDOOR se for emitir nota
+    fiscal com esse item."""
+    con = _conectar()
+    try:
+        cur = con.cursor()
+        codigo = proximo_codigo_estoque()
+        cur.execute(
+            """
+            INSERT INTO ESTOQUE (
+                CODIGO, DESCRICAO, UND, PRECO_VENDA, QTD, SITUACAO, DATA_CADASTRO
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (codigo, descricao, unidade, preco_venda, qtd, "Ativo", date.today()),
+        )
+        con.commit()
+        return codigo
+    except Exception:
+        con.rollback()
+        raise
     finally:
         con.close()
 

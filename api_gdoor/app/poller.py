@@ -117,6 +117,49 @@ def _processar_job(job: dict) -> None:
     _marcar_concluido(job_id, str(venda_id))
 
 
+def _marcar_produto_criado(job_id: int, codigo_gdoor: str) -> None:
+    try:
+        requests.post(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/criar-produto/{job_id}/concluido",
+            json={"codigo_gdoor": codigo_gdoor},
+            headers=_headers(),
+            timeout=10,
+        )
+    except Exception:
+        logger.warning("falha ao reportar produto criado (job %s)", job_id, exc_info=True)
+
+
+def _marcar_produto_erro(job_id: int, mensagem: str) -> None:
+    try:
+        requests.post(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/criar-produto/{job_id}/erro",
+            json={"mensagem": mensagem},
+            headers=_headers(),
+            timeout=10,
+        )
+    except Exception:
+        logger.warning("falha ao reportar erro de criacao de produto (job %s)", job_id, exc_info=True)
+
+
+def _processar_criacao_produto(job: dict) -> None:
+    job_id = job["id"]
+    payload = job.get("payload") or {}
+    try:
+        codigo = firebird_client.criar_produto_estoque(
+            descricao=payload.get("descricao") or "",
+            preco_venda=payload.get("preco_venda") or 0,
+            qtd=payload.get("qtd") or 0,
+            unidade=payload.get("unidade") or "UN",
+        )
+    except Exception as e:
+        logger.exception("falha ao criar produto no GDOOR (job %s)", job_id)
+        _marcar_produto_erro(job_id, str(e))
+        return
+
+    logger.info("job %s criou produto no GDOOR com codigo=%s", job_id, codigo)
+    _marcar_produto_criado(job_id, codigo)
+
+
 def _ciclo() -> None:
     _reportar_cnpj()
 
@@ -138,6 +181,20 @@ def _ciclo() -> None:
 
     for job in dados.get("jobs", []):
         _processar_job(job)
+
+    try:
+        res_produtos = requests.get(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/criar-produto/pendentes",
+            headers=_headers(),
+            timeout=10,
+        )
+        res_produtos.raise_for_status()
+        dados_produtos = res_produtos.json()
+        if not dados_produtos.get("bloqueado"):
+            for job in dados_produtos.get("jobs", []):
+                _processar_criacao_produto(job)
+    except Exception:
+        logger.warning("falha ao buscar produtos pendentes de criacao", exc_info=True)
 
 
 def _loop() -> None:

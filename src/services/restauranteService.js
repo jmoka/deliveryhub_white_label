@@ -336,10 +336,16 @@ export const getStatusAgente = () => apiFetch('/agente-impressao/status');
 export const gerarTokenGdoor = () => apiFetch('/gdoor/gerar-token', { method: 'POST' });
 export const getStatusGdoor = () => apiFetch('/gdoor/status');
 export const salvarCnpjEsperadoGdoor = (cnpj) => apiFetch('/gdoor/cnpj-esperado', { method: 'PATCH', body: JSON.stringify({ cnpj }) });
-export const getEstoqueGdoor = () => apiFetch('/gdoor/estoque');
-export const getMapeamentoGdoor = () => apiFetch('/gdoor/mapeamento');
+export const getCatalogoGdoor = () => apiFetch('/gdoor/catalogo');
 export const salvarMapeamentoProdutoGdoor = (productId, codigoGdoor, descricaoGdoor) =>
   apiFetch(`/gdoor/mapeamento/${productId}`, { method: 'PUT', body: JSON.stringify({ codigo_gdoor: codigoGdoor, descricao_gdoor: descricaoGdoor }) });
+export const bloquearSyncGdoor = (codigo, bloqueado) =>
+  apiFetch(`/gdoor/estoque/${encodeURIComponent(codigo)}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
+export const importarDeGdoor = (codigos) =>
+  apiFetch('/gdoor/importar-de-gdoor', { method: 'POST', body: JSON.stringify({ codigos }) });
+export const exportarParaGdoor = (productIds) =>
+  apiFetch('/gdoor/exportar-para-gdoor', { method: 'POST', body: JSON.stringify({ product_ids: productIds }) });
+export const getStatusExportacaoGdoor = () => apiFetch('/gdoor/exportar-para-gdoor/status');
 
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
