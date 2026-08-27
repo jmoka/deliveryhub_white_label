@@ -205,12 +205,23 @@ const GdoorAgentePanel = () => {
       </div>
 
       <ol className="text-xs text-[#71717A] dark:text-[#A1A1AA] space-y-1.5 mb-3 list-decimal list-inside">
-        <li>Instale/rode o agente GDOOR (<code>api_gdoor</code>) na máquina onde o GDOOR SLIM está instalado.</li>
+        <li>
+          <a href="/api_gdoor.rar" download className="text-[#FF441F] font-semibold">Baixe o agente (api_gdoor.rar)</a>
+          {' '}no PC onde o GDOOR SLIM está instalado.
+        </li>
+        <li>Descompacte o arquivo baixado (botão direito → Extrair aqui).</li>
+        <li>Abra a pasta <strong>api_gdoor</strong>.</li>
         <li>Clique em <strong>"Gerar token de conexão"</strong> abaixo, copie a chave.</li>
-        <li>Na pasta do agente, dê duplo clique em <strong>parear.bat</strong> — vai abrir uma janela mostrando se o GDOOR foi encontrado e o CNPJ cadastrado nele. Cole o token no campo, confirme que o CNPJ bate com o do estabelecimento e clique em <strong>Conectar</strong>.</li>
-        <li>Rode (ou reinicie) o agente com <strong>iniciar.bat</strong>.</li>
+        <li>Dê duplo clique em <strong>parear.bat</strong> — vai abrir uma janela mostrando se o GDOOR foi encontrado e o CNPJ cadastrado nele. Cole o token no campo, confirme que o CNPJ bate com o do estabelecimento e clique em <strong>Conectar</strong>.</li>
+        <li>Dê duplo clique em <strong>iniciar.bat</strong> para ligar o agente.</li>
         <li>Abra <strong>"Mapeamento de produtos GDOOR"</strong> abaixo e escolha o código do GDOOR pra cada produto — sem isso a pré-venda desse item não sai.</li>
       </ol>
+      <p className="text-xs text-[#A1A1AA] mb-3">
+        💡 Dica: crie um atalho do <strong>iniciar.bat</strong> na área de trabalho (ou na pasta Inicializar do Windows) para o agente ligar sozinho quando o computador ligar.
+      </p>
+      <p className="text-xs text-[#A1A1AA] mb-3">
+        <a href="https://github.com/jmoka/deliveryhub_white_label/tree/main/api_gdoor" target="_blank" rel="noreferrer" className="text-[#FF441F] font-semibold">Documentação completa</a>
+      </p>
 
       <button onClick={gerar} disabled={gerando}
         className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
