@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa,
   atualizarLocalizacaoManual,
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
+  gerarTokenGdoor, getStatusGdoor, salvarCnpjEsperadoGdoor,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -109,6 +110,114 @@ const Guia = () => {
               </div>
             </li>
           </ol>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Agente GDOOR local — mesmo padrão do AgenteImpressaoPanel (print-agent):
+// token de pareamento gerado aqui, colado na config do agente Python que roda
+// na máquina do restaurante (junto do GDOOR). O agente é quem puxa (polling)
+// os pedidos pendentes, nunca o servidor empurra — funciona atrás de qualquer
+// NAT sem configuração de rede. Camada extra: o agente lê o CNPJ cadastrado no
+// GDOOR local e o backend confere contra o CNPJ esperado digitado aqui.
+const GdoorAgentePanel = () => {
+  const [status, setStatus] = useState(null);
+  const [token, setToken] = useState(null);
+  const [gerando, setGerando] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+  const [cnpjEsperado, setCnpjEsperado] = useState('');
+  const [salvandoCnpj, setSalvandoCnpj] = useState(false);
+
+  const carregarStatus = useCallback(() => getStatusGdoor().then((s) => {
+    setStatus(s);
+    setCnpjEsperado((atual) => (atual ? atual : s.cnpj_esperado ?? ''));
+  }).catch(() => {}), []);
+
+  useEffect(() => {
+    carregarStatus();
+    const interval = setInterval(carregarStatus, 15000);
+    return () => clearInterval(interval);
+  }, [carregarStatus]);
+
+  const gerar = async () => {
+    setGerando(true);
+    try {
+      const { token } = await gerarTokenGdoor();
+      setToken(token);
+      carregarStatus();
+    } finally {
+      setGerando(false);
+    }
+  };
+
+  const copiar = () => {
+    navigator.clipboard?.writeText(token);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  const salvarCnpj = async () => {
+    setSalvandoCnpj(true);
+    try {
+      await salvarCnpjEsperadoGdoor(cnpjEsperado.trim());
+      carregarStatus();
+    } finally {
+      setSalvandoCnpj(false);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Integração GDOOR</p>
+        {status && (
+          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${status.online ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-zinc-100 dark:bg-zinc-950/40 text-zinc-500 dark:text-zinc-400'}`}>
+            {status.online ? 'Online' : status.pareado ? 'Offline' : 'Não pareado'}
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
+        Envia automaticamente cada pedido entregue como pré-venda pro GDOOR SLIM (PDV NFC-e), sem digitar de novo.
+      </p>
+
+      <div className="mb-3">
+        <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">CNPJ esperado no GDOOR</label>
+        <div className="flex gap-2">
+          <input value={cnpjEsperado} onChange={(e) => setCnpjEsperado(e.target.value)}
+            placeholder="00.000.000/0000-00"
+            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <button onClick={salvarCnpj} disabled={salvandoCnpj}
+            className="px-3 py-2 bg-zinc-800 text-white text-xs font-bold rounded-xl disabled:opacity-50 flex-shrink-0">
+            {salvandoCnpj ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+        <p className="text-[11px] text-[#A1A1AA] mt-1">
+          Segurança extra: o agente lê o CNPJ cadastrado no GDOOR local e o sistema confere aqui — se não bater, não envia nenhuma pré-venda.
+        </p>
+        {status?.cnpj_confere === false && (
+          <p className="text-[11px] text-red-600 dark:text-red-400 font-semibold mt-1">
+            ⚠️ CNPJ não confere — GDOOR reportou "{status.cnpj_confirmado}", esperado "{status.cnpj_esperado}"
+          </p>
+        )}
+      </div>
+
+      <ol className="text-xs text-[#71717A] dark:text-[#A1A1AA] space-y-1.5 mb-3 list-decimal list-inside">
+        <li>Instale/rode o agente GDOOR (<code>api_gdoor</code>) na máquina onde o GDOOR SLIM está instalado.</li>
+        <li>Clique em <strong>"Gerar token de conexão"</strong> abaixo, copie a chave.</li>
+        <li>Na pasta do agente, dê duplo clique em <strong>parear.bat</strong> — vai abrir uma janela mostrando se o GDOOR foi encontrado e o CNPJ cadastrado nele. Cole o token no campo, confirme que o CNPJ bate com o do estabelecimento e clique em <strong>Conectar</strong>.</li>
+        <li>Rode (ou reinicie) o agente com <strong>iniciar.bat</strong>.</li>
+      </ol>
+
+      <button onClick={gerar} disabled={gerando}
+        className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
+        {gerando ? 'Gerando...' : 'Gerar token de conexão'}
+      </button>
+      {token && (
+        <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+          <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{token}</span>
+          <button onClick={copiar} className="text-xs font-bold text-[#FF441F]">{copiado ? 'Copiado!' : 'Copiar'}</button>
         </div>
       )}
     </div>
@@ -631,6 +740,9 @@ const RestauranteConfig = () => {
 
             {/* Agente de impressão local — baixar, descompactar, rodar e parear impressoras */}
             {moduloSalao && <AgenteImpressaoPanel />}
+
+            {/* Agente GDOOR local — sincroniza pedidos entregues como pré-venda fiscal */}
+            <GdoorAgentePanel />
 
             {/* Formulário — limpo */}
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">

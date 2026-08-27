@@ -14,6 +14,16 @@ const formatCEP = (v) => {
   return n.length <= 8 ? n.replace(/(\d{5})(\d{0,3})/, (_, a, b) => (b ? `${a}-${b}` : a)) : v;
 };
 
+// Formatação leve, sem validar dígito verificador — só ajuda a digitar. Detecta
+// CPF (11) vs CNPJ (14) pela quantidade de dígitos conforme o cliente digita.
+const formatCpfCnpj = (v) => {
+  const n = (v ?? '').replace(/\D/g, '').slice(0, 14);
+  if (n.length <= 11) {
+    return n.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+  return n.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+};
+
 const Campo = ({ label, value, onChange, placeholder, required, half }) => (
   <div className={half ? 'w-1/2' : 'w-full'}>
     <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
@@ -28,7 +38,7 @@ const Campo = ({ label, value, onChange, placeholder, required, half }) => (
 
 const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
   const [form, setForm] = useState({
-    name: '', phone_e164: '',
+    name: '', phone_e164: '', cpf_cnpj: '',
     logradouro: '', numero: '', complemento: '',
     bairro: '', cidade: '', estado: '', cep: '', referencia: '',
   });
@@ -47,6 +57,7 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
     setForm({
       name: perfil.name ?? '',
       phone_e164: perfil.phone_e164 ?? '',
+      cpf_cnpj: perfil.cpf_cnpj ?? '',
       logradouro: a.logradouro ?? '',
       numero: a.numero ?? '',
       complemento: a.complemento ?? '',
@@ -165,6 +176,7 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
       const updated = await updatePerfil({
         name: form.name.trim(),
         phone_e164: form.phone_e164.trim(),
+        cpf_cnpj: form.cpf_cnpj.trim(),
         address_json: {
           logradouro: form.logradouro.trim(),
           numero: form.numero.trim(),
@@ -197,6 +209,7 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
         </p>
         <Campo label="Nome completo" value={form.name} onChange={set('name')} placeholder="João Silva" required />
         <Campo label="WhatsApp / Telefone" value={form.phone_e164} onChange={set('phone_e164')} placeholder="+55 11 99999-9999" required />
+        <Campo label="CPF/CNPJ (opcional)" value={form.cpf_cnpj} onChange={(v) => set('cpf_cnpj')(formatCpfCnpj(v))} placeholder="000.000.000-00" />
       </div>
 
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">

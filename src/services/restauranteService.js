@@ -332,6 +332,11 @@ export const getImpressorasDetectadas = () => apiFetch('/impressoras/detectadas'
 export const gerarTokenAgente = () => apiFetch('/agente-impressao/gerar-token', { method: 'POST' });
 export const getStatusAgente = () => apiFetch('/agente-impressao/status');
 
+// Agente GDOOR (mesmo padrão do agente de impressão) — pareamento por token
+export const gerarTokenGdoor = () => apiFetch('/gdoor/gerar-token', { method: 'POST' });
+export const getStatusGdoor = () => apiFetch('/gdoor/status');
+export const salvarCnpjEsperadoGdoor = (cnpj) => apiFetch('/gdoor/cnpj-esperado', { method: 'PATCH', body: JSON.stringify({ cnpj }) });
+
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
 export const bloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/bloquear`, { method: 'PATCH' });
