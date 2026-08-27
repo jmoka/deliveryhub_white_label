@@ -379,9 +379,13 @@ const ComboCarrosselCard = ({ combo, i, navigate }) => {
   );
 };
 
-/* ── Carrossel de combos ──────────────────────────────────────────── */
+/* ── Carrossel de combos: anda sozinho + continua 100% arrastável/deslizável
+   (scroll nativo) — conteúdo duplicado pra o loop fechar sem salto ─────── */
 const ComboCarrossel = ({ combos, navigate }) => {
   const scrollRef = useRef(null);
+  const auto = combos.length > 1;
+  const [pausado, setPausado] = useState(false);
+
   const scroll = (dir) => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
   };
@@ -392,8 +396,12 @@ const ComboCarrossel = ({ combos, navigate }) => {
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
         <Icon name="ChevronLeft" size={16} className="text-[var(--texto-principal)]" />
       </button>
-      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-        {combos.map((c, i) => <ComboCarrosselCard key={c.id} combo={c} i={i} navigate={navigate} />)}
+      <div ref={scrollRef} className="overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}
+        onTouchStart={() => setPausado(true)} onTouchEnd={() => setPausado(false)} onTouchCancel={() => setPausado(false)}>
+        <div className={`flex gap-3 w-max ${auto ? 'animate-carrossel-continuo-reverso' : ''}`}
+          style={auto ? { '--carrossel-duracao': `${combos.length * 5}s`, animationPlayState: pausado ? 'paused' : undefined } : undefined}>
+          {(auto ? [...combos, ...combos] : combos).map((c, i) => <ComboCarrosselCard key={auto ? `${c.id}-${i}` : c.id} combo={c} i={i} navigate={navigate} />)}
+        </div>
       </div>
       <button onClick={() => scroll(1)}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
@@ -508,9 +516,14 @@ const ProdCarrosselCard = ({ produto, i, navigate, onAdd }) => {
   );
 };
 
-/* ── Carrossel de produtos ────────────────────────────────────────── */
-const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
+/* ── Carrossel de produtos: anda sozinho + continua 100% arrastável/deslizável
+   (scroll nativo) — conteúdo duplicado pra o loop fechar sem salto ─────── */
+const ProdCarrossel = ({ produtos, navigate, onAdd, reverso = false }) => {
   const scrollRef = useRef(null);
+  const auto = produtos.length > 1;
+  const [pausado, setPausado] = useState(false);
+  const classeAnimacao = reverso ? 'animate-carrossel-continuo-reverso' : 'animate-carrossel-continuo';
+
   const scroll = (dir) => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
   };
@@ -521,10 +534,14 @@ const ProdCarrossel = ({ produtos, navigate, onAdd }) => {
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
         <Icon name="ChevronLeft" size={16} className="text-[var(--texto-principal)]" />
       </button>
-      <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
-        {produtos.map((p, i) => (
-          <ProdCarrosselCard key={p.id} produto={p} i={i} navigate={navigate} onAdd={onAdd} />
-        ))}
+      <div ref={scrollRef} className="overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}
+        onTouchStart={() => setPausado(true)} onTouchEnd={() => setPausado(false)} onTouchCancel={() => setPausado(false)}>
+        <div className={`flex gap-3 w-max ${auto ? classeAnimacao : ''}`}
+          style={auto ? { '--carrossel-duracao': `${produtos.length * 5}s`, animationPlayState: pausado ? 'paused' : undefined } : undefined}>
+          {(auto ? [...produtos, ...produtos] : produtos).map((p, i) => (
+            <ProdCarrosselCard key={auto ? `${p.id}-${i}` : p.id} produto={p} i={i} navigate={navigate} onAdd={onAdd} />
+          ))}
+        </div>
       </div>
       <button onClick={() => scroll(1)}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
@@ -1189,7 +1206,7 @@ const MenuCatalogProductBrowse = () => {
                 <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
                 {tag.name}
               </p>
-              <ProdCarrossel produtos={prods} navigate={navigate} onAdd={handleAddToCart} />
+              <ProdCarrossel produtos={prods} navigate={navigate} onAdd={handleAddToCart} reverso={/promo/i.test(tag.name)} />
             </div>
           </div>
         ))

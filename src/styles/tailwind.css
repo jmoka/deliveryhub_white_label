@@ -180,3 +180,17 @@
 .animate-carrossel-continuo:hover {
   animation-play-state: paused;
 }
+
+/* Mesmo carrossel, sentido invertido (esquerda → direita) — usado no
+   carrossel de "Promoção" pra diferenciar visualmente dos outros. */
+@keyframes carrossel-continuo-reverso {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.animate-carrossel-continuo-reverso {
+  animation: carrossel-continuo-reverso linear infinite;
+  animation-duration: var(--carrossel-duracao, 30s);
+}
+.animate-carrossel-continuo-reverso:hover {
+  animation-play-state: paused;
+}
