@@ -24,10 +24,10 @@ const DIAS_ALERTA_VENCIMENTO = 5;
 // Ícones dos favoritos começam grandes/bem visíveis e só encolhem conforme a
 // quantidade aumenta, pra continuar cabendo numa linha só na topbar.
 const tamanhoFavoritos = (qtd) => {
-  if (qtd <= 3) return { icone: 50, padding: 'p-4' };
-  if (qtd <= 5) return { icone: 44, padding: 'p-3.5' };
-  if (qtd <= 7) return { icone: 38, padding: 'p-3' };
-  return { icone: 33, padding: 'p-2.5' };
+  if (qtd <= 3) return { icone: 35, padding: 'p-3' };
+  if (qtd <= 5) return { icone: 31, padding: 'p-2.5' };
+  if (qtd <= 7) return { icone: 27, padding: 'p-2' };
+  return { icone: 23, padding: 'p-1.5' };
 };
 
 const PlanoStatusDot = ({ planoStatus, onClick }) => {
