@@ -31,18 +31,36 @@ const CardapioImpressoModal = ({ onClose }) => {
       .finally(() => setCarregando(false));
   }, []);
 
-  // Agrupa por categoria direto dos produtos (já vêm com category_name) —
-  // não precisa buscar /categorias à parte só pra montar essa lista.
-  const categorias = useMemo(() => {
-    const mapa = new Map();
+  // Agrupa em 2 níveis direto dos produtos (já vêm com category_name/grupo_name)
+  // — não precisa buscar /categorias à parte pra montar essa lista. Grupo é
+  // opcional: produto sem grupo_name cai no bucket "sem grupo" (nome: null),
+  // renderizado por último, sem cabeçalho de grupo.
+  const grupos = useMemo(() => {
+    const porGrupo = new Map();
     for (const p of produtos) {
-      const nome = p.category_name || 'Outros';
-      if (!mapa.has(nome)) mapa.set(nome, []);
-      mapa.get(nome).push(p);
+      const grupoNome = p.grupo_name || null;
+      const categoriaNome = p.category_name || 'Outros';
+      if (!porGrupo.has(grupoNome)) porGrupo.set(grupoNome, new Map());
+      const porCategoria = porGrupo.get(grupoNome);
+      if (!porCategoria.has(categoriaNome)) porCategoria.set(categoriaNome, []);
+      porCategoria.get(categoriaNome).push(p);
     }
-    return [...mapa.entries()]
-      .map(([nome, itens]) => ({ nome, produtos: itens }))
+
+    const montarCategorias = (porCategoria) =>
+      [...porCategoria.entries()]
+        .map(([nome, itens]) => ({ nome, produtos: itens }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    const nomeados = [...porGrupo.entries()]
+      .filter(([nome]) => nome !== null)
+      .map(([nome, porCategoria]) => ({ nome, categorias: montarCategorias(porCategoria) }))
       .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    const semGrupo = porGrupo.has(null)
+      ? [{ nome: null, categorias: montarCategorias(porGrupo.get(null)) }]
+      : [];
+
+    return [...nomeados, ...semGrupo];
   }, [produtos]);
 
   const toggleProduto = (id) => {
@@ -71,16 +89,21 @@ const CardapioImpressoModal = ({ onClose }) => {
     localStorage.setItem(LS_RODAPE, rodape);
     localStorage.setItem(LS_USAR_LOGO, String(usarLogo));
 
-    const categoriasSelecionadas = categorias
-      .map((c) => ({ nome: c.nome, produtos: c.produtos.filter((p) => selecionados.has(p.id)) }))
-      .filter((c) => c.produtos.length > 0);
+    const gruposSelecionados = grupos
+      .map((g) => ({
+        nome: g.nome,
+        categorias: g.categorias
+          .map((c) => ({ nome: c.nome, produtos: c.produtos.filter((p) => selecionados.has(p.id)) }))
+          .filter((c) => c.produtos.length > 0),
+      }))
+      .filter((g) => g.categorias.length > 0);
 
     const endereco = empresa
       ? [empresa.address, empresa.neighborhood, empresa.city].filter(Boolean).join(', ')
       : '';
 
     printCardapioImpresso({
-      categorias: categoriasSelecionadas,
+      grupos: gruposSelecionados,
       restauranteNome: empresa?.name,
       logoUrl: empresa?.logo_url,
       usarLogo,
@@ -93,7 +116,7 @@ const CardapioImpressoModal = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-md md:max-w-[85%] max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4E4E7]">
           <div>
             <h2 className="text-lg font-bold text-[#18181B]">Cardápio impresso</h2>
@@ -128,32 +151,41 @@ const CardapioImpressoModal = ({ onClose }) => {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {carregando ? (
             <p className="text-xs text-[#A1A1AA] py-8 text-center">Carregando...</p>
-          ) : categorias.length === 0 ? (
+          ) : grupos.length === 0 ? (
             <p className="text-xs text-[#A1A1AA] py-8 text-center">Nenhum produto cadastrado ainda.</p>
           ) : (
-            categorias.map((categoria) => {
-              const ids = categoria.produtos.map((p) => p.id);
-              const todosSelecionados = ids.every((id) => selecionados.has(id));
-              return (
-                <div key={categoria.nome}>
-                  <label className="flex items-center gap-2 mb-2 cursor-pointer">
-                    <input type="checkbox" checked={todosSelecionados} onChange={() => toggleCategoria(categoria)} className="w-4 h-4 accent-[#FF441F]" />
-                    <span className="text-sm font-bold text-[#18181B]">{categoria.nome}</span>
-                  </label>
-                  <div className="pl-6 space-y-1.5">
-                    {categoria.produtos.map((p) => (
-                      <label key={p.id} className="flex items-center justify-between gap-2 cursor-pointer">
-                        <span className="flex items-center gap-2 text-sm text-[#27272A]">
-                          <input type="checkbox" checked={selecionados.has(p.id)} onChange={() => toggleProduto(p.id)} className="w-4 h-4 accent-[#FF441F]" />
-                          {p.name}
-                        </span>
-                        <span className="text-xs text-[#71717A]">{fmtPreco(p.preco_promo ?? p.price)}</span>
-                      </label>
-                    ))}
+            grupos.map((grupo) => (
+              <div key={grupo.nome ?? '__sem_grupo__'} className="space-y-3">
+                {grupo.nome && (
+                  <div className="text-xs font-black uppercase tracking-wide text-[#FF441F] border-b border-[#FF441F]/30 pb-1">
+                    {grupo.nome}
                   </div>
-                </div>
-              );
-            })
+                )}
+                {grupo.categorias.map((categoria) => {
+                  const ids = categoria.produtos.map((p) => p.id);
+                  const todosSelecionados = ids.every((id) => selecionados.has(id));
+                  return (
+                    <div key={categoria.nome}>
+                      <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                        <input type="checkbox" checked={todosSelecionados} onChange={() => toggleCategoria(categoria)} className="w-4 h-4 accent-[#FF441F]" />
+                        <span className="text-sm font-bold text-[#18181B]">{categoria.nome}</span>
+                      </label>
+                      <div className="pl-6 space-y-1.5">
+                        {categoria.produtos.map((p) => (
+                          <label key={p.id} className="flex items-center justify-between gap-2 cursor-pointer">
+                            <span className="flex items-center gap-2 text-sm text-[#27272A]">
+                              <input type="checkbox" checked={selecionados.has(p.id)} onChange={() => toggleProduto(p.id)} className="w-4 h-4 accent-[#FF441F]" />
+                              {p.name}
+                            </span>
+                            <span className="text-xs text-[#71717A]">{fmtPreco(p.preco_promo ?? p.price)}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))
           )}
         </div>
 

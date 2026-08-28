@@ -12,7 +12,7 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '' };
 
 const JSON_FORMATO_EXEMPLO = JSON.stringify([
   {
@@ -109,6 +109,7 @@ const RestauranteProdutos = () => {
       preco_promo: p.preco_promo != null ? String(p.preco_promo) : '',
       image_url: p.image_url ?? '',
       category_id: p.category_id != null ? String(p.category_id) : '',
+      grupo_id: p.grupo_id != null ? String(p.grupo_id) : '',
       tags: Array.isArray(p.tags) ? p.tags : [],
       destaque: p.destaque ?? false,
       impressora_id: p.impressora_id != null ? String(p.impressora_id) : '',
@@ -320,6 +321,7 @@ const RestauranteProdutos = () => {
       preco_promo: form.preco_promo ? parseFloat(form.preco_promo) : null,
       image_url: form.image_url || null,
       category_id: parseInt(form.category_id),
+      grupo_id: form.grupo_id ? parseInt(form.grupo_id) : null,
       tags: form.tags,
       destaque: form.destaque,
       impressora_id: form.impressora_id ? parseInt(form.impressora_id) : null,
@@ -462,7 +464,7 @@ const RestauranteProdutos = () => {
             className="w-full flex items-center justify-between px-5 py-3.5 text-left"
           >
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm">Minhas Categorias</span>
+              <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm">Meus Grupos (categorias próprias)</span>
               <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#3F3F46] px-2 py-0.5 rounded-full">{categorias.length}</span>
             </div>
             <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">{showCategPanel ? '▲' : '▼'}</span>
@@ -470,12 +472,15 @@ const RestauranteProdutos = () => {
 
           {showCategPanel && (
             <div className="px-5 pb-4 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-3">
+                Ex.: "PF", "Prato Executivo", "Refeição p/ 2 pessoas" — usado como grupo no cardápio impresso (agrupa as categorias da plataforma dentro de cada um).
+              </p>
               {/* Criar nova */}
               <form onSubmit={handleCriarCategoria} className="flex gap-2 mt-3 mb-4">
                 <input
                   value={novaCategoria}
                   onChange={(e) => setNovaCategoria(e.target.value)}
-                  placeholder="Nome da nova categoria..."
+                  placeholder="Nome do novo grupo..."
                   className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]"
                 />
                 <button
@@ -488,7 +493,7 @@ const RestauranteProdutos = () => {
               </form>
 
               {categorias.length === 0 ? (
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhuma categoria própria. Crie acima ou use as globais da plataforma.</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhum grupo próprio ainda. Crie acima pra usar no cardápio impresso.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {categorias.map((c) => (
@@ -772,10 +777,15 @@ const RestauranteProdutos = () => {
       {/* Modal criar / editar produto */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4">
-              {editando ? 'Editar Produto' : 'Novo Produto'}
-            </h2>
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-md md:max-w-[85%] max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">
+                {editando ? 'Editar Produto' : 'Novo Produto'}
+              </h2>
+              <button type="button" onClick={fecharModal} className="text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+                <Icon name="X" size={20} />
+              </button>
+            </div>
             <form onSubmit={handleSalvar} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Nome *</label>
@@ -797,7 +807,7 @@ const RestauranteProdutos = () => {
                   placeholder="Descrição opcional"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Preço (R$) *</label>
                   <input
@@ -828,20 +838,30 @@ const RestauranteProdutos = () => {
                     required
                   >
                     <option value="">Selecionar</option>
-                    {categorias.length > 0 && (
-                      <optgroup label="Minhas categorias">
-                        {categorias.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </optgroup>
+                    {categoriasGlobais.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                    {/* Resguardo: produto antigo que usava categoria própria como
+                        categoria principal (antes da separação categoria/grupo) —
+                        mantém a opção visível pra não sumir/resetar ao editar. */}
+                    {form.category_id && !categoriasGlobais.some((c) => String(c.id) === form.category_id) && (
+                      categorias.filter((c) => String(c.id) === form.category_id).map((c) => (
+                        <option key={c.id} value={c.id}>{c.name} (própria)</option>
+                      ))
                     )}
-                    {categoriasGlobais.length > 0 && (
-                      <optgroup label="Categorias da plataforma">
-                        {categoriasGlobais.map((c) => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </optgroup>
-                    )}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Grupo</label>
+                  <select
+                    value={form.grupo_id}
+                    onChange={(e) => setForm((f) => ({ ...f, grupo_id: e.target.value }))}
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="">Nenhum grupo</option>
+                    {categorias.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>

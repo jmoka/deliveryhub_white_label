@@ -2,20 +2,40 @@ import { escapeHtml as esc } from './escapeHtml';
 
 const fmt = (v) => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
-// Distribui os blocos de categoria entre 2 colunas tentando equilibrar a
-// altura impressa (1 linha de cabeçalho + 1 por produto) — bin-packing
-// guloso: sempre entra na coluna que está com menos linhas até agora.
-// Categorias maiores primeiro pra não deixar sobras desequilibradas no fim.
-const distribuirEmColunas = (categorias) => {
-  const ordenadas = [...categorias].sort(
-    (a, b) => b.produtos.length - a.produtos.length,
-  );
+const pesoCategoria = (categoria) => 1 + categoria.produtos.length;
+const pesoGrupo = (grupo) => 1 + grupo.categorias.reduce((s, c) => s + pesoCategoria(c), 0);
+
+// Monta a lista de "blocos" a distribuir entre as colunas: um grupo nomeado
+// (com todas as suas categorias dentro) vira UM bloco indivisível, pra nunca
+// separar categorias do mesmo grupo em colunas diferentes. Produtos sem grupo
+// (nome null) mantêm o comportamento de antes — cada categoria é seu próprio
+// bloco independente, livre pra ser distribuída separadamente.
+const construirBlocos = (grupos) => {
+  const blocos = [];
+  for (const grupo of grupos) {
+    if (grupo.nome) {
+      blocos.push({ tipo: 'grupo', grupo, peso: pesoGrupo(grupo) });
+    } else {
+      for (const categoria of grupo.categorias) {
+        blocos.push({ tipo: 'categoria', categoria, peso: pesoCategoria(categoria) });
+      }
+    }
+  }
+  return blocos;
+};
+
+// Distribui os blocos entre 2 colunas tentando equilibrar a altura impressa —
+// bin-packing guloso: bloco maior primeiro, sempre entra na coluna que está
+// com menos linhas até agora.
+const distribuirEmColunas = (grupos) => {
+  const blocos = construirBlocos(grupos);
+  const ordenados = [...blocos].sort((a, b) => b.peso - a.peso);
   const colunas = [[], []];
   const linhas = [0, 0];
-  for (const cat of ordenadas) {
+  for (const bloco of ordenados) {
     const alvo = linhas[0] <= linhas[1] ? 0 : 1;
-    colunas[alvo].push(cat);
-    linhas[alvo] += 1 + cat.produtos.length;
+    colunas[alvo].push(bloco);
+    linhas[alvo] += bloco.peso;
   }
   return colunas;
 };
@@ -35,9 +55,18 @@ const blocoCategoria = (categoria) => `
   </div>
 `;
 
+const blocoGrupo = (grupo) => `
+  <div class="grupo">
+    <div class="grupo-titulo">${esc(grupo.nome)}</div>
+    ${grupo.categorias.map(blocoCategoria).join('')}
+  </div>
+`;
+
+const renderBloco = (bloco) => (bloco.tipo === 'grupo' ? blocoGrupo(bloco.grupo) : blocoCategoria(bloco.categoria));
+
 /**
  * @param {Object} args
- * @param {{nome: string, produtos: Array<{name: string, description?: string, price: number, preco_promo?: number|null}>}[]} args.categorias
+ * @param {{nome: string|null, categorias: {nome: string, produtos: Array<{name: string, description?: string, price: number, preco_promo?: number|null}>}[]}[]} args.grupos
  * @param {string} args.restauranteNome
  * @param {string|null} args.logoUrl
  * @param {boolean} args.usarLogo
@@ -46,9 +75,9 @@ const blocoCategoria = (categoria) => `
  * @param {string} args.rodape
  */
 export const printCardapioImpresso = ({
-  categorias, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
+  grupos, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
 }) => {
-  const [colunaEsq, colunaDir] = distribuirEmColunas(categorias);
+  const [colunaEsq, colunaDir] = distribuirEmColunas(grupos);
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio - ${esc(restauranteNome ?? '')}</title>
 <style>
@@ -60,6 +89,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .nome{font-size:26px;font-weight:900;text-align:center;letter-spacing:-0.5px}
 .colunas{display:flex;gap:24px}
 .coluna{flex:1;min-width:0}
+.grupo{break-inside:avoid;margin-bottom:22px}
+.grupo-titulo{font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#18181B;margin-bottom:10px;padding-bottom:5px;border-bottom:3px solid #18181B}
 .categoria{break-inside:avoid;margin-bottom:16px}
 .categoria-titulo{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#FF441F;border-bottom:2px solid #FF441F;padding-bottom:3px;margin-bottom:8px}
 .item{break-inside:avoid;margin-bottom:7px}
@@ -78,8 +109,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
   <div class="nome">${esc(restauranteNome ?? '')}</div>
 </div>
 <div class="colunas">
-  <div class="coluna">${colunaEsq.map(blocoCategoria).join('')}</div>
-  <div class="coluna">${colunaDir.map(blocoCategoria).join('')}</div>
+  <div class="coluna">${colunaEsq.map(renderBloco).join('')}</div>
+  <div class="coluna">${colunaDir.map(renderBloco).join('')}</div>
 </div>
 ${(rodape || endereco || whatsapp) ? `
 <div class="rodape">
