@@ -185,20 +185,20 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-2">Módulos incluídos</label>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5 sm:gap-4">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={form.inclui_delivery} onChange={(e) => set('inclui_delivery', e.target.checked)}
-                      className="w-4 h-4 rounded accent-blue-600" />
+                      className="w-4 h-4 shrink-0 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Delivery</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={form.inclui_salao} onChange={(e) => set('inclui_salao', e.target.checked)}
-                      className="w-4 h-4 rounded accent-blue-600" />
+                      className="w-4 h-4 shrink-0 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Salão (mesas/comandas/garçons)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={form.inclui_gdoor} onChange={(e) => set('inclui_gdoor', e.target.checked)}
-                      className="w-4 h-4 rounded accent-blue-600" />
+                      className="w-4 h-4 shrink-0 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">GDOOR (integração PDV/fiscal)</span>
                   </label>
                 </div>
