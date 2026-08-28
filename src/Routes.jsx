@@ -24,6 +24,7 @@ import AdminTiposEstabelecimento from './pages/admin-tipos-estabelecimento';
 import AdminTags from './pages/admin-tags';
 import AdminMotoboys from './pages/admin-motoboys';
 import AdminPlanos from './pages/admin-planos';
+import AdminMarketplaceBoost from './pages/admin-marketplace-boost';
 import AdminUsuarios from './pages/admin-usuarios';
 import AdminMeuPerfil from './pages/admin-meu-perfil';
 import RestauranteGuard from './components/RestauranteGuard';
@@ -65,6 +66,7 @@ import RestauranteVendaBalcao from './pages/restaurante-venda-balcao';
 import RestaurantePontosPreparo from './pages/restaurante-pontos-preparo';
 import RestaurantePontoPreparo from './pages/restaurante-ponto-preparo';
 import RestauranteCardapioDigital from './pages/restaurante-cardapio-digital';
+import RestauranteImpulsionar from './pages/restaurante-impulsionar';
 import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
 import MesaAcompanhar from './pages/mesa-acompanhar';
@@ -100,6 +102,7 @@ const Routes = () => {
         <Route path="/admin/tags" element={<AdminGuard><AdminTags /></AdminGuard>} />
         <Route path="/admin/motoboys" element={<AdminGuard><AdminMotoboys /></AdminGuard>} />
         <Route path="/admin/planos" element={<AdminGuard><AdminPlanos /></AdminGuard>} />
+        <Route path="/admin/marketplace-boost" element={<AdminGuard><AdminMarketplaceBoost /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
         <Route path="/admin/aparencia" element={<AdminGuard><AdminAparencia /></AdminGuard>} />
 
@@ -137,6 +140,7 @@ const Routes = () => {
         <Route path="/restaurante/relatorios/financeiro" element={<RestauranteGuard><RestauranteRelatorioFinanceiro /></RestauranteGuard>} />
         <Route path="/restaurante/relatorios/produtos" element={<RestauranteGuard><RestauranteRelatorioProdutos /></RestauranteGuard>} />
         <Route path="/restaurante/cardapio-digital" element={<RestauranteGuard><RestauranteCardapioDigital /></RestauranteGuard>} />
+        <Route path="/restaurante/impulsionar" element={<RestauranteGuard><RestauranteImpulsionar /></RestauranteGuard>} />
 
         {/* Módulo Salão — só estabelecimentos tipo Restaurante */}
         <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />

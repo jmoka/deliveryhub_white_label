@@ -31,9 +31,15 @@ const usePagBankSdk = (ativo) => {
 const CARTAO_INICIAL = { numero: '', validade: '', cvv: '', parcelas: 1 };
 
 // Modal de pagamento de uma fatura (Pix ou cartão débito/crédito via PagBank.js).
-// Compartilhado entre a troca de plano (/restaurante/plano) e o checkout inicial
-// do cadastro de restaurante.
-const PagamentoFaturaModal = ({ fatura, onClose, onPago }) => {
+// Compartilhado entre a troca de plano (/restaurante/plano), o checkout inicial
+// do cadastro de restaurante, e qualquer outra cobrança avulsa da plataforma
+// (ex.: marketplace boost) via os overrides pagarFn/buscarStatusFn/chavePublicaFn
+// — o objeto passado em `fatura` só precisa ter `id`, `valor` (em reais),
+// `pix_code`/`pix_qr_url` opcionais.
+const PagamentoFaturaModal = ({
+  fatura, onClose, onPago,
+  pagarFn = pagarFatura, buscarStatusFn = getFaturaDetalhe, chavePublicaFn = getPagBankChavePublica,
+}) => {
   const [metodo, setMetodo] = useState('pix'); // 'pix' | 'credit_card' | 'debit_card'
   const [form, setForm] = useState({ nome: '', email: '', cpf_cnpj: '' });
   const [cartao, setCartao] = useState(CARTAO_INICIAL);
@@ -49,7 +55,7 @@ const PagamentoFaturaModal = ({ fatura, onClose, onPago }) => {
   useEffect(() => {
     if (!resultado || pago || metodo !== 'pix') return;
     const interval = setInterval(() => {
-      getFaturaDetalhe(fatura.id)
+      buscarStatusFn(fatura.id)
         .then((f) => {
           if (f.status === 'paga') {
             setPago(true);
@@ -67,7 +73,7 @@ const PagamentoFaturaModal = ({ fatura, onClose, onPago }) => {
     setEnviando(true);
     setErro(null);
     try {
-      const r = await pagarFatura(fatura.id, { ...form, metodo: 'pix' });
+      const r = await pagarFn(fatura.id, { ...form, metodo: 'pix' });
       setResultado(r);
     } catch (err) {
       setErro(err.message);
@@ -92,7 +98,7 @@ const PagamentoFaturaModal = ({ fatura, onClose, onPago }) => {
       }
       const anoCompleto = `20${ano}`;
 
-      const { public_key } = await getPagBankChavePublica();
+      const { public_key } = await chavePublicaFn();
 
       const card = window.PagSeguro.encryptCard({
         publicKey: public_key,
@@ -107,7 +113,7 @@ const PagamentoFaturaModal = ({ fatura, onClose, onPago }) => {
         throw new Error(card.errors?.[0]?.message ?? 'Dados do cartão inválidos');
       }
 
-      const r = await pagarFatura(fatura.id, {
+      const r = await pagarFn(fatura.id, {
         ...form,
         metodo,
         card_encrypted: card.encryptedCard,

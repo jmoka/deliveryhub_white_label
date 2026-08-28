@@ -374,6 +374,7 @@ const ComboCarrosselCard = ({ combo, i, navigate }) => {
           </p>
         </div>
         {rest && <p className="text-[9px] text-[var(--texto-secundario)] truncate mt-1">{rest.name}</p>}
+        {combo.patrocinado && <p className="text-[8px] text-[var(--texto-secundario)] opacity-70 mt-0.5">Patrocinado</p>}
       </div>
     </motion.button>
   );
@@ -511,6 +512,7 @@ const ProdCarrosselCard = ({ produto, i, navigate, onAdd }) => {
           </p>
         </div>
         {rest && <p className="text-[9px] text-[var(--texto-secundario)] truncate mt-1">{rest.name}</p>}
+        {produto.patrocinado && <p className="text-[8px] text-[var(--texto-secundario)] opacity-70 mt-0.5">Patrocinado</p>}
       </div>
     </motion.button>
   );
@@ -721,6 +723,11 @@ const MenuCatalogProductBrowse = () => {
   const [combos, setCombos]             = useState([]);
   const [categorias, setCategorias]     = useState(CATEGORIAS_FALLBACK);
   const [tagsCatalogo, setTagsCatalogo] = useState([]); // tags ativas do admin
+  // Marketplace boost: item_ids em destaque pago por carrossel (ver módulo
+  // marketplace-boost/GET /api/r/patrocinados) — carrossel aqui usa 3 nomes
+  // fixos internos (mais_vendidos/promocao/lancamentos), mapeados pro slug
+  // real da tag correspondente em tags_catalogo logo abaixo.
+  const [patrocinados, setPatrocinados] = useState({ combos: [] });
   const [loading, setLoading]           = useState(true);
   const [loadProd, setLoadProd]         = useState(true);
   const [erro, setErro]                 = useState(null);
@@ -835,6 +842,11 @@ const MenuCatalogProductBrowse = () => {
       .then((d) => setLocaisFiltro(d.locais ?? []))
       .catch(() => {});
 
+    fetch(apiPath('/api/r/patrocinados'))
+      .then((r) => r.json())
+      .then((d) => setPatrocinados({ combos: [], ...d }))
+      .catch(() => {});
+
     return () => clearTimeout(fallback);
   }, []);
 
@@ -937,15 +949,35 @@ const MenuCatalogProductBrowse = () => {
       if (tag.is_auto) {
         // Auto: não filtra por tags[] do produto — seria calculado por order_items
         // No catálogo global usamos os primeiros produtos com destaque como fallback
-        prods = produtos.filter((p) => p.destaque).slice(0, 20);
+        prods = produtos.filter((p) => p.destaque);
       } else {
-        prods = produtos
-          .filter((p) => Array.isArray(p.tags) && p.tags.includes(tag.slug))
-          .slice(0, 20);
+        prods = produtos.filter((p) => Array.isArray(p.tags) && p.tags.includes(tag.slug));
       }
-      return { tag, prods };
+
+      // Prepend patrocinados desse carrossel — carrossel do pacote comprado é
+      // sempre o slug real da tag (validado no backend contra tags_catalogo),
+      // então bate direto aqui, sem tabela de alias — funciona pra qualquer
+      // tag, inclusive uma criada depois deste código (ver marketplace-boost).
+      const idsPatrocinados = patrocinados[tag.slug] ?? [];
+      const patrocinadosProds = idsPatrocinados
+        .map((id) => produtos.find((p) => p.id === id))
+        .filter(Boolean)
+        .map((p) => ({ ...p, patrocinado: true }));
+
+      const prodsFinal = [
+        ...patrocinadosProds,
+        ...prods.filter((p) => !idsPatrocinados.includes(p.id)),
+      ].slice(0, 20);
+
+      return { tag, prods: prodsFinal };
     })
     .filter(({ prods }) => prods.length > 0);
+
+  // Combos patrocinados sempre na frente do carrossel de combos.
+  const combosComDestaque = [
+    ...combos.filter((c) => patrocinados.combos?.includes(c.id)).map((c) => ({ ...c, patrocinado: true })),
+    ...combos.filter((c) => !patrocinados.combos?.includes(c.id)),
+  ];
 
   return (
     <div className="min-h-screen relative" style={{
@@ -1179,14 +1211,14 @@ const MenuCatalogProductBrowse = () => {
       )}
 
       {/* ── Carrossel de combos ativos ────────────────────────────── */}
-      {combos.length > 0 && (
+      {combosComDestaque.length > 0 && (
         <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Package" size={15} className="text-[#FF441F]" />
               Combos em destaque
             </p>
-            <ComboCarrossel combos={combos} navigate={navigate} />
+            <ComboCarrossel combos={combosComDestaque} navigate={navigate} />
           </div>
         </div>
       )}

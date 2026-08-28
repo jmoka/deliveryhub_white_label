@@ -8,6 +8,7 @@ export const ADMIN_NAV_LINKS = [
   { label: 'Comissões', path: '/admin/comissoes' },
   { label: 'Motoboys', path: '/admin/motoboys' },
   { label: 'Planos', path: '/admin/planos' },
+  { label: 'Marketplace', path: '/admin/marketplace-boost' },
   { label: 'Aparência', path: '/admin/aparencia' },
   { label: 'Configurações', path: '/admin/configuracoes' },
   { label: 'Meu Perfil', path: '/admin/meu-perfil' },

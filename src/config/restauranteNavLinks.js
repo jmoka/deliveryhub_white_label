@@ -22,6 +22,7 @@ const DELIVERY_LINKS = [
   { label: 'Delivery', path: '/restaurante/delivery', icon: 'Truck' },
   { label: 'Entregas', path: '/restaurante/entregas', icon: 'Bike' },
   { label: 'Motoboys', path: '/restaurante/motoboys', icon: 'Users' },
+  { label: 'Impulsionar', path: '/restaurante/impulsionar', icon: 'Rocket' },
 ];
 
 const COPA_LINKS = [
