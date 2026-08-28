@@ -24,7 +24,10 @@ class ItemParaGravar:
 
 def _conectar():
     dsn = f"{config.FB_HOST}/{config.FB_PORT}:{config.FB_DATABASE}"
-    return fb.connect(dsn, user=config.FB_USER, password=config.FB_PASSWORD)
+    # Banco do GDOOR é charset NONE (sem conversão no servidor) — sem isso o
+    # driver assume um default implícito que depende do locale da máquina.
+    # WIN1252 confirmado contra dados reais já gravados pelo GDOOR (EMITENTE).
+    return fb.connect(dsn, user=config.FB_USER, password=config.FB_PASSWORD, charset="WIN1252")
 
 
 def criar_pre_venda(
@@ -189,6 +192,130 @@ def criar_produto_estoque(
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (codigo, descricao, unidade, preco_venda, qtd, "Ativo", date.today()),
+        )
+        con.commit()
+        return codigo
+    except Exception:
+        con.rollback()
+        raise
+    finally:
+        con.close()
+
+
+def _para_float(valor) -> float | None:
+    """LAT/LON de CLIENTE são VARCHAR no GDOOR (não numérico) — texto livre
+    digitado, pode vir vazio/inválido."""
+    if valor is None:
+        return None
+    texto = str(valor).strip().replace(",", ".")
+    if not texto:
+        return None
+    try:
+        return float(texto)
+    except ValueError:
+        return None
+
+
+def listar_clientes(limite: int = 3000) -> list[dict]:
+    """Catálogo de clientes do GDOOR (tabela CLIENTE, cadastro persistente —
+    diferente de PDV_CLIENTE, que é só o registro por venda usado na
+    pré-venda). Exclui o código '000000' (Consumidor genérico do PDV, não é
+    cliente de verdade). Alimenta o modal de sincronização de clientes."""
+    con = _conectar()
+    try:
+        cur = con.cursor()
+        cur.execute(
+            f"""
+            SELECT FIRST {limite}
+                CODIGO, NOME, CNPJ_CNPF, TELEFONE, CELULAR, EMAIL,
+                ENDERECO, NUMERO, COMPLEMENTO, BAIRRO, CIDADE, UF, CEP, LAT, LON
+            FROM CLIENTE
+            WHERE CODIGO <> '000000'
+            ORDER BY NOME
+            """
+        )
+        itens = []
+        for codigo, nome, cnpj_cnpf, telefone, celular, email, endereco, numero, complemento, bairro, cidade, uf, cep, lat, lon in cur.fetchall():
+            if not codigo:
+                continue
+            itens.append({
+                "codigo": codigo.strip(),
+                "nome": (nome or "").strip() or None,
+                "cnpj_cnpf": (cnpj_cnpf or "").strip() or None,
+                "telefone": (celular or telefone or "").strip() or None,
+                "email": (email or "").strip() or None,
+                "endereco": (endereco or "").strip() or None,
+                "numero": (numero or "").strip() or None,
+                "complemento": (complemento or "").strip() or None,
+                "bairro": (bairro or "").strip() or None,
+                "cidade": (cidade or "").strip() or None,
+                "uf": (uf or "").strip() or None,
+                "cep": (cep or "").strip() or None,
+                "lat": _para_float(lat),
+                "lon": _para_float(lon),
+            })
+        return itens
+    finally:
+        con.close()
+
+
+def proximo_codigo_cliente() -> str:
+    """CLIENTE.CODIGO também não tem gerador — mesmo cálculo sequencial de
+    proximo_codigo_estoque(). Seguro pelo mesmo motivo: poller processa um
+    job por vez."""
+    con = _conectar()
+    try:
+        cur = con.cursor()
+        cur.execute("SELECT CODIGO FROM CLIENTE")
+        numericos = []
+        largura = 6
+        for (codigo,) in cur.fetchall():
+            if not codigo:
+                continue
+            codigo = codigo.strip()
+            if codigo.isdigit():
+                numericos.append(int(codigo))
+                largura = max(largura, len(codigo))
+        proximo = (max(numericos) + 1) if numericos else 1
+        return str(proximo).zfill(largura)
+    finally:
+        con.close()
+
+
+def criar_cliente(
+    nome: str,
+    cnpj_cnpf: str | None = None,
+    telefone: str | None = None,
+    email: str | None = None,
+    endereco: str | None = None,
+    numero: str | None = None,
+    complemento: str | None = None,
+    bairro: str | None = None,
+    cidade: str | None = None,
+    uf: str | None = None,
+    cep: str | None = None,
+) -> str:
+    """Cria um cliente mínimo em CLIENTE (código, nome, contato, endereço,
+    situação) — mesmo espírito de criar_produto_estoque: campos de
+    crédito/fiscal ficam em branco, o dono completa depois no GDOOR se
+    precisar (ex.: limite de crédito, tabela de preço)."""
+    con = _conectar()
+    try:
+        cur = con.cursor()
+        codigo = proximo_codigo_cliente()
+        cur.execute(
+            """
+            INSERT INTO CLIENTE (
+                CODIGO, NOME, CNPJ_CNPF, TELEFONE, EMAIL,
+                ENDERECO, NUMERO, COMPLEMENTO, BAIRRO, CIDADE, UF, CEP,
+                SITUACAO, CADASTRO
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                codigo, nome, cnpj_cnpf, telefone, email,
+                endereco, numero, complemento, bairro, cidade, uf, cep,
+                "Ativo", date.today(),
+            ),
         )
         con.commit()
         return codigo

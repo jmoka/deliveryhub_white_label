@@ -6,6 +6,7 @@ import {
   listarComissoesGarcom, criarComissaoGarcom, atualizarComissaoGarcom, removerComissaoGarcom,
   gerarTokenGdoor, getStatusGdoor, salvarCnpjEsperadoGdoor,
   getCatalogoGdoor, bloquearSyncGdoor, importarDeGdoor, exportarParaGdoor, getStatusExportacaoGdoor,
+  getCatalogoClientesGdoor, bloquearSyncClienteGdoor, importarClientesDeGdoor, exportarClientesParaGdoor, getStatusExportacaoClientesGdoor,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -510,6 +511,253 @@ const GdoorMapeamentoPanel = () => {
         </div>
       </div>
       {modalAberto && <GdoorMapeamentoModal onClose={() => setModalAberto(false)} />}
+    </div>
+  );
+};
+
+const GdoorClientesModal = ({ onClose }) => {
+  const [carregando, setCarregando] = useState(true);
+  const [catalogo, setCatalogo] = useState({ clientes_delivery: [], clientes_gdoor: [] });
+  const [aba, setAba] = useState('gdoor');
+  const [filtro, setFiltro] = useState('nao_mapeados');
+  const [selecionados, setSelecionados] = useState(new Set());
+  const [processando, setProcessando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [exportandoStatus, setExportandoStatus] = useState(null);
+
+  const carregar = useCallback(() => {
+    setCarregando(true);
+    return getCatalogoClientesGdoor()
+      .then(setCatalogo)
+      .catch(() => {})
+      .finally(() => setCarregando(false));
+  }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  useEffect(() => {
+    setSelecionados(new Set());
+    setResultado(null);
+  }, [aba, filtro]);
+
+  const listaAtual = aba === 'gdoor' ? catalogo.clientes_gdoor : catalogo.clientes_delivery;
+  const chave = (item) => (aba === 'gdoor' ? item.codigo : item.id);
+  const mapeadoOk = (item) => (aba === 'gdoor' ? !!item.customer_id : !!item.codigo_gdoor);
+
+  const filtrada = (listaAtual ?? []).filter((item) => {
+    if (aba === 'gdoor' && item.bloqueado_sync && filtro !== 'todos') return false;
+    if (filtro === 'nao_mapeados') return !mapeadoOk(item);
+    if (filtro === 'mapeados') return mapeadoOk(item);
+    return true;
+  });
+
+  const selecionaveis = filtrada.filter((item) => !mapeadoOk(item) && item.sincronizavel && !(aba === 'gdoor' && item.bloqueado_sync));
+
+  const toggleSelecionado = (id) => {
+    setSelecionados((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(id)) novo.delete(id); else novo.add(id);
+      return novo;
+    });
+  };
+
+  const selecionarTodos = () => {
+    setSelecionados((atual) =>
+      atual.size === selecionaveis.length ? new Set() : new Set(selecionaveis.map(chave)),
+    );
+  };
+
+  const bloquear = async (codigo, bloqueado) => {
+    await bloquearSyncClienteGdoor(codigo, bloqueado);
+    setCatalogo((c) => ({ ...c, clientes_gdoor: c.clientes_gdoor.map((e) => (e.codigo === codigo ? { ...e, bloqueado_sync: bloqueado } : e)) }));
+  };
+
+  const importar = async () => {
+    setProcessando(true);
+    setResultado(null);
+    try {
+      const r = await importarClientesDeGdoor([...selecionados]);
+      setResultado({ tipo: 'importar', ...r });
+      await carregar();
+      setSelecionados(new Set());
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  const exportar = async () => {
+    setProcessando(true);
+    setResultado(null);
+    try {
+      const r = await exportarClientesParaGdoor([...selecionados]);
+      setResultado({ tipo: 'exportar', ...r });
+      setSelecionados(new Set());
+      if (r.enfileirados?.length) {
+        setExportandoStatus({ pendentes: r.enfileirados.length });
+        const interval = setInterval(async () => {
+          const status = await getStatusExportacaoClientesGdoor().catch(() => null);
+          if (!status) return;
+          const pendentes = status.jobs.filter((j) => j.status === 'pendente' && r.enfileirados.includes(j.customer_id));
+          setExportandoStatus({ pendentes: pendentes.length });
+          if (pendentes.length === 0) {
+            clearInterval(interval);
+            setExportandoStatus(null);
+            carregar();
+          }
+        }, 3000);
+      } else {
+        await carregar();
+      }
+    } finally {
+      setProcessando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
+          <div>
+            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Sincronização de clientes GDOOR</h2>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Liga o cadastro de cliente do GDOOR com o do DeliveryHub. Cliente com o mesmo CPF/CNPJ nos dois lados é vinculado automaticamente, sem duplicar.</p>
+          </div>
+          <button onClick={onClose} className="text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+
+        <div className="flex border-b border-[#E4E4E7] dark:border-[#3F3F46] px-6">
+          {[['gdoor', 'Clientes GDOOR'], ['delivery', 'Clientes DeliveryHub']].map(([valor, label]) => (
+            <button key={valor} onClick={() => setAba(valor)}
+              className={`px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px ${aba === valor ? 'border-[#FF441F] text-[#FF441F]' : 'border-transparent text-[#71717A] dark:text-[#A1A1AA]'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between px-6 py-3 gap-3 flex-wrap">
+          <div className="flex gap-1.5">
+            {[['nao_mapeados', 'Não mapeados'], ['mapeados', 'Mapeados'], ['todos', 'Todos']].map(([valor, label]) => (
+              <button key={valor} onClick={() => setFiltro(valor)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium ${filtro === valor ? 'bg-zinc-800 text-white' : 'bg-[#F4F4F5] dark:bg-[#18181B] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {selecionaveis.length > 0 && (
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] cursor-pointer">
+                <input type="checkbox" checked={selecionados.size === selecionaveis.length} onChange={selecionarTodos} className="w-4 h-4 accent-[#FF441F]" />
+                Selecionar todos ({selecionaveis.length})
+              </label>
+              <button
+                onClick={aba === 'gdoor' ? importar : exportar}
+                disabled={selecionados.size === 0 || processando}
+                className="px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg disabled:opacity-40"
+              >
+                {processando ? 'Enviando...' : aba === 'gdoor' ? `Importar ${selecionados.size} para o Delivery` : `Enviar ${selecionados.size} para o GDOOR`}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {exportandoStatus && (
+          <div className="mx-6 mb-2 text-xs text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 rounded-lg px-3 py-2">
+            Aguardando o agente criar {exportandoStatus.pendentes} cliente(s) no GDOOR...
+          </div>
+        )}
+        {resultado && (
+          <div className="mx-6 mb-2 text-xs bg-[#F4F4F5] dark:bg-[#18181B] rounded-lg px-3 py-2 text-[#18181B] dark:text-[#F4F4F5]">
+            {resultado.tipo === 'importar' && <p>{resultado.importados?.length ?? 0} importado(s){resultado.ignorados?.length ? `, ${resultado.ignorados.length} ignorado(s)` : ''}.</p>}
+            {resultado.tipo === 'exportar' && (
+              <p>
+                {resultado.enfileirados?.length ?? 0} enviado(s) pro agente processar
+                {resultado.mapeados_direto?.length ? `, ${resultado.mapeados_direto.length} já existia(m) no GDOOR e só foram vinculados` : ''}
+                {resultado.ignorados?.length ? `, ${resultado.ignorados.length} ignorado(s)` : ''}.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-2">
+          {carregando ? (
+            <p className="text-xs text-[#A1A1AA] py-8 text-center">Carregando...</p>
+          ) : filtrada.length === 0 ? (
+            <p className="text-xs text-[#A1A1AA] py-8 text-center">Nenhum cliente {filtro === 'nao_mapeados' ? 'pendente de mapear' : filtro === 'mapeados' ? 'mapeado ainda' : 'encontrado'}.</p>
+          ) : (
+            filtrada.map((item) => (
+              aba === 'gdoor' ? (
+                <LinhaMapeamento
+                  key={item.codigo}
+                  selecionavel={!mapeadoOk(item) && item.sincronizavel && !item.bloqueado_sync}
+                  selecionado={selecionados.has(item.codigo)}
+                  onToggle={() => toggleSelecionado(item.codigo)}
+                  titulo={`${item.codigo} — ${item.nome}`}
+                  subtitulo={`${item.cnpj_cnpf ?? 'sem CPF/CNPJ — não sincroniza'}${item.telefone ? ` · ${item.telefone}` : ''}${item.nome_delivery ? ` · vinculado a "${item.nome_delivery}"` : ''}`}
+                  mapeado={mapeadoOk(item)}
+                  diverge={item.diverge}
+                  extra={
+                    !mapeadoOk(item) && (
+                      <button onClick={() => bloquear(item.codigo, !item.bloqueado_sync)}
+                        className="text-[10px] px-2 py-1 rounded-full font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700">
+                        {item.bloqueado_sync ? 'Voltar a sincronizar' : 'Não sincronizar'}
+                      </button>
+                    )
+                  }
+                />
+              ) : (
+                <LinhaMapeamento
+                  key={item.id}
+                  selecionavel={!mapeadoOk(item) && item.sincronizavel}
+                  selecionado={selecionados.has(item.id)}
+                  onToggle={() => toggleSelecionado(item.id)}
+                  titulo={item.name}
+                  subtitulo={`${item.cpf_cnpj ?? 'sem CPF/CNPJ — não sincroniza'}${item.phone_e164 ? ` · ${item.phone_e164}` : ''}${item.codigo_gdoor ? ` · GDOOR ${item.codigo_gdoor}` : ''}`}
+                  mapeado={mapeadoOk(item)}
+                  diverge={item.diverge}
+                />
+              )
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GdoorClientesPanel = () => {
+  const [modalAberto, setModalAberto] = useState(false);
+  const [resumo, setResumo] = useState(null);
+
+  useEffect(() => {
+    getCatalogoClientesGdoor()
+      .then((c) => {
+        const naoMapeados = (c.clientes_gdoor ?? []).filter((e) => !e.customer_id && !e.bloqueado_sync).length;
+        setResumo({ naoMapeados });
+      })
+      .catch(() => {});
+  }, [modalAberto]);
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Sincronização de clientes GDOOR</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Liga o cadastro de cliente do GDOOR com o do DeliveryHub (por CPF/CNPJ, sem duplicar).</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {resumo && (
+            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${resumo.naoMapeados > 0 ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'}`}>
+              {resumo.naoMapeados > 0 ? `${resumo.naoMapeados} sem mapear` : 'Tudo mapeado'}
+            </span>
+          )}
+          <button onClick={() => setModalAberto(true)}
+            className="px-3 py-1.5 bg-zinc-800 text-white text-xs font-bold rounded-xl">
+            Abrir sincronização de clientes
+          </button>
+        </div>
+      </div>
+      {modalAberto && <GdoorClientesModal onClose={() => setModalAberto(false)} />}
     </div>
   );
 };
@@ -1034,6 +1282,7 @@ const RestauranteConfig = () => {
             {/* Agente GDOOR local — sincroniza pedidos entregues como pré-venda fiscal */}
             <GdoorAgentePanel />
             <GdoorMapeamentoPanel />
+            <GdoorClientesPanel />
 
             {/* Formulário — limpo */}
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">

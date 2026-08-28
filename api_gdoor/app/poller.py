@@ -49,6 +49,23 @@ def _reportar_estoque() -> None:
         logger.warning("falha ao reportar estoque pro server_delivery", exc_info=True)
 
 
+def _reportar_clientes() -> None:
+    try:
+        itens = firebird_client.listar_clientes()
+    except Exception:
+        logger.warning("falha ao ler CLIENTE do GDOOR local", exc_info=True)
+        return
+    try:
+        requests.post(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/clientes",
+            json={"itens": itens},
+            headers=_headers(),
+            timeout=15,
+        )
+    except Exception:
+        logger.warning("falha ao reportar clientes pro server_delivery", exc_info=True)
+
+
 def _marcar_concluido(job_id: int, venda_id_gdoor: str) -> None:
     try:
         requests.post(
@@ -160,6 +177,56 @@ def _processar_criacao_produto(job: dict) -> None:
     _marcar_produto_criado(job_id, codigo)
 
 
+def _marcar_cliente_criado(job_id: int, codigo_gdoor: str) -> None:
+    try:
+        requests.post(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/criar-cliente/{job_id}/concluido",
+            json={"codigo_gdoor": codigo_gdoor},
+            headers=_headers(),
+            timeout=10,
+        )
+    except Exception:
+        logger.warning("falha ao reportar cliente criado (job %s)", job_id, exc_info=True)
+
+
+def _marcar_cliente_erro(job_id: int, mensagem: str) -> None:
+    try:
+        requests.post(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/criar-cliente/{job_id}/erro",
+            json={"mensagem": mensagem},
+            headers=_headers(),
+            timeout=10,
+        )
+    except Exception:
+        logger.warning("falha ao reportar erro de criacao de cliente (job %s)", job_id, exc_info=True)
+
+
+def _processar_criacao_cliente(job: dict) -> None:
+    job_id = job["id"]
+    payload = job.get("payload") or {}
+    try:
+        codigo = firebird_client.criar_cliente(
+            nome=payload.get("nome") or "Cliente",
+            cnpj_cnpf=payload.get("cnpj_cnpf"),
+            telefone=payload.get("telefone"),
+            email=payload.get("email"),
+            endereco=payload.get("endereco"),
+            numero=payload.get("numero"),
+            complemento=payload.get("complemento"),
+            bairro=payload.get("bairro"),
+            cidade=payload.get("cidade"),
+            uf=payload.get("uf"),
+            cep=payload.get("cep"),
+        )
+    except Exception as e:
+        logger.exception("falha ao criar cliente no GDOOR (job %s)", job_id)
+        _marcar_cliente_erro(job_id, str(e))
+        return
+
+    logger.info("job %s criou cliente no GDOOR com codigo=%s", job_id, codigo)
+    _marcar_cliente_criado(job_id, codigo)
+
+
 def _ciclo() -> None:
     _reportar_cnpj()
 
@@ -196,6 +263,20 @@ def _ciclo() -> None:
     except Exception:
         logger.warning("falha ao buscar produtos pendentes de criacao", exc_info=True)
 
+    try:
+        res_clientes = requests.get(
+            f"{config.SERVER_DELIVERY_URL}/agente-gdoor/criar-cliente/pendentes",
+            headers=_headers(),
+            timeout=10,
+        )
+        res_clientes.raise_for_status()
+        dados_clientes = res_clientes.json()
+        if not dados_clientes.get("bloqueado"):
+            for job in dados_clientes.get("jobs", []):
+                _processar_criacao_cliente(job)
+    except Exception:
+        logger.warning("falha ao buscar clientes pendentes de criacao", exc_info=True)
+
 
 def _loop() -> None:
     ciclo_num = 0
@@ -204,6 +285,7 @@ def _loop() -> None:
             _ciclo()
             if ciclo_num % _CICLOS_POR_REPORT_ESTOQUE == 0:
                 _reportar_estoque()
+                _reportar_clientes()
         except Exception:
             logger.exception("erro inesperado no ciclo do poller")
         ciclo_num += 1

@@ -347,6 +347,15 @@ export const exportarParaGdoor = (productIds) =>
   apiFetch('/gdoor/exportar-para-gdoor', { method: 'POST', body: JSON.stringify({ product_ids: productIds }) });
 export const getStatusExportacaoGdoor = () => apiFetch('/gdoor/exportar-para-gdoor/status');
 
+export const getCatalogoClientesGdoor = () => apiFetch('/gdoor/catalogo-clientes');
+export const bloquearSyncClienteGdoor = (codigo, bloqueado) =>
+  apiFetch(`/gdoor/clientes/${encodeURIComponent(codigo)}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
+export const importarClientesDeGdoor = (codigos) =>
+  apiFetch('/gdoor/importar-clientes-de-gdoor', { method: 'POST', body: JSON.stringify({ codigos }) });
+export const exportarClientesParaGdoor = (customerIds) =>
+  apiFetch('/gdoor/exportar-clientes-para-gdoor', { method: 'POST', body: JSON.stringify({ customer_ids: customerIds }) });
+export const getStatusExportacaoClientesGdoor = () => apiFetch('/gdoor/exportar-clientes-para-gdoor/status');
+
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
 export const bloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/bloquear`, { method: 'PATCH' });
