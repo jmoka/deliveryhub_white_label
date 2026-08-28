@@ -121,9 +121,10 @@ def _processar_job(job: dict) -> None:
 
     try:
         venda_id = firebird_client.criar_pre_venda(
-            cliente_nome=cliente.get("name") or "Cliente",
+            cliente_nome=cliente.get("name") or "Consumidor",
             cliente_cpf_cnpj=cliente.get("cpf_cnpj") or "",
             itens=itens_para_gravar,
+            cliente_codigo_gdoor=cliente.get("codigo_gdoor"),
         )
     except Exception as e:
         logger.exception("falha ao gravar job %s no GDOOR", job_id)

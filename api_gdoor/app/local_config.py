@@ -21,8 +21,8 @@ _PADRAO = {
     "fb_password": "masterkey",
     "fb_client_library": "",
     "vendas_serie": "001",
-    "vendas_loja": "0001",
-    "vendas_caixa": "0001",
+    "vendas_loja": "001",
+    "vendas_caixa": "001",
     "vendas_operador": "DELIVERY",
 }
 

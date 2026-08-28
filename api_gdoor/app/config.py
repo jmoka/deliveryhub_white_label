@@ -39,8 +39,8 @@ FB_CLIENT_LIBRARY = _get("FB_CLIENT_LIBRARY", "fb_client_library", "")
 # Dados fixos do documento "PV" (pre-venda) dentro de VENDAS
 VENDAS_MODELO = "PV"
 VENDAS_SERIE = _get("VENDAS_SERIE", "vendas_serie", "001")
-VENDAS_LOJA = _get("VENDAS_LOJA", "vendas_loja", "0001")
-VENDAS_CAIXA = _get("VENDAS_CAIXA", "vendas_caixa", "0001")
+VENDAS_LOJA = _get("VENDAS_LOJA", "vendas_loja", "001")
+VENDAS_CAIXA = _get("VENDAS_CAIXA", "vendas_caixa", "001")
 VENDAS_OPERADOR = _get("VENDAS_OPERADOR", "vendas_operador", "DELIVERY")
 
 # Armazenamento local (deduplicacao do webhook manual /pedidos — legado, so teste)
