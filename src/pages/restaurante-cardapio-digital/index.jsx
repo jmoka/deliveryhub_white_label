@@ -2,14 +2,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Icon from '../../components/AppIcon';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
-import { getMinhaEmpresa, getMeusProdutos } from '../../services/restauranteService';
+import {
+  getMinhaEmpresa, getMeusProdutos, getObservacoesCategorias, salvarObservacaoCategoria,
+} from '../../services/restauranteService';
 import { printCartazCardapioDigital, printTicketCardapioDigital } from '../../utils/printComanda';
 import { printCardapioImpresso } from '../../utils/printCardapioImpresso';
+import ImageUpload from '../../components/ui/ImageUpload';
 
 const fmtPreco = (v) => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
 const LS_RODAPE = 'cardapioImpresso.rodape';
 const LS_USAR_LOGO = 'cardapioImpresso.usarLogo';
+const LS_OBS_GERAL = 'cardapioImpresso.observacaoGeral';
+const LS_IMAGEM_FUNDO = 'cardapioImpresso.imagemFundo';
 
 const CardapioImpressoModal = ({ onClose }) => {
   const [carregando, setCarregando] = useState(true);
@@ -18,18 +23,33 @@ const CardapioImpressoModal = ({ onClose }) => {
   const [selecionados, setSelecionados] = useState(new Set());
   const [usarLogo, setUsarLogo] = useState(() => localStorage.getItem(LS_USAR_LOGO) !== 'false');
   const [rodape, setRodape] = useState(() => localStorage.getItem(LS_RODAPE) ?? '');
+  const [observacaoGeral, setObservacaoGeral] = useState(() => localStorage.getItem(LS_OBS_GERAL) ?? '');
+  const [imagemFundo, setImagemFundo] = useState(() => localStorage.getItem(LS_IMAGEM_FUNDO) ?? '');
+  // category_id -> observação (salva no banco, ver GET/PUT /restaurante/categorias/observacoes)
+  const [observacoesCategoria, setObservacoesCategoria] = useState({});
 
   useEffect(() => {
-    Promise.all([getMeusProdutos(), getMinhaEmpresa()])
-      .then(([p, e]) => {
+    Promise.all([getMeusProdutos(), getMinhaEmpresa(), getObservacoesCategorias()])
+      .then(([p, e, obs]) => {
         const lista = p.produtos ?? [];
         setProdutos(lista);
         setEmpresa(e.empresa);
         setSelecionados(new Set(lista.map((item) => item.id)));
+        const mapa = {};
+        for (const o of obs.observacoes ?? []) mapa[o.category_id] = o.observacao;
+        setObservacoesCategoria(mapa);
       })
       .catch(() => {})
       .finally(() => setCarregando(false));
   }, []);
+
+  const alterarObservacaoCategoria = (categoryId, texto) => {
+    setObservacoesCategoria((atual) => ({ ...atual, [categoryId]: texto }));
+  };
+
+  const salvarObservacaoAoSair = (categoryId, texto) => {
+    salvarObservacaoCategoria(categoryId, texto).catch(() => {});
+  };
 
   // Agrupa em 2 níveis direto dos produtos (já vêm com category_name/grupo_name)
   // — não precisa buscar /categorias à parte pra montar essa lista. Grupo é
@@ -48,7 +68,10 @@ const CardapioImpressoModal = ({ onClose }) => {
 
     const montarCategorias = (porCategoria) =>
       [...porCategoria.entries()]
-        .map(([nome, itens]) => ({ nome, produtos: itens }))
+        // category_id vem igual pra todo produto do mesmo nome de categoria
+        // dentro desta loja — pega do primeiro item só pra ligar com a
+        // observação salva.
+        .map(([nome, itens]) => ({ nome, id: itens[0]?.category_id ?? null, produtos: itens }))
         .sort((a, b) => a.nome.localeCompare(b.nome));
 
     const nomeados = [...porGrupo.entries()]
@@ -88,12 +111,18 @@ const CardapioImpressoModal = ({ onClose }) => {
   const gerar = () => {
     localStorage.setItem(LS_RODAPE, rodape);
     localStorage.setItem(LS_USAR_LOGO, String(usarLogo));
+    localStorage.setItem(LS_OBS_GERAL, observacaoGeral);
+    localStorage.setItem(LS_IMAGEM_FUNDO, imagemFundo);
 
     const gruposSelecionados = grupos
       .map((g) => ({
         nome: g.nome,
         categorias: g.categorias
-          .map((c) => ({ nome: c.nome, produtos: c.produtos.filter((p) => selecionados.has(p.id)) }))
+          .map((c) => ({
+            nome: c.nome,
+            produtos: c.produtos.filter((p) => selecionados.has(p.id)),
+            observacao: (observacoesCategoria[c.id] ?? '').trim(),
+          }))
           .filter((c) => c.produtos.length > 0),
       }))
       .filter((g) => g.categorias.length > 0);
@@ -110,6 +139,8 @@ const CardapioImpressoModal = ({ onClose }) => {
       endereco,
       whatsapp: empresa?.whatsapp ?? '',
       rodape: rodape.trim(),
+      observacaoGeral: observacaoGeral.trim(),
+      imagemFundoUrl: imagemFundo,
     });
     onClose();
   };
@@ -127,28 +158,40 @@ const CardapioImpressoModal = ({ onClose }) => {
           </button>
         </div>
 
-        <div className="px-6 py-3 border-b border-[#E4E4E7] space-y-3">
-          <label className="flex items-center gap-2 text-sm text-[#27272A] cursor-pointer">
-            <input type="checkbox" checked={usarLogo} onChange={(e) => setUsarLogo(e.target.checked)} className="w-4 h-4 accent-[#FF441F]" />
-            Incluir logomarca no topo
-          </label>
-          <div>
-            <label className="block text-xs font-semibold text-[#71717A] mb-1">Frase do rodapé (opcional)</label>
-            <input type="text" value={rodape} onChange={(e) => setRodape(e.target.value)}
-              placeholder="Ex: Peça também pelo nosso delivery!"
-              className="w-full border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+          <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-[#E4E4E7] overflow-y-auto px-6 py-3 space-y-3">
+            <label className="flex items-center gap-2 text-sm text-[#27272A] cursor-pointer">
+              <input type="checkbox" checked={usarLogo} onChange={(e) => setUsarLogo(e.target.checked)} className="w-4 h-4 accent-[#FF441F]" />
+              Incluir logomarca no topo
+            </label>
+            <div>
+              <label className="block text-xs font-semibold text-[#71717A] mb-1">Observação geral (opcional)</label>
+              <input type="text" value={observacaoGeral} onChange={(e) => setObservacaoGeral(e.target.value)}
+                placeholder="Ex: Preços sujeitos a alteração sem aviso prévio"
+                className="w-full border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#71717A] mb-1">Frase do rodapé (opcional)</label>
+              <input type="text" value={rodape} onChange={(e) => setRodape(e.target.value)}
+                placeholder="Ex: Peça também pelo nosso delivery!"
+                className="w-full border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#71717A] mb-1">Imagem de fundo (opcional)</label>
+              <ImageUpload value={imagemFundo} onChange={setImagemFundo} folder="cardapio-impresso" aspect="wide" previewOpacity={0.3} />
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between px-6 py-3 border-b border-[#E4E4E7]">
-          <label className="flex items-center gap-1.5 text-xs text-[#71717A] cursor-pointer">
-            <input type="checkbox" checked={produtos.length > 0 && selecionados.size === produtos.length} onChange={selecionarTodos} className="w-4 h-4 accent-[#FF441F]" />
-            Selecionar todos ({produtos.length})
-          </label>
-          <span className="text-xs font-semibold text-[#18181B]">{selecionados.size} selecionado(s)</span>
-        </div>
+          <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#E4E4E7] shrink-0">
+              <label className="flex items-center gap-1.5 text-xs text-[#71717A] cursor-pointer">
+                <input type="checkbox" checked={produtos.length > 0 && selecionados.size === produtos.length} onChange={selecionarTodos} className="w-4 h-4 accent-[#FF441F]" />
+                Selecionar todos ({produtos.length})
+              </label>
+              <span className="text-xs font-semibold text-[#18181B]">{selecionados.size} selecionado(s)</span>
+            </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {carregando ? (
             <p className="text-xs text-[#A1A1AA] py-8 text-center">Carregando...</p>
           ) : grupos.length === 0 ? (
@@ -180,6 +223,16 @@ const CardapioImpressoModal = ({ onClose }) => {
                             <span className="text-xs text-[#71717A]">{fmtPreco(p.preco_promo ?? p.price)}</span>
                           </label>
                         ))}
+                        {categoria.id != null && (
+                          <input
+                            type="text"
+                            value={observacoesCategoria[categoria.id] ?? ''}
+                            onChange={(e) => alterarObservacaoCategoria(categoria.id, e.target.value)}
+                            onBlur={(e) => salvarObservacaoAoSair(categoria.id, e.target.value)}
+                            placeholder={`Observação de "${categoria.nome}" (aparece no fim da lista)`}
+                            className="mt-1 w-full border border-dashed border-[#E4E4E7] rounded-lg px-2.5 py-1.5 text-xs text-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#FF441F]"
+                          />
+                        )}
                       </div>
                     </div>
                   );
@@ -187,6 +240,8 @@ const CardapioImpressoModal = ({ onClose }) => {
               </div>
             ))
           )}
+            </div>
+          </div>
         </div>
 
         <div className="px-6 py-4 border-t border-[#E4E4E7]">

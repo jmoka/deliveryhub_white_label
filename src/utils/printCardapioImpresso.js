@@ -52,6 +52,7 @@ const blocoCategoria = (categoria) => `
         ${p.description ? `<div class="item-desc">${esc(p.description)}</div>` : ''}
       </div>
     `).join('')}
+    ${categoria.observacao ? `<div class="categoria-obs">${esc(categoria.observacao)}</div>` : ''}
   </div>
 `;
 
@@ -66,24 +67,30 @@ const renderBloco = (bloco) => (bloco.tipo === 'grupo' ? blocoGrupo(bloco.grupo)
 
 /**
  * @param {Object} args
- * @param {{nome: string|null, categorias: {nome: string, produtos: Array<{name: string, description?: string, price: number, preco_promo?: number|null}>}[]}[]} args.grupos
+ * @param {{nome: string|null, categorias: {nome: string, observacao?: string, produtos: Array<{name: string, description?: string, price: number, preco_promo?: number|null}>}[]}[]} args.grupos
  * @param {string} args.restauranteNome
  * @param {string|null} args.logoUrl
  * @param {boolean} args.usarLogo
  * @param {string} args.endereco
  * @param {string} args.whatsapp
  * @param {string} args.rodape
+ * @param {string} [args.observacaoGeral]
+ * @param {string} [args.imagemFundoUrl]
  */
 export const printCardapioImpresso = ({
   grupos, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
+  observacaoGeral, imagemFundoUrl,
 }) => {
   const [colunaEsq, colunaDir] = distribuirEmColunas(grupos);
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio - ${esc(restauranteNome ?? '')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-@page{size:A4;margin:12mm}
+@page{size:A4;margin:0}
+html,body{position:relative}
 body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
+.fundo{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.12;z-index:0}
+.conteudo{position:relative;z-index:1;padding:12mm}
 .header{display:flex;flex-direction:column;align-items:center;margin-bottom:16px}
 .logo{max-width:90px;max-height:90px;object-fit:contain;margin-bottom:8px;border-radius:12px}
 .nome{font-size:26px;font-weight:900;text-align:center;letter-spacing:-0.5px}
@@ -99,11 +106,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .item-linha::after{content:"";flex:1;border-bottom:1px dotted #D4D4D8;margin:0 2px 3px}
 .item-preco{font-size:13px;font-weight:700;white-space:nowrap}
 .item-desc{font-size:10.5px;color:#71717A;margin-top:1px}
+.categoria-obs{font-size:10.5px;font-style:italic;color:#71717A;margin-top:4px;padding-top:3px;border-top:1px dotted #D4D4D8}
 .rodape{margin-top:20px;padding-top:10px;border-top:1px solid #E4E4E7;text-align:center}
+.rodape-obs-geral{font-size:11px;color:#27272A;margin-bottom:4px}
 .rodape-frase{font-size:12px;font-style:italic;color:#27272A;margin-bottom:4px}
 .rodape-contato{font-size:11px;color:#71717A}
 @media print{button{display:none!important}}
 </style></head><body>
+${imagemFundoUrl ? `<img class="fundo" src="${esc(imagemFundoUrl)}" />` : ''}
+<div class="conteudo">
 <div class="header">
   ${usarLogo && logoUrl ? `<img class="logo" src="${esc(logoUrl)}" />` : ''}
   <div class="nome">${esc(restauranteNome ?? '')}</div>
@@ -112,11 +123,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
   <div class="coluna">${colunaEsq.map(renderBloco).join('')}</div>
   <div class="coluna">${colunaDir.map(renderBloco).join('')}</div>
 </div>
-${(rodape || endereco || whatsapp) ? `
+${(observacaoGeral || rodape || endereco || whatsapp) ? `
 <div class="rodape">
+  ${observacaoGeral ? `<div class="rodape-obs-geral">${esc(observacaoGeral)}</div>` : ''}
   ${rodape ? `<div class="rodape-frase">${esc(rodape)}</div>` : ''}
   ${(endereco || whatsapp) ? `<div class="rodape-contato">${[endereco, whatsapp ? `Delivery: ${whatsapp}` : null].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
 </div>` : ''}
+</div>
 <script>
 window.addEventListener('load', function(){
   window.print();

@@ -137,13 +137,13 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
       )}
 
       {tab === 'url' && (
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleUrlConfirm())}
             placeholder={placeholder}
-            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
           <button type="button" onClick={handleUrlConfirm} disabled={!urlInput.trim()}
-            className="px-4 py-2 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-40 transition-colors whitespace-nowrap">
+            className="w-full px-4 py-2 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-40 transition-colors whitespace-nowrap">
             Usar URL
           </button>
         </div>

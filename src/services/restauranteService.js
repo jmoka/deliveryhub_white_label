@@ -101,6 +101,11 @@ export const criarCategoria = (name) =>
 export const deletarCategoria = (id) =>
   apiFetch(`/categorias/${id}`, { method: 'DELETE' });
 
+export const getObservacoesCategorias = () => apiFetch('/categorias/observacoes');
+
+export const salvarObservacaoCategoria = (categoryId, observacao) =>
+  apiFetch(`/categorias/${categoryId}/observacao`, { method: 'PUT', body: JSON.stringify({ observacao }) });
+
 export const getClientes = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
   return apiFetch(`/clientes${qs ? `?${qs}` : ''}`);
