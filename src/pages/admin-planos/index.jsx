@@ -41,7 +41,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -57,6 +57,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           ativo: plano.ativo,
           inclui_delivery: plano.inclui_delivery ?? true,
           inclui_salao: plano.inclui_salao ?? false,
+          inclui_gdoor: plano.inclui_gdoor ?? false,
         }
       : { ...EMPTY }
   );
@@ -93,6 +94,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         trial_dias: form.trial_dias.trim() ? parseInt(form.trial_dias, 10) : 0,
         inclui_delivery: form.inclui_delivery,
         inclui_salao: form.inclui_salao,
+        inclui_gdoor: form.inclui_gdoor,
       };
       if (isEdicao) {
         await atualizarPlano(plano.id, { ...body, ativo: form.ativo });
@@ -193,6 +195,11 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <input type="checkbox" checked={form.inclui_salao} onChange={(e) => set('inclui_salao', e.target.checked)}
                       className="w-4 h-4 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Salão (mesas/comandas/garçons)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={form.inclui_gdoor} onChange={(e) => set('inclui_gdoor', e.target.checked)}
+                      className="w-4 h-4 rounded accent-blue-600" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">GDOOR (integração PDV/fiscal)</span>
                   </label>
                 </div>
               </div>
@@ -356,6 +363,11 @@ const TabPlanos = () => {
                     {plano.inclui_salao && (
                       <span className="text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">
                         Salão
+                      </span>
+                    )}
+                    {plano.inclui_gdoor && (
+                      <span className="text-xs font-medium bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400 px-2 py-0.5 rounded-full">
+                        GDOOR
                       </span>
                     )}
                   </div>

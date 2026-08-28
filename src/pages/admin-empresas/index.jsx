@@ -15,6 +15,7 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
     user_id: empresa?.user_id ?? '',
     modulo_delivery: empresa?.modulo_delivery ?? true,
     modulo_salao: empresa?.modulo_salao ?? false,
+    modulo_gdoor: empresa?.modulo_gdoor ?? false,
   });
   const [salvando, setSalvando] = useState(false);
   const usaPadraoGlobal = form.comissao_pct === null;
@@ -115,6 +116,14 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
                   onChange={(e) => setForm({ ...form, modulo_salao: e.target.checked })}
                 />
                 Salão (mesas/comandas/garçons)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={form.modulo_gdoor}
+                  onChange={(e) => setForm({ ...form, modulo_gdoor: e.target.checked })}
+                />
+                GDOOR (integração PDV/fiscal)
               </label>
             </div>
           </div>
@@ -364,7 +373,10 @@ const AdminEmpresas = () => {
                           {e.modulo_salao && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">Salão</span>
                           )}
-                          {!e.modulo_delivery && !e.modulo_salao && (
+                          {e.modulo_gdoor && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400">GDOOR</span>
+                          )}
+                          {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && (
                             <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
                           )}
                         </div>

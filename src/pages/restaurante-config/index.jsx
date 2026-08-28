@@ -1108,7 +1108,7 @@ const ComissoesConfig = () => {
 };
 
 const RestauranteConfig = () => {
-  const { moduloSalao } = useModulosEmpresa();
+  const { moduloSalao, moduloGdoor } = useModulosEmpresa();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -1279,10 +1279,15 @@ const RestauranteConfig = () => {
             {/* Agente de impressão local — baixar, descompactar, rodar e parear impressoras */}
             {moduloSalao && <AgenteImpressaoPanel />}
 
-            {/* Agente GDOOR local — sincroniza pedidos entregues como pré-venda fiscal */}
-            <GdoorAgentePanel />
-            <GdoorMapeamentoPanel />
-            <GdoorClientesPanel />
+            {/* Agente GDOOR local — sincroniza pedidos entregues como pré-venda fiscal.
+                Módulo comprável no pacote, igual Delivery/Salão — some da tela sem ele. */}
+            {moduloGdoor && (
+              <>
+                <GdoorAgentePanel />
+                <GdoorMapeamentoPanel />
+                <GdoorClientesPanel />
+              </>
+            )}
 
             {/* Formulário — limpo */}
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">

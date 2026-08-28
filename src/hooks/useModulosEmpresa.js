@@ -7,6 +7,7 @@ export function useModulosEmpresa() {
   return {
     moduloDelivery: !!data?.empresa?.modulo_delivery,
     moduloSalao: !!data?.empresa?.modulo_salao,
+    moduloGdoor: !!data?.empresa?.modulo_gdoor,
     autoAtendimentoHabilitado: !!data?.empresa?.auto_atendimento_habilitado,
   };
 }
