@@ -3,6 +3,8 @@
 cadastrado, um campo pra colar o token gerado no painel, e um botão Conectar."""
 import tkinter as tk
 
+import requests
+
 from app import firebird_client, local_config
 
 COR_FUNDO = "#18181B"
@@ -29,15 +31,42 @@ def _token_atual() -> str:
     return local_config.carregar().get("token") or ""
 
 
-def _salvar_token(token: str) -> None:
-    local_config.definir_token(token)
+def _url_atual() -> str:
+    return local_config.carregar().get("backend_url") or local_config.DEFAULT_BACKEND_URL
+
+
+def _salvar_token(token: str, backend_url: str) -> None:
+    local_config.definir_token(token, backend_url)
+
+
+def _testar_conexao(token: str, backend_url: str) -> tuple[bool, str]:
+    """Confirma de verdade que o token+URL funcionam contra o servidor —
+    mesmo espírito do print-agent (gui.py chama client.me() antes de dizer
+    que conectou). Retorna (sucesso, mensagem)."""
+    try:
+        resp = requests.get(
+            f"{backend_url}/agente-gdoor/me",
+            headers={"x-gdoor-agente-token": token},
+            timeout=10,
+        )
+    except requests.exceptions.RequestException as e:
+        return False, f"Não foi possível conectar em {backend_url}: {e}"
+
+    if resp.status_code == 200:
+        nome = resp.json().get("restaurante", {}).get("name", "?")
+        return True, f"Conectado! Restaurante: {nome}"
+    if resp.status_code == 401:
+        return False, "Token inválido — gere um novo em Configurações > Integração GDOOR no painel."
+    if resp.status_code == 403:
+        return False, "Conectou, mas o módulo GDOOR não está habilitado pra essa loja (fale com o suporte)."
+    return False, f"Servidor respondeu {resp.status_code} — confira a URL do servidor."
 
 
 class JanelaPareamento(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("DeliveryHub — Agente GDOOR")
-        self.geometry("420x380")
+        self.geometry("640x480")
         self.resizable(False, False)
         self.configure(bg=COR_FUNDO)
 
@@ -57,11 +86,11 @@ class JanelaPareamento(tk.Tk):
         caixa.pack(fill="x", pady=16, **pad)
 
         self.lbl_gdoor = tk.Label(caixa, text="Verificando GDOOR...", font=("Segoe UI", 10, "bold"),
-                                   bg=COR_CAIXA, fg=COR_TEXTO, anchor="w", wraplength=360, justify="left")
+                                   bg=COR_CAIXA, fg=COR_TEXTO, anchor="w", wraplength=580, justify="left")
         self.lbl_gdoor.pack(fill="x", padx=12, pady=(8, 0))
 
         self.lbl_cnpj = tk.Label(caixa, text="", font=("Segoe UI", 9), bg=COR_CAIXA,
-                                  fg=COR_TEXTO_FRACO, anchor="w", wraplength=360, justify="left")
+                                  fg=COR_TEXTO_FRACO, anchor="w", wraplength=580, justify="left")
         self.lbl_cnpj.pack(fill="x", padx=12, pady=(0, 10))
 
         # Campo de token
@@ -76,7 +105,22 @@ class JanelaPareamento(tk.Tk):
         self.entry_token.pack(fill="x", pady=(6, 4), ipady=6, **pad)
         self.entry_token.insert(0, _token_atual())
 
-        self.lbl_msg = tk.Label(self, text="", font=("Segoe UI", 9), bg=COR_FUNDO, fg=COR_TEXTO, wraplength=380, justify="left")
+        # Campo de URL do servidor — mesmo padrão do print-agent (gui.py): sem
+        # isso, uma instalação que herdou/testou com um .env local (ex.:
+        # SERVER_DELIVERY_URL=http://127.0.0.1:3002) fica presa em localhost e
+        # nunca sincroniza em produção, sem jeito de corrigir pela GUI.
+        tk.Label(self, text="URL do servidor", font=("Segoe UI", 9, "bold"),
+                 bg=COR_FUNDO, fg=COR_TEXTO).pack(**pad, anchor="w", pady=(4, 0))
+        tk.Label(self, text="Deixe como está, a menos que o suporte peça pra mudar",
+                 font=("Segoe UI", 8), bg=COR_FUNDO, fg=COR_TEXTO_FRACO).pack(**pad, anchor="w")
+
+        self.entry_url = tk.Entry(self, font=("Consolas", 10), bg=COR_CAIXA, fg=COR_TEXTO,
+                                   insertbackground=COR_TEXTO, relief="flat",
+                                   highlightbackground=COR_BORDA, highlightthickness=1)
+        self.entry_url.pack(fill="x", pady=(6, 4), ipady=6, **pad)
+        self.entry_url.insert(0, _url_atual())
+
+        self.lbl_msg = tk.Label(self, text="", font=("Segoe UI", 9), bg=COR_FUNDO, fg=COR_TEXTO, wraplength=600, justify="left")
         self.lbl_msg.pack(**pad, anchor="w")
 
         self.btn_conectar = tk.Button(self, text="Conectar", font=("Segoe UI", 10, "bold"),
@@ -102,11 +146,22 @@ class JanelaPareamento(tk.Tk):
         if not token:
             self.lbl_msg.config(text="Cole o token antes de conectar.", fg=COR_VERMELHO)
             return
-        _salvar_token(token)
-        self.lbl_msg.config(
-            text="Token salvo! Reinicie o agente (iniciar.bat) para aplicar a conexão.",
-            fg=COR_VERDE,
-        )
+        # rstrip da barra final — o poller monta URL como f"{backend_url}/agente-gdoor/..."
+        # e uma barra dupla (ex.: usuário cola a URL com "/" no final) pode
+        # quebrar dependendo de como o proxy/servidor trata a rota.
+        backend_url = (self.entry_url.get().strip() or local_config.DEFAULT_BACKEND_URL).rstrip('/')
+
+        self.lbl_msg.config(text="Conectando...", fg=COR_TEXTO_FRACO)
+        self.btn_conectar.config(state="disabled")
+        self.update_idletasks()
+
+        sucesso, mensagem = _testar_conexao(token, backend_url)
+        if sucesso:
+            _salvar_token(token, backend_url)
+            self.lbl_msg.config(text=f"✓ {mensagem} Reinicie o agente (iniciar.bat) para aplicar.", fg=COR_VERDE)
+        else:
+            self.lbl_msg.config(text=f"✗ {mensagem}", fg=COR_VERMELHO)
+        self.btn_conectar.config(state="normal")
 
 
 if __name__ == "__main__":
