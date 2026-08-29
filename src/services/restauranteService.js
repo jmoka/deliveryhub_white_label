@@ -101,6 +101,9 @@ export const criarCategoria = (name) =>
 export const deletarCategoria = (id) =>
   apiFetch(`/categorias/${id}`, { method: 'DELETE' });
 
+export const editarCategoria = (id, name) =>
+  apiFetch(`/categorias/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) });
+
 export const getObservacoesCategorias = () => apiFetch('/categorias/observacoes');
 
 export const salvarObservacaoCategoria = (categoryId, observacao) =>

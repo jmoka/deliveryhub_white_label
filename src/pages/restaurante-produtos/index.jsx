@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
-  getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria,
+  getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria, editarCategoria,
   getTagsPublicas, listarImpressoras, getAparencia, updateAparencia, importarProdutos,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
@@ -52,6 +52,9 @@ const RestauranteProdutos = () => {
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
+  const [editandoCategId, setEditandoCategId] = useState(null);
+  const [editCategNome, setEditCategNome] = useState('');
+  const [salvandoCateg, setSalvandoCateg] = useState(false);
   const [showCategPanel, setShowCategPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -145,6 +148,31 @@ const RestauranteProdutos = () => {
       alert(err.message);
     } finally {
       setDeletandoCateg(null);
+    }
+  };
+
+  const iniciarEdicaoCategoria = (cat) => {
+    setEditandoCategId(cat.id);
+    setEditCategNome(cat.name);
+  };
+
+  const cancelarEdicaoCategoria = () => {
+    setEditandoCategId(null);
+    setEditCategNome('');
+  };
+
+  const handleSalvarCategoria = async (cat) => {
+    const nome = editCategNome.trim();
+    if (!nome || nome === cat.name) { cancelarEdicaoCategoria(); return; }
+    setSalvandoCateg(true);
+    try {
+      const atualizada = await editarCategoria(cat.id, nome);
+      setCategorias((prev) => prev.map((c) => (c.id === cat.id ? atualizada : c)).sort((a, b) => a.name.localeCompare(b.name)));
+      cancelarEdicaoCategoria();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSalvandoCateg(false);
     }
   };
 
@@ -497,20 +525,47 @@ const RestauranteProdutos = () => {
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {categorias.map((c) => (
-                    <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full px-3 py-1.5">
-                      <span className="text-sm text-[#27272A] dark:text-[#F4F4F5]">{c.name}</span>
-                      {c.total_produtos > 0 && (
-                        <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">({c.total_produtos})</span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleDeletarCategoria(c)}
-                        disabled={deletandoCateg === c.id}
-                        className="text-[#A1A1AA] hover:text-red-500 dark:hover:text-red-400 text-sm leading-none disabled:opacity-40"
-                      >
-                        ×
-                      </button>
-                    </div>
+                    editandoCategId === c.id ? (
+                      <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full pl-3 pr-1.5 py-1">
+                        <input
+                          value={editCategNome}
+                          onChange={(e) => setEditCategNome(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSalvarCategoria(c); if (e.key === 'Escape') cancelarEdicaoCategoria(); }}
+                          autoFocus
+                          disabled={salvandoCateg}
+                          className="text-sm bg-transparent text-[#27272A] dark:text-[#F4F4F5] outline-none w-32"
+                        />
+                        <button type="button" onClick={() => handleSalvarCategoria(c)} disabled={salvandoCateg}
+                          className="text-emerald-600 dark:text-emerald-400 text-xs font-bold disabled:opacity-40">
+                          ✓
+                        </button>
+                        <button type="button" onClick={cancelarEdicaoCategoria} disabled={salvandoCateg}
+                          className="text-[#A1A1AA] hover:text-red-500 dark:hover:text-red-400 text-sm leading-none disabled:opacity-40">
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full px-3 py-1.5">
+                        <span
+                          onClick={() => iniciarEdicaoCategoria(c)}
+                          title="Clique para renomear"
+                          className="text-sm text-[#27272A] dark:text-[#F4F4F5] cursor-pointer hover:underline"
+                        >
+                          {c.name}
+                        </span>
+                        {c.total_produtos > 0 && (
+                          <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">({c.total_produtos})</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeletarCategoria(c)}
+                          disabled={deletandoCateg === c.id}
+                          className="text-[#A1A1AA] hover:text-red-500 dark:hover:text-red-400 text-sm leading-none disabled:opacity-40"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )
                   ))}
                 </div>
               )}
