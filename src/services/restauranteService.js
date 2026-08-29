@@ -315,6 +315,8 @@ export const removerGarcom = (id) =>
   apiFetch(`/garcons/${id}`, { method: 'DELETE' });
 export const forcarLogoutGarcom = (id) =>
   apiFetch(`/garcons/${id}/forcar-logout`, { method: 'POST' });
+export const liberarBloqueioGarcom = (id) =>
+  apiFetch(`/garcons/${id}/liberar-bloqueio`, { method: 'POST' });
 
 // Módulo Salão — regras de comissão do garçom (do estabelecimento, valem pra todos)
 export const listarComissoesGarcom = () => apiFetch('/garcons/comissoes');

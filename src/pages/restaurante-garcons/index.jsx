@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  listarGarcons, criarGarcom, atualizarGarcom, removerGarcom, forcarLogoutGarcom,
+  listarGarcons, criarGarcom, atualizarGarcom, removerGarcom, forcarLogoutGarcom, liberarBloqueioGarcom,
 } from '../../services/restauranteService';
 import { getLocalUrls } from '../../utils/mesaAcompanharUrl';
+import { formatDuracao } from '../../utils/formatDuracao';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const NovoGarcomForm = ({ onCriado }) => {
@@ -56,8 +57,31 @@ const NovoGarcomForm = ({ onCriado }) => {
 const GarcomCard = ({ garcom, onMudou }) => {
   const [copiado, setCopiado] = useState(false);
   const [modo, setModo] = useState('online'); // 'online' | 'local'
+  const [now, setNow] = useState(Date.now());
+  const [liberandoBloqueio, setLiberandoBloqueio] = useState(false);
   const urls = getLocalUrls(`/garcom/${garcom.login_key}`);
   const link = modo === 'local' && urls.lan ? urls.lan : urls.principal;
+
+  const bloqueadoAteMs = garcom.bloqueado_ate ? new Date(garcom.bloqueado_ate).getTime() : null;
+  const bloqueado = bloqueadoAteMs && bloqueadoAteMs > now;
+
+  // Contagem regressiva do bloqueio por senha errada — mesmo relógio que o garçom vê
+  // na tela dele, pra o estabelecimento saber quanto falta sem precisar recarregar.
+  useEffect(() => {
+    if (!bloqueadoAteMs) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [bloqueadoAteMs]);
+
+  const liberarBloqueio = async () => {
+    setLiberandoBloqueio(true);
+    try {
+      await liberarBloqueioGarcom(garcom.id);
+      onMudou();
+    } finally {
+      setLiberandoBloqueio(false);
+    }
+  };
 
   const copiarLink = () => {
     navigator.clipboard?.writeText(link);
@@ -105,6 +129,11 @@ const GarcomCard = ({ garcom, onMudou }) => {
               Logado em 1 dispositivo
             </span>
           )}
+          {bloqueado && (
+            <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-mono">
+              Bloqueado · {formatDuracao(bloqueadoAteMs - now)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -141,6 +170,13 @@ const GarcomCard = ({ garcom, onMudou }) => {
       {garcom.sessao_ativa && (
         <button onClick={forcarLogout} className="w-full mt-3 py-1.5 text-xs border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/40 font-medium">
           Forçar logout (liberar outro dispositivo)
+        </button>
+      )}
+
+      {bloqueado && (
+        <button onClick={liberarBloqueio} disabled={liberandoBloqueio}
+          className="w-full mt-3 py-1.5 text-xs border border-red-300 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 font-medium disabled:opacity-50">
+          {liberandoBloqueio ? 'Liberando...' : `Liberar agora (bloqueado por mais ${formatDuracao(bloqueadoAteMs - now)})`}
         </button>
       )}
 

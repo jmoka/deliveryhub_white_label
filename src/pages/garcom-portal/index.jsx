@@ -44,6 +44,23 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
   const [password, setPassword] = useState('');
   const [erro, setErro] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [bloqueadoAte, setBloqueadoAte] = useState(null); // timestamp ms
+  const [now, setNow] = useState(Date.now());
+
+  // Contagem regressiva enquanto bloqueado — some sozinho quando o tempo zera,
+  // liberando o formulário de novo sem precisar recarregar a página.
+  useEffect(() => {
+    if (!bloqueadoAte) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [bloqueadoAte]);
+
+  useEffect(() => {
+    if (bloqueadoAte && now >= bloqueadoAte) setBloqueadoAte(null);
+  }, [now, bloqueadoAte]);
+
+  const segundosRestantes = bloqueadoAte ? Math.max(0, Math.ceil((bloqueadoAte - now) / 1000)) : 0;
+  const bloqueado = bloqueadoAte && segundosRestantes > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,7 +71,12 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
       setGarcomToken(token);
       onLogin();
     } catch (err) {
-      setErro(err.message ?? 'Senha inválida.');
+      if (err.bloqueadoAte) {
+        setBloqueadoAte(new Date(err.bloqueadoAte).getTime());
+        setNow(Date.now());
+      } else {
+        setErro(err.message ?? 'Senha inválida.');
+      }
     } finally {
       setLoading(false);
     }
@@ -78,10 +100,19 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
             placeholder="Senha"
             autoFocus
             required
-            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F]"
+            disabled={bloqueado}
+            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
           />
-          {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
-          <button type="submit" disabled={loading}
+          {bloqueado ? (
+            <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center">
+              <p className="text-xs text-red-600 dark:text-red-400 font-medium">Muitas tentativas com senha errada.</p>
+              <p className="text-2xl font-black text-red-600 dark:text-red-400 mt-1 font-mono">{formatDuracao(bloqueadoAte - now)}</p>
+              <p className="text-[11px] text-red-500/80 dark:text-red-400/70 mt-1">Tente de novo depois, ou peça pro estabelecimento liberar.</p>
+            </div>
+          ) : (
+            erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>
+          )}
+          <button type="submit" disabled={loading || bloqueado}
             className="w-full py-3 bg-[#FF441F] text-white font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50 text-sm">
             {loading ? 'Entrando...' : 'Entrar'}
           </button>

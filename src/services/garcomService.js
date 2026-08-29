@@ -41,7 +41,11 @@ export const login = async (loginKey, password) => {
   const contentType = res.headers.get('content-type') ?? '';
   const isJson = contentType.includes('application/json');
   const data = isJson ? await res.json().catch(() => ({})) : {};
-  if (!res.ok) throw new Error(data?.message ?? `HTTP ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(data?.message ?? `HTTP ${res.status}`);
+    if (data?.bloqueado_ate) err.bloqueadoAte = data.bloqueado_ate;
+    throw err;
+  }
   return data;
 };
 
