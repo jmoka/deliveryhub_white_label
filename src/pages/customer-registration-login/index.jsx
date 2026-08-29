@@ -47,7 +47,9 @@ const CustomerRegistrationLogin = () => {
         return;
       }
 
-      throw new Error(result?.error || 'Credenciais inválidas');
+      const erro = new Error(result?.error || 'Credenciais inválidas');
+      if (result?.bloqueadoAte) erro.bloqueadoAte = result.bloqueadoAte;
+      throw erro;
     } catch (error) {
       throw error;
     } finally {

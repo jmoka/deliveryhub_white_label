@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getMeuPlanoStatus } from '../services/restauranteService';
+import { apiPath } from '../lib/apiUrl';
 
 const AuthContext = createContext({})
 
@@ -80,29 +81,45 @@ export const AuthProvider = ({ children }) => {
       })
   }
 
+  // Login mediado pelo backend (não chama signInWithPassword direto) — necessário pro
+  // bloqueio por tentativas erradas (ver AuthLoginService no backend): é o backend quem
+  // verifica a senha e decide bloquear, então o registro de falha não pode ser burlado
+  // por quem só sabe o email de outra pessoa. Sucesso devolve os tokens da sessão já
+  // emitida pelo Supabase Auth, aplicados aqui via setSession — o listener
+  // onAuthStateChange (acima) cuida do resto (setUser/fetchUserProfile) normalmente.
   const signIn = async (email, password) => {
     setAuthError(null)
     setLoading(true)
-    
+
     try {
-      const { data, error } = await supabase?.auth?.signInWithPassword({
-        email,
-        password
-      })
-      
+      const res = await fetch(apiPath('/api/auth-principal/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const contentType = res.headers.get('content-type') ?? '';
+      const body = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
+
+      if (!res.ok) {
+        const mensagem = body?.message ?? 'Credenciais inválidas';
+        setAuthError(mensagem);
+        return { success: false, error: mensagem, bloqueadoAte: body?.bloqueado_ate ?? null };
+      }
+
+      const { error } = await supabase?.auth?.setSession({ access_token: body.access_token, refresh_token: body.refresh_token });
       if (error) {
-        setAuthError(error?.message)
+        setAuthError(error?.message);
         return { success: false, error: error?.message };
       }
-      
-      return { success: true, user: data?.user };
+
+      return { success: true };
     } catch (error) {
-      if (error?.message?.includes('Failed to fetch') || 
+      if (error?.message?.includes('Failed to fetch') ||
           error?.message?.includes('AuthRetryableFetchError')) {
         setAuthError('Cannot connect to authentication service. Your Supabase project may be paused or inactive. Please check your Supabase dashboard and resume your project if needed.')
         return { success: false, error: 'Connection failed' }
       }
-      
+
       setAuthError('Something went wrong. Please try again.')
       return { success: false, error: 'Authentication failed' }
     } finally {

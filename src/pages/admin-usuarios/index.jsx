@@ -1,10 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   getUsuarios, trocarCredenciaisUsuario, getEmpresas, atualizarEmpresa,
-  editarUsuario, bloquearUsuario, excluirUsuario,
+  editarUsuario, bloquearUsuario, excluirUsuario, liberarBloqueioLoginUsuario,
 } from '../../services/adminService';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatDuracao } from '../../utils/formatDuracao';
+
+// Badge com contagem regressiva do bloqueio por tentativas de senha erradas no login
+// principal — próprio componente pra ticar a cada segundo sem re-renderizar a tabela
+// inteira de usuários.
+const BloqueioLoginBadge = ({ bloqueadoAte }) => {
+  const [now, setNow] = useState(Date.now());
+  const bloqueadoAteMs = new Date(bloqueadoAte).getTime();
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (bloqueadoAteMs <= now) return null;
+
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-mono">
+      Bloqueado (login) · {formatDuracao(bloqueadoAteMs - now)}
+    </span>
+  );
+};
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -292,6 +314,18 @@ const AdminUsuarios = () => {
     }
   };
 
+  const handleLiberarBloqueioLogin = async (usuario) => {
+    setProcessando(usuario.id);
+    try {
+      await liberarBloqueioLoginUsuario(usuario.id);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setProcessando(null);
+    }
+  };
+
   const handleExcluir = async (usuario) => {
     if (!confirm(`Excluir "${usuario.name || usuario.email}" permanentemente? Essa ação não pode ser desfeita.`)) return;
     setProcessando(usuario.id);
@@ -382,6 +416,7 @@ const AdminUsuarios = () => {
                               Bloqueado
                             </span>
                           )}
+                          {u.bloqueado_login_ate && <BloqueioLoginBadge bloqueadoAte={u.bloqueado_login_ate} />}
                         </div>
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden md:table-cell">
@@ -416,6 +451,12 @@ const AdminUsuarios = () => {
                             className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
                             Editar
                           </button>
+                          {u.bloqueado_login_ate && (
+                            <button onClick={() => handleLiberarBloqueioLogin(u)} disabled={processando === u.id}
+                              className="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg disabled:opacity-50">
+                              Liberar login
+                            </button>
+                          )}
                           {u.id !== user?.id && (
                             <button onClick={() => handleBloquear(u)} disabled={processando === u.id}
                               className={`px-3 py-1 text-xs font-medium rounded-lg disabled:opacity-50 ${
