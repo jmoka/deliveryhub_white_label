@@ -147,48 +147,48 @@ const CardapioImpressoModal = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md md:max-w-[85%] max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4E4E7]">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md md:max-w-[85%] max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
           <div>
-            <h2 className="text-lg font-bold text-[#18181B]">Cardápio impresso</h2>
-            <p className="text-xs text-[#71717A]">Escolha os produtos que entram na folha pra imprimir e plastificar.</p>
+            <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Cardápio impresso</h2>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Escolha os produtos que entram na folha pra imprimir e plastificar.</p>
           </div>
-          <button onClick={onClose} className="text-[#A1A1AA] hover:text-[#18181B]">
+          <button onClick={onClose} className="text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
             <Icon name="X" size={20} />
           </button>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
-          <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-[#E4E4E7] overflow-y-auto px-6 py-3 space-y-3">
-            <label className="flex items-center gap-2 text-sm text-[#27272A] cursor-pointer">
+          <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-[#E4E4E7] dark:border-[#3F3F46] overflow-y-auto px-6 py-3 space-y-3">
+            <label className="flex items-center gap-2 text-sm text-[#27272A] dark:text-[#F4F4F5] cursor-pointer">
               <input type="checkbox" checked={usarLogo} onChange={(e) => setUsarLogo(e.target.checked)} className="w-4 h-4 accent-[#FF441F]" />
               Incluir logomarca no topo
             </label>
             <div>
-              <label className="block text-xs font-semibold text-[#71717A] mb-1">Observação geral (opcional)</label>
+              <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Observação geral (opcional)</label>
               <input type="text" value={observacaoGeral} onChange={(e) => setObservacaoGeral(e.target.value)}
                 placeholder="Ex: Preços sujeitos a alteração sem aviso prévio"
-                className="w-full border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#71717A] mb-1">Frase do rodapé (opcional)</label>
+              <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Frase do rodapé (opcional)</label>
               <input type="text" value={rodape} onChange={(e) => setRodape(e.target.value)}
                 placeholder="Ex: Peça também pelo nosso delivery!"
-                className="w-full border border-[#E4E4E7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#71717A] mb-1">Imagem de fundo (opcional)</label>
+              <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Imagem de fundo (opcional)</label>
               <ImageUpload value={imagemFundo} onChange={setImagemFundo} folder="cardapio-impresso" aspect="wide" previewOpacity={0.3} />
             </div>
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-3 border-b border-[#E4E4E7] shrink-0">
-              <label className="flex items-center gap-1.5 text-xs text-[#71717A] cursor-pointer">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-[#E4E4E7] dark:border-[#3F3F46] shrink-0">
+              <label className="flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] cursor-pointer">
                 <input type="checkbox" checked={produtos.length > 0 && selecionados.size === produtos.length} onChange={selecionarTodos} className="w-4 h-4 accent-[#FF441F]" />
                 Selecionar todos ({produtos.length})
               </label>
-              <span className="text-xs font-semibold text-[#18181B]">{selecionados.size} selecionado(s)</span>
+              <span className="text-xs font-semibold text-[#18181B] dark:text-[#F4F4F5]">{selecionados.size} selecionado(s)</span>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -211,16 +211,16 @@ const CardapioImpressoModal = ({ onClose }) => {
                     <div key={categoria.nome}>
                       <label className="flex items-center gap-2 mb-2 cursor-pointer">
                         <input type="checkbox" checked={todosSelecionados} onChange={() => toggleCategoria(categoria)} className="w-4 h-4 accent-[#FF441F]" />
-                        <span className="text-sm font-bold text-[#18181B]">{categoria.nome}</span>
+                        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{categoria.nome}</span>
                       </label>
                       <div className="pl-6 space-y-1.5">
                         {categoria.produtos.map((p) => (
                           <label key={p.id} className="flex items-center justify-between gap-2 cursor-pointer">
-                            <span className="flex items-center gap-2 text-sm text-[#27272A]">
+                            <span className="flex items-center gap-2 text-sm text-[#27272A] dark:text-[#F4F4F5]">
                               <input type="checkbox" checked={selecionados.has(p.id)} onChange={() => toggleProduto(p.id)} className="w-4 h-4 accent-[#FF441F]" />
                               {p.name}
                             </span>
-                            <span className="text-xs text-[#71717A]">{fmtPreco(p.preco_promo ?? p.price)}</span>
+                            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtPreco(p.preco_promo ?? p.price)}</span>
                           </label>
                         ))}
                         {categoria.id != null && (
@@ -230,7 +230,7 @@ const CardapioImpressoModal = ({ onClose }) => {
                             onChange={(e) => alterarObservacaoCategoria(categoria.id, e.target.value)}
                             onBlur={(e) => salvarObservacaoAoSair(categoria.id, e.target.value)}
                             placeholder={`Observação de "${categoria.nome}" (aparece no fim da lista)`}
-                            className="mt-1 w-full border border-dashed border-[#E4E4E7] rounded-lg px-2.5 py-1.5 text-xs text-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#FF441F]"
+                            className="mt-1 w-full border border-dashed border-[#E4E4E7] dark:border-[#3F3F46] bg-transparent text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2.5 py-1.5 text-xs text-[#71717A] dark:placeholder:text-[#71717A] focus:outline-none focus:ring-2 focus:ring-[#FF441F]"
                           />
                         )}
                       </div>
@@ -244,7 +244,7 @@ const CardapioImpressoModal = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-[#E4E4E7]">
+        <div className="px-6 py-4 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
           <button onClick={gerar} disabled={selecionados.size === 0}
             className="w-full flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl bg-[#FF441F] text-white hover:bg-[#E63A19] disabled:opacity-40">
             <Icon name="Printer" size={15} /> Gerar cardápio impresso ({selecionados.size})
@@ -290,44 +290,44 @@ const RestauranteCardapioDigital = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
+    <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/cardapio-digital" title="Cardápio Digital" />
 
       <div className="max-w-xl mx-auto p-4">
-        <h1 className="text-lg font-black text-[#18181B] mb-1">Cardápio Digital</h1>
-        <p className="text-sm text-[#71717A] mb-4">
+        <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5] mb-1">Cardápio Digital</h1>
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mb-4">
           Gere um QR code pras mesas — o cliente escaneia e vê produtos e preços, sem precisar pedir pelo app.
         </p>
 
         {!slugLoja ? (
-          <p className="text-sm text-[#71717A]">Carregando...</p>
+          <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</p>
         ) : (() => {
           const urls = getCardapioUrls(slugLoja);
           const urlAtiva = modo === 'local' && urls.lan ? urls.lan : urls.principal;
           const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(urlAtiva)}`;
 
           return (
-            <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 flex flex-col items-center">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-6 flex flex-col items-center">
               {urls.lan && (
                 <div className="flex gap-2 mb-4 self-start">
                   <button onClick={() => setModo('online')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                     ONLINE
                   </button>
                   <button onClick={() => setModo('local')}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] text-[#71717A]'}`}>
+                    className={`px-3 py-1 rounded-lg text-[10px] font-bold ${modo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
                     LOCAL
                   </button>
                 </div>
               )}
 
-              <img src={qrSrc} alt="QR code do cardápio digital" width={260} height={260} className="rounded-xl border border-[#E4E4E7]" />
+              <img src={qrSrc} alt="QR code do cardápio digital" width={260} height={260} className="rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46]" />
 
-              <p className="text-xs text-[#71717A] mt-3 break-all text-center">{urlAtiva}</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-3 break-all text-center">{urlAtiva}</p>
 
               <div className="flex gap-2 mt-4 w-full">
                 <button onClick={() => copiarLink(urlAtiva)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]">
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                   <Icon name={copiado ? 'Check' : 'Copy'} size={15} /> {copiado ? 'Copiado!' : 'Copiar link'}
                 </button>
                 <a href={urlAtiva} target="_blank" rel="noreferrer"
@@ -340,13 +340,13 @@ const RestauranteCardapioDigital = () => {
                 Baixar QR code (PNG)
               </a>
 
-              <div className="flex gap-2 mt-4 w-full border-t border-[#E4E4E7] pt-4">
+              <div className="flex gap-2 mt-4 w-full border-t border-[#E4E4E7] dark:border-[#3F3F46] pt-4">
                 <button
                   onClick={() => imprimirComLogo(
                     printCartazCardapioDigital,
                     `https://api.qrserver.com/v1/create-qr-code/?size=340x340&data=${encodeURIComponent(urlAtiva)}`,
                   )}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]">
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                   <Icon name="Printer" size={15} /> Cartaz A4
                 </button>
                 <button
@@ -354,14 +354,14 @@ const RestauranteCardapioDigital = () => {
                     printTicketCardapioDigital,
                     `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(urlAtiva)}`,
                   )}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]">
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                   <Icon name="Printer" size={15} /> Ticket térmico
                 </button>
               </div>
 
               <button
                 onClick={() => setMostrarModalCardapioImpresso(true)}
-                className="mt-2 w-full flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] text-[#27272A] hover:bg-[#F4F4F5]">
+                className="mt-2 w-full flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                 <Icon name="Printer" size={15} /> Cardápio impresso (pra plastificar)
               </button>
             </div>

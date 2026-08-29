@@ -10,13 +10,13 @@ Uso: dê duplo clique em parear.bat, ou rode "python parear.py" com o venv
 from app import local_config
 
 
-def salvar_token(token: str) -> None:
+def salvar_token(token: str, backend_url: str | None = None) -> None:
     token = token.strip()
     if not token:
         print("Token vazio — nada foi salvo.")
         return
 
-    local_config.definir_token(token)
+    local_config.definir_token(token, backend_url.strip().rstrip('/') if backend_url else None)
     print(f"\nToken salvo em {local_config._config_path()}")
     print("Agora reinicie o agente (feche a janela e rode iniciar.bat de novo) pra aplicar.")
 
@@ -45,7 +45,10 @@ if __name__ == "__main__":
     _mostrar_cnpj_local()
     print("\nCole abaixo o token gerado em Configurações > Integração GDOOR no painel do restaurante.\n")
     token = input("Token: ")
-    salvar_token(token)
+    atual = local_config.carregar()
+    print(f"\nURL do servidor atual: {atual.get('backend_url') or local_config.DEFAULT_BACKEND_URL}")
+    backend_url = input("Nova URL do servidor (ENTER pra manter a atual): ")
+    salvar_token(token, backend_url or None)
     try:
         input("\nPressione ENTER pra fechar...")
     except EOFError:
