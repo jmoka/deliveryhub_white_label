@@ -435,6 +435,8 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   // lançar pagamento fica disponível até isso zerar, não só o saldo dos itens, senão
   // esconde a possibilidade de cobrar a gorjeta assim que os produtos já foram pagos.
   const faltaPagarEfetivo = faltaPagar ?? saldo;
+  const subtotalItensComanda = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
+  const taxaCartaoPagaComanda = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor || 0), 0);
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
   // Comanda paga/cancelada não deixa mais mexer nos pagamentos, mesma regra de editar itens.
   const podeMexer = ['aberta', 'fechada_garcom'].includes(comanda.status);
@@ -531,6 +533,14 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
           pagamentos={comanda.pagamentos ?? []}
           podeRegistrar={podePagamentoParcial}
           taxaCartaoPercentual={comanda.taxa_cartao_percentual ?? 0}
+          resumoFinanceiro={{
+            subtotal: subtotalItensComanda,
+            desconto: Number(comanda.desconto_valor || 0),
+            acrescimo: Number(comanda.acrescimo_valor || 0),
+            gorjeta: Number(comanda.gorjeta_valor || 0),
+            taxaCartaoPaga: taxaCartaoPagaComanda,
+            total: comanda.saldo?.total ?? subtotalItensComanda,
+          }}
           valor={valor} setValor={setValor}
           forma={forma} setForma={setForma}
           valorRecebido={valorRecebido} setValorRecebido={setValorRecebido}

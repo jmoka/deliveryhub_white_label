@@ -1029,6 +1029,15 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             pagamentos={comanda.pagamentos ?? []}
             podeRegistrar={podeEditar}
             taxaCartaoPercentual={taxaCartaoPercentual}
+            resumoFinanceiro={{
+              subtotal,
+              desconto: Number(comanda.desconto_valor || 0),
+              acrescimo: Number(comanda.acrescimo_valor || 0),
+              gorjeta: Number(comanda.gorjeta_valor || 0) > 0 ? comanda.gorjeta_valor : gorjetaCobrancaComanda,
+              gorjetaEstimativa: !(Number(comanda.gorjeta_valor || 0) > 0) && gorjetaCobrancaComanda > 0,
+              taxaCartaoPaga: taxaCartaoRegistrada,
+              total: (comanda.saldo?.total ?? totalFinal) + (Number(comanda.gorjeta_valor || 0) > 0 ? 0 : gorjetaCobrancaComanda),
+            }}
             valor={valorPagamento} setValor={setValorPagamento}
             forma={formaPagamentoParcial} setForma={setFormaPagamentoParcial}
             valorRecebido={valorRecebidoParcial} setValorRecebido={setValorRecebidoParcial}

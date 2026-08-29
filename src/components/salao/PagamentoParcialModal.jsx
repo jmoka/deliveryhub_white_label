@@ -69,6 +69,8 @@ const PagamentoParcialModal = ({
   valorEdicaoDesabilitado,
   onRemoverPagamento,
   onAlterarTrocoPix,
+
+  resumoFinanceiro,
 }) => {
   const faltaPagarEfetivo = faltaPagar ?? saldo ?? 0;
   const totalPagoEfetivo = totalPago ?? pagamentos.reduce((acc, p) => acc + p.valor + (p.taxa_cartao_valor || 0), 0);
@@ -87,6 +89,47 @@ const PagamentoParcialModal = ({
         </div>
 
         <div className="overflow-y-auto pl-5 pr-6 sm:pr-7 py-5 space-y-5">
+          {/* Composição da conta — produtos, desconto, acréscimo, gorjeta, taxa cartão
+              já paga e total geral. Sem isso o modal só mostrava saldo/já pago, sem
+              explicar de onde vem o valor a cobrar — confundia na hora do fechamento. */}
+          {resumoFinanceiro && (
+            <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl p-4 space-y-1.5">
+              <h3 className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-1.5">Composição da conta</h3>
+              <div className="flex justify-between text-sm">
+                <span className="text-[#71717A] dark:text-[#A1A1AA]">Produtos</span>
+                <span className="text-[#18181B] dark:text-[#F4F4F5]">{fmt(resumoFinanceiro.subtotal)}</span>
+              </div>
+              {Number(resumoFinanceiro.desconto || 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Desconto</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">- {fmt(resumoFinanceiro.desconto)}</span>
+                </div>
+              )}
+              {Number(resumoFinanceiro.acrescimo || 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Acréscimo</span>
+                  <span className="text-[#18181B] dark:text-[#F4F4F5]">+ {fmt(resumoFinanceiro.acrescimo)}</span>
+                </div>
+              )}
+              {Number(resumoFinanceiro.gorjeta || 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta{resumoFinanceiro.gorjetaEstimativa ? ' (estimativa)' : ''}</span>
+                  <span className="text-[#18181B] dark:text-[#F4F4F5]">+ {fmt(resumoFinanceiro.gorjeta)}</span>
+                </div>
+              )}
+              {Number(resumoFinanceiro.taxaCartaoPaga || 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão (já paga)</span>
+                  <span className="text-[#FF441F]">+ {fmt(resumoFinanceiro.taxaCartaoPaga)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1.5 mt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+                <span>Total geral</span>
+                <span>{fmt(resumoFinanceiro.total)}</span>
+              </div>
+            </div>
+          )}
+
           {/* Saldo devedor + já pago em destaque */}
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-2xl p-4 text-center">
