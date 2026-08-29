@@ -175,9 +175,12 @@ export const buscarPedidoDetalhe = (id) => apiFetch(`/pedidos/${id}/detalhe`);
 export const getPedidosCozinha = () => apiFetch('/cozinha');
 export const renovarTokenCozinha = () => apiFetch('/renovar-token-cozinha', { method: 'PATCH' });
 export const getKdsItensRestaurante = (impressoraId) => apiFetch(`/kds?impressora_id=${impressoraId}`);
+export const getKdsSemImpressora = () => apiFetch('/kds/sem-impressora');
 export const marcarItemProntoRestaurante = (itemId) => apiFetch(`/kds/itens/${itemId}/pronto`, { method: 'PATCH' });
 export const reimprimirItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/reimprimir`, { method: 'POST' });
+export const reenviarItemKds = (itemId, impressoraId) =>
+  apiFetch(`/kds/itens/${itemId}/reenviar`, { method: 'PATCH', body: JSON.stringify({ impressora_id: impressoraId }) });
 export const iniciarPreparoItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
 export const voltarStatusItemRestaurante = (itemId) =>

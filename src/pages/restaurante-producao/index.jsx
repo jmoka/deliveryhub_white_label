@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
@@ -9,15 +9,98 @@ import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
+// Seletor "escolher setor + enviar", reaproveitado no banner de itens sem setor e dentro
+// do ComandaModal — recebe só o callback de envio, quem chama decide o que fazer com o
+// resultado (imprimir via navegador, recarregar lista, etc).
+const ItemReenviarSelect = ({ impressoras, onEnviar }) => {
+  const [impressoraId, setImpressoraId] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const enviar = async () => {
+    if (!impressoraId) return;
+    setEnviando(true);
+    setErro(null);
+    try {
+      await onEnviar(Number(impressoraId));
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-2">
+        <select value={impressoraId} onChange={(e) => setImpressoraId(e.target.value)}
+          className="flex-1 bg-[#111111] border border-[#2A2A2A] rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-[#FF441F]">
+          <option value="">Escolher setor...</option>
+          {impressoras.map((imp) => <option key={imp.id} value={imp.id}>{imp.setor}</option>)}
+        </select>
+        <button onClick={enviar} disabled={!impressoraId || enviando}
+          className="flex-shrink-0 px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-40">
+          {enviando ? 'Enviando...' : 'Enviar p/ cozinha'}
+        </button>
+      </div>
+      {erro && <p className="text-[11px] text-red-400 mt-1">{erro}</p>}
+    </div>
+  );
+};
+
+// Card de um item sem setor no banner de alerta (topo da tela) — produto ficou sem
+// impressora configurada e o envio pra cozinha nunca chegou a lugar nenhum.
+const ItemSemSetorCard = ({ item, impressoras, onReenviado }) => {
+  const enviar = async (impressoraId) => {
+    const imp = impressoras.find((i) => i.id === impressoraId);
+    const res = await reenviarItemKds(item.id, impressoraId);
+    if (res.via === 'navegador') {
+      printTicketSetor([item], { mesaLabel: item.mesa, cliente_mesa_nome: item.cliente, numero_comanda: item.numero_comanda }, imp?.setor);
+    }
+    await onReenviado?.();
+  };
+
+  return (
+    <div className="bg-[#111111] rounded-xl px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <p className="text-sm font-bold text-white">{item.quantity}x {item.product_name}</p>
+        {item.numero_comanda && <span className="text-[10px] text-[#71717A] flex-shrink-0">Comanda #{item.numero_comanda}</span>}
+      </div>
+      {(item.mesa || item.cliente || item.garcom) && (
+        <p className="text-xs text-[#71717A] mb-1.5">{[item.mesa, item.cliente, item.garcom].filter(Boolean).join(' • ')}</p>
+      )}
+      {item.observacao && <p className="text-xs text-blue-400 mb-1.5">Obs: {item.observacao}</p>}
+      <ItemReenviarSelect impressoras={impressoras} onEnviar={enviar} />
+    </div>
+  );
+};
+
 // Clique no card (só itens de Salão, com numero_comanda) abre essa comanda completa —
-// mesmo endpoint que o PDV do Salão usa, só leitura aqui (sem ações de pagamento).
-const ComandaModal = ({ orderId, onFechar }) => {
+// mesmo endpoint que o PDV do Salão usa, só leitura aqui (sem ações de pagamento), exceto
+// pelo botão de reenviar quando um item ficou sem setor (impressora_id null).
+const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado }) => {
   const [comanda, setComanda] = useState(null);
   const [erro, setErro] = useState(null);
 
-  useEffect(() => {
+  const carregarComanda = useCallback(() => {
     getSalaoComandaDetalhe(orderId).then(setComanda).catch((e) => setErro(e.message));
   }, [orderId]);
+
+  useEffect(() => { carregarComanda(); }, [carregarComanda]);
+
+  const reenviarItemDaComanda = async (itemDaComanda, impressoraId) => {
+    const res = await reenviarItemKds(itemDaComanda.id, impressoraId);
+    if (res.via === 'navegador') {
+      const imp = impressoras.find((i) => i.id === impressoraId);
+      printTicketSetor(
+        [{ product_name: itemDaComanda.products?.name, quantity: itemDaComanda.quantity, observacao: itemDaComanda.observacao }],
+        { mesaLabel: comanda?.mesas ? `Mesa ${comanda.mesas.numero}${comanda.mesas.nome ? ' - ' + comanda.mesas.nome : ''}` : comanda?.cliente_mesa_nome, cliente_mesa_nome: comanda?.cliente_mesa_nome, cliente_mesa_telefone: comanda?.cliente_mesa_telefone, numero_comanda: comanda?.numero_comanda },
+        imp?.setor,
+      );
+    }
+    carregarComanda();
+    await onItemReenviado?.();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onFechar}>
@@ -39,15 +122,28 @@ const ComandaModal = ({ orderId, onFechar }) => {
                 {comanda.aberto_por_nome && ` • Aberto por: ${comanda.aberto_por_nome}`}
               </p>
               <div className="space-y-2 mb-3">
-                {(comanda.itens ?? []).map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-2 bg-[#111111] rounded-lg px-3 py-2">
-                    <div>
-                      <p className="text-sm font-bold text-white">{item.quantity}x {item.products?.name}</p>
-                      {item.observacao && <p className="text-xs text-blue-400">Obs: {item.observacao}</p>}
+                {(comanda.itens ?? []).map((item) => {
+                  const semSetor = !item.impressora_id && ['enviado', 'preparando'].includes(item.status);
+                  return (
+                    <div key={item.id} className="bg-[#111111] rounded-lg px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-bold text-white">{item.quantity}x {item.products?.name}</p>
+                          {item.observacao && <p className="text-xs text-blue-400">Obs: {item.observacao}</p>}
+                        </div>
+                        <span className="text-xs text-[#71717A] flex-shrink-0">{fmt(item.quantity * item.unit_price)}</span>
+                      </div>
+                      {semSetor && (
+                        <div className="mt-2 pt-2 border-t border-[#2A2A2A]">
+                          <p className="text-[11px] text-yellow-400 font-bold mb-1.5 flex items-center gap-1">
+                            <Icon name="AlertTriangle" size={12} /> Não chegou na cozinha — produto sem impressora configurada
+                          </p>
+                          <ItemReenviarSelect impressoras={impressoras} onEnviar={(impressoraId) => reenviarItemDaComanda(item, impressoraId)} />
+                        </div>
+                      )}
                     </div>
-                    <span className="text-xs text-[#71717A]">{fmt(item.quantity * item.unit_price)}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="border-t border-[#2A2A2A] pt-3 flex items-center justify-between">
                 <span className="text-xs font-bold text-[#71717A] uppercase">Total</span>
@@ -70,6 +166,7 @@ const RestauranteProducao = () => {
   const navigate = useNavigate();
   const [impressoras, setImpressoras] = useState(null);
   const [itensPorImpressora, setItensPorImpressora] = useState({});
+  const [itensSemSetor, setItensSemSetor] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -90,9 +187,11 @@ const RestauranteProducao = () => {
 
   const carregar = useCallback(async (lista) => {
     try {
-      const resultados = await Promise.all(
-        lista.map((imp) => getKdsItensRestaurante(imp.id).then((r) => [imp, r.itens ?? []])),
-      );
+      const [resultados, semSetor] = await Promise.all([
+        Promise.all(lista.map((imp) => getKdsItensRestaurante(imp.id).then((r) => [imp, r.itens ?? []]))),
+        getKdsSemImpressora().then((r) => r.itens ?? []).catch(() => []),
+      ]);
+      setItensSemSetor(semSetor);
       const porImpressora = {};
       const idsAgora = new Set();
       for (const [imp, itens] of resultados) {
@@ -301,6 +400,24 @@ const RestauranteProducao = () => {
         <div className="mx-5 mt-4 bg-red-900/50 border border-red-700 rounded-xl px-4 py-3 text-sm text-red-400">{erro}</div>
       )}
 
+      {/* Itens enviados que nunca chegaram em setor nenhum — produto sem impressora
+          configurada no cadastro. Some sozinho da lista assim que reenviado. */}
+      {itensSemSetor.length > 0 && (
+        <div className="mx-5 mt-4 bg-yellow-900/20 border border-yellow-600/40 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Icon name="AlertTriangle" size={16} className="text-yellow-400" />
+            <h2 className="text-yellow-400 font-bold text-sm">
+              {itensSemSetor.length} {itensSemSetor.length === 1 ? 'item não chegou' : 'itens não chegaram'} na cozinha (sem impressora configurada)
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {itensSemSetor.map((item) => (
+              <ItemSemSetorCard key={item.id} item={item} impressoras={impressoras ?? []} onReenviado={() => carregar(impressoras)} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {impressoras && impressoras.length === 0 ? (
         <div className="text-center py-20 px-5">
           <Icon name="Printer" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
@@ -405,7 +522,10 @@ const RestauranteProducao = () => {
 
       <p className="text-center text-xs text-[#3A3A3A] py-4">Atualiza automaticamente a cada 15 segundos</p>
 
-      {comandaAbertaId && <ComandaModal orderId={comandaAbertaId} onFechar={() => setComandaAbertaId(null)} />}
+      {comandaAbertaId && (
+        <ComandaModal orderId={comandaAbertaId} impressoras={impressoras ?? []} onFechar={() => setComandaAbertaId(null)}
+          onItemReenviado={() => carregar(impressoras)} />
+      )}
     </div>
   );
 };
