@@ -1390,6 +1390,21 @@ const RestauranteSalao = () => {
 
   const statusLabelComanda = (c) => (c.status === 'aberta' ? 'Em aberto' : c.status === 'fechada_garcom' ? 'Aguardando pagamento' : 'Paga');
   const responsavelComanda = (c) => (c.garcons?.nome ? `Garçom: ${c.garcons.nome}` : c.aberto_por_nome ? `Caixa: ${c.aberto_por_nome}` : 'Garçom: —');
+  // Comanda ainda aberta: `total` é só a soma bruta dos produtos — desconto/acréscimo
+  // ficam em colunas separadas e só se somam a ele no pagamento (ver pagar()), e
+  // gorjeta nunca entra em `total` (nem depois de paga — vai separada em
+  // gorjeta_valor, mesmo no recibo). Sem isso o card mostrava um valor bem menor do
+  // que a comanda ia fechar de verdade. Comanda já paga: `total` já é o valor final
+  // (produtos - desconto + acréscimo, calculado no pagamento) — só falta somar a
+  // gorjeta de fato cobrada, sem estimar mais nada.
+  const totalReal = (c) => {
+    if (c.status === 'paga') return (c.total ?? 0) + (c.gorjeta_valor ?? 0);
+    const gorjetaConfirmada = Number(c.gorjeta_valor || 0) > 0;
+    const gorjeta = gorjetaConfirmada
+      ? Number(c.gorjeta_valor)
+      : (c.total ?? 0) * (c.restaurants?.gorjeta_percentual ?? 0) / 100;
+    return (c.total ?? 0) - (c.desconto_valor ?? 0) + (c.acrescimo_valor ?? 0) + gorjeta;
+  };
 
   const ComandaLinha = ({ c }) => (
     <button onClick={() => setComandaAtiva(c.id)}
@@ -1400,7 +1415,7 @@ const RestauranteSalao = () => {
         </p>
         <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{responsavelComanda(c)} · {statusLabelComanda(c)}</p>
       </div>
-      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(c.total)}</p>
+      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(totalReal(c))}</p>
     </button>
   );
 
@@ -1414,7 +1429,7 @@ const RestauranteSalao = () => {
         <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium min-w-0 leading-tight ${c.status === 'fechada_garcom' ? 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'}`}>
           {statusLabelComanda(c)}
         </span>
-        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(c.total)}</span>
+        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">{fmt(totalReal(c))}</span>
       </div>
     </button>
   );
@@ -1470,7 +1485,7 @@ const RestauranteSalao = () => {
                     <p className="text-[10px] font-medium">{MESA_STATUS_LABEL[m.status] ?? m.status}</p>
                     {m.comanda && (
                       <>
-                        <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(m.comanda.total)}</p>
+                        <p className="text-[10px] font-medium">#{m.comanda.numero_comanda ?? m.comanda.id} · {fmt(totalReal(m.comanda))}</p>
                         <p className="text-[10px] truncate">{m.comanda.cliente_mesa_nome}</p>
                         <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] truncate">
                           {m.comanda.garcons?.nome ?? (m.comanda.aberto_por_nome ? `Caixa: ${m.comanda.aberto_por_nome}` : '—')}
