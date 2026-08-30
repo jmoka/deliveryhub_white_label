@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { printFichaMotoboy } from '../../utils/printComanda';
 import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
-import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago } from '../../services/restauranteService';
+import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago, getStatusGdoorPedido, enviarGdoorPedido } from '../../services/restauranteService';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -65,11 +66,32 @@ const PedidoDetalhe = ({
   const [atribuindo, setAtribuindo] = useState(false);
   const [entregandoProprio, setEntregandoProprio] = useState(false);
   const [confirmandoPagamento, setConfirmandoPagamento] = useState(false);
+  const { moduloGdoor } = useModulosEmpresa();
+  const [gdoorStatus, setGdoorStatus] = useState(null);
+  const [enviandoGdoor, setEnviandoGdoor] = useState(false);
+
+  // Hooks precisam rodar sempre na mesma ordem — antes do guard `!detalhe`
+  // abaixo, senão o React quebra em "change in the order of Hooks" quando o
+  // modal abre com `detalhe` ainda null e recarrega depois.
+  useEffect(() => {
+    if (moduloGdoor && detalhe?.pedido?.status === 'delivered') {
+      getStatusGdoorPedido(detalhe.pedido.id).then(setGdoorStatus).catch(() => {});
+    }
+  }, [detalhe?.pedido?.id, detalhe?.pedido?.status, moduloGdoor]);
 
   if (!detalhe) return null;
   const { pedido, itens, cliente, motoboy, empresa } = detalhe;
 
   const troco = pedido.troco_para > pedido.total ? Number(pedido.troco_para) - Number(pedido.total) : 0;
+
+  const enviarGdoor = async () => {
+    setEnviandoGdoor(true);
+    try {
+      await enviarGdoorPedido(pedido.id);
+      setGdoorStatus(await getStatusGdoorPedido(pedido.id));
+    } catch (e) { alert(e.message); }
+    finally { setEnviandoGdoor(false); }
+  };
 
   const handleFreteGratis = async () => {
     if (!confirm(`Zerar frete de ${fmt(pedido?.frete_cobrado)} neste pedido? O total será reduzido.`)) return;
@@ -690,6 +712,42 @@ const PedidoDetalhe = ({
                   Avançar Status <Icon name="ChevronRight" size={14} />
                 </button>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {pedido.status === 'delivered' && moduloGdoor && (
+        <div className="pb-2">
+          {(!gdoorStatus || gdoorStatus.status === 'nao_enviado') && (
+            <button
+              onClick={enviarGdoor}
+              disabled={enviandoGdoor}
+              className="w-full py-2.5 border-2 border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] text-sm font-bold rounded-2xl hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <Icon name="Send" size={15} /> {enviandoGdoor ? 'Enviando...' : 'Enviar para GDOOR'}
+            </button>
+          )}
+          {gdoorStatus?.status === 'pendente' && (
+            <span className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-2xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+              <Icon name="Clock" size={13} /> Enviado ao GDOOR (na fila)
+            </span>
+          )}
+          {gdoorStatus?.status === 'processado' && (
+            <span className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-2xl text-xs font-bold bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+              <Icon name="CheckCircle2" size={13} /> Enviado GDOOR
+            </span>
+          )}
+          {gdoorStatus?.status === 'erro' && (
+            <div className="flex items-center gap-2">
+              <span title={gdoorStatus.erro_msg}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-2xl text-xs font-bold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
+                <Icon name="AlertTriangle" size={13} /> Erro ao enviar ao GDOOR
+              </span>
+              <button onClick={enviarGdoor} disabled={enviandoGdoor}
+                className="px-3 py-2 rounded-2xl text-xs font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-50">
+                Reenviar
+              </button>
             </div>
           )}
         </div>

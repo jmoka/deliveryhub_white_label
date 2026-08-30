@@ -369,6 +369,10 @@ export const exportarClientesParaGdoor = (customerIds) =>
   apiFetch('/gdoor/exportar-clientes-para-gdoor', { method: 'POST', body: JSON.stringify({ customer_ids: customerIds }) });
 export const getStatusExportacaoClientesGdoor = () => apiFetch('/gdoor/exportar-clientes-para-gdoor/status');
 
+// Prevenda por pedido/comanda (botão manual + tag "Enviado GDOOR")
+export const getStatusGdoorPedido = (pedidoId) => apiFetch(`/gdoor/pedido/${pedidoId}/status`);
+export const enviarGdoorPedido = (pedidoId) => apiFetch(`/gdoor/pedido/${pedidoId}/enviar`, { method: 'POST' });
+
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');
 export const bloquearMesaSalao = (id) => apiFetch(`/salao/mesas/${id}/bloquear`, { method: 'PATCH' });

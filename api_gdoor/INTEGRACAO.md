@@ -7,13 +7,19 @@
 `api_gdoor` roda como **agente local**, na mesma máquina/rede do GDOOR SLIM — igual o `print-agent` (`DeliveryHubAgente.exe`) já faz pra impressão. Ele **puxa** (polling) os pedidos pendentes do `server_delivery`, nunca o contrário:
 
 1. Dono gera um token de conexão em `/restaurante/config` (painel, botão "Gerar token de conexão", componente `GdoorAgentePanel`).
-2. Token colado na GUI de pareamento (`parear_gui.py`, botão "Conectar") — grava em `local_config.json` (`%APPDATA%\DeliveryHubAgenteGdoor`), **não** em `.env` (ver seção "Configuração" abaixo — mesmo padrão do print-agent, pensado pra funcionar numa instalação empacotada sem nenhum arquivo pra editar na mão).
-3. `app/poller.py` roda em background (thread, iniciado no `startup` do FastAPI), a cada `POLLER_INTERVALO_SEG` (padrão 5s):
+2. Token colado na GUI de pareamento (`parear_gui.py`/`parear.bat`, botão "Conectar") — grava em `local_config.json` (`%APPDATA%\DeliveryHubAgenteGdoor`), **não** em `.env` (ver seção "Configuração" abaixo — mesmo padrão do print-agent, pensado pra funcionar numa instalação empacotada sem nenhum arquivo pra editar na mão). **Isso só testa a conexão uma vez** (`GET /agente-gdoor/me`) e pode ser fechado em seguida — não inicia o poller, não fica processando nada (ver Gotcha abaixo).
+3. `iniciar.bat` (`uvicorn app.main:app`) precisa ser executado **separadamente** e **ficar rodando continuamente** (janela aberta, ou instalado pra iniciar com o Windows) — é só nesse processo que `app/poller.py` de fato roda em background (thread, iniciado no `startup` do FastAPI), a cada `POLLER_INTERVALO_SEG` (padrão 5s):
    - `POST /agente-gdoor/cnpj` — reporta o CNPJ lido de `EMITENTE.CNPJ` no Firebird local (não existe campo "SERIAL" dedicado no GDOOR — CNPJ é o identificador usado).
    - `GET /agente-gdoor/jobs/pendentes` — só devolve trabalho se o CNPJ reportado bater com o `gdoor_cnpj_esperado` cadastrado no painel (`bloqueado: true` se não bater — trava de segurança extra além do token).
    - Pra cada job: grava a pré-venda no Firebird (`firebird_client.criar_pre_venda`) e reporta `POST /agente-gdoor/jobs/:id/concluido` (ou `/erro`).
-4. `server_delivery` nunca chama o `api_gdoor` diretamente — quando um pedido vira `delivered` (`PedidosService.atualizarStatus`), só faz `INSERT` numa fila (`gdoor_jobs`), que o poller consome.
+4. `server_delivery` nunca chama o `api_gdoor` diretamente — quando uma venda é concluída (pedido de delivery vira `delivered`, ou comanda/balcão de salão é paga via `SalaoPdvService.pagar()`, ou o garçom fecha a comanda em `SalaoService.fecharComanda()`), só faz `INSERT` numa fila (`gdoor_jobs`), que o poller consome. `GdoorService.criarJob()` ignora se já existe job pendente/processado pro mesmo pedido (evita duplicar quando mais de um gatilho dispara pra mesma venda).
 5. A cada ~12 ciclos (~1x/min com `POLLER_INTERVALO_SEG=5`), o poller também reporta o catálogo `ESTOQUE` do GDOOR local via `POST /agente-gdoor/estoque`, cacheado em `gdoor_estoque_cache` — alimenta o seletor de código no painel (o agente nunca decide mapeamento sozinho).
+
+### Gotcha: pareamento "conectado" não significa que o agente está rodando (2026-08-30)
+
+`parear_gui.py` e `iniciar.bat` são dois programas diferentes, fácil confundir: a GUI de pareamento só faz um teste pontual de conexão (`GET /agente-gdoor/me`) e atualiza `gdoor_agente_ultimo_ping` **uma vez**, ao clicar "Conectar" — não inicia nenhum loop. Se `iniciar.bat` nunca foi executado (ou a janela foi fechada), o painel pode mostrar "Online" por até 60s depois desse único clique (janela de `statusAgente()`), dando falsa sensação de que está tudo funcionando — mas nenhum job em `gdoor_jobs` é processado, ficam presos em `pendente` pra sempre, sem erro nenhum (o próprio `_reportar_cnpj`/ping nunca mais roda de novo, então o "Online" também cai sozinho depois de 60s, mas é fácil não notar isso na hora).
+
+**Como apply:** se um job fica `pendente` indefinidamente mesmo com CNPJ conferindo e token válido (confirmar com `GET /agente-gdoor/jobs/pendentes` direto, deve retornar os jobs com `bloqueado: false`), suspeitar primeiro de que `iniciar.bat` não está rodando de fato — pedir pro dono confirmar que existe uma janela preta aberta com `uvicorn` e linhas de log tipo `job X importado como venda_id=Y`, não só a telinha de pareamento. Painel (`GdoorAgentePanel`) já foi ajustado pra deixar essa distinção explícita no passo a passo.
 
 ## Configuração — sem `.env` em produção
 

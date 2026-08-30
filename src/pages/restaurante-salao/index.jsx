@@ -8,6 +8,7 @@ import {
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, alterarTrocoPixComandaSalao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
   reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao, confirmarEntregaItemSalao,
+  getStatusGdoorPedido, enviarGdoorPedido,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda, printTicketSetor } from '../../utils/printComanda';
@@ -321,7 +322,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [mostrarQrAuto, setMostrarQrAuto] = useState(false);
   const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
   const [linkCopiado, setLinkCopiado] = useState(null); // 'acompanhar' | 'auto' | null
-  const { autoAtendimentoHabilitado } = useModulosEmpresa();
+  const { autoAtendimentoHabilitado, moduloGdoor } = useModulosEmpresa();
+  const [gdoorStatus, setGdoorStatus] = useState(null);
   const [pagamentoEditandoId, setPagamentoEditandoId] = useState(null);
   const [valorEdicao, setValorEdicao] = useState('');
   const [formaEdicao, setFormaEdicao] = useState('pix');
@@ -371,6 +373,21 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     listarGarcons().then(setGarcons).catch(() => {});
     getConfig().then((c) => setTaxaCartaoPercentual(c.taxa_cartao_percentual ?? 0)).catch(() => {});
   }, []);
+
+  // Comanda paga é quando o gatilho automático dispara (ver salao-pdv.service.ts
+  // pagar()) — só então faz sentido checar/mostrar o status do envio ao GDOOR.
+  useEffect(() => {
+    if (moduloGdoor && comanda?.status === 'paga') {
+      getStatusGdoorPedido(comandaId).then(setGdoorStatus).catch(() => {});
+    }
+  }, [comandaId, comanda?.status, moduloGdoor]);
+
+  const enviarGdoor = () => {
+    acao(async () => {
+      await enviarGdoorPedido(comandaId);
+      setGdoorStatus(await getStatusGdoorPedido(comandaId));
+    });
+  };
 
   const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 
@@ -736,6 +753,39 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             className="w-full mb-3 py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
             <Icon name="Printer" size={16} /> Reimprimir recibo (comanda já paga)
           </button>
+        )}
+
+        {comanda.status === 'paga' && moduloGdoor && (
+          <div className="mb-3">
+            {(!gdoorStatus || gdoorStatus.status === 'nao_enviado') && (
+              <button onClick={enviarGdoor} disabled={salvando}
+                className="w-full py-2.5 bg-[#F4F4F5] dark:bg-[#3F3F46] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] rounded-xl text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-40">
+                <Icon name="Send" size={16} /> Enviar para GDOOR
+              </button>
+            )}
+            {gdoorStatus?.status === 'pendente' && (
+              <span className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
+                <Icon name="Clock" size={13} /> Enviado ao GDOOR (na fila)
+              </span>
+            )}
+            {gdoorStatus?.status === 'processado' && (
+              <span className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                <Icon name="CheckCircle2" size={13} /> Enviado GDOOR
+              </span>
+            )}
+            {gdoorStatus?.status === 'erro' && (
+              <div className="flex items-center gap-2">
+                <span title={gdoorStatus.erro_msg}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
+                  <Icon name="AlertTriangle" size={13} /> Erro ao enviar ao GDOOR
+                </span>
+                <button onClick={enviarGdoor} disabled={salvando}
+                  className="px-3 py-2 rounded-xl text-xs font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-40">
+                  Reenviar
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {comanda.tracking_token && (

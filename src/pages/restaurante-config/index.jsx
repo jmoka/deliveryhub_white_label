@@ -213,8 +213,10 @@ const GdoorAgentePanel = () => {
         <li>Descompacte o arquivo baixado (botão direito → Extrair aqui).</li>
         <li>Abra a pasta <strong>api_gdoor</strong>.</li>
         <li>Clique em <strong>"Gerar token de conexão"</strong> abaixo, copie a chave.</li>
-        <li>Dê duplo clique em <strong>parear.bat</strong> — vai abrir uma janela mostrando se o GDOOR foi encontrado e o CNPJ cadastrado nele. Cole o token no campo, confirme que o CNPJ bate com o do estabelecimento e clique em <strong>Conectar</strong>.</li>
-        <li>Dê duplo clique em <strong>iniciar.bat</strong> para ligar o agente.</li>
+        <li>Dê duplo clique em <strong>parear.bat</strong> — vai abrir uma janela mostrando se o GDOOR foi encontrado e o CNPJ cadastrado nele. Cole o token no campo, confirme que o CNPJ bate com o do estabelecimento e clique em <strong>Conectar</strong>. Essa janela só testa a conexão uma vez — pode fechar depois.</li>
+        <li>
+          Dê duplo clique em <strong>iniciar.bat</strong> para ligar o agente de verdade — é essa janela (preta, com linhas de texto passando) que precisa ficar <strong>aberta o tempo todo</strong>. Se fechar, as pré-vendas param de ser enviadas mesmo com o status acima mostrando "Online".
+        </li>
         <li>Abra <strong>"Mapeamento de produtos GDOOR"</strong> abaixo e escolha o código do GDOOR pra cada produto — sem isso a pré-venda desse item não sai.</li>
       </ol>
       <p className="text-xs text-[#A1A1AA] mb-3">
