@@ -372,6 +372,7 @@ export const getStatusExportacaoClientesGdoor = () => apiFetch('/gdoor/exportar-
 // Prevenda por pedido/comanda (botão manual + tag "Enviado GDOOR")
 export const getStatusGdoorPedido = (pedidoId) => apiFetch(`/gdoor/pedido/${pedidoId}/status`);
 export const enviarGdoorPedido = (pedidoId) => apiFetch(`/gdoor/pedido/${pedidoId}/enviar`, { method: 'POST' });
+export const getStatusGdoorPedidos = (pedidoIds) => apiFetch(`/gdoor/status-pedidos?ids=${pedidoIds.join(',')}`);
 
 // Módulo Salão — PDV do caixa (mesas/comandas do salão)
 export const getSalaoMesas = () => apiFetch('/salao/mesas');

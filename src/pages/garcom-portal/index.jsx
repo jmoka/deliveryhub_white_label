@@ -468,6 +468,13 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   const faltaPagarEfetivo = faltaPagar ?? saldo;
   const subtotalItensComanda = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const taxaCartaoPagaComanda = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor || 0), 0);
+  // Antes do caixa confirmar (gorjeta_valor só é setado no fechamento), mostra a
+  // sugestão calculada (gorjeta_sugestao) como estimativa — mesma lógica que o
+  // resumo da própria tela já usa (gorjetaExibida, mais abaixo), só que também
+  // precisa chegar no modal de pagamento parcial, senão a composição da conta
+  // aparece sem gorjeta nenhuma até a comanda já estar fechada.
+  const gorjetaConfirmadaComanda = Number(comanda.gorjeta_valor || 0) > 0;
+  const gorjetaComandaModal = gorjetaConfirmadaComanda ? comanda.gorjeta_valor : (comanda.gorjeta_sugestao?.valor_sugerido ?? 0);
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
   // Comanda paga/cancelada não deixa mais mexer nos pagamentos, mesma regra de editar itens.
   const podeMexer = ['aberta', 'fechada_garcom'].includes(comanda.status);
@@ -568,9 +575,10 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
             subtotal: subtotalItensComanda,
             desconto: Number(comanda.desconto_valor || 0),
             acrescimo: Number(comanda.acrescimo_valor || 0),
-            gorjeta: Number(comanda.gorjeta_valor || 0),
+            gorjeta: gorjetaComandaModal,
+            gorjetaEstimativa: !gorjetaConfirmadaComanda && gorjetaComandaModal > 0,
             taxaCartaoPaga: taxaCartaoPagaComanda,
-            total: comanda.saldo?.total ?? subtotalItensComanda,
+            total: (comanda.saldo?.total ?? subtotalItensComanda) + (gorjetaConfirmadaComanda ? 0 : gorjetaComandaModal),
           }}
           valor={valor} setValor={setValor}
           forma={forma} setForma={setForma}

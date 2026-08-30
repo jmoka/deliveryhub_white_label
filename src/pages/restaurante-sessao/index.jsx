@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getCaixa } from '../../services/restauranteService';
+import { getCaixa, getStatusGdoorPedidos, enviarGdoorPedido } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+
+const gdoorConcluido = (p) => (p.canal === 'presencial' ? p.status === 'paga' : p.status === 'delivered');
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -23,6 +26,9 @@ const RestauranteSessao = () => {
   const [loading, setLoading] = useState(true);
   const [filtroCanal, setFiltroCanal] = useState('todos');
   const [erro, setErro] = useState(null);
+  const { moduloGdoor } = useModulosEmpresa();
+  const [gdoorStatus, setGdoorStatus] = useState({});
+  const [enviandoGdoorId, setEnviandoGdoorId] = useState(null);
 
   const carregar = useCallback(async () => {
     try {
@@ -35,6 +41,29 @@ const RestauranteSessao = () => {
       setLoading(false);
     }
   }, []);
+
+  // Busca em lote (1 request pra tabela inteira, não 1 por linha) o status GDOOR
+  // só dos pedidos já concluídos (delivery entregue / salão-balcão pago) — os
+  // demais nunca teriam job mesmo, não vale a pena perguntar.
+  useEffect(() => {
+    if (!moduloGdoor) return;
+    const idsConcluidos = (caixa?.pedidos ?? []).filter(gdoorConcluido).map((p) => p.id);
+    if (!idsConcluidos.length) return;
+    getStatusGdoorPedidos(idsConcluidos).then(setGdoorStatus).catch(() => {});
+  }, [caixa, moduloGdoor]);
+
+  const enviarGdoor = async (pedidoId) => {
+    setEnviandoGdoorId(pedidoId);
+    try {
+      await enviarGdoorPedido(pedidoId);
+      const idsConcluidos = (caixa?.pedidos ?? []).filter(gdoorConcluido).map((p) => p.id);
+      setGdoorStatus(await getStatusGdoorPedidos(idsConcluidos));
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setEnviandoGdoorId(null);
+    }
+  };
 
   useEffect(() => {
     carregar();
@@ -77,6 +106,7 @@ const RestauranteSessao = () => {
             </div>
 
             <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#E4E4E7] dark:border-[#3F3F46] text-left text-xs text-[#71717A] dark:text-[#A1A1AA]">
@@ -86,6 +116,7 @@ const RestauranteSessao = () => {
                     <th className="px-4 py-2.5">Status</th>
                     <th className="px-4 py-2.5">Pagamento</th>
                     <th className="px-4 py-2.5">Hora</th>
+                    {moduloGdoor && <th className="px-4 py-2.5">GDOOR</th>}
                     <th className="px-4 py-2.5 text-right">Total</th>
                   </tr>
                 </thead>
@@ -106,11 +137,44 @@ const RestauranteSessao = () => {
                       </td>
                       <td className="px-4 py-2.5 text-xs text-[#71717A] dark:text-[#A1A1AA]">{PAGAMENTO_LABEL[p.payment_method] ?? p.payment_method ?? '—'}</td>
                       <td className="px-4 py-2.5 text-xs text-[#71717A] dark:text-[#A1A1AA]">{new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</td>
+                      {moduloGdoor && (
+                        <td className="px-4 py-2.5">
+                          {!gdoorConcluido(p) ? (
+                            <span className="text-xs text-[#D4D4D8]">—</span>
+                          ) : (() => {
+                            const g = gdoorStatus[p.id];
+                            if (!g || g.status === 'nao_enviado') {
+                              return (
+                                <button onClick={() => enviarGdoor(p.id)} disabled={enviandoGdoorId === p.id}
+                                  className="text-[10px] px-2 py-1 rounded-full font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-40 whitespace-nowrap">
+                                  {enviandoGdoorId === p.id ? 'Enviando...' : 'Enviar GDOOR'}
+                                </button>
+                              );
+                            }
+                            if (g.status === 'pendente') {
+                              return <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">Na fila</span>;
+                            }
+                            if (g.status === 'processado') {
+                              return <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 whitespace-nowrap">✓ Enviado</span>;
+                            }
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <span title={g.erro_msg} className="text-[10px] px-2 py-1 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 whitespace-nowrap">Erro</span>
+                                <button onClick={() => enviarGdoor(p.id)} disabled={enviandoGdoorId === p.id}
+                                  className="text-[10px] px-2 py-1 rounded-full font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-40 whitespace-nowrap">
+                                  Reenviar
+                                </button>
+                              </div>
+                            );
+                          })()}
+                        </td>
+                      )}
                       <td className="px-4 py-2.5 text-right font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(p.total)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
               {pedidos.length === 0 && (
                 <p className="text-center py-10 text-sm text-[#A1A1AA]">Nenhum pedido nessa sessão ainda.</p>
               )}
