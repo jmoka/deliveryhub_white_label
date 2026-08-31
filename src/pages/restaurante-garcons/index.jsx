@@ -59,6 +59,7 @@ const GarcomCard = ({ garcom, onMudou }) => {
   const [modo, setModo] = useState('online'); // 'online' | 'local'
   const [now, setNow] = useState(Date.now());
   const [liberandoBloqueio, setLiberandoBloqueio] = useState(false);
+  const [erroRemover, setErroRemover] = useState(null);
   const urls = getLocalUrls(`/garcom/${garcom.login_key}`);
   const link = modo === 'local' && urls.lan ? urls.lan : urls.principal;
 
@@ -103,8 +104,13 @@ const GarcomCard = ({ garcom, onMudou }) => {
 
   const remover = async () => {
     if (!window.confirm(`Remover ${garcom.nome}?`)) return;
-    await removerGarcom(garcom.id);
-    onMudou();
+    setErroRemover(null);
+    try {
+      await removerGarcom(garcom.id);
+      onMudou();
+    } catch (err) {
+      setErroRemover(err.message);
+    }
   };
 
   const forcarLogout = async () => {
@@ -180,6 +186,9 @@ const GarcomCard = ({ garcom, onMudou }) => {
         </button>
       )}
 
+      {erroRemover && (
+        <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 rounded-lg px-2 py-1.5 mt-3">{erroRemover}</p>
+      )}
       <div className="flex gap-2 mt-3">
         <button onClick={toggleAtivo} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
           {garcom.ativo ? 'Desativar' : 'Ativar'}
