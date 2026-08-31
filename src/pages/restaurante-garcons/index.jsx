@@ -203,18 +203,41 @@ const GarcomCard = ({ garcom, onMudou }) => {
 
 const RestauranteGarcons = () => {
   const [garcons, setGarcons] = useState([]);
+  const [filtro, setFiltro] = useState('ativos'); // ativos | desativados | todos
 
   const carregar = useCallback(() => listarGarcons().then(setGarcons), []);
   useEffect(() => { carregar(); }, [carregar]);
+
+  const garconsFiltrados = garcons.filter((g) => (
+    filtro === 'ativos' ? g.ativo : filtro === 'desativados' ? !g.ativo : true
+  ));
+
+  const FiltroBtn = ({ valor, label }) => (
+    <button onClick={() => setFiltro(valor)}
+      className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-colors ${
+        filtro === valor ? 'bg-[#FF441F] text-white' : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#3F3F46] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]'
+      }`}>
+      {label}
+    </button>
+  );
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/garcons" title="Garçons" onRefresh={carregar} />
       <div className="max-w-5xl mx-auto p-4">
         <NovoGarcomForm onCriado={carregar} />
+        <div className="flex items-center gap-2 mb-3">
+          <FiltroBtn valor="ativos" label="Ativos" />
+          <FiltroBtn valor="desativados" label="Desativados" />
+          <FiltroBtn valor="todos" label="Todos" />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {garcons.map((g) => <GarcomCard key={g.id} garcom={g} onMudou={carregar} />)}
-          {garcons.length === 0 && <p className="text-sm text-[#A1A1AA]">Nenhum garçom cadastrado.</p>}
+          {garconsFiltrados.map((g) => <GarcomCard key={g.id} garcom={g} onMudou={carregar} />)}
+          {garconsFiltrados.length === 0 && (
+            <p className="text-sm text-[#A1A1AA]">
+              {filtro === 'ativos' ? 'Nenhum garçom ativo.' : filtro === 'desativados' ? 'Nenhum garçom desativado.' : 'Nenhum garçom cadastrado.'}
+            </p>
+          )}
         </div>
       </div>
     </div>
