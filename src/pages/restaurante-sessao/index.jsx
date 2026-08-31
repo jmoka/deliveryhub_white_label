@@ -159,7 +159,10 @@ const RestauranteSessao = () => {
                             }
                             return (
                               <div className="flex items-center gap-1.5">
-                                <span title={g.erro_msg} className="text-[10px] px-2 py-1 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 whitespace-nowrap">Erro</span>
+                                <button onClick={() => alert(g.erro_msg || 'Erro desconhecido')}
+                                  className="text-[10px] px-2 py-1 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 whitespace-nowrap">
+                                  Erro — ver
+                                </button>
                                 <button onClick={() => enviarGdoor(p.id)} disabled={enviandoGdoorId === p.id}
                                   className="text-[10px] px-2 py-1 rounded-full font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-40 whitespace-nowrap">
                                   Reenviar

@@ -739,13 +739,15 @@ const PedidoDetalhe = ({
             </span>
           )}
           {gdoorStatus?.status === 'erro' && (
-            <div className="flex items-center gap-2">
-              <span title={gdoorStatus.erro_msg}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-2xl text-xs font-bold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">
+            <div className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3">
+              <p className="flex items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-400">
                 <Icon name="AlertTriangle" size={13} /> Erro ao enviar ao GDOOR
-              </span>
+              </p>
+              {gdoorStatus.erro_msg && (
+                <p className="text-xs text-red-700 dark:text-red-400 mt-1 break-words">{gdoorStatus.erro_msg}</p>
+              )}
               <button onClick={enviarGdoor} disabled={enviandoGdoor}
-                className="px-3 py-2 rounded-2xl text-xs font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-50">
+                className="w-full mt-2 py-2 rounded-2xl text-xs font-bold border border-[#FF441F] text-[#FF441F] hover:bg-[#FF441F]/5 disabled:opacity-50">
                 Reenviar
               </button>
             </div>
