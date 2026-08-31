@@ -920,21 +920,23 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         {podeEditar && (
         <div className="flex items-center gap-2 mb-3">
           <select value={garcomSelecionado} onChange={(e) => setGarcomSelecionado(e.target.value)}
-            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
+            className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
             <option value="">Transferir pra outro garçom...</option>
             {garcons.filter((g) => g.id !== comanda.garcom_id).map((g) => (
               <option key={g.id} value={g.id}>{g.nome}</option>
             ))}
           </select>
-          <button onClick={transferir} disabled={!garcomSelecionado || salvando}
-            className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
+          <button onClick={transferir} disabled={!garcomSelecionado || salvando} title="Transferir"
+            className="w-7 h-7 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#FF441F] disabled:opacity-40 flex-shrink-0 flex items-center justify-center">
+            <Icon name="ArrowRightLeft" size={14} />
+          </button>
         </div>
         )}
 
         {podeEditar && (
         <div className="flex items-center gap-2 mb-3">
           <select value={mesaDestino} onChange={(e) => setMesaDestino(e.target.value)}
-            className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
+            className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
             <option value="">Transferir mesa/comanda pra...</option>
             <optgroup label="Mesas">
               {(mesas ?? []).filter((m) => m.id !== comanda.mesa_id).map((m) => (
@@ -951,8 +953,10 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               ))}
             </optgroup>
           </select>
-          <button onClick={transferirMesaOuComanda} disabled={!mesaDestino || salvando}
-            className="text-xs font-bold text-[#FF441F] disabled:opacity-40 flex-shrink-0">Transferir</button>
+          <button onClick={transferirMesaOuComanda} disabled={!mesaDestino || salvando} title="Transferir"
+            className="w-7 h-7 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#FF441F] disabled:opacity-40 flex-shrink-0 flex items-center justify-center">
+            <Icon name="ArrowRightLeft" size={14} />
+          </button>
         </div>
         )}
 
