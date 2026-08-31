@@ -55,6 +55,11 @@ const BusinessInformationForm = ({
             required
             description="Restaurante, farmácia, material de construção..."
           />
+          {tipoSelecionado && !isRestaurante && (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Este tipo de estabelecimento não terá acesso a Salão/comandas — só Delivery e Venda de Balcão.
+            </p>
+          )}
         </div>
 
         <div className="md:col-span-2">

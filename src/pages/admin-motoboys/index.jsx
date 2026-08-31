@@ -14,13 +14,24 @@ const Badge = ({ status }) => {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>;
 };
 
+// Signed URL do Supabase carrega query string (?token=...) depois do nome do arquivo.
+const isPdfUrl = (url) => /\.pdf(\?|$)/i.test(url ?? '');
+
 const Documento = ({ label, url }) => (
   <div>
     <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-1">{label}</p>
     {url ? (
-      <a href={url} target="_blank" rel="noreferrer" className="block border border-gray-200 dark:border-zinc-700 rounded-xl overflow-hidden hover:border-blue-400">
-        <img src={url} alt={label} className="w-full h-32 object-cover" />
-      </a>
+      isPdfUrl(url) ? (
+        <a href={url} target="_blank" rel="noreferrer"
+          className="flex flex-col items-center justify-center gap-1 h-32 border border-gray-200 dark:border-zinc-700 rounded-xl text-red-500 dark:text-red-400 hover:border-blue-400">
+          <Icon name="FileText" size={22} />
+          <span className="text-[10px] font-semibold">Ver PDF</span>
+        </a>
+      ) : (
+        <a href={url} target="_blank" rel="noreferrer" className="block border border-gray-200 dark:border-zinc-700 rounded-xl overflow-hidden hover:border-blue-400">
+          <img src={url} alt={label} className="w-full h-32 object-cover" />
+        </a>
+      )
     ) : (
       <div className="border border-dashed border-gray-200 dark:border-zinc-700 rounded-xl h-32 flex items-center justify-center text-xs text-gray-400 dark:text-zinc-500">
         Não enviado
@@ -28,6 +39,15 @@ const Documento = ({ label, url }) => (
     )}
   </div>
 );
+
+const MEI_LABELS = {
+  validado: { label: 'MEI validado', cls: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
+  invalido: { label: 'MEI inválido', cls: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+  revisao_manual: { label: 'MEI: revisar manualmente', cls: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
+  pendente: { label: 'MEI pendente', cls: 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400' },
+};
+
+const VEICULO_LABEL = { bicicleta: 'Bicicleta', moto: 'Moto', carro: 'Carro', caminhao: 'Caminhão', carretinha: 'Carretinha' };
 
 const DetalheModal = ({ motoboyId, onClose, onAtualizado }) => {
   const [mb, setMb] = useState(null);
@@ -70,7 +90,7 @@ const DetalheModal = ({ motoboyId, onClose, onAtualizado }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-lg p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-lg md:max-w-[85%] p-6 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {!mb ? (
           <div className="flex justify-center py-10">
             <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -98,12 +118,34 @@ const DetalheModal = ({ motoboyId, onClose, onAtualizado }) => {
               {mb.revisoes_solicitadas > 0 && (
                 <p className="flex items-center gap-2"><Icon name="RotateCcw" size={13} /> {mb.revisoes_solicitadas} pedido(s) de revisão já usado(s)</p>
               )}
+              {mb.cnpj && <p className="flex items-center gap-2"><Icon name="FileText" size={13} /> CNPJ: {mb.cnpj}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            {(mb.veiculo_tipo || mb.mei_situacao) && (
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                {mb.veiculo_tipo && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300">
+                    {VEICULO_LABEL[mb.veiculo_tipo] ?? mb.veiculo_tipo}
+                  </span>
+                )}
+                {mb.mei_situacao && (
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${(MEI_LABELS[mb.mei_situacao] ?? MEI_LABELS.pendente).cls}`}>
+                    {(MEI_LABELS[mb.mei_situacao] ?? MEI_LABELS.pendente).label}
+                    {mb.mei_caminhoneiro ? ' (caminhoneiro)' : ''}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
               <Documento label="Documento (frente)" url={mb.documento_frente_url} />
               <Documento label="Documento (verso)" url={mb.documento_verso_url} />
               <Documento label="Comprovante de endereço" url={mb.comprovante_endereco_url} />
+              <Documento label="Foto do veículo" url={mb.veiculo_foto_url} />
+              <Documento label={mb.veiculo_tipo === 'carretinha' ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)'} url={mb.veiculo_documento_url} />
+              {mb.veiculo_tipo === 'carretinha' && (
+                <Documento label="Documento da carretinha (CRLV)" url={mb.veiculo_documento_carretinha_url} />
+              )}
             </div>
 
             {mb.status_plataforma === 'recusado' && mb.motivo_recusa_plataforma && (

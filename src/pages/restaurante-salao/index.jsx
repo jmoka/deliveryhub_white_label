@@ -568,34 +568,34 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   };
 
   const renderItemLinha = (item, { ocultarComboLabel = false } = {}) => (
-    <div key={item.id} className="py-1">
-      <div className="flex justify-between items-center text-base gap-2">
+    <div key={item.id} className="py-1.5">
+      <div className="flex justify-between items-start gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
             {item.products?.image_url
               ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={15} className="text-[#A1A1AA]" /></div>}
           </div>
-          <span className="truncate font-medium">
-            {item.quantity}x {item.products?.name}
-            {item.combo_nome && !ocultarComboLabel && <span className="text-xs text-[#FF441F] block leading-tight">combo: {item.combo_nome}</span>}
-          </span>
+          <div className="min-w-0">
+            <p className="font-medium truncate">{item.quantity}x {item.products?.name}</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+              {fmt(item.quantity * item.unit_price)}
+              {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <span className="font-semibold">{fmt(item.quantity * item.unit_price)}</span>
-          {['aberta', 'fechada_garcom'].includes(comanda.status) && (
-            <>
-              <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] flex items-center justify-center">
-                <Icon name="MessageSquare" size={13} />
-              </button>
-              <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">−</button>
-              <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">+</button>
-              <button onClick={() => removerItem(item)} className="w-7 h-7 rounded-md border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
-                <Icon name="X" size={13} />
-              </button>
-            </>
-          )}
-        </div>
+        {['aberta', 'fechada_garcom'].includes(comanda.status) && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] flex items-center justify-center">
+              <Icon name="MessageSquare" size={13} />
+            </button>
+            <button onClick={() => alterarQuantidadeItem(item, -1)} className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">−</button>
+            <button onClick={() => alterarQuantidadeItem(item, 1)} className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center">+</button>
+            <button onClick={() => removerItem(item)} className="w-7 h-7 rounded-md border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center">
+              <Icon name="X" size={13} />
+            </button>
+          </div>
+        )}
       </div>
       {observacaoEditandoId === item.id ? (
         <div className="flex items-center gap-1.5 mt-1 pl-11">

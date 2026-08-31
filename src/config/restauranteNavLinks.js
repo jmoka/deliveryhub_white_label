@@ -43,17 +43,23 @@ const SALAO_LINKS = [
 // visibilidade da Cozinha — precisam de algum módulo ativo pra fazer sentido no menu.
 const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurante/pontos-preparo', icon: 'LayoutGrid' };
 
-export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPreparo = []) => {
+// Estabelecimento tipo ≠ Restaurante (farmácia, material de construção...) chama
+// o entregador de "Entregadores" no menu, em vez de "Motoboys" (termo mais
+// específico de delivery de comida).
+export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPreparo = [], tipoRestaurante = true) => {
   const temAlgumModulo = moduloDelivery || moduloSalao;
+  const deliveryLinks = tipoRestaurante
+    ? DELIVERY_LINKS
+    : DELIVERY_LINKS.map((l) => (l.path === '/restaurante/motoboys' ? { ...l, label: 'Entregadores' } : l));
   const links = [
     ...BASE_LINKS.slice(0, 2), // Dashboard, Relatórios
-    ...(moduloDelivery ? DELIVERY_LINKS.slice(0, 1) : []), // Delivery
+    ...(moduloDelivery ? deliveryLinks.slice(0, 1) : []), // Delivery
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(0, 1) : []), // Cozinha
     ...(temAlgumModulo ? [PONTOS_PREPARO_CADASTRO, ...pontosPreparo] : []), // Cadastro + pontos criados
     ...(moduloSalao ? COPA_LINKS : []), // Produção, Bar
     ...BASE_LINKS.slice(2, 3), // Produtos
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(1) : []), // Combos, Pedidos
-    ...(moduloDelivery ? DELIVERY_LINKS.slice(1) : []), // Entregas, Motoboys
+    ...(moduloDelivery ? deliveryLinks.slice(1) : []), // Entregas, Motoboys/Entregadores
     ...BASE_LINKS.slice(3), // Clientes...Sessão
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
   ];

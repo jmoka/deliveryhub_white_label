@@ -4,17 +4,42 @@ import Icon from '../../components/AppIcon';
 import { completarCadastroMotoboy, arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
 
-const CAMPOS_ARQUIVO = [
-  { name: 'foto_perfil', label: 'Foto de perfil', obrigatorio: true, icon: 'User', accept: 'image/*' },
-  { name: 'documento_frente', label: 'Documento com foto (CNH ou RG)', obrigatorio: true, icon: 'IdCard', accept: 'image/*,application/pdf' },
-  { name: 'documento_verso', label: 'Verso do documento (opcional)', obrigatorio: false, icon: 'IdCard', accept: 'image/*,application/pdf' },
-  { name: 'comprovante_endereco', label: 'Comprovante de endereço', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' },
+// Carretinha é puxada por um carro — precisa do CRLV dos dois, por isso o
+// campo de documento do veículo muda de rótulo e ganha um campo extra só nesse caso.
+const camposArquivo = (veiculoTipo) => {
+  const ehCarretinha = veiculoTipo === 'carretinha';
+  const campos = [
+    { name: 'foto_perfil', label: 'Foto de perfil', obrigatorio: true, icon: 'User', accept: 'image/*' },
+    { name: 'documento_frente', label: 'Documento com foto (CNH ou RG)', obrigatorio: true, icon: 'IdCard', accept: 'image/*,application/pdf' },
+    { name: 'documento_verso', label: 'Verso do documento (opcional)', obrigatorio: false, icon: 'IdCard', accept: 'image/*,application/pdf' },
+    { name: 'comprovante_endereco', label: 'Comprovante de endereço', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' },
+    { name: 'veiculo_foto', label: 'Foto do veículo', obrigatorio: true, icon: 'Camera', accept: 'image/*' },
+    { name: 'veiculo_documento', label: ehCarretinha ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' },
+  ];
+  if (ehCarretinha) {
+    campos.push({ name: 'veiculo_documento_carretinha', label: 'Documento da carretinha (CRLV)', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' });
+  }
+  return campos;
+};
+
+const VEICULO_TIPOS = [
+  { value: 'bicicleta', label: 'Bicicleta' },
+  { value: 'moto', label: 'Moto' },
+  { value: 'carro', label: 'Carro' },
+  { value: 'caminhao', label: 'Caminhão' },
+  { value: 'carretinha', label: 'Carretinha' },
 ];
+
+// Formatação leve, sem validar dígito verificador — só ajuda a digitar (CNPJ, 14 dígitos).
+const formatCnpj = (v) => {
+  const n = (v ?? '').replace(/\D/g, '').slice(0, 14);
+  return n.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+};
 
 const MotoboyCadastro = () => {
   const navigate = useNavigate();
   const { signUp, refreshUserProfile } = useAuth();
-  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', veiculo_tipo: '', cnpj: '' });
   const [arquivos, setArquivos] = useState({});
   const [previews, setPreviews] = useState({});
   const [erro, setErro] = useState(null);
@@ -33,7 +58,15 @@ const MotoboyCadastro = () => {
     e.preventDefault();
     setErro(null);
 
-    for (const campo of CAMPOS_ARQUIVO) {
+    if (!form.veiculo_tipo) {
+      setErro('Selecione o tipo de veículo');
+      return;
+    }
+    if (form.cnpj.replace(/\D/g, '').length !== 14) {
+      setErro('Informe um CNPJ válido (MEI é obrigatório)');
+      return;
+    }
+    for (const campo of camposArquivo(form.veiculo_tipo)) {
       if (campo.obrigatorio && !arquivos[campo.name]) {
         setErro(`Envie: ${campo.label}`);
         return;
@@ -49,7 +82,13 @@ const MotoboyCadastro = () => {
       });
       if (!resultado?.success) throw new Error(resultado?.error || 'Erro ao criar conta');
 
-      await completarCadastroMotoboy({ name: form.name, phone: form.phone, ...arquivos });
+      await completarCadastroMotoboy({
+        name: form.name,
+        phone: form.phone,
+        veiculo_tipo: form.veiculo_tipo,
+        cnpj: form.cnpj.replace(/\D/g, ''),
+        ...arquivos,
+      });
       await refreshUserProfile();
       // Cadastro ainda entra "pendente" de aprovação da plataforma — manda pra
       // vitrine (como qualquer usuário), não pro painel de entregas ainda vazio.
@@ -91,8 +130,18 @@ const MotoboyCadastro = () => {
             placeholder="Senha (mínimo 8 caracteres)"
             className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
 
+          <select required value={form.veiculo_tipo} onChange={(e) => set('veiculo_tipo', e.target.value)}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]">
+            <option value="" disabled>Tipo de veículo</option>
+            {VEICULO_TIPOS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+          </select>
+          <input required value={form.cnpj} onChange={(e) => set('cnpj', formatCnpj(e.target.value))}
+            placeholder="CNPJ (MEI) — 00.000.000/0000-00"
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] -mt-1.5">Entregador precisa ser MEI. Se o veículo for caminhão, precisa ser MEI caminhoneiro.</p>
+
           <div className="pt-2 space-y-2.5">
-            {CAMPOS_ARQUIVO.map((campo) => (
+            {camposArquivo(form.veiculo_tipo).map((campo) => (
               <label key={campo.name}
                 className="flex items-center gap-3 border border-dashed border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2.5 cursor-pointer hover:border-[#FF441F]/50 transition-colors">
                 <Icon name={previews[campo.name] ? 'CheckCircle2' : campo.icon}

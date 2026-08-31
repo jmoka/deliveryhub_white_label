@@ -9,5 +9,6 @@ export function useModulosEmpresa() {
     moduloSalao: !!data?.empresa?.modulo_salao,
     moduloGdoor: !!data?.empresa?.modulo_gdoor,
     autoAtendimentoHabilitado: !!data?.empresa?.auto_atendimento_habilitado,
+    tipoRestaurante: !!data?.empresa?.tipo_restaurante,
   };
 }

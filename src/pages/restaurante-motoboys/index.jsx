@@ -7,6 +7,30 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { arquivoParaBase64 } from '../../services/motoboyAuthService';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+
+const VEICULO_TIPOS = [
+  { value: 'bicicleta', label: 'Bicicleta' },
+  { value: 'moto', label: 'Moto' },
+  { value: 'carro', label: 'Carro' },
+  { value: 'caminhao', label: 'Caminhão' },
+  { value: 'carretinha', label: 'Carretinha' },
+];
+
+const formatCnpj = (v) => {
+  const n = (v ?? '').replace(/\D/g, '').slice(0, 14);
+  return n.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+};
+
+const MEI_LABELS = {
+  validado: { texto: 'MEI validado', cls: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
+  invalido: { texto: 'MEI inválido', cls: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+  revisao_manual: { texto: 'MEI: revisar manualmente', cls: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
+  pendente: { texto: 'MEI pendente', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
+};
+
+const VEICULO_LABEL = Object.fromEntries(VEICULO_TIPOS.map((v) => [v.value, v.label]));
 
 // Signed URL do Supabase carrega query string (?token=...) depois do nome do arquivo —
 // preciso olhar o path antes do "?" pra saber a extensão real.
@@ -36,7 +60,7 @@ const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando, 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onFechar}>
-      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md md:max-w-[85%] p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 mb-5">
           <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
             {mb.foto_perfil_url
@@ -50,15 +74,43 @@ const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando, 
           </div>
         </div>
 
+        {(mb.veiculo_tipo || mb.cnpj) && (
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            {mb.veiculo_tipo && (
+              <span className="inline-block text-xs px-2.5 py-1 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                {VEICULO_LABEL[mb.veiculo_tipo] ?? mb.veiculo_tipo}
+              </span>
+            )}
+            {mb.mei_situacao && (
+              <span className={`inline-block text-xs px-2.5 py-1 rounded-full font-medium ${(MEI_LABELS[mb.mei_situacao] ?? MEI_LABELS.pendente).cls}`}>
+                {(MEI_LABELS[mb.mei_situacao] ?? MEI_LABELS.pendente).texto}
+                {mb.mei_caminhoneiro ? ' (caminhoneiro)' : ''}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Documentos</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {mb.documento_frente_url && (
               <ArquivoPreview url={mb.documento_frente_url} alt="Documento frente"
                 className="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 aspect-video bg-gray-50 dark:bg-gray-950/40" />
             )}
             {mb.documento_verso_url && (
               <ArquivoPreview url={mb.documento_verso_url} alt="Documento verso"
+                className="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 aspect-video bg-gray-50 dark:bg-gray-950/40" />
+            )}
+            {mb.veiculo_foto_url && (
+              <ArquivoPreview url={mb.veiculo_foto_url} alt="Foto do veículo"
+                className="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 aspect-video bg-gray-50 dark:bg-gray-950/40" />
+            )}
+            {mb.veiculo_documento_url && (
+              <ArquivoPreview url={mb.veiculo_documento_url} alt={mb.veiculo_tipo === 'carretinha' ? 'CRLV do carro' : 'CRLV'}
+                className="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 aspect-video bg-gray-50 dark:bg-gray-950/40" />
+            )}
+            {mb.veiculo_documento_carretinha_url && (
+              <ArquivoPreview url={mb.veiculo_documento_carretinha_url} alt="CRLV da carretinha"
                 className="block rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 aspect-video bg-gray-50 dark:bg-gray-950/40" />
             )}
           </div>
@@ -106,22 +158,40 @@ const FichaModal = ({ solicitacao, onFechar, onAceitar, onRecusar, processando, 
   );
 };
 
-const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) => {
+const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, termoCap = 'Motoboy' }) => {
   const editando = !!motoboy;
   const [name, setName] = useState(motoboy?.name ?? '');
   const [phone, setPhone] = useState(motoboy?.phone ?? '');
   const [email, setEmail] = useState(motoboy?.email ?? '');
   const [password, setPassword] = useState('');
+  const [veiculoTipo, setVeiculoTipo] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [veiculoFoto, setVeiculoFoto] = useState(null);
+  const [veiculoDocumento, setVeiculoDocumento] = useState(null);
+  const [veiculoDocumentoCarretinha, setVeiculoDocumentoCarretinha] = useState(null);
+  const [documentoFrente, setDocumentoFrente] = useState(null);
+  const [documentoVerso, setDocumentoVerso] = useState(null);
+  const [comprovanteEndereco, setComprovanteEndereco] = useState(null);
   const [gerandoLink, setGerandoLink] = useState(false);
   const [enviandoEmail, setEnviandoEmail] = useState(false);
   const [linkCopiado, setLinkCopiado] = useState(false);
   const [emailEnviado, setEmailEnviado] = useState(false);
   const [erroLink, setErroLink] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const dados = { name, phone, email };
     if (password) dados.password = password;
+    if (!editando) {
+      dados.veiculo_tipo = veiculoTipo;
+      dados.cnpj = cnpj.replace(/\D/g, '');
+      dados.veiculo_foto = await arquivoParaBase64(veiculoFoto);
+      dados.veiculo_documento = await arquivoParaBase64(veiculoDocumento);
+      if (veiculoTipo === 'carretinha') dados.veiculo_documento_carretinha = await arquivoParaBase64(veiculoDocumentoCarretinha);
+      dados.documento_frente = await arquivoParaBase64(documentoFrente);
+      dados.comprovante_endereco = await arquivoParaBase64(comprovanteEndereco);
+      if (documentoVerso) dados.documento_verso = await arquivoParaBase64(documentoVerso);
+    }
     onSalvar(dados);
   };
 
@@ -170,9 +240,9 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) =>
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onFechar}>
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md md:max-w-[85%] p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5] mb-4">
-          {editando ? 'Editar motoboy' : 'Adicionar motoboy'}
+          {editando ? `Editar ${termoCap.toLowerCase()}` : `Adicionar ${termoCap.toLowerCase()}`}
         </h3>
 
         {erro && (
@@ -203,9 +273,63 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) =>
               placeholder="Mínimo 8 caracteres" minLength={8} required={!editando}
               className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
             {!editando && (
-              <p className="text-[11px] text-[#A1A1AA] mt-1">Compartilhe telefone/e-mail e essa senha com o motoboy — ou gere um link de acesso depois de salvar.</p>
+              <p className="text-[11px] text-[#A1A1AA] mt-1">Compartilhe telefone/e-mail e essa senha com o {termoCap.toLowerCase()} — ou gere um link de acesso depois de salvar.</p>
             )}
           </div>
+
+          {!editando && (
+            <>
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Tipo de veículo</label>
+                <select value={veiculoTipo} onChange={(e) => setVeiculoTipo(e.target.value)} required
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
+                  <option value="" disabled>Selecione</option>
+                  {VEICULO_TIPOS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNPJ (MEI)</label>
+                <input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} required
+                  placeholder="00.000.000/0000-00"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                <p className="text-[11px] text-[#A1A1AA] mt-1">Entregador precisa ser MEI (MEI caminhoneiro se o veículo for caminhão).</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Foto do veículo</label>
+                <input type="file" accept="image/*" required onChange={(e) => setVeiculoFoto(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">
+                  {veiculoTipo === 'carretinha' ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)'}
+                </label>
+                <input type="file" accept="image/*,application/pdf" required onChange={(e) => setVeiculoDocumento(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+              </div>
+              {veiculoTipo === 'carretinha' && (
+                <div>
+                  <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Documento da carretinha (CRLV)</label>
+                  <input type="file" accept="image/*,application/pdf" required onChange={(e) => setVeiculoDocumentoCarretinha(e.target.files?.[0] ?? null)}
+                    className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNH (frente)</label>
+                <input type="file" accept="image/*,application/pdf" required onChange={(e) => setDocumentoFrente(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNH (verso, opcional)</label>
+                <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentoVerso(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Comprovante de endereço</label>
+                <input type="file" accept="image/*,application/pdf" required onChange={(e) => setComprovanteEndereco(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+              </div>
+            </>
+          )}
 
           {editando && (
             <div className="border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 space-y-2">
@@ -246,6 +370,8 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro }) =>
 };
 
 const RestauranteMotoboys = () => {
+  const { tipoRestaurante } = useModulosEmpresa();
+  const termoCap = tipoRestaurante ? 'Motoboy' : 'Entregador';
   const [aba, setAba] = useState('pendentes'); // pendentes | aceitas | recusadas
   const [motoboys, setMotoboys] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
@@ -282,7 +408,7 @@ const RestauranteMotoboys = () => {
     try {
       await aceitarSolicitacaoMotoboy(id);
       setFicha(null);
-      setMsg({ tipo: 'ok', texto: 'Motoboy aceito!' });
+      setMsg({ tipo: 'ok', texto: `${termoCap} aceito!` });
       setTimeout(() => setMsg(null), 3000);
       reload();
     } catch (err) {
@@ -336,10 +462,10 @@ const RestauranteMotoboys = () => {
     try {
       if (formModal === 'novo') {
         await criarMotoboy(dados);
-        setMsg({ tipo: 'ok', texto: 'Motoboy cadastrado!' });
+        setMsg({ tipo: 'ok', texto: `${termoCap} cadastrado!` });
       } else {
         await editarMotoboy(formModal.id, dados);
-        setMsg({ tipo: 'ok', texto: 'Motoboy atualizado!' });
+        setMsg({ tipo: 'ok', texto: `${termoCap} atualizado!` });
       }
       setTimeout(() => setMsg(null), 3000);
       setFormModal(null);
@@ -384,7 +510,7 @@ const RestauranteMotoboys = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/motoboys" title="Motoboys" subtitle="Entregadores afiliados ao seu estabelecimento" onRefresh={reload} />
+      <RestauranteHeader active="/restaurante/motoboys" title={tipoRestaurante ? 'Motoboys' : 'Entregadores'} subtitle="Entregadores afiliados ao seu estabelecimento" onRefresh={reload} />
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         {msg && (
@@ -444,13 +570,13 @@ const RestauranteMotoboys = () => {
           <div className="space-y-3">
             <button onClick={() => { setErroForm(null); setFormModal('novo'); }}
               className="w-full flex items-center justify-center gap-1.5 py-2.5 border-2 border-dashed border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:border-[#FF441F] hover:text-[#FF441F] transition-colors">
-              <Icon name="Plus" size={16} /> Adicionar motoboy
+              <Icon name="Plus" size={16} /> Adicionar {termoCap.toLowerCase()}
             </button>
 
             <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
               {motoboys.length === 0 ? (
                 <p className="p-5 text-sm text-[#71717A] dark:text-[#A1A1AA] text-center">
-                  Nenhum motoboy afiliado ainda. Cadastre o seu próprio acima, ou aguarde um entregador se cadastrar pelo app e solicitar atender aqui.
+                  Nenhum {termoCap.toLowerCase()} afiliado ainda. Cadastre o seu próprio acima, ou aguarde um entregador se cadastrar pelo app e solicitar atender aqui.
                 </p>
               ) : motoboys.map((mb) => (
                 <div key={mb.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
@@ -578,6 +704,7 @@ const RestauranteMotoboys = () => {
           onSalvar={handleSalvarForm}
           processando={salvandoForm}
           erro={erroForm}
+          termoCap={termoCap}
         />
       )}
     </div>
