@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe, getSalaoComandasFechadasHoje,
   aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
-  adicionarItensComandaSalao, enviarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
+  adicionarItensComandaSalao, enviarItensComandaSalao, editarItemComandaSalao, incluirMaisUnidadeItemSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, getMeusCombos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, alterarTrocoPixComandaSalao, reabrirComandaSalao,
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
@@ -368,6 +368,9 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [formaGorjeta, setFormaGorjeta] = useState('comanda');
   const [observacaoEditandoId, setObservacaoEditandoId] = useState(null);
   const [observacaoInput, setObservacaoInput] = useState('');
+  // Item selecionado ao clicar "+" num item que já foi pro setor de produção — pergunta
+  // antes de mandar a unidade extra, em vez de só trocar o número silenciosamente.
+  const [confirmarInclusao, setConfirmarInclusao] = useState(null);
 
   const carregar = useCallback(async () => {
     const [c, sugestao, produtosResp, combosResp] = await Promise.all([
@@ -549,7 +552,21 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const alterarQuantidadeItem = (item, delta) => {
     const novaQtd = item.quantity + delta;
     if (novaQtd < 1) return;
+    // Item já enviado pro setor: aumentar direto deixaria a unidade extra invisível pra
+    // cozinha/bar (só mudaria o número no banco) — pergunta antes de mandar de fato.
+    if (delta > 0 && item.status !== 'pendente') {
+      setConfirmarInclusao(item);
+      return;
+    }
     acao(() => editarItemComandaSalao(comandaId, item.id, { quantity: novaQtd }));
+  };
+
+  const confirmarIncluirMais = (item) => {
+    setConfirmarInclusao(null);
+    acao(async () => {
+      const { grupos } = await incluirMaisUnidadeItemSalao(comandaId, item.id, 1);
+      (grupos ?? []).forEach((grupo) => { if (grupo.itens?.length) printTicketSetor(grupo.itens, comanda, grupo.setor); });
+    });
   };
 
   // Caixa confirma a entrega direto pelo painel — mesma ação que o garçom faz no app
@@ -569,21 +586,19 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   const renderItemLinha = (item, { ocultarComboLabel = false } = {}) => (
     <div key={item.id} className="py-1.5">
-      <div className="flex justify-between items-start gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
-            {item.products?.image_url
-              ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={15} className="text-[#A1A1AA]" /></div>}
-          </div>
-          <div className="min-w-0">
-            <p className="font-medium truncate">{item.quantity}x {item.products?.name}</p>
-            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
-              {fmt(item.quantity * item.unit_price)}
-              {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
-            </p>
-          </div>
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
+          {item.products?.image_url
+            ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={15} className="text-[#A1A1AA]" /></div>}
         </div>
+        <p className="font-medium truncate min-w-0 flex-1">{item.quantity}x {item.products?.name}</p>
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-1 pl-11">
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+          {fmt(item.quantity * item.unit_price)}
+          {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
+        </p>
         {['aberta', 'fechada_garcom'].includes(comanda.status) && (
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button onClick={() => abrirEdicaoObservacao(item)} title="Editar observação" className="w-7 h-7 rounded-md border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] flex items-center justify-center">
@@ -1018,6 +1033,29 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                 <button onClick={() => { setMostrarAvisoPendente(false); enviarItens(); }} disabled={salvando}
                   className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
                   Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {confirmarInclusao && (
+          <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[70] p-4">
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+              <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">
+                Enviar mais 1x {confirmarInclusao.products?.name}?
+              </h2>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">
+                Esse item já foi enviado — a unidade extra só chega na produção se você mandar agora.
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmarInclusao(null)} disabled={salvando}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-50">
+                  Não
+                </button>
+                <button onClick={() => confirmarIncluirMais(confirmarInclusao)} disabled={salvando}
+                  className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white bg-[#FF441F] hover:bg-[#E63A19] disabled:opacity-50">
+                  Enviar para {confirmarInclusao.products?.impressoras?.setor || confirmarInclusao.products?.impressoras?.nome || 'produção'}
                 </button>
               </div>
             </div>

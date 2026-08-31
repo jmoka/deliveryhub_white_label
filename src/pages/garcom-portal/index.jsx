@@ -820,21 +820,19 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
 
   const renderItemCard = (item, { ocultarComboLabel = false } = {}) => (
     <div key={item.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
-      <div className="flex justify-between items-center gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
-            {item.products?.image_url
-              ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
-          </div>
-          <div className="min-w-0">
-            <p className="text-base font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{item.quantity}x {item.products?.name}</p>
-            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
-              {fmt(item.unit_price)} un.
-              {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
-            </p>
-          </div>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-11 h-11 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
+          {item.products?.image_url
+            ? <img src={item.products.image_url} alt="" className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center"><Icon name="UtensilsCrossed" size={18} className="text-[#A1A1AA]" /></div>}
         </div>
+        <p className="text-base font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate min-w-0 flex-1">{item.quantity}x {item.products?.name}</p>
+      </div>
+      <div className="flex items-center justify-between gap-2 mt-1 pl-14">
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+          {fmt(item.unit_price)} un.
+          {item.combo_nome && !ocultarComboLabel && <span className="text-[#FF441F]"> · combo: {item.combo_nome}</span>}
+        </p>
         {item.status === 'pendente' ? (
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button onClick={() => alterarQuantidade(item, -1)} className="w-8 h-8 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-base font-bold text-[#27272A] dark:text-[#F4F4F5]">−</button>

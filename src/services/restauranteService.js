@@ -408,6 +408,8 @@ export const enviarItensComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/enviar`, { method: 'POST' });
 export const editarItemComandaSalao = (id, itemId, body) =>
   apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'PATCH', body: JSON.stringify(body) });
+export const incluirMaisUnidadeItemSalao = (id, itemId, quantidade = 1) =>
+  apiFetch(`/salao/comandas/${id}/itens/${itemId}/incluir-mais`, { method: 'POST', body: JSON.stringify({ quantidade }) });
 export const removerItemComandaSalao = (id, itemId) =>
   apiFetch(`/salao/comandas/${id}/itens/${itemId}`, { method: 'DELETE' });
 export const confirmarEntregaItemSalao = (id, itemId) =>
