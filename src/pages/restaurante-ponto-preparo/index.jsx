@@ -8,6 +8,8 @@ import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
 import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
 import { barcodeValue } from '../../utils/printComanda';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 // Tela genérica de ponto de preparo — gerada automaticamente pra qualquer impressora
 // marcada como ponto_preparo em /restaurante/pontos-preparo (Churrasqueira, Drinks...).
@@ -16,6 +18,8 @@ import { barcodeValue } from '../../utils/printComanda';
 const RestaurantePontoPreparo = () => {
   const navigate = useNavigate();
   const { id: impressoraId } = useParams();
+  const { tipoRestaurante } = useModulosEmpresa();
+  const termos = getTermos(tipoRestaurante);
   const [impressoraInfo, setImpressoraInfo] = useState(undefined); // undefined = carregando, null = não encontrada
   const [restauranteNome, setRestauranteNome] = useState('');
   const [itens, setItens] = useState([]);
@@ -282,11 +286,11 @@ const RestaurantePontoPreparo = () => {
             <div className="space-y-3">
               {aguardando.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando" tipoRestaurante={tipoRestaurante}
                     atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                     onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                     highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                 )
               ))}
@@ -297,7 +301,7 @@ const RestaurantePontoPreparo = () => {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
-            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Em Preparo</h2>
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">{termos.emPreparo}</h2>
             {emPreparo.length > 0 && (
               <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{emPreparo.length}</span>
             )}
@@ -311,12 +315,12 @@ const RestaurantePontoPreparo = () => {
             <div className="space-y-3">
               {emPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando" tipoRestaurante={tipoRestaurante}
                     atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                     onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
                     onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                     highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                 )
               ))}
@@ -334,11 +338,11 @@ const RestaurantePontoPreparo = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(verTodosProntos ? prontos : prontos.slice(0, 5)).map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto"
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto" tipoRestaurante={tipoRestaurante}
                     atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                     onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                 ) : (
-                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                     highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                 )
               ))}

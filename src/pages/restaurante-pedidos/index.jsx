@@ -5,22 +5,27 @@ import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import PracasStatus from '../../components/restaurante/PracasStatus';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const STATUS_LABELS = {
-  pending:            { label: 'Pendente',       color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
-  confirmed:          { label: 'Confirmado',     color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
-  preparing:          { label: 'Em preparo',     color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
-  ready:              { label: 'Pronto',         color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
-  motoboy_collecting: { label: 'Motoboy vindo',  color: 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400' },
-  out_for_delivery:   { label: 'Em entrega',     color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
-  delivered:          { label: 'Entregue',       color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
-  canceled:           { label: 'Cancelado',      color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
-  // Status do módulo Salão — comanda de mesa/balcão também aparece nessa listagem.
-  aberta:             { label: 'Aberta',         color: 'bg-teal-100 dark:bg-teal-950/40 text-teal-800 dark:text-teal-400' },
-  fechada_garcom:     { label: 'Aguardando caixa', color: 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400' },
-  paga:               { label: 'Paga',           color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
+const statusLabels = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return {
+    pending:            { label: 'Pendente',       color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
+    confirmed:          { label: 'Confirmado',     color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
+    preparing:          { label: termos.emPreparo, color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
+    ready:              { label: termos.pronto,    color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
+    motoboy_collecting: { label: 'Motoboy vindo',  color: 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400' },
+    out_for_delivery:   { label: 'Em entrega',     color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
+    delivered:          { label: 'Entregue',       color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
+    canceled:           { label: 'Cancelado',      color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
+    // Status do módulo Salão — comanda de mesa/balcão também aparece nessa listagem.
+    aberta:             { label: 'Aberta',         color: 'bg-teal-100 dark:bg-teal-950/40 text-teal-800 dark:text-teal-400' },
+    fechada_garcom:     { label: 'Aguardando caixa', color: 'bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400' },
+    paga:               { label: 'Paga',           color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
+  };
 };
 
 const PROXIMOS_STATUS = {
@@ -34,6 +39,8 @@ const FILTROS = ['', 'pending', 'confirmed', 'preparing', 'ready', 'motoboy_coll
 
 const RestaurantePedidos = () => {
   const navigate = useNavigate();
+  const { tipoRestaurante } = useModulosEmpresa();
+  const STATUS_LABELS = statusLabels(tipoRestaurante);
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);

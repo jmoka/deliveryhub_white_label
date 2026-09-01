@@ -18,6 +18,17 @@ const COMPARTILHADO_LINKS = [
   { label: 'Pedidos', path: '/restaurante/pedidos', icon: 'ClipboardList' },
 ];
 
+// "Cozinha"/"Cardápio Digital" só fazem sentido pra Restaurante — farmácia, material de
+// construção etc. usam "Embalagem"/"Catálogo Digital" no menu (ver useTerminologiaEstabelecimento).
+const relabelarParaTipo = (links, tipoRestaurante) => {
+  if (tipoRestaurante) return links;
+  return links.map((l) => {
+    if (l.path === '/restaurante/cozinha') return { ...l, label: 'Embalagem', icon: 'Package' };
+    if (l.path === '/restaurante/cardapio-digital') return { ...l, label: 'Catálogo Digital' };
+    return l;
+  });
+};
+
 const DELIVERY_LINKS = [
   { label: 'Delivery', path: '/restaurante/delivery', icon: 'Truck' },
   { label: 'Entregas', path: '/restaurante/entregas', icon: 'Bike' },
@@ -51,7 +62,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPrepar
   const deliveryLinks = tipoRestaurante
     ? DELIVERY_LINKS
     : DELIVERY_LINKS.map((l) => (l.path === '/restaurante/motoboys' ? { ...l, label: 'Entregadores' } : l));
-  const links = [
+  const links = relabelarParaTipo([
     ...BASE_LINKS.slice(0, 2), // Dashboard, Relatórios
     ...(moduloDelivery ? deliveryLinks.slice(0, 1) : []), // Delivery
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(0, 1) : []), // Cozinha
@@ -62,7 +73,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPrepar
     ...(moduloDelivery ? deliveryLinks.slice(1) : []), // Entregas, Motoboys/Entregadores
     ...BASE_LINKS.slice(3), // Clientes...Sessão
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
-  ];
+  ], tipoRestaurante);
   // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só
   // controla quais links entram conforme os módulos ativos. Dashboard fica
   // fixo no topo, fora da ordenação.

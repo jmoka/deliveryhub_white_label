@@ -1,24 +1,26 @@
 import React from 'react';
 import Icon from '../AppIcon';
 import { formatDuracao } from '../../utils/formatDuracao';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
-
-const BUCKET_INFO = {
-  aguardando: { label: 'Aguardando Preparo', border: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800' },
-  preparando: { label: 'Em Preparo', border: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800' },
-  pronto: { label: 'Pronto', border: 'border-emerald-300 bg-emerald-50', badge: 'bg-emerald-100 text-emerald-800' },
-};
 
 // Pedido de delivery agrupado (mesmo visual do OrderCard da tela Cozinha) — usado em
 // Produção/Bar pra manter o mesmo padrão de card em todas as praças. Diferença chave:
 // aqui a ação avança/volta só os ITENS deste setor específico (não o status do pedido
 // inteiro), porque um pedido pode ter itens espalhados por mais de uma praça — só o
 // backend (marcarItemPronto) decide quando TODAS já terminaram pra liberar pro motoboy.
-const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPreparo, onMarcarPronto, onVoltar, atualizando, highlighted = false, codigoBarras = null, cardId = null }) => {
+// `tipoRestaurante` troca o vocabulário pra "Embalagem" fora do tipo Restaurante.
+const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPreparo, onMarcarPronto, onVoltar, atualizando, highlighted = false, codigoBarras = null, cardId = null, tipoRestaurante = true }) => {
   const isAtualizando = atualizando === pedido.id;
   const tempoDecorrido = now - new Date(pedido.created_at).getTime();
+  const termos = getTermos(tipoRestaurante);
+  const BUCKET_INFO = {
+    aguardando: { label: termos.aguardandoPreparo, border: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800' },
+    preparando: { label: termos.emPreparo, border: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800' },
+    pronto: { label: termos.pronto, border: 'border-emerald-300 bg-emerald-50', badge: 'bg-emerald-100 text-emerald-800' },
+  };
   const c = BUCKET_INFO[bucket];
   const ehPrioridade = posicao === 1 && bucket !== 'pronto';
 
@@ -136,8 +138,8 @@ const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPrep
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <Icon name={bucket === 'aguardando' ? 'ChefHat' : 'Package'} size={15} />
-                {bucket === 'aguardando' ? 'Iniciar Preparo' : 'Marcar Pronto'}
+                <Icon name={bucket === 'aguardando' ? termos.icone : 'Package'} size={15} />
+                {bucket === 'aguardando' ? termos.iniciarPreparo : 'Marcar Pronto'}
               </>
             )}
           </button>

@@ -17,6 +17,7 @@ import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
 import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 // Card de item do salão (não agrupa por mesa/comanda) — mostra mesa e garçom inline,
 // ordenado junto com os pedidos de delivery pela ordem de chegada. Cronômetro ao vivo
@@ -100,6 +101,8 @@ const RestauranteCozinha = () => {
   const [pedidos, setPedidos] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
   const [restauranteId, setRestauranteId] = useState(null);
+  const [tipoRestaurante, setTipoRestaurante] = useState(true);
+  const termos = getTermos(tipoRestaurante);
   const [loading, setLoading] = useState(true);
   const [atualizando, setAtualizando] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
@@ -235,7 +238,12 @@ const RestauranteCozinha = () => {
 
     if (modoToken) {
       getCozinhaMe()
-        .then((d) => { nome = d.restaurante?.name ?? ''; setRestauranteNome(nome); setRestauranteId(d.restaurante?.id ?? null); })
+        .then((d) => {
+          nome = d.restaurante?.name ?? '';
+          setRestauranteNome(nome);
+          setRestauranteId(d.restaurante?.id ?? null);
+          setTipoRestaurante(d.restaurante?.tipo_restaurante ?? true);
+        })
         .catch(() => {});
       carregar(nome, true);
       const id = setInterval(() => carregar(nome, true), 30000);
@@ -247,6 +255,7 @@ const RestauranteCozinha = () => {
         nome = d.empresa?.name ?? '';
         setRestauranteNome(nome);
         setRestauranteId(d.empresa?.id ?? null);
+        setTipoRestaurante(d.empresa?.tipo_restaurante ?? true);
       })
       .catch(() => {});
 
@@ -456,10 +465,10 @@ const RestauranteCozinha = () => {
           )}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#FF441F] rounded-lg flex items-center justify-center flex-shrink-0">
-              <Icon name="ChefHat" size={16} className="text-white" />
+              <Icon name={termos.icone} size={16} className="text-white" />
             </div>
             <div>
-              <p className="text-white font-black text-base leading-none">Painel da Cozinha</p>
+              <p className="text-white font-black text-base leading-none">{termos.painelPreparo}</p>
               <p className="text-[#71717A] text-xs">{restauranteNome}</p>
             </div>
           </div>
@@ -473,7 +482,7 @@ const RestauranteCozinha = () => {
               <button
                 onClick={copiarLinkCozinha}
                 disabled={gerandoLink}
-                title="Copiar link de acesso para a cozinha"
+                title={`Copiar link de acesso para a ${termos.pracaLower}`}
                 className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${copiadoLink ? 'text-green-400 bg-green-400/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
               >
                 <Icon name={gerandoLink ? 'Loader2' : copiadoLink ? 'Check' : 'Link'} size={16}
@@ -589,7 +598,7 @@ const RestauranteCozinha = () => {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-blue-400" />
-            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Preparo</h2>
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">{termos.aguardandoPreparo}</h2>
             {aguardandoPreparo.length > 0 && (
               <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{aguardandoPreparo.length}</span>
             )}
@@ -603,7 +612,7 @@ const RestauranteCozinha = () => {
             <div className="space-y-3">
               {aguardandoPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando" tipoRestaurante={tipoRestaurante}
                     atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                     highlighted={highlighted === entry.pedido.id}
                     onIniciarPreparo={() => iniciarPreparoGrupoDelivery(entry.pedido.id, entry.itemIds)} />
@@ -620,21 +629,21 @@ const RestauranteCozinha = () => {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
-            <h2 className="text-white font-bold text-sm uppercase tracking-wider">Em Preparo</h2>
+            <h2 className="text-white font-bold text-sm uppercase tracking-wider">{termos.emPreparo}</h2>
             {emPreparo.length > 0 && (
               <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{emPreparo.length}</span>
             )}
           </div>
           {emPreparo.length === 0 ? (
             <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
-              <Icon name="ChefHat" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+              <Icon name={termos.icone} size={32} className="text-[#3A3A3A] mx-auto mb-2" />
               <p className="text-[#71717A] text-sm">Nenhum pedido em preparo</p>
             </div>
           ) : (
             <div className="space-y-3">
               {emPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando" tipoRestaurante={tipoRestaurante}
                     atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                     highlighted={highlighted === entry.pedido.id}
                     onMarcarPronto={() => marcarProntoGrupoDelivery(entry.pedido.id, entry.itemIds)}
@@ -676,7 +685,7 @@ const RestauranteCozinha = () => {
       {pedidos.length === 0 && itensSalao.length === 0 && !loading && (
         <div className="text-center py-20">
           <Icon name="UtensilsCrossed" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
-          <p className="text-[#71717A] text-lg font-semibold">Cozinha tranquila</p>
+          <p className="text-[#71717A] text-lg font-semibold">{termos.pracaTranquila}</p>
           <p className="text-[#3A3A3A] text-sm mt-1">Nenhum pedido para preparar agora</p>
         </div>
       )}

@@ -10,36 +10,47 @@ import PedidoTimeline from '../restaurante-dashboard/PedidoTimeline';
 import { printComanda } from '../../utils/printComanda';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import PracasStatus from '../../components/restaurante/PracasStatus';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const STATUS_LABELS = {
-  pending:          { label: 'Recebido',   color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
-  confirmed:        { label: 'Aguardando Preparo', color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
-  preparing:        { label: 'Em Preparo', color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
-  ready:            { label: 'Pronto',     color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
-  motoboy_collecting: { label: 'Motoboy a caminho', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
-  out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
-  delivered:        { label: 'Entregue',   color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
-  canceled:         { label: 'Cancelado',  color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
+const statusLabels = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return {
+    pending:          { label: 'Recebido',   color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
+    confirmed:        { label: termos.aguardandoPreparo, color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
+    preparing:        { label: termos.emPreparo, color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
+    ready:            { label: termos.pronto,     color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
+    motoboy_collecting: { label: 'Motoboy a caminho', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
+    out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
+    delivered:        { label: 'Entregue',   color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
+    canceled:         { label: 'Cancelado',  color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
+  };
 };
 
-const FILTER_TABS = [
-  { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
-  { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
-  { value: 'confirmed',        label: 'Ag. Preparo', activeColor: 'border-blue-400 dark:border-blue-800 bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
-  { value: 'preparing',        label: 'Cozinha',    activeColor: 'border-orange-400 dark:border-orange-800 bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
-  { value: 'ready',            label: 'Pronto',     activeColor: 'border-purple-400 dark:border-purple-800 bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
-  { value: 'out_for_delivery', label: 'Em Entrega', activeColor: 'border-indigo-400 dark:border-indigo-800 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
-  { value: 'delivered',        label: 'Entregue',   activeColor: 'border-green-400 dark:border-green-800 bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
-  { value: 'canceled',         label: 'Cancelado',  activeColor: 'border-red-400 dark:border-red-800 bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
-];
+const filterTabs = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return [
+    { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
+    { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
+    { value: 'confirmed',        label: 'Ag. Preparo', activeColor: 'border-blue-400 dark:border-blue-800 bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
+    { value: 'preparing',        label: termos.praca,    activeColor: 'border-orange-400 dark:border-orange-800 bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
+    { value: 'ready',            label: termos.pronto,     activeColor: 'border-purple-400 dark:border-purple-800 bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
+    { value: 'out_for_delivery', label: 'Em Entrega', activeColor: 'border-indigo-400 dark:border-indigo-800 bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
+    { value: 'delivered',        label: 'Entregue',   activeColor: 'border-green-400 dark:border-green-800 bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
+    { value: 'canceled',         label: 'Cancelado',  activeColor: 'border-red-400 dark:border-red-800 bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
+  ];
+};
 
 
 // Painel dedicado só ao delivery — extraído da seção "Pedidos da sessão" do Dashboard
 // principal, que misturava pedidos de delivery com comandas do salão (status "aberta"
 // aparecia sem tradução, confuso). Aqui o filtro de canal já vem aplicado: só delivery.
 const RestauranteDelivery = () => {
+  const { tipoRestaurante } = useModulosEmpresa();
+  const STATUS_LABELS = statusLabels(tipoRestaurante);
+  const FILTER_TABS = filterTabs(tipoRestaurante);
   const [empresa, setEmpresa] = useState(null);
   const [caixa, setCaixa] = useState(null);
   const [loading, setLoading] = useState(true);

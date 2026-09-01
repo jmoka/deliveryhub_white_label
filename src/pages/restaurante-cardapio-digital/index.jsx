@@ -8,6 +8,8 @@ import {
 import { printCartazCardapioDigital, printTicketCardapioDigital } from '../../utils/printComanda';
 import { printCardapioImpresso } from '../../utils/printCardapioImpresso';
 import ImageUpload from '../../components/ui/ImageUpload';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmtPreco = (v) => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
@@ -270,6 +272,8 @@ const getCardapioUrls = (slug) => {
 
 const RestauranteCardapioDigital = () => {
   const slugLoja = useMinhaLojaSlug();
+  const { tipoRestaurante } = useModulosEmpresa();
+  const termos = getTermos(tipoRestaurante);
   const [copiado, setCopiado] = useState(false);
   const [modo, setModo] = useState('online'); // 'online' | 'local'
   const [mostrarModalCardapioImpresso, setMostrarModalCardapioImpresso] = useState(false);
@@ -278,7 +282,7 @@ const RestauranteCardapioDigital = () => {
   // logo quando o botão é clicado antes do fetch inicial da tela terminar.
   const imprimirComLogo = async (imprimirFn, qrUrl) => {
     const d = await getMinhaEmpresa().catch(() => null);
-    imprimirFn(qrUrl, d?.empresa?.name, d?.empresa?.logo_url);
+    imprimirFn(qrUrl, d?.empresa?.name, d?.empresa?.logo_url, tipoRestaurante);
   };
 
   const copiarLink = async (url) => {
@@ -291,10 +295,10 @@ const RestauranteCardapioDigital = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/cardapio-digital" title="Cardápio Digital" />
+      <RestauranteHeader active="/restaurante/cardapio-digital" title={termos.cardapio} />
 
       <div className="max-w-xl mx-auto p-4">
-        <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5] mb-1">Cardápio Digital</h1>
+        <h1 className="text-lg font-black text-[#18181B] dark:text-[#F4F4F5] mb-1">{termos.cardapio}</h1>
         <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mb-4">
           Gere um QR code pras mesas — o cliente escaneia e vê produtos e preços, sem precisar pedir pelo app.
         </p>

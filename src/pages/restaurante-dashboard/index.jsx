@@ -17,6 +17,7 @@ import KpiCard from './KpiCard';
 import AlertasToast from './AlertasToast';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTerminologiaEstabelecimento } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -26,6 +27,7 @@ const PAGAMENTO_ICONE = { cash: '💵', pix: '📲', credit_card: '💳', debit_
 const RestauranteDashboard = () => {
   const navigate = useNavigate();
   const { planoStatus } = useAuth();
+  const { termos } = useTerminologiaEstabelecimento();
 
   const [empresa, setEmpresa] = useState(null);
   const [statusAberto, setStatusAberto] = useState(false);
@@ -349,7 +351,7 @@ const RestauranteDashboard = () => {
 
       <RestauranteHeader
         active="/restaurante"
-        title={empresa?.name ?? 'Meu Restaurante'}
+        title={empresa?.name ?? `Meu ${termos.estabelecimento}`}
         subtitle={`Painel Operacional${planoStatus?.plano_nome ? ` · ${planoStatus.plano_nome}` : ''}`}
         onRefresh={carregar}
       />
@@ -372,7 +374,7 @@ const RestauranteDashboard = () => {
         <motion.div animate={{ borderColor: statusAberto ? '#22C55E' : '#EF4444' }}
           className={`rounded-2xl border-2 p-4 flex items-center justify-between ${statusAberto ? 'bg-green-50 dark:bg-green-950/40' : 'bg-red-50 dark:bg-red-950/40'}`}>
           <div>
-            <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">{statusAberto ? '🟢 Restaurante ABERTO' : '🔴 Restaurante FECHADO'}</p>
+            <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">{statusAberto ? `🟢 ${termos.estabelecimento} ABERTO` : `🔴 ${termos.estabelecimento} FECHADO`}</p>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{statusAberto ? 'Clientes podem fazer pedidos agora.' : 'Pedidos pausados.'}</p>
           </div>
           <button type="button" onClick={() => handleToggleStatus(!statusAberto)}

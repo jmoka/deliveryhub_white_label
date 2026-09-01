@@ -8,6 +8,8 @@ import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
 import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
 import { barcodeValue } from '../../utils/printComanda';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 // Painel de pedidos do Bar/Copa — mesmo padrão de acesso da tela de Cozinha (dono já
 // logado, sem link/token separado), lista PLANA de itens por setor de impressora (não
@@ -15,6 +17,8 @@ import { barcodeValue } from '../../utils/printComanda';
 // /restaurante/producao (visão unificada de todos os setores) — essa aqui é só o Bar.
 const RestauranteBar = () => {
   const navigate = useNavigate();
+  const { tipoRestaurante } = useModulosEmpresa();
+  const termos = getTermos(tipoRestaurante);
   const [impressorasBar, setImpressorasBar] = useState(null);
   const [itens, setItens] = useState([]);
   const [restauranteNome, setRestauranteNome] = useState('');
@@ -279,11 +283,11 @@ const RestauranteBar = () => {
               <div className="space-y-3">
                 {aguardando.map((entry, idx) => (
                   entry.tipo === 'delivery' ? (
-                    <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                    <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando" tipoRestaurante={tipoRestaurante}
                       atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                       onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
                   ) : (
-                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                       highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                   )
                 ))}
@@ -308,12 +312,12 @@ const RestauranteBar = () => {
               <div className="space-y-3">
                 {preparando.map((entry, idx) => (
                   entry.tipo === 'delivery' ? (
-                    <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                    <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando" tipoRestaurante={tipoRestaurante}
                       atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                       onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
                       onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                   ) : (
-                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                       highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                   )
                 ))}
@@ -331,11 +335,11 @@ const RestauranteBar = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(verTodosEntregues ? prontosRecentes : prontosRecentes.slice(0, 2)).map((entry, idx) => (
                   entry.tipo === 'delivery' ? (
-                    <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto"
+                    <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto" tipoRestaurante={tipoRestaurante}
                       atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                       onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                   ) : (
-                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
                       highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                   )
                 ))}

@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Icon from './AppIcon';
+import { getTermos } from '../hooks/useTerminologiaEstabelecimento';
 
 // Pinos coloridos via divIcon (sem depender de imagem externa) — laranja pro
 // restaurante (cor da marca), azul pro endereço de entrega.
@@ -20,7 +21,8 @@ const PINO_ENTREGA = pinoIcon('#2563EB');
 // Mapa somente-leitura mostrando o ponto do restaurante e o do endereço de
 // entrega, com legenda — usado onde já mostramos a distância/excedente
 // calculado, pra dar contexto visual de onde os dois pontos ficam.
-const MapaDistanciaEntrega = ({ restauranteLat, restauranteLng, clienteLat, clienteLng, distanciaKm }) => {
+const MapaDistanciaEntrega = ({ restauranteLat, restauranteLng, clienteLat, clienteLng, distanciaKm, tipoRestaurante = true }) => {
+  const termos = getTermos(tipoRestaurante);
   const temRestaurante = restauranteLat != null && restauranteLng != null;
   const temCliente = clienteLat != null && clienteLng != null;
 
@@ -28,7 +30,7 @@ const MapaDistanciaEntrega = ({ restauranteLat, restauranteLng, clienteLat, clie
     return (
       <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F4F4F5] dark:bg-[#27272A] rounded-xl text-xs text-[#71717A] dark:text-[#A1A1AA]">
         <Icon name="MapPinOff" size={14} className="flex-shrink-0" />
-        Não foi possível localizar {!temRestaurante ? 'o restaurante' : 'o endereço de entrega'} no mapa.
+        Não foi possível localizar {!temRestaurante ? `o ${termos.estabelecimento.toLowerCase()}` : 'o endereço de entrega'} no mapa.
       </div>
     );
   }
@@ -47,7 +49,7 @@ const MapaDistanciaEntrega = ({ restauranteLat, restauranteLng, clienteLat, clie
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <Marker position={[restauranteLat, restauranteLng]} icon={PINO_RESTAURANTE}>
-            <Popup>Restaurante</Popup>
+            <Popup>{termos.estabelecimento}</Popup>
           </Marker>
           <Marker position={[clienteLat, clienteLng]} icon={PINO_ENTREGA}>
             <Popup>Endereço de entrega</Popup>
@@ -57,7 +59,7 @@ const MapaDistanciaEntrega = ({ restauranteLat, restauranteLng, clienteLat, clie
       <div className="flex items-center justify-between mt-2 text-xs">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 text-[#71717A] dark:text-[#A1A1AA]">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FF441F] flex-shrink-0" /> Restaurante
+            <span className="w-2.5 h-2.5 rounded-full bg-[#FF441F] flex-shrink-0" /> {termos.estabelecimento}
           </span>
           <span className="flex items-center gap-1.5 text-[#71717A] dark:text-[#A1A1AA]">
             <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB] flex-shrink-0" /> Entrega

@@ -5,6 +5,7 @@ import { printFichaMotoboy } from '../../utils/printComanda';
 import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
 import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago, getStatusGdoorPedido, enviarGdoorPedido } from '../../services/restauranteService';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 import PracasStatus from '../../components/restaurante/PracasStatus';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -25,10 +26,13 @@ const STATUS_COLORS = {
   canceled:           'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800',
 };
 
-const STATUS_LABEL = {
-  pending: 'Recebido', confirmed: 'Aguardando Preparo', preparing: 'Em Preparo',
-  ready: 'Pronto', motoboy_collecting: 'Motoboy coletando',
-  out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
+const statusLabel = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return {
+    pending: 'Recebido', confirmed: termos.aguardandoPreparo, preparing: termos.emPreparo,
+    ready: termos.pronto, motoboy_collecting: 'Motoboy coletando',
+    out_for_delivery: 'Em entrega', delivered: 'Entregue', canceled: 'Cancelado',
+  };
 };
 
 const PROXIMOS    = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready', ready: 'motoboy_collecting', motoboy_collecting: 'out_for_delivery', out_for_delivery: 'delivered' };
@@ -67,7 +71,9 @@ const PedidoDetalhe = ({
   const [atribuindo, setAtribuindo] = useState(false);
   const [entregandoProprio, setEntregandoProprio] = useState(false);
   const [confirmandoPagamento, setConfirmandoPagamento] = useState(false);
-  const { moduloGdoor } = useModulosEmpresa();
+  const { moduloGdoor, tipoRestaurante } = useModulosEmpresa();
+  const termos = getTermos(tipoRestaurante);
+  const STATUS_LABEL = statusLabel(tipoRestaurante);
   const [gdoorStatus, setGdoorStatus] = useState(null);
   const [enviandoGdoor, setEnviandoGdoor] = useState(false);
 
@@ -533,6 +539,7 @@ const PedidoDetalhe = ({
                   restauranteLat={empresa?.lat} restauranteLng={empresa?.lng}
                   clienteLat={cliente?.lat} clienteLng={cliente?.lng}
                   distanciaKm={pedido.distancia_entrega_km}
+                  tipoRestaurante={tipoRestaurante}
                 />
               </div>
             </>
@@ -669,7 +676,7 @@ const PedidoDetalhe = ({
             >
               {atualizando === pedido.id
                 ? 'Confirmando...'
-                : <><Icon name="ChefHat" size={16} /> Confirmar e Enviar p/ Cozinha</>}
+                : <><Icon name={termos.icone} size={16} /> Confirmar e Enviar p/ {termos.praca}</>}
             </button>
           )}
 

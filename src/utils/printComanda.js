@@ -1,5 +1,6 @@
 import JsBarcode from 'jsbarcode';
 import { escapeHtml as esc } from './escapeHtml';
+import { getTermos } from '../hooks/useTerminologiaEstabelecimento';
 
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
 
@@ -79,8 +80,9 @@ setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameEleme
 };
 
 // Cartaz A4 pra fixar tipo poster no salão — QR grande, logo, nome e frase de chamada.
-export const printCartazCardapioDigital = (qrUrl, nomeRestaurante, logoUrl) => {
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio Digital - ${esc(nomeRestaurante ?? '')}</title>
+export const printCartazCardapioDigital = (qrUrl, nomeRestaurante, logoUrl, tipoRestaurante = true) => {
+  const termos = getTermos(tipoRestaurante);
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${termos.cardapio} - ${esc(nomeRestaurante ?? '')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 @page{size:A4;margin:0}
@@ -95,8 +97,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;width:210mm;height:297mm;display:fl
 @media print{button{display:none!important}}
 </style></head><body>
 ${logoUrl ? `<img class="logo" src="${esc(logoUrl)}" />` : ''}
-<div class="nome">${esc(nomeRestaurante ?? 'Nosso Restaurante')}</div>
-<div class="badge">Cardápio Digital</div>
+<div class="nome">${esc(nomeRestaurante ?? `Nosso ${termos.estabelecimento}`)}</div>
+<div class="badge">${termos.cardapio}</div>
 <div class="qrbox"><img src="${esc(qrUrl)}" width="340" height="340" alt="QR code cardápio" /></div>
 <div class="frase">Escaneie e descubra sabores que valem a viagem até a mesa.</div>
 <div class="sub">Aponte a câmera do celular para o QR code acima</div>
@@ -126,8 +128,9 @@ window.addEventListener('load', function(){
 };
 
 // Ticket pra impressora térmica — QR pequeno pra entregar ao cliente na mesa/balcão.
-export const printTicketCardapioDigital = (qrUrl, nomeRestaurante, logoUrl) => {
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio Digital</title>
+export const printTicketCardapioDigital = (qrUrl, nomeRestaurante, logoUrl, tipoRestaurante = true) => {
+  const termos = getTermos(tipoRestaurante);
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${termos.cardapio}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Courier New',monospace;font-size:13px;padding:12px;color:#000;max-width:300px;margin:0 auto}
@@ -141,8 +144,8 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 @media print{button{display:none!important}}
 </style></head><body>
 ${logoUrl ? `<img class="logo" src="${esc(logoUrl)}" />` : ''}
-<div class="rest">${esc(nomeRestaurante ?? 'RESTAURANTE')}</div>
-<div class="badge">CARDÁPIO DIGITAL</div>
+<div class="rest">${esc(nomeRestaurante ?? termos.estabelecimento.toUpperCase())}</div>
+<div class="badge">${termos.cardapio.toUpperCase()}</div>
 <hr/>
 <img class="qr" src="${esc(qrUrl)}" width="180" height="180" alt="QR code cardápio" />
 <div class="frase">Escaneie e confira nosso cardápio completo!</div>

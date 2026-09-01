@@ -8,13 +8,16 @@ import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
 import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 // Seletor "escolher setor + enviar", reaproveitado no banner de itens sem setor e dentro
 // do ComandaModal — recebe só o callback de envio, quem chama decide o que fazer com o
 // resultado (imprimir via navegador, recarregar lista, etc).
-const ItemReenviarSelect = ({ impressoras, onEnviar }) => {
+const ItemReenviarSelect = ({ impressoras, onEnviar, tipoRestaurante = true }) => {
+  const termos = getTermos(tipoRestaurante);
   const [impressoraId, setImpressoraId] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -42,7 +45,7 @@ const ItemReenviarSelect = ({ impressoras, onEnviar }) => {
         </select>
         <button onClick={enviar} disabled={!impressoraId || enviando}
           className="flex-shrink-0 px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-40">
-          {enviando ? 'Enviando...' : 'Enviar p/ cozinha'}
+          {enviando ? 'Enviando...' : `Enviar p/ ${termos.pracaLower}`}
         </button>
       </div>
       {erro && <p className="text-[11px] text-red-400 mt-1">{erro}</p>}
@@ -52,7 +55,7 @@ const ItemReenviarSelect = ({ impressoras, onEnviar }) => {
 
 // Card de um item sem setor no banner de alerta (topo da tela) — produto ficou sem
 // impressora configurada e o envio pra cozinha nunca chegou a lugar nenhum.
-const ItemSemSetorCard = ({ item, impressoras, onReenviado }) => {
+const ItemSemSetorCard = ({ item, impressoras, onReenviado, tipoRestaurante = true }) => {
   const enviar = async (impressoraId) => {
     const imp = impressoras.find((i) => i.id === impressoraId);
     const res = await reenviarItemKds(item.id, impressoraId);
@@ -72,7 +75,7 @@ const ItemSemSetorCard = ({ item, impressoras, onReenviado }) => {
         <p className="text-xs text-[#71717A] mb-1.5">{[item.mesa, item.cliente, item.garcom].filter(Boolean).join(' • ')}</p>
       )}
       {item.observacao && <p className="text-xs text-blue-400 mb-1.5">Obs: {item.observacao}</p>}
-      <ItemReenviarSelect impressoras={impressoras} onEnviar={enviar} />
+      <ItemReenviarSelect impressoras={impressoras} onEnviar={enviar} tipoRestaurante={tipoRestaurante} />
     </div>
   );
 };
@@ -80,7 +83,8 @@ const ItemSemSetorCard = ({ item, impressoras, onReenviado }) => {
 // Clique no card (só itens de Salão, com numero_comanda) abre essa comanda completa —
 // mesmo endpoint que o PDV do Salão usa, só leitura aqui (sem ações de pagamento), exceto
 // pelo botão de reenviar quando um item ficou sem setor (impressora_id null).
-const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado }) => {
+const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado, tipoRestaurante = true }) => {
+  const termos = getTermos(tipoRestaurante);
   const [comanda, setComanda] = useState(null);
   const [erro, setErro] = useState(null);
 
@@ -138,9 +142,9 @@ const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado }) => {
                       {semSetor && (
                         <div className="mt-2 pt-2 border-t border-[#2A2A2A]">
                           <p className="text-[11px] text-yellow-400 font-bold mb-1.5 flex items-center gap-1">
-                            <Icon name="AlertTriangle" size={12} /> Não chegou na cozinha — produto sem impressora configurada
+                            <Icon name="AlertTriangle" size={12} /> Não chegou na {termos.pracaLower} — produto sem impressora configurada
                           </p>
-                          <ItemReenviarSelect impressoras={impressoras} onEnviar={(impressoraId) => reenviarItemDaComanda(item, impressoraId)} />
+                          <ItemReenviarSelect impressoras={impressoras} onEnviar={(impressoraId) => reenviarItemDaComanda(item, impressoraId)} tipoRestaurante={tipoRestaurante} />
                         </div>
                       )}
                     </div>
@@ -166,6 +170,8 @@ const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado }) => {
 // lista PLANA por item (não agrupa por mesa/comanda), com cronômetro de espera/preparo.
 const RestauranteProducao = () => {
   const navigate = useNavigate();
+  const { tipoRestaurante } = useModulosEmpresa();
+  const termos = getTermos(tipoRestaurante);
   const [impressoras, setImpressoras] = useState(null);
   const [itensPorImpressora, setItensPorImpressora] = useState({});
   const [itensSemSetor, setItensSemSetor] = useState([]);
@@ -449,12 +455,12 @@ const RestauranteProducao = () => {
           <div className="flex items-center gap-2 mb-3">
             <Icon name="AlertTriangle" size={16} className="text-yellow-400" />
             <h2 className="text-yellow-400 font-bold text-sm">
-              {itensSemSetor.length} {itensSemSetor.length === 1 ? 'item não chegou' : 'itens não chegaram'} na cozinha (sem impressora configurada)
+              {itensSemSetor.length} {itensSemSetor.length === 1 ? 'item não chegou' : 'itens não chegaram'} na {termos.pracaLower} (sem impressora configurada)
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {itensSemSetor.map((item) => (
-              <ItemSemSetorCard key={item.id} item={item} impressoras={impressoras ?? []} onReenviado={() => carregar(impressoras)} />
+              <ItemSemSetorCard key={item.id} item={item} impressoras={impressoras ?? []} onReenviado={() => carregar(impressoras)} tipoRestaurante={tipoRestaurante} />
             ))}
           </div>
         </div>
@@ -464,7 +470,7 @@ const RestauranteProducao = () => {
         <div className="text-center py-20 px-5">
           <Icon name="Printer" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
           <p className="text-[#71717A] text-lg font-semibold">Nenhuma impressora cadastrada</p>
-          <p className="text-[#3A3A3A] text-sm mt-1">Cada setor (Cozinha, Bar, Salgados...) precisa de uma impressora cadastrada com esse setor.</p>
+          <p className="text-[#3A3A3A] text-sm mt-1">Cada setor ({termos.praca}, Bar, Salgados...) precisa de uma impressora cadastrada com esse setor.</p>
           <button onClick={() => navigate('/restaurante/impressoras')}
             className="mt-4 px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
             Ir pra Impressoras
@@ -495,18 +501,18 @@ const RestauranteProducao = () => {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Aguardando Preparo</p>
+                      <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">{termos.aguardandoPreparo}</p>
                       {aguardando.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {aguardando.map((entry, idx) => (
                             entry.tipo === 'delivery' ? (
-                              <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                              <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando" tipoRestaurante={tipoRestaurante}
                                 atualizando={atualizandoPedido}
                                 onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
                             ) : (
-                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
+                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante}
                                 ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
                                 onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
                                 highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
@@ -516,19 +522,19 @@ const RestauranteProducao = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">Em Preparo</p>
+                      <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">{termos.emPreparo}</p>
                       {preparando.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                           {preparando.map((entry, idx) => (
                             entry.tipo === 'delivery' ? (
-                              <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                              <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando" tipoRestaurante={tipoRestaurante}
                                 atualizando={atualizandoPedido}
                                 onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
                                 onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                             ) : (
-                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
+                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante}
                                 onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
                                 highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                             )
@@ -545,11 +551,11 @@ const RestauranteProducao = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                             {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((entry, idx) => (
                               entry.tipo === 'delivery' ? (
-                                <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto"
+                                <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto" tipoRestaurante={tipoRestaurante}
                                   atualizando={atualizandoPedido}
                                   onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                               ) : (
-                                <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
+                                <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante}
                                   onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
                                   highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                               )
@@ -583,7 +589,7 @@ const RestauranteProducao = () => {
 
       {comandaAbertaId && (
         <ComandaModal orderId={comandaAbertaId} impressoras={impressoras ?? []} onFechar={() => setComandaAbertaId(null)}
-          onItemReenviado={() => carregar(impressoras)} />
+          onItemReenviado={() => carregar(impressoras)} tipoRestaurante={tipoRestaurante} />
       )}
     </div>
   );

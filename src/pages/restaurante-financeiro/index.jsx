@@ -5,6 +5,8 @@ import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import { escapeHtml as esc } from '../../utils/escapeHtml';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt      = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate  = (d) => d ? new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -19,14 +21,18 @@ const MODOS     = [{ value: 'dia', label: 'Dia' }, { value: 'mes', label: 'Mês'
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
 const PAYMENT_ICONS  = { pix: 'QrCode', credit_card: 'CreditCard', debit_card: 'CreditCard', cash: 'Banknote' };
 const PAYMENT_COLORS = { pix: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', credit_card: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', debit_card: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', cash: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-400' };
-const STATUS_LABELS  = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', motoboy_collecting: 'Motoboy', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
+const statusLabels = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return { pending: 'Recebido', confirmed: 'Confirmado', preparing: termos.emPreparo, ready: termos.pronto, motoboy_collecting: 'Motoboy', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
+};
 const STATUS_COLORS  = { pending: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400', confirmed: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', preparing: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400', ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', motoboy_collecting: 'bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400', out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', delivered: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400', canceled: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' };
 const ORIGEM_LABELS = { garcom: 'Garçom', estabelecimento: 'Caixa', delivery: 'Delivery' };
 const CANAL_LABELS  = { delivery: 'Delivery', presencial: 'Salão', balcao: 'Balcão', marketplace: 'Marketplace' };
 
 const MEIO_LABELS = { dinheiro: 'Dinheiro', pix: 'PIX', transferencia: 'Transferência', cartao: 'Cartão' };
 const PRINT_STYLE = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:12px;padding:16px;max-width:800px;margin:0 auto}h1{font-size:18px;font-weight:900;margin-bottom:2px}h2{font-size:13px;font-weight:700;margin:14px 0 6px;border-bottom:1px solid #ddd;padding-bottom:4px}.sub{font-size:11px;color:#555;margin-bottom:12px}table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}th{background:#f0f0f0;padding:6px 8px;text-align:left;font-weight:700;border:1px solid #ddd}td{padding:5px 8px;border:1px solid #ddd;vertical-align:top}.right{text-align:right}.bold{font-weight:700}.green{color:#166534}.red{color:#991b1b}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}.kpi{border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center}.kpi .val{font-size:18px;font-weight:900;display:block;margin:2px 0}.kpi .lbl{font-size:10px;color:#555}footer{margin-top:16px;font-size:10px;color:#888;border-top:1px solid #ddd;padding-top:6px}@media print{button{display:none!important}}`;
-const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate) => {
+const buildPrint = (dados, nome, label, caixa, taxaPagbank, historico, de, ate, tipoRestaurante = true) => {
+  const STATUS_LABELS = statusLabels(tipoRestaurante);
   const r = dados.resumo;
   const pedidos = dados.pedidos ?? [];
   const naoCancelados = pedidos.filter((p) => p.status !== 'canceled');
@@ -165,6 +171,8 @@ const buildRange = (modo, dia, mes, ano, ini, fim) => {
 };
 
 const RestauranteFinanceiro = () => {
+  const { tipoRestaurante } = useModulosEmpresa();
+  const STATUS_LABELS = statusLabels(tipoRestaurante);
   const [restauranteNome, setRestauranteNome] = useState('');
   const [modo, setModo] = useState('dia');
   const [dia, setDia]   = useState(today());
@@ -318,7 +326,7 @@ const RestauranteFinanceiro = () => {
               Buscar
             </button>
             {dados && (
-              <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label, caixa, taxaPagbank, historico, rangeAtual?.de, rangeAtual?.ate))}
+              <button onClick={() => printIframe(buildPrint(dados, restauranteNome, label, caixa, taxaPagbank, historico, rangeAtual?.de, rangeAtual?.ate, tipoRestaurante))}
                 className="flex items-center gap-2 px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-bold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                 <Icon name="Printer" size={14} /> Imprimir
               </button>

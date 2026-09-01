@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { getSalaoComandaDetalhe } from '../../services/restauranteService';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const fmtDate = (d) => d ? new Date(d).toLocaleString('pt-BR') : '-';
 
 const PL = { cash: 'Dinheiro', pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', taxa_cartao: '+ Taxa cartão' };
-const PEDIDO_STATUS_LABEL = { confirmed: 'Aguardando Preparo', preparing: 'Em preparo' };
+const pedidoStatusLabel = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return { confirmed: termos.aguardandoPreparo, preparing: termos.emPreparo };
+};
 
 const Row = ({ label, value, bold, accent, muted }) => (
   <div className={`flex justify-between text-sm py-1.5 border-b border-[#F4F4F5] dark:border-[#3F3F46] last:border-0 ${bold ? 'font-bold' : ''}`}>
@@ -70,6 +75,8 @@ const DetalheComandaBox = ({ detalhe, carregando }) => (
 );
 
 const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarProntos, marcando, onContinuar, onCancelar }) => {
+  const { tipoRestaurante } = useModulosEmpresa();
+  const PEDIDO_STATUS_LABEL = pedidoStatusLabel(tipoRestaurante);
   const [pedidosSel, setPedidosSel] = useState(new Set());
   const [itensSel, setItensSel] = useState(new Set());
   const [comandasExpandidas, setComandasExpandidas] = useState(new Set());
@@ -116,7 +123,7 @@ const PreparoEmAndamentoView = ({ pedidosEmPreparo, itensEmPreparo, onMarcarPron
     <>
       <div className="text-center mb-4">
         <p className="text-2xl mb-1">👨‍🍳</p>
-        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Pedidos ainda em preparo</h2>
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">{`Pedidos ainda ${tipoRestaurante ? 'em preparo' : 'sendo embalados'}`}</h2>
         <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
           {totalItens} {totalItens === 1 ? 'item está' : 'itens estão'} em produção. Marque como pronto o que já terminou, ou continue deixando pendente.
         </p>

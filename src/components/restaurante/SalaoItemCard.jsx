@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../AppIcon';
 import { formatDuracao } from '../../utils/formatDuracao';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
@@ -41,8 +42,9 @@ const AlertaMotoboy = ({ item }) => {
 // já marcaram seus itens (ver marcarItemPronto no backend).
 const SalaoItemCard = ({
   item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar,
-  onMover, ehPrimeiro, ehUltimo, onAbrirComanda, onSalvarObservacao, highlighted = false,
+  onMover, ehPrimeiro, ehUltimo, onAbrirComanda, onSalvarObservacao, highlighted = false, tipoRestaurante = true,
 }) => {
+  const termos = getTermos(tipoRestaurante);
   const enviadoEm = new Date(item.enviado_em).getTime();
   const preparandoEm = item.preparando_em ? new Date(item.preparando_em).getTime() : null;
   const tempoEspera = (preparandoEm ?? now) - enviadoEm;
@@ -75,7 +77,7 @@ const SalaoItemCard = ({
           )}
           <button onClick={() => onIniciarPreparo(item)}
             className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-            <Icon name="ChefHat" size={13} /> Iniciar Preparo
+            <Icon name={termos.icone} size={13} /> {termos.iniciarPreparo}
           </button>
         </>
       ) : item.status === 'pronto' ? (
