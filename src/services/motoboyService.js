@@ -33,6 +33,16 @@ export const atualizarPerfil = (dados) =>
   motoboyFetch('/me', { method: 'PATCH', body: JSON.stringify(dados) });
 export const solicitarRevisaoPlataforma = () => motoboyFetch('/solicitar-revisao', { method: 'POST' });
 export const getMeusPedidos = () => motoboyFetch('/pedidos');
+
+// Saldo por estabelecimento + solicitação de repasse (resgate) — motoboy pede, restaurante
+// paga e confirma com comprovante.
+export const getSaldoPorEstabelecimento = () => motoboyFetch('/saldo');
+export const criarSolicitacaoRepasse = (restaurantId, valor, notaFiscalBase64) =>
+  motoboyFetch('/repasses', {
+    method: 'POST',
+    body: JSON.stringify({ restaurant_id: restaurantId, valor, nota_fiscal: notaFiscalBase64 || undefined }),
+  });
+export const getMinhasSolicitacoesRepasse = () => motoboyFetch('/repasses');
 export const atualizarLocalizacao = (pedidoId, lat, lng) =>
   motoboyFetch(`/pedidos/${pedidoId}/localizacao`, {
     method: 'PATCH',

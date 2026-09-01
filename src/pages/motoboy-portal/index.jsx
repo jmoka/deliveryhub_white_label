@@ -5,6 +5,7 @@ import {
   getPedidosDisponiveis, pegarPedido, getPedidosEmProducao, demonstrarInteresse, desistirInteresse,
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
   getGanhosResumo, getGanhosHistorico, getGanhosPorDia, solicitarRevisaoPlataforma,
+  getSaldoPorEstabelecimento, criarSolicitacaoRepasse, getMinhasSolicitacoesRepasse,
 } from '../../services/motoboyService';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -245,15 +246,106 @@ const AbaEstabelecimentos = ({
   );
 };
 
-const AbaFinanceiro = ({ afiliacoes }) => {
+const STATUS_REPASSE_LABEL = {
+  pendente: { texto: 'Aguardando o restaurante', cor: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
+  pago: { texto: 'Pago', cor: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
+  recusada: { texto: 'Recusada', cor: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+};
+
+// Modal de resgate — valor vem pré-preenchido com o saldo disponível mas é editável (motoboy
+// pode pedir menos), nota fiscal é opcional. Chave PIX vai junto automaticamente (backend
+// pega do cadastro), por isso bloqueia o resgate se ainda não tiver chave PIX cadastrada.
+const ResgateModal = ({ item, temChavePix, onFechar, onEnviado }) => {
+  const [valor, setValor] = useState(item.saldo_disponivel.toFixed(2));
+  const [notaFiscal, setNotaFiscal] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const handleArquivo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNotaFiscal(await arquivoParaBase64(file));
+  };
+
+  const handleEnviar = async () => {
+    const v = Number(String(valor).replace(',', '.'));
+    if (!v || v <= 0) { setErro('Informe um valor válido'); return; }
+    if (v > item.saldo_disponivel + 0.01) { setErro(`Valor maior que o saldo disponível (${fmt(item.saldo_disponivel)})`); return; }
+    setEnviando(true);
+    setErro(null);
+    try {
+      await criarSolicitacaoRepasse(item.restaurant_id, v, notaFiscal);
+      onEnviado();
+    } catch (e) { setErro(e.message); }
+    finally { setEnviando(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Resgatar de {item.restaurant_name}</h2>
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-4">Saldo disponível: <strong>{fmt(item.saldo_disponivel)}</strong></p>
+
+        {!temChavePix ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 mb-4">
+            Cadastre sua chave PIX na aba Perfil antes de solicitar o resgate.
+          </p>
+        ) : (
+          <div className="space-y-3 mb-4">
+            <div>
+              <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Valor a resgatar (R$)</label>
+              <input type="number" min="0.01" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)}
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Nota fiscal (opcional)</label>
+              <input type="file" accept="image/*" onChange={handleArquivo}
+                className="w-full text-xs text-[#71717A] dark:text-[#A1A1AA] file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-[#F4F4F5] dark:file:bg-[#3F3F46] file:text-[#18181B] dark:file:text-[#F4F4F5] file:text-xs" />
+              {notaFiscal && <p className="text-[11px] text-green-600 dark:text-green-400 mt-1">✓ Anexada</p>}
+            </div>
+          </div>
+        )}
+
+        {erro && <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2 mb-3">{erro}</p>}
+
+        <div className="flex gap-2">
+          <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+            Cancelar
+          </button>
+          {temChavePix && (
+            <button onClick={handleEnviar} disabled={enviando}
+              className="flex-1 py-2.5 text-sm bg-[#FF441F] text-white rounded-xl font-semibold hover:bg-[#E63A19] disabled:opacity-50">
+              {enviando ? 'Enviando...' : 'Solicitar resgate'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AbaFinanceiro = ({ afiliacoes, me }) => {
   const [resumo, setResumo] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [porDia, setPorDia] = useState([]);
+  const [saldo, setSaldo] = useState([]);
+  const [solicitacoesRepasse, setSolicitacoesRepasse] = useState([]);
+  const [resgateAlvo, setResgateAlvo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buscando, setBuscando] = useState(false);
   const [filtro, setFiltro] = useState(defaultFiltroState());
   const [restaurantId, setRestaurantId] = useState('');
   const [rangeLabel, setRangeLabel] = useState('');
+
+  const carregarSaldo = useCallback(async () => {
+    try {
+      const [s, r] = await Promise.all([getSaldoPorEstabelecimento(), getMinhasSolicitacoesRepasse()]);
+      setSaldo(s.saldo ?? []);
+      setSolicitacoesRepasse(r.solicitacoes ?? []);
+    } catch {}
+  }, []);
+
+  useEffect(() => { carregarSaldo(); }, [carregarSaldo]);
 
   const estabelecimentos = (afiliacoes ?? [])
     .filter((a) => a.status === 'aceito' && a.restaurant)
@@ -376,22 +468,66 @@ const AbaFinanceiro = ({ afiliacoes }) => {
       </div>
 
       <div>
-        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Por estabelecimento (total geral)</p>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Saldo por estabelecimento</p>
         <div className="space-y-2">
-          {(resumo?.resumo ?? []).map((r) => (
-            <div key={r.restaurant_id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{r.nome}</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{r.entregas} entrega(s)</p>
+          {saldo.map((s) => (
+            <div key={s.restaurant_id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
+                  {s.em_solicitacao > 0 && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400">{fmt(s.em_solicitacao)} já solicitado, aguardando</p>
+                  )}
+                </div>
+                <p className="text-base font-black text-[#FF441F] flex-shrink-0">{fmt(s.saldo_devido)}</p>
               </div>
-              <p className="text-sm font-black text-[#FF441F]">{fmt(r.total)}</p>
+              {s.saldo_disponivel > 0 && (
+                <button onClick={() => setResgateAlvo(s)}
+                  className="w-full mt-2 py-2 border-2 border-[#FF441F]/30 bg-[#FF441F]/5 text-[#FF441F] text-xs font-bold rounded-xl hover:bg-[#FF441F]/10 transition-colors">
+                  Resgatar valor
+                </button>
+              )}
             </div>
           ))}
-          {(resumo?.resumo ?? []).length === 0 && (
-            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhuma entrega concluída ainda</p>
+          {saldo.length === 0 && (
+            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhum saldo a receber por enquanto</p>
           )}
         </div>
       </div>
+
+      {solicitacoesRepasse.length > 0 && (
+        <div>
+          <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Minhas solicitações</p>
+          <div className="space-y-2">
+            {solicitacoesRepasse.map((s) => {
+              const st = STATUS_REPASSE_LABEL[s.status] ?? { texto: s.status, cor: 'bg-gray-100 text-gray-700' };
+              return (
+                <div key={s.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
+                      <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A]">{new Date(s.criado_em).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(s.valor_solicitado)}</p>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${st.cor}`}>{st.texto}</span>
+                    </div>
+                  </div>
+                  {s.status === 'recusada' && s.motivo_recusa && (
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1.5">Motivo: {s.motivo_recusa}</p>
+                  )}
+                  {s.status === 'pago' && s.comprovante_pagamento_url && (
+                    <a href={s.comprovante_pagamento_url} target="_blank" rel="noreferrer"
+                      className="text-[11px] text-[#FF441F] font-semibold hover:underline mt-1.5 inline-block">
+                      Ver comprovante
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div>
         <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Histórico de entregas no período</p>
@@ -425,6 +561,15 @@ const AbaFinanceiro = ({ afiliacoes }) => {
           )}
         </div>
       </div>
+
+      {resgateAlvo && (
+        <ResgateModal
+          item={resgateAlvo}
+          temChavePix={!!me?.chave_pix?.trim()}
+          onFechar={() => setResgateAlvo(null)}
+          onEnviado={() => { setResgateAlvo(null); carregarSaldo(); }}
+        />
+      )}
     </div>
   );
 };
@@ -450,7 +595,7 @@ const Campo = ({ label, value, onChange, placeholder, required, readOnly }) => (
 );
 
 const AbaPerfil = ({ me, onAtualizado }) => {
-  const [form, setForm] = useState({ name: me?.name ?? '', phone: me?.phone ?? '' });
+  const [form, setForm] = useState({ name: me?.name ?? '', phone: me?.phone ?? '', chave_pix: me?.chave_pix ?? '' });
   const [fotoUrl, setFotoUrl] = useState(me?.foto_perfil_url ?? null);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -483,7 +628,7 @@ const AbaPerfil = ({ me, onAtualizado }) => {
     setSucesso(false);
     setSalvando(true);
     try {
-      await atualizarPerfil({ name: form.name, phone: form.phone });
+      await atualizarPerfil({ name: form.name, phone: form.phone, chave_pix: form.chave_pix });
       setSucesso(true);
       await onAtualizado();
     } catch (err) {
@@ -524,6 +669,7 @@ const AbaPerfil = ({ me, onAtualizado }) => {
         <Campo label="E-mail (trocar abaixo, em Segurança)" value={me?.email ?? ''} readOnly />
         <Campo label="Nome completo" value={form.name} onChange={set('name')} placeholder="João Silva" required />
         <Campo label="Telefone" value={form.phone} onChange={set('phone')} placeholder="Ex: 11999998888" />
+        <Campo label="Chave PIX (pra receber os repasses)" value={form.chave_pix} onChange={set('chave_pix')} placeholder="CPF, e-mail, telefone ou chave aleatória" />
         {erro && <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
         {sucesso && <p className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-lg px-3 py-2">Perfil atualizado.</p>}
         <button type="submit" disabled={salvando}
@@ -1085,7 +1231,7 @@ const MotoboyPortal = () => {
           />
         )}
 
-        {aba === 'financeiro' && <AbaFinanceiro afiliacoes={afiliacoes} />}
+        {aba === 'financeiro' && <AbaFinanceiro afiliacoes={afiliacoes} me={me} />}
 
         {aba === 'perfil' && <AbaPerfil me={me} onAtualizado={carregarDados} />}
 

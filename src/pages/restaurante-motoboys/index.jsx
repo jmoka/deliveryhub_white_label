@@ -4,11 +4,14 @@ import {
   recusarSolicitacaoMotoboy, revisarSolicitacaoMotoboy, removerAfiliacaoMotoboy,
   criarMotoboy, editarMotoboy, excluirMotoboy, bloquearMotoboy,
   gerarLinkSenhaMotoboy, enviarLinkSenhaMotoboyPorEmail,
+  listarSolicitacoesRepasse, pagarSolicitacaoRepasse, recusarSolicitacaoRepasse,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+
+const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const VEICULO_TIPOS = [
   { value: 'bicicleta', label: 'Bicicleta' },
@@ -50,6 +53,125 @@ const ArquivoPreview = ({ url, alt, className }) => {
     <a href={url} target="_blank" rel="noreferrer" className={className}>
       <img src={url} alt={alt} className="w-full h-full object-cover" />
     </a>
+  );
+};
+
+const STATUS_REPASSE_LABEL = {
+  pendente: { texto: 'Pendente', cls: 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
+  pago: { texto: 'Pago', cls: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
+  recusada: { texto: 'Recusada', cls: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+};
+
+// Ficha da solicitação de repasse — mostra nota fiscal (se anexada, via ArquivoPreview) e
+// chave PIX do motoboy; pendente permite pagar (upload de comprovante) ou recusar (motivo).
+const RepasseModal = ({ solicitacao, onFechar, onPagar, onRecusar, processando }) => {
+  const [comprovante, setComprovante] = useState(null);
+  const [motivo, setMotivo] = useState('');
+  const [mostrarRecusa, setMostrarRecusa] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+  const s = solicitacao;
+  const st = STATUS_REPASSE_LABEL[s.status] ?? { texto: s.status, cls: 'bg-gray-100 text-gray-700' };
+
+  const handleArquivo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setComprovante(await arquivoParaBase64(file));
+  };
+
+  const copiarPix = async () => {
+    try {
+      await navigator.clipboard.writeText(s.chave_pix_motoboy);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {}
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.motoboy_nome}</h2>
+              {s.motoboy_phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{s.motoboy_phone}</p>}
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 ${st.cls}`}>{st.texto}</span>
+          </div>
+
+          <div className="bg-[#F4F4F5] dark:bg-[#18181B] rounded-xl p-3">
+            <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide">Valor solicitado</p>
+            <p className="text-2xl font-black text-[#FF441F]">{fmt(s.valor_solicitado)}</p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-1">Chave PIX</p>
+            <div className="flex items-center gap-2 bg-[#F4F4F5] dark:bg-[#18181B] rounded-xl px-3 py-2">
+              <p className="text-sm font-mono text-[#18181B] dark:text-[#F4F4F5] flex-1 min-w-0 truncate">{s.chave_pix_motoboy}</p>
+              <button onClick={copiarPix} className="flex-shrink-0 text-xs font-bold text-[#FF441F] hover:underline">
+                {copiado ? 'Copiado!' : 'Copiar'}
+              </button>
+            </div>
+          </div>
+
+          {s.nota_fiscal_url && (
+            <div>
+              <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-1">Nota fiscal</p>
+              <ArquivoPreview url={s.nota_fiscal_url} alt="Nota fiscal" className="block w-full h-32 rounded-xl overflow-hidden bg-[#F4F4F5] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46]" />
+            </div>
+          )}
+
+          {s.status === 'pendente' && !mostrarRecusa && (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] mb-1">Comprovante de pagamento</label>
+                <input type="file" accept="image/*" onChange={handleArquivo}
+                  className="w-full text-xs text-[#71717A] dark:text-[#A1A1AA] file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-[#F4F4F5] dark:file:bg-[#3F3F46] file:text-[#18181B] dark:file:text-[#F4F4F5] file:text-xs" />
+                {comprovante && <p className="text-[11px] text-green-600 dark:text-green-400 mt-1">✓ Anexado</p>}
+              </div>
+              <button onClick={() => onPagar(s.id, comprovante)} disabled={!comprovante || processando}
+                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl disabled:opacity-50">
+                {processando ? 'Confirmando...' : 'Confirmar pagamento'}
+              </button>
+              <button onClick={() => setMostrarRecusa(true)}
+                className="w-full py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:underline">
+                Recusar solicitação
+              </button>
+            </div>
+          )}
+
+          {s.status === 'pendente' && mostrarRecusa && (
+            <div className="space-y-2">
+              <textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} rows={3}
+                placeholder="Motivo da recusa..."
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-400" />
+              <div className="flex gap-2">
+                <button onClick={() => setMostrarRecusa(false)} className="flex-1 py-2 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
+                  Voltar
+                </button>
+                <button onClick={() => onRecusar(s.id, motivo)} disabled={!motivo.trim() || processando}
+                  className="flex-1 py-2 text-sm bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50">
+                  {processando ? 'Enviando...' : 'Confirmar recusa'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {s.status === 'recusada' && s.motivo_recusa && (
+            <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 rounded-lg px-3 py-2">{s.motivo_recusa}</p>
+          )}
+          {s.status === 'pago' && s.comprovante_pagamento_url && (
+            <div>
+              <p className="text-[10px] font-black text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-1">Comprovante</p>
+              <ArquivoPreview url={s.comprovante_pagamento_url} alt="Comprovante" className="block w-full h-32 rounded-xl overflow-hidden bg-[#F4F4F5] dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#3F3F46]" />
+            </div>
+          )}
+
+          <button onClick={onFechar} className="w-full py-2 text-sm text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+            Fechar
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -372,14 +494,17 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
 const RestauranteMotoboys = () => {
   const { tipoRestaurante } = useModulosEmpresa();
   const termoCap = tipoRestaurante ? 'Motoboy' : 'Entregador';
-  const [aba, setAba] = useState('pendentes'); // pendentes | aceitas | recusadas
+  const [aba, setAba] = useState('pendentes'); // pendentes | aceitas | recusadas | repasses
   const [motoboys, setMotoboys] = useState([]);
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [recusadas, setRecusadas] = useState([]);
+  const [repasses, setRepasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [ficha, setFicha] = useState(null); // solicitacao selecionada
   const [fichaSomenteLeitura, setFichaSomenteLeitura] = useState(false);
+  const [fichaRepasse, setFichaRepasse] = useState(null); // solicitação de repasse selecionada
+  const [processandoRepasse, setProcessandoRepasse] = useState(false);
   const [processando, setProcessando] = useState(false);
   const [removendo, setRemovendo] = useState(null);
   const [revisando, setRevisando] = useState(null);
@@ -391,11 +516,12 @@ const RestauranteMotoboys = () => {
 
   const reload = useCallback(() => {
     setLoading(true);
-    Promise.all([listarMotoboys(), listarSolicitacoesMotoboy('pendente'), listarSolicitacoesMotoboy('recusado')])
-      .then(([mbs, sols, recs]) => {
+    Promise.all([listarMotoboys(), listarSolicitacoesMotoboy('pendente'), listarSolicitacoesMotoboy('recusado'), listarSolicitacoesRepasse()])
+      .then(([mbs, sols, recs, reps]) => {
         setMotoboys(mbs.motoboys ?? []);
         setSolicitacoes(sols.solicitacoes ?? []);
         setRecusadas(recs.solicitacoes ?? []);
+        setRepasses(reps.solicitacoes ?? []);
       })
       .catch((e) => setMsg({ tipo: 'erro', texto: e.message }))
       .finally(() => setLoading(false));
@@ -440,6 +566,34 @@ const RestauranteMotoboys = () => {
       setMsg({ tipo: 'erro', texto: err.message });
     } finally {
       setRevisando(null);
+    }
+  };
+
+  const handlePagarRepasse = async (id, comprovanteBase64) => {
+    setProcessandoRepasse(true);
+    try {
+      await pagarSolicitacaoRepasse(id, comprovanteBase64);
+      setFichaRepasse(null);
+      setMsg({ tipo: 'ok', texto: 'Repasse confirmado!' });
+      setTimeout(() => setMsg(null), 3000);
+      reload();
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setProcessandoRepasse(false);
+    }
+  };
+
+  const handleRecusarRepasse = async (id, motivo) => {
+    setProcessandoRepasse(true);
+    try {
+      await recusarSolicitacaoRepasse(id, motivo);
+      setFichaRepasse(null);
+      reload();
+    } catch (err) {
+      setMsg({ tipo: 'erro', texto: err.message });
+    } finally {
+      setProcessandoRepasse(false);
     }
   };
 
@@ -527,6 +681,7 @@ const RestauranteMotoboys = () => {
             { id: 'pendentes', label: 'Pendentes', count: solicitacoes.length },
             { id: 'aceitas', label: 'Aceitas', count: motoboys.length },
             { id: 'recusadas', label: 'Recusadas', count: recusadas.length },
+            { id: 'repasses', label: 'Repasses', count: repasses.filter((r) => r.status === 'pendente').length },
           ].map((t) => (
             <button key={t.id} onClick={() => setAba(t.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-colors ${
@@ -684,6 +839,28 @@ const RestauranteMotoboys = () => {
             ))}
           </div>
         )}
+
+        {aba === 'repasses' && (
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
+            {repasses.length === 0 ? (
+              <p className="p-5 text-sm text-[#71717A] dark:text-[#A1A1AA] text-center">Nenhuma solicitação de repasse ainda</p>
+            ) : repasses.map((r) => {
+              const st = STATUS_REPASSE_LABEL[r.status] ?? { texto: r.status, cls: 'bg-gray-100 text-gray-700' };
+              return (
+                <button key={r.id} onClick={() => setFichaRepasse(r)}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] transition-colors text-left">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{r.motoboy_nome}</p>
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{new Date(r.criado_em).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <p className="text-sm font-black text-[#FF441F] flex-shrink-0">{fmt(r.valor_solicitado)}</p>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full flex-shrink-0 ${st.cls}`}>{st.texto}</span>
+                  <Icon name="ChevronRight" size={16} className="text-[#A1A1AA] flex-shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {ficha && (
@@ -694,6 +871,16 @@ const RestauranteMotoboys = () => {
           onRecusar={handleRecusar}
           processando={processando}
           somenteLeitura={fichaSomenteLeitura}
+        />
+      )}
+
+      {fichaRepasse && (
+        <RepasseModal
+          solicitacao={fichaRepasse}
+          onFechar={() => setFichaRepasse(null)}
+          onPagar={handlePagarRepasse}
+          onRecusar={handleRecusarRepasse}
+          processando={processandoRepasse}
         />
       )}
 

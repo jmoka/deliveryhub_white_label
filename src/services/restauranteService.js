@@ -246,6 +246,15 @@ export const removerAfiliacaoMotoboy = (motoboyId) =>
 export const atribuirMotoboy = (pedidoId, motoboyId) =>
   apiFetch(`/motoboys/${pedidoId}/atribuir`, { method: 'PATCH', body: JSON.stringify({ motoboy_id: motoboyId }) });
 
+// Motoboys — solicitações de repasse (motoboy pede o resgate, restaurante paga e confirma)
+export const listarSolicitacoesRepasse = (status) =>
+  apiFetch(`/motoboys/repasses${status ? `?status=${status}` : ''}`);
+export const contarSolicitacoesRepassePendentes = () => apiFetch('/motoboys/repasses/count');
+export const pagarSolicitacaoRepasse = (id, comprovante) =>
+  apiFetch(`/motoboys/repasses/${id}/pagar`, { method: 'PATCH', body: JSON.stringify({ comprovante }) });
+export const recusarSolicitacaoRepasse = (id, motivo) =>
+  apiFetch(`/motoboys/repasses/${id}/recusar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });
+
 // Motoboys — cadastro direto pelo estabelecimento (dono cadastra/edita/exclui/bloqueia)
 export const criarMotoboy = (dados) =>
   apiFetch('/motoboys', { method: 'POST', body: JSON.stringify(dados) });
