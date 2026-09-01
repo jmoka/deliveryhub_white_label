@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import { getTermos } from '../../../hooks/useTerminologiaEstabelecimento';
 
 const OrderActions = ({
   orderStatus = 'confirmed',
@@ -10,8 +11,10 @@ const OrderActions = ({
   primaryColor = '#2563EB',
   isPago = false,
   valorDevolver = 0,
+  tipoRestaurante = true,
   className = ''
 }) => {
+  const termos = getTermos(tipoRestaurante);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -190,7 +193,7 @@ const OrderActions = ({
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorDevolver)}
                     </strong>
                     <span className="block text-xs text-blue-600 dark:text-blue-400/80 mt-0.5">
-                      O estorno será processado pelo restaurante.
+                      O estorno será processado pelo {termos.estabelecimento.toLowerCase()}.
                     </span>
                   </p>
                 </div>

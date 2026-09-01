@@ -5,18 +5,25 @@ import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 import { ThemeToggle } from '../../contexts/ThemeContext';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const STATUS_LABELS = {
-  pending:            { label: 'Aguardando',        color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400' },
-  confirmed:          { label: 'Confirmado',        color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400' },
-  preparing:          { label: 'Em preparo',        color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' },
-  ready:              { label: 'Pronto',            color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400' },
-  motoboy_collecting: { label: 'Motoboy a caminho',  color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
-  out_for_delivery:   { label: 'Em entrega',         color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
-  delivered:          { label: 'Entregue',           color: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
-  canceled:           { label: 'Cancelado',          color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+// Cada pedido pode ser de um estabelecimento de tipo diferente — o rotulo
+// depende do tipo_restaurante DAQUELE pedido (ver GET /pedidos/meus), nao de
+// um so valor global.
+const statusLabels = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return {
+    pending:            { label: 'Aguardando',        color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400' },
+    confirmed:          { label: 'Confirmado',        color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400' },
+    preparing:          { label: termos.emPreparo,    color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' },
+    ready:              { label: termos.pronto,       color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400' },
+    motoboy_collecting: { label: 'Motoboy a caminho',  color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
+    out_for_delivery:   { label: 'Em entrega',         color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
+    delivered:          { label: 'Entregue',           color: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
+    canceled:           { label: 'Cancelado',          color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+  };
 };
 
 const ORDER_TABS = [
@@ -177,6 +184,7 @@ const CustomerAccountOrderHistory = () => {
         ) : (
           <div className="space-y-3">
             {pedidosFiltrados.map((p) => {
+              const STATUS_LABELS = statusLabels(p.tipo_restaurante ?? true);
               const s = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 text-gray-700' };
               const finalizado = p.status === 'delivered' || p.status === 'canceled';
               return (

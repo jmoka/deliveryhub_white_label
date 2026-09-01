@@ -7,18 +7,25 @@ import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import OrderActions from './components/OrderActions';
 import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
+import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const STATUS_INFO = {
-  pending:            { label: 'Recebido',              icon: 'Clock',        color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/40' },
-  confirmed:          { label: 'Confirmado',            icon: 'CheckCircle',  color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-950/40' },
-  preparing:          { label: 'Em preparo',            icon: 'ChefHat',      color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40' },
-  ready:              { label: 'Pronto',                icon: 'Package',      color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/40' },
-  motoboy_collecting: { label: 'Motoboy indo buscar',   icon: 'Bike',         color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-950/40' },
-  out_for_delivery:   { label: 'Saiu para entrega',     icon: 'Navigation',   color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
-  delivered:          { label: 'Entregue!',             icon: 'PartyPopper',  color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-950/40' },
-  canceled:           { label: 'Cancelado',             icon: 'XCircle',      color: 'text-red-600 dark:text-red-400',       bg: 'bg-red-50 dark:bg-red-950/40' },
+// Rotulo de "preparing"/"ready" muda pra Embalando/Pacote pronto quando o
+// estabelecimento DESSE pedido nao e Restaurante (ver empresa.tipo_restaurante
+// vindo de GET /pedidos/:id).
+const buildStatusInfo = (tipoRestaurante) => {
+  const termos = getTermos(tipoRestaurante);
+  return {
+    pending:            { label: 'Recebido',              icon: 'Clock',        color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-950/40' },
+    confirmed:          { label: 'Confirmado',            icon: 'CheckCircle',  color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-950/40' },
+    preparing:          { label: termos.emPreparo,        icon: termos.icone,   color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40' },
+    ready:              { label: termos.pronto,           icon: 'Package',      color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/40' },
+    motoboy_collecting: { label: 'Motoboy indo buscar',   icon: 'Bike',         color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-950/40' },
+    out_for_delivery:   { label: 'Saiu para entrega',     icon: 'Navigation',   color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },
+    delivered:          { label: 'Entregue!',             icon: 'PartyPopper',  color: 'text-green-600 dark:text-green-400',   bg: 'bg-green-50 dark:bg-green-950/40' },
+    canceled:           { label: 'Cancelado',             icon: 'XCircle',      color: 'text-red-600 dark:text-red-400',       bg: 'bg-red-50 dark:bg-red-950/40' },
+  };
 };
 
 const TIMELINE = ['pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered'];
@@ -29,6 +36,7 @@ const OrderTrackingStatus = () => {
   const { orderId, restauranteSlug } = location.state ?? {};
 
   const [pedido, setPedido] = useState(null);
+  const [tipoRestaurante, setTipoRestaurante] = useState(true);
   const [pontos, setPontos] = useState({ restaurante: null, cliente: null });
   const [pagamentoPago, setPagamentoPago] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +59,7 @@ const OrderTrackingStatus = () => {
       const data = await res.json();
       // API returns { pedido:{...}, itens:[], cliente:{...}, empresa:{...}, pagamento_pago }
       setPedido({ ...data.pedido, itens: data.itens ?? [] });
+      setTipoRestaurante(data.empresa?.tipo_restaurante ?? true);
       setPontos({
         restaurante: { lat: data.empresa?.lat, lng: data.empresa?.lng },
         cliente: { lat: data.cliente?.lat, lng: data.cliente?.lng },
@@ -139,6 +148,8 @@ const OrderTrackingStatus = () => {
     }
   };
 
+  const termos = getTermos(tipoRestaurante);
+  const STATUS_INFO = buildStatusInfo(tipoRestaurante);
   const statusInfo = STATUS_INFO[pedido.status] ?? STATUS_INFO.pending;
   const timelineIdx = TIMELINE.indexOf(pedido.status);
   const valorDevolver = pagamentoPago?.valor ?? 0;
@@ -273,6 +284,7 @@ const OrderTrackingStatus = () => {
                   restauranteLat={pontos.restaurante?.lat} restauranteLng={pontos.restaurante?.lng}
                   clienteLat={pontos.cliente?.lat} clienteLng={pontos.cliente?.lng}
                   distanciaKm={pedido.distancia_entrega_km}
+                  tipoRestaurante={tipoRestaurante}
                 />
               </div>
             )}
@@ -288,7 +300,7 @@ const OrderTrackingStatus = () => {
               {cancelSucesso.precisa_estorno && (
                 <p className="text-sm text-green-700 dark:text-green-400/80 mt-0.5">
                   Valor a devolver:{' '}
-                  <strong>{fmt(cancelSucesso.valor_devolver)}</strong> — o estorno será processado pelo restaurante.
+                  <strong>{fmt(cancelSucesso.valor_devolver)}</strong> — o estorno será processado pelo {termos.estabelecimento.toLowerCase()}.
                 </p>
               )}
             </div>
@@ -303,6 +315,7 @@ const OrderTrackingStatus = () => {
             onCancelOrder={handleCancelarPedido}
             isPago={valorDevolver > 0}
             valorDevolver={valorDevolver}
+            tipoRestaurante={tipoRestaurante}
           />
         )}
 
