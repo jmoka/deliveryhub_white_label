@@ -6,6 +6,7 @@ import {
 import AdminHeader from '../../components/admin/AdminHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDuracao } from '../../utils/formatDuracao';
+import { ChevronDown } from 'lucide-react';
 
 // Badge com contagem regressiva do bloqueio por tentativas de senha erradas no login
 // principal — próprio componente pra ticar a cada segundo sem re-renderizar a tabela
@@ -256,6 +257,82 @@ const EditarModal = ({ usuario, onClose, onSave }) => {
   );
 };
 
+// Card de usuário, reaproveitado nas duas visões (mesmo padrão do
+// EmpresaCard em admin-empresas) — mesmas ações da linha da tabela.
+const UsuarioCard = ({ usuario: u, currentUserId, processando, onVincular, onDesvincular, onCredenciais, onEditar, onLiberarLogin, onBloquear, onExcluir }) => (
+  <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
+    <div className="min-w-0">
+      <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">
+        {u.name || <span className="text-gray-400 dark:text-zinc-500 font-normal">—</span>}
+      </p>
+      <p className="text-xs text-gray-400 dark:text-zinc-500 truncate">{u.email}</p>
+    </div>
+
+    <div className="flex flex-wrap items-center gap-1">
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_BADGE_CLASS[u.role] ?? ROLE_BADGE_CLASS.customer}`}>
+        {ROLE_LABELS[u.role] ?? u.role}
+      </span>
+      {u.bloqueado && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+          Bloqueado
+        </span>
+      )}
+      {u.bloqueado_login_ate && <BloqueioLoginBadge bloqueadoAte={u.bloqueado_login_ate} />}
+    </div>
+
+    {u.restaurante ? (
+      <a href={`/r/${u.restaurante.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline w-fit">
+        {u.restaurante.name}
+      </a>
+    ) : (
+      <span className="text-xs text-gray-400 dark:text-zinc-500">Sem restaurante vinculado</span>
+    )}
+
+    <p className="text-xs text-gray-400 dark:text-zinc-500">
+      Cadastro em {new Date(u.created_at).toLocaleDateString('pt-BR')}
+    </p>
+
+    <div className="flex flex-wrap gap-1.5 pt-1 border-t border-gray-100 dark:border-zinc-700">
+      <button onClick={onVincular} className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900">
+        {u.restaurante ? 'Trocar vínculo' : 'Vincular'}
+      </button>
+      {u.restaurante && (
+        <button onClick={onDesvincular} className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900">
+          Desvincular
+        </button>
+      )}
+      <button onClick={onCredenciais} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700">
+        Email/senha
+      </button>
+      <button onClick={onEditar} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700">
+        Editar
+      </button>
+      {u.bloqueado_login_ate && (
+        <button onClick={onLiberarLogin} disabled={processando === u.id}
+          className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900 disabled:opacity-50">
+          Liberar login
+        </button>
+      )}
+      {u.id !== currentUserId && (
+        <button onClick={onBloquear} disabled={processando === u.id}
+          className={`px-3 py-1.5 text-xs font-medium rounded-lg border disabled:opacity-50 ${
+            u.bloqueado
+              ? 'text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+              : 'text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+          }`}>
+          {u.bloqueado ? 'Desbloquear' : 'Bloquear'}
+        </button>
+      )}
+      {u.id !== currentUserId && (
+        <button onClick={onExcluir} disabled={processando === u.id}
+          className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900 disabled:opacity-50">
+          Excluir
+        </button>
+      )}
+    </div>
+  </div>
+);
+
 const LIMIT = 50;
 
 const AdminUsuarios = () => {
@@ -272,6 +349,7 @@ const AdminUsuarios = () => {
   const [modalCredenciais, setModalCredenciais] = useState(null);
   const [modalEditar, setModalEditar] = useState(null);
   const [processando, setProcessando] = useState(null);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'lista'
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -347,18 +425,39 @@ const AdminUsuarios = () => {
 
       <main className="p-6 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-            Usuários <span className="text-gray-400 dark:text-zinc-500 font-normal text-sm">({total})</span>
-          </h2>
-          <div className="flex gap-2">
-            <input
-              placeholder="Buscar por nome ou email..."
-              className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
-              value={busca}
-              onChange={(e) => { setPage(1); setBusca(e.target.value); }}
-            />
+          <div className="flex items-center flex-wrap gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+              Usuários <span className="text-gray-400 dark:text-zinc-500 font-normal text-sm">({total})</span>
+            </h2>
+            <div className="flex border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1.5 text-xs font-medium ${viewMode === 'cards' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'}`}
+              >
+                Cards
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('lista')}
+                className={`px-3 py-1.5 text-xs font-medium ${viewMode === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'}`}
+              >
+                Lista
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mb-6">
+          <input
+            placeholder="Buscar por nome ou email..."
+            className="w-full sm:w-64 min-w-0 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={busca}
+            onChange={(e) => { setPage(1); setBusca(e.target.value); }}
+          />
+          <div className="relative w-full sm:w-auto sm:max-w-[220px] min-w-0">
             <select
-              className="border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full min-w-0 max-w-full appearance-none border border-gray-300 dark:border-zinc-700 rounded-lg pl-3 pr-8 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={role}
               onChange={(e) => { setPage(1); setRole(e.target.value); }}
             >
@@ -367,7 +466,16 @@ const AdminUsuarios = () => {
                 <option key={v} value={v}>{label}</option>
               ))}
             </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
+          {(busca || role) && (
+            <button
+              onClick={() => { setPage(1); setBusca(''); setRole(''); }}
+              className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 self-start"
+            >
+              Limpar filtros
+            </button>
+          )}
         </div>
 
         {erro && (
@@ -380,14 +488,33 @@ const AdminUsuarios = () => {
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : usuarios.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700">
+            <div className="p-12 text-center text-gray-400 dark:text-zinc-500">
+              <p className="text-lg">Nenhum usuário encontrado</p>
+            </div>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {usuarios.map((u) => (
+              <UsuarioCard
+                key={u.id}
+                usuario={u}
+                currentUserId={user?.id}
+                processando={processando}
+                onVincular={() => setModalVincular(u)}
+                onDesvincular={() => handleDesvincular(u)}
+                onCredenciais={() => setModalCredenciais(u)}
+                onEditar={() => setModalEditar(u)}
+                onLiberarLogin={() => handleLiberarBloqueioLogin(u)}
+                onBloquear={() => handleBloquear(u)}
+                onExcluir={() => handleExcluir(u)}
+              />
+            ))}
+          </div>
         ) : (
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 overflow-x-auto">
-            {usuarios.length === 0 ? (
-              <div className="p-12 text-center text-gray-400 dark:text-zinc-500">
-                <p className="text-lg">Nenhum usuário encontrado</p>
-              </div>
-            ) : (
-              <table className="w-full text-sm">
+            <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50">
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Nome</th>
@@ -479,7 +606,6 @@ const AdminUsuarios = () => {
                   ))}
                 </tbody>
               </table>
-            )}
           </div>
         )}
 
