@@ -5,7 +5,7 @@ import { escapeHtml as esc } from '../../utils/escapeHtml';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão Crédito', debit_card: 'Cartão Débito', cash: 'Dinheiro', taxa_cartao: '+ Taxa cartão' };
-const STATUS_LABELS = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
+const STATUS_LABELS = { pending: 'Recebido', confirmed: 'Confirmado', preparing: 'Em Preparo', ready: 'Pronto', motoboy_collecting: 'Motoboy a caminho', out_for_delivery: 'Em Entrega', delivered: 'Entregue', canceled: 'Cancelado' };
 const STATUS_COLORS = { pending: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400', confirmed: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400', preparing: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400', ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400', out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400', delivered: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400', canceled: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' };
 
 const today = () => new Date().toISOString().slice(0, 10);

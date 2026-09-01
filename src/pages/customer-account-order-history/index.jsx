@@ -9,12 +9,14 @@ import { ThemeToggle } from '../../contexts/ThemeContext';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const STATUS_LABELS = {
-  pending:          { label: 'Aguardando', color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400' },
-  confirmed:        { label: 'Confirmado', color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400' },
-  ready:            { label: 'Pronto',     color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400' },
-  out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
-  delivered:        { label: 'Entregue',   color: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
-  canceled:         { label: 'Cancelado',  color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
+  pending:            { label: 'Aguardando',        color: 'bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400' },
+  confirmed:          { label: 'Confirmado',        color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400' },
+  preparing:          { label: 'Em preparo',        color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' },
+  ready:              { label: 'Pronto',            color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400' },
+  motoboy_collecting: { label: 'Motoboy a caminho',  color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
+  out_for_delivery:   { label: 'Em entrega',         color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400' },
+  delivered:          { label: 'Entregue',           color: 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400' },
+  canceled:           { label: 'Cancelado',          color: 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400' },
 };
 
 const ORDER_TABS = [

@@ -50,8 +50,11 @@ export const registrarOcorrencia = (pedidoId, tipo, motivo) =>
     body: JSON.stringify({ tipo, motivo }),
   });
 
+// Sem restaurantId, agrega pedidos disponíveis de todas as lojas afiliadas de uma vez —
+// é o modo usado pro polling de alerta (ver motoboy-portal/index.jsx), pra não perder
+// pedido pronto de uma loja só porque outra está selecionada no momento.
 export const getPedidosDisponiveis = (restaurantId) =>
-  motoboyFetch(`/pedidos/disponiveis?restaurant_id=${restaurantId}`);
+  motoboyFetch(`/pedidos/disponiveis${restaurantId ? `?restaurant_id=${restaurantId}` : ''}`);
 
 export const pegarPedido = (pedidoId) =>
   motoboyFetch(`/pedidos/${pedidoId}/pegar`, { method: 'POST' });

@@ -58,7 +58,10 @@ export const entregarPedidoProprio = (id) =>
 export const marcarPedidoPago = (id) =>
   apiFetch(`/pedidos/${id}/marcar-pago`, { method: 'PATCH' });
 
-export const listarEntregas = () => apiFetch('/entregas');
+export const listarEntregas = (params = {}) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return apiFetch(`/entregas${qs ? `?${qs}` : ''}`);
+};
 
 export const getMeusProdutos = () => apiFetch('/produtos');
 

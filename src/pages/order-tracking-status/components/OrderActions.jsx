@@ -182,14 +182,14 @@ const OrderActions = ({
               </div>
 
               {isPago && valorDevolver > 0 && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
-                  <Icon name="RefreshCw" size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-800">
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg flex items-start gap-2">
+                  <Icon name="RefreshCw" size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-800 dark:text-blue-400">
                     Valor a devolver:{' '}
                     <strong>
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorDevolver)}
                     </strong>
-                    <span className="block text-xs text-blue-600 mt-0.5">
+                    <span className="block text-xs text-blue-600 dark:text-blue-400/80 mt-0.5">
                       O estorno será processado pelo restaurante.
                     </span>
                   </p>

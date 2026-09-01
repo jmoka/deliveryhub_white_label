@@ -106,10 +106,15 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
                 const { icone, padding } = mostrarNomes ? { icone: 13, padding: 'px-3 py-1.5' } : tamanhoFavoritos(linksFavoritos.length);
                 return (
                   <button key={l.path} onClick={() => navigate(l.path)} title={l.label}
-                    className={`flex items-center gap-1.5 ${padding} text-xs font-semibold rounded-full whitespace-nowrap transition-colors ${
+                    className={`relative flex items-center gap-1.5 ${padding} text-xs font-semibold rounded-full whitespace-nowrap transition-colors ${
                       l.path === active ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'
                     }`}>
                     <Icon name={l.icon} size={icone} /> {mostrarNomes && l.label}
+                    {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
+                        {pendentesMotoboy}
+                      </span>
+                    )}
                   </button>
                 );
               })}

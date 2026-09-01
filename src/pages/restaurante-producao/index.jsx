@@ -6,6 +6,8 @@ import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
+import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
+import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -176,6 +178,7 @@ const RestauranteProducao = () => {
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const [verTodosEntregues, setVerTodosEntregues] = useState({}); // { [impressoraId]: bool }
   const [busca, setBusca] = useState('');
+  const [atualizandoPedido, setAtualizandoPedido] = useState(null);
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
   const tocarSom = useNotificacaoSonora('cozinha');
@@ -238,6 +241,45 @@ const RestauranteProducao = () => {
   const voltarItem = async (item) => {
     await voltarStatusItemRestaurante(item.id);
     carregar(impressoras);
+  };
+
+  // Ações do card de pedido agrupado (delivery) agem em TODOS os itens desse pedido
+  // roteados pra esse setor de uma vez — mesmo endpoint por item de sempre, só disparado
+  // em lote (Promise.all), sem endpoint novo. Não mexe no status do pedido inteiro.
+  const iniciarPreparoGrupo = async (pedidoId, itemIds) => {
+    setAtualizandoPedido(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => iniciarPreparoItemRestaurante(id)));
+      await carregar(impressoras);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizandoPedido(null);
+    }
+  };
+
+  const marcarProntoGrupo = async (pedidoId, itemIds) => {
+    setAtualizandoPedido(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => marcarItemProntoRestaurante(id)));
+      await carregar(impressoras);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizandoPedido(null);
+    }
+  };
+
+  const voltarGrupo = async (pedidoId, itemIds) => {
+    setAtualizandoPedido(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => voltarStatusItemRestaurante(id)));
+      await carregar(impressoras);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizandoPedido(null);
+    }
   };
 
   const moverItem = async (item, direcao) => {
@@ -432,11 +474,9 @@ const RestauranteProducao = () => {
         <main className="p-5 max-w-6xl mx-auto space-y-8">
           {(impressoras ?? []).map((imp) => {
             const itens = (itensPorImpressora[imp.id] ?? []).filter(passaFiltro);
-            const aguardando = itens.filter((i) => i.status === 'enviado');
-            const preparando = itens.filter((i) => i.status === 'preparando');
-            const entregues = itens
-              .filter((i) => i.status === 'pronto')
-              .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
+            const aguardando = montarFilaAgrupadaDelivery(itens.filter((i) => i.status === 'enviado'));
+            const preparando = montarFilaAgrupadaDelivery(itens.filter((i) => i.status === 'preparando'));
+            const entregues = montarFilaAgrupadaDelivery(itens.filter((i) => i.status === 'pronto'), 'pronto_em');
             return (
               <div key={imp.id}>
                 <div className="flex items-center gap-2 mb-3">
@@ -460,11 +500,17 @@ const RestauranteProducao = () => {
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                          {aguardando.map((item, idx) => (
-                            <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
-                              highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
+                          {aguardando.map((entry, idx) => (
+                            entry.tipo === 'delivery' ? (
+                              <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                                atualizando={atualizandoPedido}
+                                onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
+                            ) : (
+                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
+                                ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                                highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
+                            )
                           ))}
                         </div>
                       )}
@@ -475,10 +521,17 @@ const RestauranteProducao = () => {
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                          {preparando.map((item, idx) => (
-                            <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                              onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
-                              highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
+                          {preparando.map((entry, idx) => (
+                            entry.tipo === 'delivery' ? (
+                              <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                                atualizando={atualizandoPedido}
+                                onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
+                                onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
+                            ) : (
+                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                                highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
+                            )
                           ))}
                         </div>
                       )}
@@ -490,10 +543,16 @@ const RestauranteProducao = () => {
                       ) : (
                         <>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                            {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((item, idx) => (
-                              <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now}
-                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
-                                highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
+                            {(verTodosEntregues[imp.id] ? entregues : entregues.slice(0, 2)).map((entry, idx) => (
+                              entry.tipo === 'delivery' ? (
+                                <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto"
+                                  atualizando={atualizandoPedido}
+                                  onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
+                              ) : (
+                                <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
+                                  onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                                  highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
+                              )
                             ))}
                           </div>
                           {entregues.length > 2 && (

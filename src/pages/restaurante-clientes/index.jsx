@@ -20,6 +20,7 @@ const STATUS_INFO = {
   confirmed:         { label: 'Confirmado',         cor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
   preparing:         { label: 'Em preparo',         cor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
   ready:             { label: 'Pronto',             cor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
+  motoboy_collecting:{ label: 'Motoboy a caminho',  cor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
   out_for_delivery:  { label: 'Saiu p/ entrega',    cor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
   delivered:         { label: 'Entregue',           cor: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' },
   canceled:          { label: 'Cancelado',          cor: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400' },

@@ -5,6 +5,7 @@ import { printFichaMotoboy } from '../../utils/printComanda';
 import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
 import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago, getStatusGdoorPedido, enviarGdoorPedido } from '../../services/restauranteService';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import PracasStatus from '../../components/restaurante/PracasStatus';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -80,9 +81,10 @@ const PedidoDetalhe = ({
   }, [detalhe?.pedido?.id, detalhe?.pedido?.status, moduloGdoor]);
 
   if (!detalhe) return null;
-  const { pedido, itens, cliente, motoboy, empresa } = detalhe;
+  const { pedido, itens, cliente, motoboy, empresa, pracas } = detalhe;
 
   const troco = pedido.troco_para > pedido.total ? Number(pedido.troco_para) - Number(pedido.total) : 0;
+  const pracasIncompletas = pracas?.filter((g) => !g.pronto) ?? [];
 
   const enviarGdoor = async () => {
     setEnviandoGdoor(true);
@@ -189,6 +191,8 @@ const PedidoDetalhe = ({
           </button>
         </div>
       </div>
+
+      <PracasStatus pracas={pracas} />
 
       {isCanceled && (
         <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-3 flex items-start gap-3">
@@ -706,7 +710,13 @@ const PedidoDetalhe = ({
               {proxStatus && (
                 <button
                   disabled={atualizando === pedido.id}
-                  onClick={() => onAvancar(pedido, proxStatus)}
+                  onClick={() => {
+                    if (proxStatus === 'ready' && pracasIncompletas.length > 0) {
+                      const faltando = pracasIncompletas.map((g) => g.setor).join(', ');
+                      if (!confirm(`Ainda falta terminar: ${faltando}. Marcar como pronto pro motoboy mesmo assim?`)) return;
+                    }
+                    onAvancar(pedido, proxStatus);
+                  }}
                   className="flex-1 py-2.5 border-2 border-[#FF441F]/30 bg-[#FF441F]/5 text-[#FF441F] text-xs font-bold rounded-2xl hover:bg-[#FF441F]/10 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                 >
                   Avançar Status <Icon name="ChevronRight" size={14} />

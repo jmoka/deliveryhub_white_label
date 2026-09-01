@@ -1,132 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getPedidosCozinha, atualizarStatusPedido, getMinhaEmpresa, renovarTokenCozinha,
+  getPedidosCozinha, getMinhaEmpresa, renovarTokenCozinha,
   listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
 } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken, resgatarToken,
-  getCozinhaMe, getCozinhaPedidos, atualizarStatusCozinhaPortal,
+  getCozinhaMe, getCozinhaPedidos,
   getKdsImpressoras, getKdsItens, marcarItemPronto, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
+import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
+import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
 import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
-import { formatDuracao } from '../../utils/formatDuracao';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
-
-const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débito', cash: 'Dinheiro' };
-
-const STATUS_INFO = {
-  confirmed: { label: 'Aguardando Preparo', next: 'preparing', nextLabel: 'Iniciar Preparo', nextIcon: 'ChefHat', prev: 'pending', prevLabel: 'Pendente', color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-100 text-blue-800', btnColor: 'bg-orange-500 hover:bg-orange-600' },
-  preparing: { label: 'Em Preparo', next: 'ready', nextLabel: 'Marcar Pronto', nextIcon: 'Package', prev: 'confirmed', prevLabel: 'Ag. Preparo', color: 'border-orange-300 bg-orange-50', badge: 'bg-orange-100 text-orange-800', btnColor: 'bg-purple-600 hover:bg-purple-700' },
-};
-
-const OrderCard = ({ pedido, posicao, now, onAvancar, onVoltar, atualizando, restauranteNome, highlighted }) => {
-  const si = STATUS_INFO[pedido.status];
-  const isAtualizando = atualizando === pedido.id;
-  const tempoDecorrido = now - new Date(pedido.created_at).getTime();
-  const minutos = Math.floor(tempoDecorrido / 60000);
-  const isHighlighted = highlighted === pedido.id;
-
-  return (
-    <div
-      id={`order-${pedido.id}`}
-      className={`rounded-2xl border-2 overflow-hidden flex flex-col transition-all duration-300 ${
-        isHighlighted
-          ? 'border-yellow-400 bg-yellow-50 shadow-xl shadow-yellow-300/40 scale-[1.02]'
-          : posicao === 1
-          ? 'border-yellow-400 bg-white'
-          : si?.color ?? 'border-gray-200 bg-white'
-      }`}
-    >
-      {isHighlighted && (
-        <div className="bg-yellow-400 px-4 py-1.5 flex items-center gap-2">
-          <Icon name="ScanLine" size={14} className="text-yellow-900" />
-          <p className="text-xs font-black text-yellow-900 uppercase tracking-wide">Pedido encontrado via leitura</p>
-        </div>
-      )}
-      {!isHighlighted && posicao === 1 && (
-        <div className="bg-yellow-400 px-4 py-1 flex items-center gap-1.5">
-          <p className="text-[10px] font-black text-yellow-900 uppercase tracking-wide">Próximo da fila</p>
-        </div>
-      )}
-
-      <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-2">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className={`w-6 h-6 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-black ${posicao === 1 ? 'bg-yellow-400 text-black' : 'bg-[#E4E4E7] text-[#27272A]'}`}>
-              {posicao}
-            </span>
-            <p className="text-2xl font-black text-[#18181B]">#{pedido.id}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${si?.badge}`}>{si?.label}</span>
-          </div>
-          {pedido.customers?.name && (
-            <p className="text-sm font-semibold text-[#27272A]">{pedido.customers.name}</p>
-          )}
-          <p className="text-xs text-[#71717A] mt-0.5 flex items-center gap-1">
-            <Icon name="Clock" size={11} />
-            {new Date(pedido.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            <span className={`ml-1 font-semibold font-mono ${minutos > 15 ? 'text-red-500' : minutos > 8 ? 'text-orange-500' : 'text-green-600'}`}>
-              · {formatDuracao(tempoDecorrido)}
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-col gap-1.5 flex-shrink-0">
-          <div className="flex items-center justify-center gap-1 px-2 py-1 bg-[#F4F4F5] rounded-lg">
-            <Icon name="Barcode" size={11} className="text-[#71717A]" />
-            <span className="text-[10px] font-mono text-[#71717A]">{barcodeValue(pedido.id)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 py-3 bg-white mx-3 rounded-xl mb-3 border border-[#E4E4E7] flex-1">
-        <div className="space-y-2">
-          {(pedido.itens ?? []).map((item) => (
-            <div key={item.id} className="flex items-start gap-2">
-              <span className="w-7 h-7 bg-[#FF441F] text-white font-black text-sm rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                {item.quantity}
-              </span>
-              <p className="text-sm font-semibold text-[#18181B] leading-tight">{item.product_name ?? `Produto #${item.product_id}`}</p>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#F4F4F5]">
-          <span className="text-xs text-[#71717A]">{PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method}</span>
-          <span className="text-sm font-black text-[#FF441F]">{fmt(pedido.total)}</span>
-        </div>
-      </div>
-
-      <div className="px-3 pb-3 flex gap-2">
-        <button
-          disabled={isAtualizando}
-          onClick={() => onVoltar(pedido.id, si?.prev)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white border border-[#E4E4E7] rounded-xl text-xs font-bold text-[#71717A] hover:bg-[#F4F4F5] disabled:opacity-40 transition-colors"
-        >
-          <Icon name="ArrowLeft" size={13} />
-          {si?.prevLabel}
-        </button>
-        <button
-          disabled={isAtualizando}
-          onClick={() => onAvancar(pedido.id, si?.next)}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-white text-sm font-black rounded-xl disabled:opacity-50 transition-colors shadow-md ${si?.btnColor}`}
-        >
-          {isAtualizando ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <Icon name={si?.nextIcon ?? 'ArrowRight'} size={15} />
-              {si?.nextLabel}
-            </>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-};
 
 // Card de item do salão (não agrupa por mesa/comanda) — mostra mesa e garçom inline,
 // ordenado junto com os pedidos de delivery pela ordem de chegada. Cronômetro ao vivo
@@ -433,16 +323,39 @@ const RestauranteCozinha = () => {
     if (e.key === 'Enter') { e.preventDefault(); buscarPorId(scanInput); }
   };
 
-  const handleAvancar = async (pedidoId, novoStatus) => {
+  // Ações do card de pedido delivery agrupado agem em TODOS os itens desse pedido
+  // roteados pra Cozinha de uma vez (Promise.all) — mesmo endpoint por item que o Salão
+  // já usa, nunca mexe no status do pedido inteiro direto. Ver PedidoDeliveryCard/
+  // montarFilaAgrupadaDelivery, mesmo padrão usado em Produção.
+  const iniciarPreparoGrupoDelivery = async (pedidoId, itemIds) => {
     setAtualizando(pedidoId);
     try {
-      if (modoToken) {
-        await atualizarStatusCozinhaPortal(pedidoId, novoStatus);
-        await carregar(restauranteNome, true);
-      } else {
-        await atualizarStatusPedido(pedidoId, novoStatus);
-        await carregar(restauranteNome);
-      }
+      await Promise.all(itemIds.map((id) => (modoToken ? iniciarPreparoItem(id) : iniciarPreparoItemRestaurante(id))));
+      await carregarSalao(impressorasCozinha, modoToken);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizando(null);
+    }
+  };
+
+  const marcarProntoGrupoDelivery = async (pedidoId, itemIds) => {
+    setAtualizando(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => (modoToken ? marcarItemPronto(id) : marcarItemProntoRestaurante(id))));
+      await carregarSalao(impressorasCozinha, modoToken);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizando(null);
+    }
+  };
+
+  const voltarGrupoDelivery = async (pedidoId, itemIds) => {
+    setAtualizando(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => (modoToken ? voltarStatusItem(id) : voltarStatusItemRestaurante(id))));
+      await carregarSalao(impressorasCozinha, modoToken);
     } catch (e) {
       alert(e.message);
     } finally {
@@ -480,33 +393,17 @@ const RestauranteCozinha = () => {
     }
   };
 
-  // Só mostra pedido delivery aqui se ele tiver item roteado pra impressora de setor
-  // "Cozinha" — antes mostrava TODO pedido delivery independente do produto, por isso
-  // Bar/Cozinha ficavam misturados. Roteamento vem do produto (config em /produtos).
-  const idsDeliveryRoteadosParaCozinha = new Set(
-    itensSalao.filter((i) => i.tipo === 'delivery').map((i) => i.order_id),
-  );
-  const confirmados = pedidos.filter((p) => p.status === 'confirmed' && idsDeliveryRoteadosParaCozinha.has(p.id));
-  const preparando = pedidos.filter((p) => p.status === 'preparing' && idsDeliveryRoteadosParaCozinha.has(p.id));
-  // Itens de delivery já aparecem via OrderCard (pedido inteiro, confirmados/preparando
-  // acima) — sem esse filtro por tipo, o mesmo item de delivery apareceria de novo aqui
-  // como card avulso duplicado.
-  const itensSalaoAguardando = itensSalao.filter((i) => i.status === 'enviado' && i.tipo !== 'delivery');
-  const itensSalaoPreparando = itensSalao.filter((i) => i.status === 'preparando' && i.tipo !== 'delivery');
+  // Card de delivery agrupado por pedido (mesmo padrão de Produção/Bar) + item de salão
+  // avulso, na mesma fila ordenada por chegada — bucket vem do status do ITEM na praça
+  // (order_items.status), não do orders.status: cada praça só sabe do que é dela, o
+  // pedido inteiro só libera pro motoboy quando marcarItemPronto confirma que todas já
+  // terminaram. Ver [[project_deliveryhub]] "card de pedido delivery agrupado".
   const itensSalaoProntos = itensSalao
     .filter((i) => i.status === 'pronto' && i.tipo !== 'delivery')
     .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
 
-  // Junta delivery + salão numa fila só por coluna, ordenada por quem chegou primeiro.
-  const filaAguardando = [
-    ...confirmados.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
-    ...itensSalaoAguardando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
-  ].sort((a, b) => a.ts - b.ts);
-
-  const filaEmPreparo = [
-    ...preparando.map((p) => ({ tipo: 'delivery', ts: new Date(p.created_at).getTime(), pedido: p })),
-    ...itensSalaoPreparando.map((i) => ({ tipo: 'salao', ts: new Date(i.enviado_em).getTime(), item: i })),
-  ].sort((a, b) => a.ts - b.ts);
+  const filaAguardando = montarFilaAgrupadaDelivery(itensSalao.filter((i) => i.status === 'enviado'));
+  const filaEmPreparo = montarFilaAgrupadaDelivery(itensSalao.filter((i) => i.status === 'preparando'));
 
   // Filtro por canal (Todos/Delivery/Salão) + busca, igual Produção e Bar: aceita tanto
   // código de barras/pedido exato quanto texto livre (cliente, mesa, garçom).
@@ -706,8 +603,10 @@ const RestauranteCozinha = () => {
             <div className="space-y-3">
               {aguardandoPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} now={now} onAvancar={handleAvancar} onVoltar={handleAvancar}
-                    atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                    atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
+                    highlighted={highlighted === entry.pedido.id}
+                    onIniciarPreparo={() => iniciarPreparoGrupoDelivery(entry.pedido.id, entry.itemIds)} />
                 ) : (
                   <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
                     onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao}
@@ -735,8 +634,11 @@ const RestauranteCozinha = () => {
             <div className="space-y-3">
               {emPreparo.map((entry, idx) => (
                 entry.tipo === 'delivery' ? (
-                  <OrderCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} posicao={idx + 1} now={now} onAvancar={handleAvancar} onVoltar={handleAvancar}
-                    atualizando={atualizando} restauranteNome={restauranteNome} highlighted={highlighted} />
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                    atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
+                    highlighted={highlighted === entry.pedido.id}
+                    onMarcarPronto={() => marcarProntoGrupoDelivery(entry.pedido.id, entry.itemIds)}
+                    onVoltar={() => voltarGrupoDelivery(entry.pedido.id, entry.itemIds)} />
                 ) : (
                   <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now}
                     onIniciarPreparo={iniciarPreparoSalao} onMarcarPronto={marcarProntoSalao} onVoltar={voltarSalao}

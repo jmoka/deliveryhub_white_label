@@ -9,12 +9,14 @@ const STATUS_LABEL = {
   ready: 'Pronto — aguardando entrega',
   motoboy_collecting: 'Motoboy indo buscar',
   out_for_delivery: 'Saiu para entrega',
+  delivered: 'Entregue',
 };
 
 const STATUS_COLOR = {
   ready: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-800',
   motoboy_collecting: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
   out_for_delivery: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
+  delivered: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800',
 };
 
 const timeAgo = (iso) => {
@@ -23,6 +25,11 @@ const timeAgo = (iso) => {
   if (diff < 60) return `há ${diff}s`;
   if (diff < 3600) return `há ${Math.floor(diff / 60)}min`;
   return `há ${Math.floor(diff / 3600)}h`;
+};
+
+const formatDateTime = (iso) => {
+  if (!iso) return null;
+  return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 
 const CardEntrega = ({ entrega, motoboys, onAtribuir, onEntregarProprio }) => {
@@ -139,14 +146,74 @@ const CardEntrega = ({ entrega, motoboys, onAtribuir, onEntregarProprio }) => {
   );
 };
 
+const CardHistorico = ({ entrega }) => {
+  const addr = entrega.cliente?.address_json ?? {};
+  const enderecoCompleto = [addr.logradouro, addr.numero, addr.bairro, addr.cidade].filter(Boolean).join(', ');
+  const mapsClienteUrl = enderecoCompleto
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(enderecoCompleto)}`
+    : null;
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">Pedido #{entrega.id}</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{entrega.cliente?.name ?? 'Cliente'}</p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${STATUS_COLOR.delivered}`}>
+            {STATUS_LABEL.delivered}
+          </span>
+          <p className="text-xs font-bold text-[#FF441F] mt-1">{fmt(entrega.total)}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+        <Icon name="Clock" size={12} /> Entregue em {formatDateTime(entrega.updated_at)}
+      </div>
+
+      {entrega.motoboy ? (
+        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 rounded-xl p-3 flex items-center gap-2">
+          <Icon name="Bike" size={15} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+          <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{entrega.motoboy.name}</p>
+        </div>
+      ) : entrega.entrega_propria ? (
+        <div className="bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-800 rounded-xl p-3 flex items-center gap-2">
+          <Icon name="Store" size={15} className="text-green-600 dark:text-green-400" />
+          <p className="text-sm font-semibold text-green-700 dark:text-green-400">Entrega própria</p>
+        </div>
+      ) : null}
+
+      {mapsClienteUrl && (
+        <a href={mapsClienteUrl} target="_blank" rel="noreferrer"
+          className="flex items-center justify-center gap-1.5 w-full py-2 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] text-xs font-semibold rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+          <Icon name="MapPin" size={12} /> Ver endereço do cliente
+        </a>
+      )}
+    </div>
+  );
+};
+
 const RestauranteEntregas = () => {
+  const [aba, setAba] = useState('ativas'); // 'ativas' | 'historico'
+  const [filtros, setFiltros] = useState({ dataInicio: '', dataFim: '', pedido: '', cliente: '' });
   const [entregas, setEntregas] = useState([]);
   const [motoboys, setMotoboys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
 
-  const reload = useCallback(() => {
-    Promise.all([listarEntregas(), listarMotoboys().catch(() => ({ motoboys: [] }))])
+  const reload = useCallback((filtrosHistorico) => {
+    const params = filtrosHistorico
+      ? {
+          historico: 'true',
+          dataInicio: filtrosHistorico.dataInicio ? new Date(filtrosHistorico.dataInicio).toISOString() : '',
+          dataFim: filtrosHistorico.dataFim ? new Date(`${filtrosHistorico.dataFim}T23:59:59`).toISOString() : '',
+          pedido: filtrosHistorico.pedido,
+          cliente: filtrosHistorico.cliente,
+        }
+      : {};
+    setLoading(true);
+    Promise.all([listarEntregas(params), listarMotoboys().catch(() => ({ motoboys: [] }))])
       .then(([e, m]) => {
         setEntregas(e.entregas ?? []);
         setMotoboys(m.motoboys ?? []);
@@ -155,11 +222,25 @@ const RestauranteEntregas = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Auto-refresh de 15s só faz sentido na aba "Ativas" (painel ao vivo) — na aba
+  // "Histórico" a busca é disparada manualmente pelo botão, com os filtros atuais.
   useEffect(() => {
+    if (aba !== 'ativas') return;
     reload();
     const interval = setInterval(reload, 15000);
     return () => clearInterval(interval);
-  }, [reload]);
+  }, [aba, reload]);
+
+  const handleBuscarHistorico = (e) => {
+    e.preventDefault();
+    reload(filtros);
+  };
+
+  const handleLimparFiltros = () => {
+    const vazio = { dataInicio: '', dataFim: '', pedido: '', cliente: '' };
+    setFiltros(vazio);
+    reload(vazio);
+  };
 
   const handleAtribuir = async (pedidoId, motoboyId) => {
     await atribuirMotoboy(pedidoId, motoboyId);
@@ -182,12 +263,71 @@ const RestauranteEntregas = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/entregas" title="Entregas" subtitle={`${entregas.length} entrega(s) em andamento agora`} onRefresh={reload} />
+      <RestauranteHeader
+        active="/restaurante/entregas"
+        title="Entregas"
+        subtitle={aba === 'ativas' ? `${entregas.length} entrega(s) em andamento agora` : `${entregas.length} entrega(s) encontrada(s)`}
+        onRefresh={() => reload(aba === 'historico' ? filtros : undefined)}
+      />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAba('ativas')}
+            className={`px-4 py-2 rounded-lg text-sm font-bold ${aba === 'ativas' ? 'bg-[#FF441F] text-white' : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#3F3F46]'}`}
+          >
+            Ativas
+          </button>
+          <button
+            onClick={() => { setAba('historico'); reload(filtros); }}
+            className={`px-4 py-2 rounded-lg text-sm font-bold ${aba === 'historico' ? 'bg-[#FF441F] text-white' : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border border-[#E4E4E7] dark:border-[#3F3F46]'}`}
+          >
+            Histórico
+          </button>
+        </div>
+
+        {aba === 'historico' && (
+          <form onSubmit={handleBuscarHistorico} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-bold text-[#71717A] dark:text-[#A1A1AA]">Data inicial</label>
+              <input type="date" value={filtros.dataInicio} onChange={(e) => setFiltros((f) => ({ ...f, dataInicio: e.target.value }))}
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-bold text-[#71717A] dark:text-[#A1A1AA]">Data final</label>
+              <input type="date" value={filtros.dataFim} onChange={(e) => setFiltros((f) => ({ ...f, dataFim: e.target.value }))}
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-bold text-[#71717A] dark:text-[#A1A1AA]">Nº do pedido</label>
+              <input type="text" placeholder="Ex: 128" value={filtros.pedido} onChange={(e) => setFiltros((f) => ({ ...f, pedido: e.target.value }))}
+                className="w-28 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
+              <label className="text-[11px] font-bold text-[#71717A] dark:text-[#A1A1AA]">Nome do cliente</label>
+              <input type="text" placeholder="Buscar cliente..." value={filtros.cliente} onChange={(e) => setFiltros((f) => ({ ...f, cliente: e.target.value }))}
+                className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700">Buscar</button>
+            <button type="button" onClick={handleLimparFiltros} className="px-4 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] text-sm font-bold rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">Limpar</button>
+          </form>
+        )}
+
         {erro && <div className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm">{erro}</div>}
 
-        {entregas.length === 0 ? (
+        {aba === 'historico' ? (
+          entregas.length === 0 ? (
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
+              <Icon name="History" size={44} className="text-[#E4E4E7] mx-auto mb-3" />
+              <p className="text-[#27272A] dark:text-[#F4F4F5] font-bold">Nenhuma entrega encontrada</p>
+              <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Ajuste os filtros de data, pedido ou cliente e busque novamente</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {entregas.map((e) => <CardHistorico key={e.id} entrega={e} />)}
+            </div>
+          )
+        ) : entregas.length === 0 ? (
           <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
             <Icon name="Truck" size={44} className="text-[#E4E4E7] mx-auto mb-3" />
             <p className="text-[#27272A] dark:text-[#F4F4F5] font-bold">Nenhuma entrega em andamento</p>
@@ -223,7 +363,7 @@ const RestauranteEntregas = () => {
           </>
         )}
 
-        <p className="text-center text-xs text-[#A1A1AA]">Atualiza automaticamente a cada 15 segundos</p>
+        {aba === 'ativas' && <p className="text-center text-xs text-[#A1A1AA]">Atualiza automaticamente a cada 15 segundos</p>}
       </main>
     </div>
   );

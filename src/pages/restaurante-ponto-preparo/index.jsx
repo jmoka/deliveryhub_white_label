@@ -5,6 +5,9 @@ import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
+import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
+import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
+import { barcodeValue } from '../../utils/printComanda';
 
 // Tela genérica de ponto de preparo — gerada automaticamente pra qualquer impressora
 // marcada como ponto_preparo em /restaurante/pontos-preparo (Churrasqueira, Drinks...).
@@ -22,6 +25,7 @@ const RestaurantePontoPreparo = () => {
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const [busca, setBusca] = useState('');
   const [verTodosProntos, setVerTodosProntos] = useState(false);
+  const [atualizando, setAtualizando] = useState(null);
   const now = useNowTick();
   const prevItemIds = useRef(new Set());
   const firstLoad = useRef(true);
@@ -86,6 +90,44 @@ const RestaurantePontoPreparo = () => {
     }
   };
 
+  // Ações do card de pedido delivery agrupado agem em TODOS os itens desse pedido nesse
+  // ponto de preparo de uma vez — mesmo padrão de Cozinha/Produção/Bar, sem endpoint novo.
+  const iniciarPreparoGrupo = async (pedidoId, itemIds) => {
+    setAtualizando(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => iniciarPreparoItemRestaurante(id)));
+      await carregar();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setAtualizando(null);
+    }
+  };
+
+  const marcarProntoGrupo = async (pedidoId, itemIds) => {
+    setAtualizando(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => marcarItemProntoRestaurante(id)));
+      await carregar();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setAtualizando(null);
+    }
+  };
+
+  const voltarGrupo = async (pedidoId, itemIds) => {
+    setAtualizando(pedidoId);
+    try {
+      await Promise.all(itemIds.map((id) => voltarStatusItemRestaurante(id)));
+      await carregar();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setAtualizando(null);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#111111] flex items-center justify-center">
       <div className="w-10 h-10 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
@@ -123,10 +165,9 @@ const RestaurantePontoPreparo = () => {
     return alvo.includes(buscaNormalizada);
   };
   const itensFiltrados = itens.filter((i) => (filtroCanal === 'todos' || i.tipo === filtroCanal) && passaBusca(i));
-  const aguardando = itensFiltrados.filter((i) => i.status === 'enviado');
-  const emPreparo = itensFiltrados.filter((i) => i.status === 'preparando');
-  const prontos = itensFiltrados.filter((i) => i.status === 'pronto')
-    .sort((a, b) => new Date(b.pronto_em).getTime() - new Date(a.pronto_em).getTime());
+  const aguardando = montarFilaAgrupadaDelivery(itensFiltrados.filter((i) => i.status === 'enviado'));
+  const emPreparo = montarFilaAgrupadaDelivery(itensFiltrados.filter((i) => i.status === 'preparando'));
+  const prontos = montarFilaAgrupadaDelivery(itensFiltrados.filter((i) => i.status === 'pronto'), 'pronto_em');
   const totalDelivery = itens.filter((i) => i.tipo === 'delivery').length;
   const totalSalao = itens.filter((i) => i.tipo === 'salao').length;
   const itemEncontradoBusca = numeroComandaEscaneado !== null && itens.some((i) => i.numero_comanda === numeroComandaEscaneado);
@@ -239,9 +280,15 @@ const RestaurantePontoPreparo = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {aguardando.map((item, idx) => (
-                <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
-                  highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
+              {aguardando.map((entry, idx) => (
+                entry.tipo === 'delivery' ? (
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando"
+                    atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
+                    onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
+                ) : (
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
+                )
               ))}
             </div>
           )}
@@ -262,9 +309,16 @@ const RestaurantePontoPreparo = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {emPreparo.map((item, idx) => (
-                <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
-                  highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
+              {emPreparo.map((entry, idx) => (
+                entry.tipo === 'delivery' ? (
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando"
+                    atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
+                    onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
+                    onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
+                ) : (
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
+                )
               ))}
             </div>
           )}
@@ -278,9 +332,15 @@ const RestaurantePontoPreparo = () => {
               <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontos.length}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {(verTodosProntos ? prontos : prontos.slice(0, 5)).map((item, idx) => (
-                <SalaoItemCard key={item.id} item={item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
-                  highlighted={numeroComandaEscaneado !== null && item.numero_comanda === numeroComandaEscaneado} />
+              {(verTodosProntos ? prontos : prontos.slice(0, 5)).map((entry, idx) => (
+                entry.tipo === 'delivery' ? (
+                  <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto"
+                    atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
+                    onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
+                ) : (
+                  <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
+                )
               ))}
             </div>
             {prontos.length > 5 && (

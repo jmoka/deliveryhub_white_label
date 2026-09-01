@@ -4,6 +4,7 @@ import { getMeusPedidos, atualizarStatusPedido, marcarPedidoPago, getMinhaEmpres
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import PracasStatus from '../../components/restaurante/PracasStatus';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -136,6 +137,7 @@ const RestaurantePedidos = () => {
             {pedidos.map((p) => {
               const s = STATUS_LABELS[p.status] ?? { label: p.status, color: 'bg-gray-100 dark:bg-gray-950/40 text-gray-700 dark:text-gray-400' };
               const proximo = PROXIMOS_STATUS[p.status];
+              const pracasIncompletas = p.pracas?.filter((g) => !g.pronto) ?? [];
               return (
                 <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-center justify-between">
                   <div>
@@ -144,6 +146,7 @@ const RestaurantePedidos = () => {
                       {fmt(p.total)} · {p.payment_method} · {new Date(p.created_at).toLocaleString('pt-BR')}
                       {p.pago_em && <span className="text-green-600 dark:text-green-400 font-medium"> · ✓ Pago</span>}
                     </p>
+                    <PracasStatus pracas={p.pracas} compact />
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${s.color}`}>{s.label}</span>
@@ -159,7 +162,13 @@ const RestaurantePedidos = () => {
                     {proximo && (
                       <button
                         disabled={atualizando === p.id}
-                        onClick={() => avancarStatus(p)}
+                        onClick={() => {
+                          if (proximo === 'ready' && pracasIncompletas.length > 0) {
+                            const faltando = pracasIncompletas.map((g) => g.setor).join(', ');
+                            if (!confirm(`Ainda falta terminar: ${faltando}. Marcar como pronto pro motoboy mesmo assim?`)) return;
+                          }
+                          avancarStatus(p);
+                        }}
                         className="text-xs px-3 py-1.5 bg-[#FF441F] text-white rounded-lg hover:bg-[#e03b1a] disabled:opacity-50"
                       >
                         {atualizando === p.id ? '...' : `→ ${STATUS_LABELS[proximo]?.label}`}

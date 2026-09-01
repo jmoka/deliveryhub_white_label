@@ -9,6 +9,7 @@ import PedidoDetalhe from '../restaurante-dashboard/PedidoDetalhe';
 import PedidoTimeline from '../restaurante-dashboard/PedidoTimeline';
 import { printComanda } from '../../utils/printComanda';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import PracasStatus from '../../components/restaurante/PracasStatus';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -17,6 +18,7 @@ const STATUS_LABELS = {
   confirmed:        { label: 'Aguardando Preparo', color: 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
   preparing:        { label: 'Em Preparo', color: 'bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
   ready:            { label: 'Pronto',     color: 'bg-purple-100 dark:bg-purple-950/40 text-purple-800 dark:text-purple-400' },
+  motoboy_collecting: { label: 'Motoboy a caminho', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
   out_for_delivery: { label: 'Em entrega', color: 'bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-400' },
   delivered:        { label: 'Entregue',   color: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400' },
   canceled:         { label: 'Cancelado',  color: 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-400' },
@@ -244,6 +246,7 @@ const RestauranteDelivery = () => {
                                   </p>
                                 </div>
                                 <PedidoTimeline status={p.status} />
+                                <PracasStatus pracas={p.pracas} compact />
                               </div>
                             </button>
                           );

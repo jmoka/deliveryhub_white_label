@@ -769,7 +769,6 @@ const MotoboyPortal = () => {
   const [loading, setLoading] = useState(true);
   const [aba, setAba] = useState('pedidos');
   const [afiliacoes, setAfiliacoes] = useState([]);
-  const [estabelecimentoAtivo, setEstabelecimentoAtivo] = useState(null);
   const [disponiveis, setDisponiveis] = useState([]);
   const [pegando, setPegando] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
@@ -784,10 +783,7 @@ const MotoboyPortal = () => {
   const carregarAfiliacoes = useCallback(async () => {
     try {
       const d = await getMinhasAfiliacoes();
-      const lista = d.afiliacoes ?? [];
-      setAfiliacoes(lista);
-      const aceitos = lista.filter((a) => a.status === 'aceito');
-      setEstabelecimentoAtivo((atual) => atual ?? aceitos[0]?.restaurant?.id ?? null);
+      setAfiliacoes(d.afiliacoes ?? []);
     } catch {}
   }, []);
 
@@ -811,11 +807,14 @@ const MotoboyPortal = () => {
     return () => clearInterval(interval);
   }, [carregarDados, carregarAfiliacoes]);
 
+  // Agrega pedidos disponíveis de TODAS as lojas afiliadas de uma vez (sem restaurant_id
+  // na chamada) — antes só escutava a loja marcada como "ativa", que fixava na afiliação
+  // mais recente e nunca trocava sozinha; motoboy afiliado a mais de uma loja perdia o
+  // alerta das outras mesmo com o app aberto. Ver pedidosDisponiveisTodos no backend.
   useEffect(() => {
-    if (!estabelecimentoAtivo) return;
     const carregarDisponiveis = async () => {
       try {
-        const d = await getPedidosDisponiveis(estabelecimentoAtivo);
+        const d = await getPedidosDisponiveis();
         const novos = d.pedidos ?? [];
         if (novos.length > prevDisponiveisCount.current) tocarSom();
         prevDisponiveisCount.current = novos.length;
@@ -825,7 +824,7 @@ const MotoboyPortal = () => {
     carregarDisponiveis();
     const id = setInterval(carregarDisponiveis, 10000);
     return () => clearInterval(id);
-  }, [estabelecimentoAtivo, tocarSom]);
+  }, [tocarSom]);
 
   // GPS loop
   useEffect(() => {
@@ -1019,18 +1018,6 @@ const MotoboyPortal = () => {
               </div>
             )}
 
-            {aceitos.length > 1 && (
-              <div className="flex items-center gap-2 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2">
-                <Icon name="Store" size={14} className="text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0" />
-                <select value={estabelecimentoAtivo ?? ''} onChange={(e) => setEstabelecimentoAtivo(Number(e.target.value))}
-                  className="flex-1 text-sm bg-transparent outline-none">
-                  {aceitos.map((a) => (
-                    <option key={a.restaurant.id} value={a.restaurant.id}>{a.restaurant.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {disponiveis.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -1051,6 +1038,11 @@ const MotoboyPortal = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-black text-[#18181B] dark:text-[#F4F4F5] text-lg">Pedido #{p.id}</p>
+                          {p.restaurant_name && (
+                            <p className="text-xs font-bold text-[#FF441F] flex items-center gap-1">
+                              <Icon name="Store" size={11} /> {p.restaurant_name}
+                            </p>
+                          )}
                           {cli.name && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{cli.name}</p>}
                           {endereco && (
                             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 mt-0.5">
