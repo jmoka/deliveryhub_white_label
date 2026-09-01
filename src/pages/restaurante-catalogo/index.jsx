@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 import Icon from '../../components/AppIcon';
 import { imgUrl } from '../../lib/imgUrl';
+import { aplicarFaviconLoja, restaurarFaviconPadrao } from '../../utils/faviconLoja';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -271,6 +272,18 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
   }, [slugParam, dadosPreCarregados]);
+
+  // Favicon personalizado é recurso pago (modulo_favicon_personalizado) —
+  // cobre tanto acesso por domínio próprio (dadosPreCarregados) quanto por
+  // /r/:slug, já que os dois caem nesse mesmo componente. Restaura o padrão
+  // ao sair da página (navegação SPA não recarrega a aba sozinha).
+  useEffect(() => {
+    const restaurante = data?.restaurante;
+    if (restaurante?.modulo_favicon_personalizado && restaurante?.logo_url) {
+      aplicarFaviconLoja(imgUrl(restaurante.logo_url));
+    }
+    return () => restaurarFaviconPadrao();
+  }, [data?.restaurante]);
 
   // Slug efetivo pro checkout: vem da URL em /r/:slug, ou do próprio payload
   // quando a loja foi aberta pelo domínio customizado (sem slug na URL).

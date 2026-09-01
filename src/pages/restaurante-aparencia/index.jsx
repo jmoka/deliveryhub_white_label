@@ -4,6 +4,7 @@ import { getAparencia, updateAparencia, getMinhaEmpresa, updateEmpresa, updateDo
 import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -54,6 +55,7 @@ const OpacitySlider = ({ value, onChange }) => (
 /* ── Componente principal ────────────────────────────────────────── */
 const RestauranteAparencia = () => {
   const navigate = useNavigate();
+  const { moduloFaviconPersonalizado } = useModulosEmpresa();
   const [slug, setSlug] = useState('');
   const [editandoSlug, setEditandoSlug] = useState(false);
   const [slugInput, setSlugInput] = useState('');
@@ -403,6 +405,19 @@ const RestauranteAparencia = () => {
                   <div className="px-2 py-1.5"><p className="text-[10px] font-bold text-[#18181B] dark:text-[#F4F4F5]">Preview no card</p></div>
                 </div>
               </div>
+            )}
+            {moduloFaviconPersonalizado ? (
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                <Icon name="CheckCircle2" size={13} className="flex-shrink-0" />
+                Favicon personalizado ativo — essa logo aparece na aba do navegador de quem acessa sua loja.
+              </p>
+            ) : (
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2">
+                Favicon personalizado (essa logo na aba do navegador) é um recurso pago —{' '}
+                <button type="button" onClick={() => navigate('/restaurante/plano')} className="font-bold underline">
+                  veja os planos que incluem
+                </button>.
+              </p>
             )}
           </Section>
 

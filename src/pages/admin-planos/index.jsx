@@ -41,7 +41,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, cobra_comissao: false };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, cobra_comissao: false, inclui_favicon_personalizado: false };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -60,6 +60,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           inclui_salao: plano.inclui_salao ?? false,
           inclui_gdoor: plano.inclui_gdoor ?? false,
           cobra_comissao: plano.cobra_comissao ?? false,
+          inclui_favicon_personalizado: plano.inclui_favicon_personalizado ?? false,
         }
       : { ...EMPTY }
   );
@@ -99,6 +100,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         inclui_salao: form.inclui_salao,
         inclui_gdoor: form.inclui_gdoor,
         cobra_comissao: form.cobra_comissao,
+        inclui_favicon_personalizado: form.inclui_favicon_personalizado,
       };
       if (isEdicao) {
         await atualizarPlano(plano.id, { ...body, ativo: form.ativo });
@@ -210,6 +212,11 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <input type="checkbox" checked={form.inclui_gdoor} onChange={(e) => set('inclui_gdoor', e.target.checked)}
                       className="w-4 h-4 shrink-0 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">GDOOR (integração PDV/fiscal)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={form.inclui_favicon_personalizado} onChange={(e) => set('inclui_favicon_personalizado', e.target.checked)}
+                      className="w-4 h-4 shrink-0 rounded accent-blue-600" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">Favicon personalizado</span>
                   </label>
                 </div>
               </div>
@@ -399,6 +406,11 @@ const TabPlanos = () => {
                     {plano.cobra_comissao && (
                       <span className="text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
                         + Comissão
+                      </span>
+                    )}
+                    {plano.inclui_favicon_personalizado && (
+                      <span className="text-xs font-medium bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-400 px-2 py-0.5 rounded-full">
+                        Favicon
                       </span>
                     )}
                   </div>
