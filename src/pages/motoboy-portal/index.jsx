@@ -331,6 +331,7 @@ const AbaFinanceiro = ({ afiliacoes, me }) => {
   const [saldo, setSaldo] = useState([]);
   const [solicitacoesRepasse, setSolicitacoesRepasse] = useState([]);
   const [resgateAlvo, setResgateAlvo] = useState(null);
+  const [subAba, setSubAba] = useState('geral'); // geral | resgate | pagos
   const [loading, setLoading] = useState(true);
   const [buscando, setBuscando] = useState(false);
   const [filtro, setFiltro] = useState(defaultFiltroState());
@@ -377,9 +378,35 @@ const AbaFinanceiro = ({ afiliacoes, me }) => {
   if (loading) return <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-8">Carregando...</p>;
 
   const totalFiltro = historico.reduce((acc, h) => acc + Number(h.comissao_valor ?? 0), 0);
+  const solicitacoesPendentes = solicitacoesRepasse.filter((s) => s.status === 'pendente');
+  const solicitacoesFinalizadas = solicitacoesRepasse.filter((s) => s.status !== 'pendente');
+  const SUB_ABAS = [
+    { id: 'geral', label: 'Geral' },
+    { id: 'resgate', label: 'Resgate' },
+    { id: 'pagos', label: 'Pagos' },
+  ];
 
   return (
     <div className="space-y-4">
+      {/* Sub-abas — separa em colunas pra não empilhar tudo numa lista só no celular */}
+      <div className="flex gap-1 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl">
+        {SUB_ABAS.map((t) => (
+          <button key={t.id} onClick={() => setSubAba(t.id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+              subAba === t.id ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA]'
+            }`}>
+            {t.label}
+            {t.id === 'resgate' && solicitacoesPendentes.length > 0 && (
+              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                {solicitacoesPendentes.length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {subAba === 'geral' && (
+        <>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gradient-to-br from-[#FF441F] to-[#FF7A00] rounded-2xl p-4 text-white">
           <p className="text-xs text-white/80">Hoje</p>
@@ -468,68 +495,6 @@ const AbaFinanceiro = ({ afiliacoes, me }) => {
       </div>
 
       <div>
-        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Saldo por estabelecimento</p>
-        <div className="space-y-2">
-          {saldo.map((s) => (
-            <div key={s.restaurant_id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
-                  {s.em_solicitacao > 0 && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400">{fmt(s.em_solicitacao)} já solicitado, aguardando</p>
-                  )}
-                </div>
-                <p className="text-base font-black text-[#FF441F] flex-shrink-0">{fmt(s.saldo_devido)}</p>
-              </div>
-              {s.saldo_disponivel > 0 && (
-                <button onClick={() => setResgateAlvo(s)}
-                  className="w-full mt-2 py-2 border-2 border-[#FF441F]/30 bg-[#FF441F]/5 text-[#FF441F] text-xs font-bold rounded-xl hover:bg-[#FF441F]/10 transition-colors">
-                  Resgatar valor
-                </button>
-              )}
-            </div>
-          ))}
-          {saldo.length === 0 && (
-            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhum saldo a receber por enquanto</p>
-          )}
-        </div>
-      </div>
-
-      {solicitacoesRepasse.length > 0 && (
-        <div>
-          <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Minhas solicitações</p>
-          <div className="space-y-2">
-            {solicitacoesRepasse.map((s) => {
-              const st = STATUS_REPASSE_LABEL[s.status] ?? { texto: s.status, cor: 'bg-gray-100 text-gray-700' };
-              return (
-                <div key={s.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
-                      <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A]">{new Date(s.criado_em).toLocaleDateString('pt-BR')}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(s.valor_solicitado)}</p>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${st.cor}`}>{st.texto}</span>
-                    </div>
-                  </div>
-                  {s.status === 'recusada' && s.motivo_recusa && (
-                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1.5">Motivo: {s.motivo_recusa}</p>
-                  )}
-                  {s.status === 'pago' && s.comprovante_pagamento_url && (
-                    <a href={s.comprovante_pagamento_url} target="_blank" rel="noreferrer"
-                      className="text-[11px] text-[#FF441F] font-semibold hover:underline mt-1.5 inline-block">
-                      Ver comprovante
-                    </a>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div>
         <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Histórico de entregas no período</p>
         <div className="space-y-2">
           {historico.map((h) => (
@@ -561,6 +526,102 @@ const AbaFinanceiro = ({ afiliacoes, me }) => {
           )}
         </div>
       </div>
+        </>
+      )}
+
+      {subAba === 'resgate' && (
+        <>
+      <div>
+        <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Saldo por estabelecimento</p>
+        <div className="space-y-2">
+          {saldo.map((s) => (
+            <div key={s.restaurant_id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
+                  {s.em_solicitacao > 0 && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400">{fmt(s.em_solicitacao)} já solicitado, aguardando</p>
+                  )}
+                </div>
+                <p className="text-base font-black text-[#FF441F] flex-shrink-0">{fmt(s.saldo_devido)}</p>
+              </div>
+              {s.saldo_disponivel > 0 && (
+                <button onClick={() => setResgateAlvo(s)}
+                  className="w-full mt-2 py-2 border-2 border-[#FF441F]/30 bg-[#FF441F]/5 text-[#FF441F] text-xs font-bold rounded-xl hover:bg-[#FF441F]/10 transition-colors">
+                  Resgatar valor
+                </button>
+              )}
+            </div>
+          ))}
+          {saldo.length === 0 && (
+            <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhum saldo a receber por enquanto</p>
+          )}
+        </div>
+      </div>
+
+      {solicitacoesPendentes.length > 0 && (
+        <div>
+          <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Aguardando o restaurante</p>
+          <div className="space-y-2">
+            {solicitacoesPendentes.map((s) => {
+              const st = STATUS_REPASSE_LABEL[s.status] ?? { texto: s.status, cor: 'bg-gray-100 text-gray-700' };
+              return (
+                <div key={s.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
+                      <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A]">{new Date(s.criado_em).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(s.valor_solicitado)}</p>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${st.cor}`}>{st.texto}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {subAba === 'pagos' && (
+        <div>
+          <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase mb-2">Solicitações respondidas</p>
+          <div className="space-y-2">
+            {solicitacoesFinalizadas.map((s) => {
+              const st = STATUS_REPASSE_LABEL[s.status] ?? { texto: s.status, cor: 'bg-gray-100 text-gray-700' };
+              return (
+                <div key={s.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.restaurant_name}</p>
+                      <p className="text-[10px] text-[#A1A1AA] dark:text-[#71717A]">{new Date(s.criado_em).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5]">{fmt(s.valor_solicitado)}</p>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${st.cor}`}>{st.texto}</span>
+                    </div>
+                  </div>
+                  {s.status === 'recusada' && s.motivo_recusa && (
+                    <p className="text-[11px] text-red-600 dark:text-red-400 mt-1.5">Motivo: {s.motivo_recusa}</p>
+                  )}
+                  {s.status === 'pago' && s.comprovante_pagamento_url && (
+                    <a href={s.comprovante_pagamento_url} target="_blank" rel="noreferrer"
+                      className="text-[11px] text-[#FF441F] font-semibold hover:underline mt-1.5 inline-block">
+                      Ver comprovante
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+            {solicitacoesFinalizadas.length === 0 && (
+              <p className="text-xs text-[#A1A1AA] dark:text-[#71717A] text-center py-4">Nenhuma solicitação respondida ainda</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {resgateAlvo && (
         <ResgateModal
