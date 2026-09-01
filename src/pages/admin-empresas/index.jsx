@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig } from '../../services/adminService';
+import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig, getUsuarios } from '../../services/adminService';
 import { getAssinaturas } from '../../services/planosService';
 import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
 import AdminHeader from '../../components/admin/AdminHeader';
+import { ChevronDown } from 'lucide-react';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -20,6 +21,24 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
   });
   const [salvando, setSalvando] = useState(false);
   const usaPadraoGlobal = form.comissao_pct === null;
+
+  // Donos disponíveis pro select: qualquer usuário (menos admin) que ainda
+  // não tem restaurante vinculado, mais o dono atual dessa empresa (senão a
+  // opção selecionada some do select ao editar). Evita expor UUID cru — o
+  // admin escolhe pelo nome/email, o mesmo poder de antes (promove pra
+  // restaurant_owner ao salvar), só que sem precisar saber/colar o UUID.
+  const [usuarios, setUsuarios] = useState(null);
+  useEffect(() => {
+    getUsuarios({ limit: 1000 })
+      .then((d) => setUsuarios(d.usuarios ?? []))
+      .catch(() => setUsuarios([]));
+  }, []);
+  const donosDisponiveis = (usuarios ?? [])
+    .filter((u) => u.role !== 'admin' && (!u.restaurante || u.restaurante.id === empresa?.id))
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'pt-BR'));
+  // Fallback defensivo: se o user_id atual não aparecer na lista (ex: conta
+  // apagada), mantém a opção visível em vez de sumir silenciosamente o valor.
+  const donoAtualPerdido = form.user_id && usuarios && !donosDisponiveis.some((u) => u.id === form.user_id);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +59,7 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md p-6">
+      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full min-w-0 max-w-md max-h-[90vh] overflow-y-auto p-6">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-zinc-100">{empresa ? 'Editar Empresa' : 'Nova Empresa'}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -87,16 +106,27 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
-              UUID do dono (restaurant_owner)
+              Dono (restaurant_owner)
             </label>
-            <input
-              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs"
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              value={form.user_id}
-              onChange={(e) => setForm({ ...form, user_id: e.target.value.trim() })}
-            />
+            <div className="relative w-full min-w-0">
+              <select
+                disabled={!usuarios}
+                className="w-full min-w-0 max-w-full appearance-none border border-gray-300 dark:border-zinc-700 rounded-lg pl-3 pr-8 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                value={form.user_id}
+                onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+              >
+                <option value="">— Sem dono ainda —</option>
+                {donoAtualPerdido && (
+                  <option value={form.user_id}>{form.user_id} (conta não encontrada)</option>
+                )}
+                {donosDisponiveis.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            </div>
             <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-              UUID do usuário cadastrado como restaurant_owner. Deixe vazio se não houver dono ainda.
+              {usuarios ? 'Só aparecem contas sem restaurante vinculado ainda. Vincular promove a conta pra restaurant_owner.' : 'Carregando usuários...'}
             </p>
           </div>
           <div>
@@ -158,6 +188,126 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
   );
 };
 
+// Badge de módulos liberados, reaproveitado nos dois modos (card e lista).
+const ModulosBadges = ({ empresa: e }) => (
+  <div className="flex flex-wrap gap-1">
+    {e.modulo_delivery && (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">Delivery</span>
+    )}
+    {e.modulo_salao && (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">Salão</span>
+    )}
+    {e.modulo_gdoor && (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400">GDOOR</span>
+    )}
+    {e.modulo_favicon_personalizado && (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-400">Favicon</span>
+    )}
+    {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && !e.modulo_favicon_personalizado && (
+      <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
+    )}
+  </div>
+);
+
+const DominioBadge = ({ empresa: e }) => (
+  e.custom_domain_status === 'pendente' ? (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-mono">
+      {e.custom_domain} (pendente)
+    </span>
+  ) : e.custom_domain_status === 'recusado' ? (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-mono">
+      {e.custom_domain} (recusado)
+    </span>
+  ) : e.custom_domain ? (
+    <span className="text-xs text-gray-500 dark:text-zinc-400 font-mono">{e.custom_domain}</span>
+  ) : (
+    <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
+  )
+);
+
+const PlanoBadge = ({ empresa, assinaturas }) => {
+  const assinatura = assinaturas.find((a) => a.restaurant_id === empresa.id);
+  if (!assinatura) return <span className="text-xs text-gray-400 dark:text-zinc-500">Sem plano</span>;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{assinatura.planos?.nome}</span>
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+        assinatura.status === 'ativa' ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400'
+        : assinatura.status === 'trial' ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
+        : 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400'
+      }`}>
+        {assinatura.status === 'ativa' ? 'Ativa' : assinatura.status === 'trial' ? 'Trial' : 'Cancelada'}
+      </span>
+    </div>
+  );
+};
+
+const EmpresaCard = ({ empresa: e, assinaturas, comissaoPadrao, isLocalMode, onVer, onEditar, onBloquear, onRemover }) => (
+  <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
+    <div className="flex items-start justify-between gap-2">
+      <div className="min-w-0">
+        <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">{e.name}</p>
+        <p className="text-xs text-gray-400 dark:text-zinc-500">#{e.id}</p>
+      </div>
+      {e.bloqueado ? (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 flex-shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Bloqueado
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 flex-shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
+        </span>
+      )}
+    </div>
+
+    {e.address && <p className="text-sm text-gray-500 dark:text-zinc-400 truncate">{e.address}</p>}
+
+    {e.slug && (
+      <a href={`/r/${e.slug}`} target="_blank" rel="noopener noreferrer"
+        className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-mono w-fit">
+        /r/{e.slug}
+      </a>
+    )}
+
+    <ModulosBadges empresa={e} />
+
+    <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-100 dark:border-zinc-700">
+      <PlanoBadge empresa={e} assinaturas={assinaturas} />
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 flex-shrink-0">
+        {e.comissao_pct ?? comissaoPadrao}%{e.comissao_pct == null && <span className="opacity-60"> (padrão)</span>}
+      </span>
+    </div>
+
+    <DominioBadge empresa={e} />
+
+    <p className="text-xs text-gray-400 dark:text-zinc-500">
+      Cadastro em {new Date(e.created_at).toLocaleDateString('pt-BR')}
+    </p>
+
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      <button onClick={onVer} className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900">
+        Ver
+      </button>
+      <button onClick={onEditar} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700">
+        Editar
+      </button>
+      <button onClick={onBloquear}
+        className={`px-3 py-1.5 text-xs font-medium rounded-lg border ${
+          e.bloqueado
+            ? 'text-green-700 dark:text-green-400 border-green-200 dark:border-green-900 hover:bg-green-50 dark:hover:bg-green-950/40'
+            : 'text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/40'
+        }`}>
+        {e.bloqueado ? 'Desbloquear' : 'Bloquear'}
+      </button>
+      {!isLocalMode && (
+        <button onClick={onRemover} className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900">
+          Remover
+        </button>
+      )}
+    </div>
+  </div>
+);
+
 const AdminEmpresas = () => {
   const navigate = useNavigate();
   const { isLocalMode, localRestaurantId } = useLocalMode() ?? {};
@@ -167,6 +317,9 @@ const AdminEmpresas = () => {
   const [modal, setModal] = useState(null); // null | 'novo' | empresa_obj
   const [comissaoPadrao, setComissaoPadrao] = useState(5);
   const [assinaturas, setAssinaturas] = useState([]);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'lista'
+  const [busca, setBusca] = useState(''); // nome ou endereço
+  const [filtroPlano, setFiltroPlano] = useState(''); // '' | 'sem_plano' | plano_id
 
   const carregar = async () => {
     setLoading(true);
@@ -235,6 +388,30 @@ const AdminEmpresas = () => {
 
   const solicitacoesDominio = empresas.filter((e) => e.custom_domain_status === 'pendente');
 
+  // Planos únicos presentes nas assinaturas atuais, pra popular o filtro sem
+  // precisar de outra chamada — "Sem plano" cobre quem não tem assinatura.
+  const planosDisponiveis = Array.from(
+    new Map(assinaturas.filter((a) => a.planos).map((a) => [a.plano_id, a.planos.nome])).entries()
+  );
+
+  const normalizar = (s) => (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
+
+  const empresasFiltradas = empresas.filter((e) => {
+    if (busca.trim()) {
+      const alvo = normalizar(`${e.name} ${e.address ?? ''}`);
+      if (!alvo.includes(normalizar(busca))) return false;
+    }
+    if (filtroPlano) {
+      const assinatura = assinaturas.find((a) => a.restaurant_id === e.id);
+      if (filtroPlano === 'sem_plano') {
+        if (assinatura) return false;
+      } else if (String(assinatura?.plano_id) !== filtroPlano) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       <LocalModeBanner />
@@ -242,21 +419,69 @@ const AdminEmpresas = () => {
       <AdminHeader active="/admin/empresas" title="Painel Dev-Admin" subtitle="Gestão de Empresas" />
 
       <main className="p-6 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
-            Empresas <span className="text-gray-400 dark:text-zinc-500 font-normal text-sm">({empresas.length})</span>
-            {solicitacoesDominio.length > 0 && (
-              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 align-middle">
-                {solicitacoesDominio.length} solicitação(ões) de domínio pendente(s)
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex items-center flex-wrap gap-3">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
+              Empresas <span className="text-gray-400 dark:text-zinc-500 font-normal text-sm">
+                ({empresasFiltradas.length}{empresasFiltradas.length !== empresas.length ? ` de ${empresas.length}` : ''})
               </span>
-            )}
-          </h2>
+              {solicitacoesDominio.length > 0 && (
+                <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 align-middle">
+                  {solicitacoesDominio.length} solicitação(ões) de domínio pendente(s)
+                </span>
+              )}
+            </h2>
+            <div className="flex border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1.5 text-xs font-medium ${viewMode === 'cards' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'}`}
+              >
+                Cards
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('lista')}
+                className={`px-3 py-1.5 text-xs font-medium ${viewMode === 'lista' ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'}`}
+              >
+                Lista
+              </button>
+            </div>
+          </div>
           {!isLocalMode && (
             <button
               onClick={() => setModal('novo')}
               className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
             >
               + Nova Empresa
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mb-6">
+          <input
+            placeholder="Buscar por nome ou endereço..."
+            className="w-full sm:w-64 min-w-0 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+          <select
+            className="w-full sm:w-auto sm:max-w-[220px] min-w-0 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={filtroPlano}
+            onChange={(e) => setFiltroPlano(e.target.value)}
+          >
+            <option value="">Todos os planos</option>
+            <option value="sem_plano">Sem plano</option>
+            {planosDisponiveis.map(([id, nome]) => (
+              <option key={id} value={id}>{nome}</option>
+            ))}
+          </select>
+          {(busca || filtroPlano) && (
+            <button
+              onClick={() => { setBusca(''); setFiltroPlano(''); }}
+              className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 self-start"
+            >
+              Limpar filtros
             </button>
           )}
         </div>
@@ -312,19 +537,48 @@ const AdminEmpresas = () => {
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : empresas.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700">
+            <div className="p-12 text-center text-gray-400 dark:text-zinc-500">
+              <p className="text-lg">Nenhuma empresa cadastrada</p>
+              <button
+                onClick={() => setModal('novo')}
+                className="mt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline"
+              >
+                Cadastrar primeira empresa
+              </button>
+            </div>
+          </div>
+        ) : empresasFiltradas.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700">
+            <div className="p-12 text-center text-gray-400 dark:text-zinc-500">
+              <p className="text-lg">Nenhuma empresa encontrada com esse filtro</p>
+              <button
+                onClick={() => { setBusca(''); setFiltroPlano(''); }}
+                className="mt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline"
+              >
+                Limpar filtros
+              </button>
+            </div>
+          </div>
+        ) : viewMode === 'cards' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {empresasFiltradas.map((e) => (
+              <EmpresaCard
+                key={e.id}
+                empresa={e}
+                assinaturas={assinaturas}
+                comissaoPadrao={comissaoPadrao}
+                isLocalMode={isLocalMode}
+                onVer={() => navigate(`/admin/empresas/${e.id}`)}
+                onEditar={() => setModal(e)}
+                onBloquear={() => handleBloquear(e)}
+                onRemover={() => handleRemover(e)}
+              />
+            ))}
+          </div>
         ) : (
           <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 overflow-x-auto">
-            {empresas.length === 0 ? (
-              <div className="p-12 text-center text-gray-400 dark:text-zinc-500">
-                <p className="text-lg">Nenhuma empresa cadastrada</p>
-                <button
-                  onClick={() => setModal('novo')}
-                  className="mt-3 text-blue-600 dark:text-blue-400 text-sm hover:underline"
-                >
-                  Cadastrar primeira empresa
-                </button>
-              </div>
-            ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900/50">
@@ -342,7 +596,7 @@ const AdminEmpresas = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {empresas.map((e) => (
+                  {empresasFiltradas.map((e) => (
                     <tr key={e.id} className="border-b border-gray-200 dark:border-zinc-700 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
                       <td className="px-2 sm:px-4 py-3 text-gray-400 dark:text-zinc-500 hidden sm:table-cell">#{e.id}</td>
                       <td className="px-2 sm:px-4 py-3 font-medium text-gray-900 dark:text-zinc-100 max-w-[120px] sm:max-w-none truncate">{e.name}</td>
@@ -375,56 +629,13 @@ const AdminEmpresas = () => {
                         )}
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
-                        <div className="flex gap-1">
-                          {e.modulo_delivery && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">Delivery</span>
-                          )}
-                          {e.modulo_salao && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">Salão</span>
-                          )}
-                          {e.modulo_gdoor && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400">GDOOR</span>
-                          )}
-                          {e.modulo_favicon_personalizado && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-400">Favicon</span>
-                          )}
-                          {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && !e.modulo_favicon_personalizado && (
-                            <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
-                          )}
-                        </div>
+                        <ModulosBadges empresa={e} />
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
-                        {e.custom_domain_status === 'pendente' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-mono">
-                            {e.custom_domain} (pendente)
-                          </span>
-                        ) : e.custom_domain_status === 'recusado' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 font-mono">
-                            {e.custom_domain} (recusado)
-                          </span>
-                        ) : e.custom_domain ? (
-                          <span className="text-xs text-gray-500 dark:text-zinc-400 font-mono">{e.custom_domain}</span>
-                        ) : (
-                          <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
-                        )}
+                        <DominioBadge empresa={e} />
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
-                        {(() => {
-                          const assinatura = assinaturas.find((a) => a.restaurant_id === e.id);
-                          if (!assinatura) return <span className="text-xs text-gray-400 dark:text-zinc-500">Sem plano</span>;
-                          return (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{assinatura.planos?.nome}</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                                assinatura.status === 'ativa' ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400'
-                                : assinatura.status === 'trial' ? 'bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
-                                : 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400'
-                              }`}>
-                                {assinatura.status === 'ativa' ? 'Ativa' : assinatura.status === 'trial' ? 'Trial' : 'Cancelada'}
-                              </span>
-                            </div>
-                          );
-                        })()}
+                        <PlanoBadge empresa={e} assinaturas={assinaturas} />
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
@@ -472,7 +683,6 @@ const AdminEmpresas = () => {
                   ))}
                 </tbody>
               </table>
-            )}
           </div>
         )}
       </main>
