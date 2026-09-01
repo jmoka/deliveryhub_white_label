@@ -41,7 +41,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, cobra_comissao: false };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -52,12 +52,14 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           periodicidade: plano.periodicidade,
           tipo: plano.tipo ?? 'saas',
           limite_produtos: plano.limite_produtos != null ? String(plano.limite_produtos) : '',
+          limite_impressoras: plano.limite_impressoras != null ? String(plano.limite_impressoras) : '',
           piso_faturamento: plano.piso_faturamento != null ? String(plano.piso_faturamento) : '',
           trial_dias: String(plano.trial_dias ?? 0),
           ativo: plano.ativo,
           inclui_delivery: plano.inclui_delivery ?? true,
           inclui_salao: plano.inclui_salao ?? false,
           inclui_gdoor: plano.inclui_gdoor ?? false,
+          cobra_comissao: plano.cobra_comissao ?? false,
         }
       : { ...EMPTY }
   );
@@ -90,11 +92,13 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         periodicidade: form.periodicidade,
         tipo: form.tipo,
         limite_produtos: form.limite_produtos.trim() ? parseInt(form.limite_produtos, 10) : null,
+        limite_impressoras: form.limite_impressoras.trim() ? parseInt(form.limite_impressoras, 10) : null,
         piso_faturamento: form.piso_faturamento.trim() ? parseFloat(form.piso_faturamento) : null,
         trial_dias: form.trial_dias.trim() ? parseInt(form.trial_dias, 10) : 0,
         inclui_delivery: form.inclui_delivery,
         inclui_salao: form.inclui_salao,
         inclui_gdoor: form.inclui_gdoor,
+        cobra_comissao: form.cobra_comissao,
       };
       if (isEdicao) {
         await atualizarPlano(plano.id, { ...body, ativo: form.ativo });
@@ -178,6 +182,12 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Vazio = sempre cobra" />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Limite de impressoras</label>
+                  <input type="number" min="1" value={form.limite_impressoras} onChange={(e) => set('limite_impressoras', e.target.value)}
+                    className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Vazio = ilimitado" />
+                </div>
               </div>
               <p className="text-xs text-gray-400 dark:text-zinc-500 -mt-2">
                 Piso de faturamento: só cobra a loja quando o faturamento do período atingir esse valor.
@@ -202,6 +212,22 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <span className="text-sm text-gray-700 dark:text-zinc-300">GDOOR (integração PDV/fiscal)</span>
                   </label>
                 </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={form.cobra_comissao} onChange={(e) => set('cobra_comissao', e.target.checked)}
+                    className="w-4 h-4 shrink-0 rounded accent-blue-600" />
+                  <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Cobra comissão sobre vendas</span>
+                </label>
+                {form.cobra_comissao && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1.5 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2">
+                    Além da mensalidade, a fatura vai somar a comissão de todas as vendas do
+                    período que não tiveram o split do PagBank ativo (loja em recebimento
+                    manual ou sem sub-conta de split configurada). Vendas com split ativo já
+                    têm a comissão descontada na hora — não entram na fatura de novo.
+                  </p>
+                )}
               </div>
             </>
           )}
@@ -370,9 +396,16 @@ const TabPlanos = () => {
                         GDOOR
                       </span>
                     )}
+                    {plano.cobra_comissao && (
+                      <span className="text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                        + Comissão
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
                     {plano.limite_produtos != null ? `Até ${plano.limite_produtos} produtos` : 'Produtos ilimitados'}
+                    {' · '}
+                    {plano.limite_impressoras != null ? `até ${plano.limite_impressoras} impressoras` : 'impressoras ilimitadas'}
                     {' · '}
                     {plano.piso_faturamento != null ? `cobra a partir de ${fmt(plano.piso_faturamento)} faturados` : 'cobra sempre'}
                     {plano.trial_dias > 0 && ` · ${plano.trial_dias} dias grátis`}
@@ -666,7 +699,14 @@ const TabFaturas = () => {
                 <tr key={f.id} className="border-b border-gray-200 dark:border-zinc-700 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
                   <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">{nomeFatura(f)}</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-zinc-400 text-xs">{fmtData(f.periodo_inicio)} – {fmtData(f.periodo_fim)}</td>
-                  <td className="px-4 py-3 text-right text-gray-900 dark:text-zinc-100">{fmt(f.valor)}</td>
+                  <td className="px-4 py-3 text-right text-gray-900 dark:text-zinc-100">
+                    {fmt(f.valor)}
+                    {f.comissao_valor > 0 && (
+                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-normal mt-0.5">
+                        inclui {fmt(f.comissao_valor)} de comissão
+                      </p>
+                    )}
+                  </td>
                   <td className="px-4 py-3"><Badge status={f.status} /></td>
                   <td className="px-4 py-3 text-gray-500 dark:text-zinc-400 text-xs">{fmtData(f.vencimento)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">

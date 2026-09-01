@@ -23,6 +23,87 @@ const Badge = ({ status }) => {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>{s.label}</span>;
 };
 
+// Fatura com comissão mostra o detalhamento (mensalidade + comissão = total)
+// e permite expandir a lista de vendas que geraram a comissão — busca sob
+// demanda pra não pedir o detalhe de toda fatura sem comissão.
+const FaturaLinha = ({ f, onPagar }) => {
+  const [aberto, setAberto] = useState(false);
+  const [detalhe, setDetalhe] = useState(null);
+  const [carregando, setCarregando] = useState(false);
+  const temComissao = f.comissao_valor > 0;
+
+  const toggle = async () => {
+    if (aberto) { setAberto(false); return; }
+    setAberto(true);
+    if (!detalhe) {
+      setCarregando(true);
+      try {
+        const d = await getFaturaDetalhe(f.id);
+        setDetalhe(d.comissoes ?? []);
+      } catch {
+        setDetalhe([]);
+      } finally {
+        setCarregando(false);
+      }
+    }
+  };
+
+  return (
+    <div className="px-6 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm text-[#18181B] dark:text-[#F4F4F5]">{fmtData(f.periodo_inicio)} – {fmtData(f.periodo_fim)}</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vencimento {fmtData(f.vencimento)}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmt(f.valor)}</span>
+            {temComissao && (
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                mensalidade {fmt(f.valor - f.comissao_valor)} + comissão {fmt(f.comissao_valor)}
+              </p>
+            )}
+          </div>
+          <Badge status={f.status} />
+          {(f.status === 'pendente' || f.status === 'vencida') && (
+            <button
+              onClick={() => onPagar(f)}
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-[#FF441F] hover:bg-[#E63A19] rounded-lg"
+            >
+              Pagar
+            </button>
+          )}
+        </div>
+      </div>
+      {temComissao && (
+        <div className="mt-2">
+          <button onClick={toggle} className="text-xs font-semibold text-[#FF441F] hover:underline">
+            {aberto ? 'Ocultar detalhe das vendas' : 'Ver detalhe das vendas'}
+          </button>
+          {aberto && (
+            <div className="mt-2 bg-[#F4F4F5] dark:bg-[#18181B] rounded-lg p-3 space-y-1.5">
+              {carregando ? (
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Carregando...</p>
+              ) : detalhe.length === 0 ? (
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhuma venda encontrada.</p>
+              ) : (
+                detalhe.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between text-xs">
+                    <span className="text-[#71717A] dark:text-[#A1A1AA]">
+                      Pedido #{c.pedido_id} · venda {fmt(c.valor_venda)} · {c.comissao_pct}%
+                    </span>
+                    <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmt(c.comissao_valor)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PlanosDisponiveisModal = ({ planoAtualId, onClose, onEscolher }) => {
   const [planos, setPlanos] = useState(null);
   const [erro, setErro] = useState(null);
@@ -81,6 +162,9 @@ const PlanosDisponiveisModal = ({ planoAtualId, onClose, onEscolher }) => {
                     {p.inclui_salao && <span className="text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">Salão</span>}
                     <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
                       {p.limite_produtos != null ? `Até ${p.limite_produtos} produtos` : 'Produtos ilimitados'}
+                    </span>
+                    <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
+                      {p.limite_impressoras != null ? `Até ${p.limite_impressoras} impressoras` : 'Impressoras ilimitadas'}
                     </span>
                   </div>
                   {!atual && (
@@ -233,6 +317,25 @@ const RestaurantePlano = () => {
                 )}
               </div>
 
+              {/* Uso de impressoras */}
+              <div className="mt-3">
+                <div className="flex items-center justify-between text-xs text-[#71717A] dark:text-[#A1A1AA] mb-1">
+                  <span>Impressoras cadastradas</span>
+                  <span>
+                    {dados.impressoras_ativas}
+                    {dados.limite_impressoras != null ? ` / ${dados.limite_impressoras}` : ' (ilimitado)'}
+                  </span>
+                </div>
+                {dados.limite_impressoras != null && (
+                  <div className="w-full h-2 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${dados.impressoras_ativas >= dados.limite_impressoras ? 'bg-red-500' : 'bg-[#FF441F]'}`}
+                      style={{ width: `${Math.min(100, (dados.impressoras_ativas / dados.limite_impressoras) * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+
               {dados.assinatura?.status !== 'cancelada' && (
                 <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                   <div>
@@ -258,24 +361,7 @@ const RestaurantePlano = () => {
               ) : (
                 <div className="divide-y divide-[#E4E4E7] dark:divide-[#3F3F46]">
                   {dados.faturas.map((f) => (
-                    <div key={f.id} className="px-6 py-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm text-[#18181B] dark:text-[#F4F4F5]">{fmtData(f.periodo_inicio)} – {fmtData(f.periodo_fim)}</p>
-                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Vencimento {fmtData(f.vencimento)}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{fmt(f.valor)}</span>
-                        <Badge status={f.status} />
-                        {(f.status === 'pendente' || f.status === 'vencida') && (
-                          <button
-                            onClick={() => setFaturaPagando(f)}
-                            className="px-3 py-1.5 text-xs font-semibold text-white bg-[#FF441F] hover:bg-[#E63A19] rounded-lg"
-                          >
-                            Pagar
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    <FaturaLinha key={f.id} f={f} onPagar={setFaturaPagando} />
                   ))}
                 </div>
               )}

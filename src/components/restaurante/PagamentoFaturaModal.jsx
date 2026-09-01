@@ -169,8 +169,13 @@ const PagamentoFaturaModal = ({
           </div>
         ) : (
           <>
-            <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] mb-3">Dados pra pagamento</h3>
-            <div className="flex gap-1.5 mb-4">
+            <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Dados pra pagamento</h3>
+            {fatura.comissao_valor > 0 && (
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-2">
+                Total {fmt(fatura.valor)} — mensalidade {fmt(fatura.valor - fatura.comissao_valor)} + comissão {fmt(fatura.comissao_valor)}
+              </p>
+            )}
+            <div className="flex gap-1.5 mb-4 mt-2">
               <TabButton valor="pix" label="Pix" />
               <TabButton valor="credit_card" label="Crédito" />
               <TabButton valor="debit_card" label="Débito" />
