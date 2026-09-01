@@ -59,6 +59,15 @@ export const getPedidosDisponiveis = (restaurantId) =>
 export const pegarPedido = (pedidoId) =>
   motoboyFetch(`/pedidos/${pedidoId}/pegar`, { method: 'POST' });
 
+// Pedidos em produção (ainda sem motoboy) de todas as lojas afiliadas — motoboy demonstra
+// interesse aqui, antes de o pedido ficar pronto. Alerta final de "pronto" prioriza quem
+// já demonstrou interesse (ver getPedidosDisponiveis).
+export const getPedidosEmProducao = () => motoboyFetch('/pedidos/em-producao');
+export const demonstrarInteresse = (pedidoId) =>
+  motoboyFetch(`/pedidos/${pedidoId}/interesse`, { method: 'POST' });
+export const desistirInteresse = (pedidoId) =>
+  motoboyFetch(`/pedidos/${pedidoId}/interesse`, { method: 'DELETE' });
+
 export const confirmarColeta = (pedidoId, barcode) =>
   motoboyFetch(`/pedidos/${pedidoId}/confirmar-coleta`, {
     method: 'POST',

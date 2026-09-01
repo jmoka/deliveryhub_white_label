@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getMe, atualizarPerfil, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
-  getPedidosDisponiveis, pegarPedido,
+  getPedidosDisponiveis, pegarPedido, getPedidosEmProducao, demonstrarInteresse, desistirInteresse,
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
   getGanhosResumo, getGanhosHistorico, getGanhosPorDia, solicitarRevisaoPlataforma,
 } from '../../services/motoboyService';
@@ -760,9 +760,16 @@ const PedidoAtivoCard = ({ p, defaultExpandido, confirmando, onEntregar, onOcorr
   );
 };
 
+const GPS_ATIVO_KEY = 'motoboy_gps_ativo';
+const dismissedKey = (userId) => `motoboy_producao_dispensados_${userId}`;
+const readDismissed = (userId) => {
+  if (!userId) return [];
+  try { return JSON.parse(localStorage.getItem(dismissedKey(userId)) ?? '[]'); } catch { return []; }
+};
+
 const MotoboyPortal = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [erro, setErro] = useState(null);
   const [me, setMe] = useState(null);
   const [pedidos, setPedidos] = useState([]);
@@ -770,14 +777,20 @@ const MotoboyPortal = () => {
   const [aba, setAba] = useState('pedidos');
   const [afiliacoes, setAfiliacoes] = useState([]);
   const [disponiveis, setDisponiveis] = useState([]);
+  const [emProducao, setEmProducao] = useState([]);
+  const [dispensados, setDispensados] = useState([]);
+  const [marcandoInteresse, setMarcandoInteresse] = useState(null);
   const [pegando, setPegando] = useState(null);
   const [confirmando, setConfirmando] = useState(null);
   const [ocorrencia, setOcorrencia] = useState(null); // { pedido, tipo }
   const [salvandoOcorrencia, setSalvandoOcorrencia] = useState(false);
-  const [gpsAtivo, setGpsAtivo] = useState(false);
+  // Fica ativo entre recarregamentos de página até o motoboy desligar manualmente —
+  // antes voltava pra OFF sozinho a cada refresh, mesmo com o motoboy tendo ligado.
+  const [gpsAtivo, setGpsAtivo] = useState(() => localStorage.getItem(GPS_ATIVO_KEY) === 'true');
   const [gpsErro, setGpsErro] = useState(null);
   const gpsRef = useRef(null);
   const prevDisponiveisCount = useRef(0);
+  const prevProducaoCount = useRef(0);
   const tocarSom = useNotificacaoSonora('motoboy');
 
   const carregarAfiliacoes = useCallback(async () => {
@@ -807,6 +820,19 @@ const MotoboyPortal = () => {
     return () => clearInterval(interval);
   }, [carregarDados, carregarAfiliacoes]);
 
+  useEffect(() => { localStorage.setItem(GPS_ATIVO_KEY, String(gpsAtivo)); }, [gpsAtivo]);
+
+  useEffect(() => { setDispensados(readDismissed(user?.id)); }, [user?.id]);
+
+  const handleDispensar = (pedidoId) => {
+    if (!user?.id) return;
+    setDispensados((prev) => {
+      const next = [...new Set([...prev, pedidoId])];
+      localStorage.setItem(dismissedKey(user.id), JSON.stringify(next));
+      return next;
+    });
+  };
+
   // Agrega pedidos disponíveis de TODAS as lojas afiliadas de uma vez (sem restaurant_id
   // na chamada) — antes só escutava a loja marcada como "ativa", que fixava na afiliação
   // mais recente e nunca trocava sozinha; motoboy afiliado a mais de uma loja perdia o
@@ -825,6 +851,60 @@ const MotoboyPortal = () => {
     const id = setInterval(carregarDisponiveis, 10000);
     return () => clearInterval(id);
   }, [tocarSom]);
+
+  // Pedidos em produção — camada extra de alerta: mostra o pedido ANTES de ficar pronto,
+  // pra motoboy demonstrar interesse e "entrar na fila" (ver getPedidosEmProducao no
+  // backend). Toca som só na primeira vez que um pedido novo aparece aqui, igual disponíveis.
+  const carregarEmProducao = useCallback(async () => {
+    try {
+      const d = await getPedidosEmProducao();
+      const novos = d.pedidos ?? [];
+      if (novos.length > prevProducaoCount.current) tocarSom();
+      prevProducaoCount.current = novos.length;
+      setEmProducao(novos);
+      // Poda ids dispensados que já saíram da lista (virou pronto/foi pego/cancelado) —
+      // senão o localStorage cresce pra sempre com pedido que nem existe mais.
+      if (user?.id) {
+        const idsAtuais = new Set(novos.map((p) => p.id));
+        setDispensados((prev) => {
+          const podado = prev.filter((id) => idsAtuais.has(id));
+          if (podado.length !== prev.length) localStorage.setItem(dismissedKey(user.id), JSON.stringify(podado));
+          return podado;
+        });
+      }
+    } catch {}
+  }, [tocarSom, user?.id]);
+
+  useEffect(() => {
+    carregarEmProducao();
+    const id = setInterval(carregarEmProducao, 15000);
+    return () => clearInterval(id);
+  }, [carregarEmProducao]);
+
+  const handleDemonstrarInteresse = async (pedidoId) => {
+    if (!gpsAtivo) { alert('Ligue o GPS pra poder demonstrar interesse — é como você avisa que está disponível.'); return; }
+    setMarcandoInteresse(pedidoId);
+    try {
+      await demonstrarInteresse(pedidoId);
+      await carregarEmProducao();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setMarcandoInteresse(null);
+    }
+  };
+
+  const handleDesistirInteresse = async (pedidoId) => {
+    setMarcandoInteresse(pedidoId);
+    try {
+      await desistirInteresse(pedidoId);
+      await carregarEmProducao();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setMarcandoInteresse(null);
+    }
+  };
 
   // GPS loop
   useEffect(() => {
@@ -883,7 +963,10 @@ const MotoboyPortal = () => {
     }
   };
 
+  // GPS ligado é o sinal de "estou disponível/trabalhando agora" — sem isso não dá pra
+  // rastrear o motoboy até o cliente, então bloqueia pegar/demonstrar interesse em pedido.
   const handlePegar = async (pedidoId) => {
+    if (!gpsAtivo) { alert('Ligue o GPS pra poder aceitar pedidos — é como você avisa que está disponível.'); return; }
     setPegando(pedidoId);
     try {
       await pegarPedido(pedidoId);
@@ -924,6 +1007,7 @@ const MotoboyPortal = () => {
   );
 
   const aceitos = afiliacoes.filter((a) => a.status === 'aceito');
+  const emProducaoVisivel = emProducao.filter((p) => !dispensados.includes(p.id));
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
@@ -1018,6 +1102,85 @@ const MotoboyPortal = () => {
               </div>
             )}
 
+            {aceitos.length > 0 && !gpsAtivo && (
+              <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 mb-4 flex items-center gap-2.5">
+                <Icon name="MapPin" size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                <p className="text-xs text-amber-800 dark:text-amber-400">
+                  <strong>GPS desligado</strong> — ligue pra poder demonstrar interesse ou aceitar pedidos.
+                </p>
+              </div>
+            )}
+
+            {emProducaoVisivel.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="ChefHat" size={14} className="text-blue-500" />
+                  <p className="text-sm font-black text-[#18181B] dark:text-[#F4F4F5] uppercase tracking-wide">
+                    {emProducaoVisivel.length} pedido{emProducaoVisivel.length > 1 ? 's' : ''} em produção
+                  </p>
+                </div>
+                {emProducaoVisivel.map((p) => {
+                  const cli = p.cliente ?? {};
+                  const addr = cli.address_json ?? {};
+                  const endereco = [addr.logradouro, addr.numero, addr.bairro].filter(Boolean).join(', ');
+                  return (
+                  <div key={p.id} className="bg-blue-50 dark:bg-blue-950/30 rounded-2xl border-2 border-dashed border-blue-300 dark:border-blue-800 p-4 mb-3 space-y-2.5">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0">
+                        <p className="font-black text-[#18181B] dark:text-[#F4F4F5] text-base">Pedido #{p.id}</p>
+                        {p.restaurant_name && (
+                          <p className="text-xs font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1 truncate">
+                            <Icon name="Store" size={11} /> {p.restaurant_name}
+                          </p>
+                        )}
+                        {cli.name && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] truncate">{cli.name}</p>}
+                        {endereco && (
+                          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 mt-0.5">
+                            <Icon name="MapPin" size={11} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <span className="truncate">{endereco}</span>
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-sm font-black text-[#FF441F] flex-shrink-0">{fmt(p.total)}</p>
+                    </div>
+                    <p className="text-xs text-blue-700 dark:text-blue-400">
+                      Ainda em preparo — {p.total_interessados > 0
+                        ? `${p.total_interessados} motoboy${p.total_interessados > 1 ? 's' : ''} concorrendo`
+                        : 'ninguém concorrendo ainda'}
+                    </p>
+                    {p.meu_interesse ? (
+                      <button
+                        onClick={() => handleDesistirInteresse(p.id)}
+                        disabled={marcandoInteresse === p.id}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <Icon name="CheckCircle2" size={14} />
+                        {marcandoInteresse === p.id ? 'Aguarde...' : 'Você está concorrendo — toque pra desistir'}
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDemonstrarInteresse(p.id)}
+                          disabled={marcandoInteresse === p.id}
+                          className="flex-1 py-2.5 border-2 border-blue-400 dark:border-blue-700 bg-white dark:bg-[#18181B] text-blue-700 dark:text-blue-400 font-bold text-xs rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 transition-colors"
+                        >
+                          {marcandoInteresse === p.id ? 'Aguarde...' : 'Tenho interesse — quero concorrer'}
+                        </button>
+                        <button
+                          onClick={() => handleDispensar(p.id)}
+                          title="Não mostrar mais este pedido"
+                          className="flex-shrink-0 px-3 py-2.5 text-[#71717A] dark:text-[#A1A1AA] text-xs font-bold rounded-xl hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] transition-colors"
+                        >
+                          Não tenho interesse
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+              </div>
+            )}
+
             {disponiveis.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -1070,7 +1233,7 @@ const MotoboyPortal = () => {
               </div>
             )}
 
-            {pedidos.length === 0 && disponiveis.length === 0 ? (
+            {pedidos.length === 0 && disponiveis.length === 0 && emProducao.length === 0 ? (
               <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-10 text-center">
                 <Icon name="CheckCircle" size={40} className="mx-auto mb-3 text-green-400" />
                 <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">Nenhum pedido no momento</p>
