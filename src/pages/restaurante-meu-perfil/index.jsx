@@ -195,7 +195,7 @@ const RestauranteMeuPerfil = () => {
 
       <main className="p-6 max-w-2xl mx-auto space-y-6">
         <DadosEstabelecimentoForm />
-        <CredenciaisForm currentEmail={user?.email} />
+        <CredenciaisForm currentEmail={user?.email} mostrarSeguranca2FA />
       </main>
     </div>
   );

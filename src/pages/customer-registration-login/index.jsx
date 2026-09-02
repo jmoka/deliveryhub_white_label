@@ -5,6 +5,7 @@ import Icon from '../../components/AppIcon';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
+import TwoFactorVerification from '../../components/TwoFactorVerification';
 import { authService } from '../../services/authService';
 import { APP_NAME } from '../../constants/brand';
 
@@ -18,8 +19,12 @@ const CustomerRegistrationLogin = () => {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  // Preenchido quando signIn devolve requires2fa — credenciais ficam só em
+  // memória (nunca persistidas) só pra permitir "reenviar código" sem pedir
+  // a senha de novo.
+  const [twoFactor, setTwoFactor] = useState(null);
 
-  const { signIn, signUp, isAuthenticated, isAdmin, isRestaurantOwner, isMotoboy } = useAuth();
+  const { signIn, signUp, verifyTwoFactor, isAuthenticated, isAdmin, isRestaurantOwner, isMotoboy } = useAuth();
 
   // Motoboy também compra como qualquer usuário — cai na vitrine normal (com
   // o botão "Painel do motoboy" no topo), não direto no painel de entregas.
@@ -48,6 +53,16 @@ const CustomerRegistrationLogin = () => {
         return;
       }
 
+      if (result?.requires2fa) {
+        setTwoFactor({
+          challengeId: result.challengeId,
+          method: result.method,
+          emailOrPhone: formData?.emailOrPhone,
+          password: formData?.password,
+        });
+        return;
+      }
+
       const erro = new Error(result?.error || 'Credenciais inválidas');
       if (result?.bloqueadoAte) erro.bloqueadoAte = result.bloqueadoAte;
       throw erro;
@@ -55,6 +70,26 @@ const CustomerRegistrationLogin = () => {
       throw error;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyTwoFactor = async (code) => {
+    setLoading(true);
+    try {
+      const result = await verifyTwoFactor(twoFactor.challengeId, code);
+      if (!result?.success) throw new Error(result?.error || 'Código inválido');
+      navigate(getRedirectUrl(location?.state?.from));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Não existe endpoint de "reenviar" isolado — refaz o login com a mesma
+  // senha (guardada só em memória) pra gerar um desafio/código novos.
+  const handleResendTwoFactor = async () => {
+    const result = await signIn(twoFactor.emailOrPhone, twoFactor.password);
+    if (result?.requires2fa) {
+      setTwoFactor((prev) => ({ ...prev, challengeId: result.challengeId }));
     }
   };
 
@@ -77,7 +112,10 @@ const CustomerRegistrationLogin = () => {
   };
 
   const handleForgotPassword = async (email) => {
-    await authService.resetPassword(email);
+    const result = await authService.resetPassword(email);
+    if (!result?.success) {
+      throw new Error(result?.error || 'Erro ao enviar email de recuperação. Tente novamente.');
+    }
   };
 
   return (
@@ -103,6 +141,19 @@ const CustomerRegistrationLogin = () => {
       <main className="flex-1 px-4 py-8">
         <div className="max-w-md mx-auto space-y-6">
 
+          {twoFactor ? (
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl shadow-sm border border-[#E4E4E7] dark:border-[#3F3F46] p-6">
+              <TwoFactorVerification
+                method={twoFactor.method}
+                onVerify={handleVerifyTwoFactor}
+                onResendCode={handleResendTwoFactor}
+                onBack={() => setTwoFactor(null)}
+                loading={loading}
+                primaryColor="#2563EB"
+              />
+            </div>
+          ) : (
+          <>
           {/* Card principal */}
           <div className="bg-white dark:bg-[#27272A] rounded-2xl shadow-sm border border-[#E4E4E7] dark:border-[#3F3F46] p-6 space-y-5">
             <div className="text-center">
@@ -205,6 +256,8 @@ const CustomerRegistrationLogin = () => {
                 Já é entregador? Entre por aqui em cima
               </button>
             </>
+          )}
+          </>
           )}
         </div>
       </main>

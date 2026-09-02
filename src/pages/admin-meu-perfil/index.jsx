@@ -11,7 +11,7 @@ const AdminMeuPerfil = () => {
       <AdminHeader active="/admin/meu-perfil" title="Painel Dev-Admin" subtitle="Meu Perfil" />
 
       <main className="p-6 max-w-2xl mx-auto">
-        <CredenciaisForm currentEmail={user?.email} />
+        <CredenciaisForm currentEmail={user?.email} mostrarSeguranca2FA />
       </main>
     </div>
   );

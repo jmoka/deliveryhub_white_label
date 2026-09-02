@@ -106,6 +106,14 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: mensagem, bloqueadoAte: body?.bloqueado_ate ?? null };
       }
 
+      // Conta com 2FA ativo (admin/dono de restaurante) — o backend segura a sessão
+      // já emitida e devolve um desafio em vez dos tokens. Só chama setSession depois
+      // que o código for confirmado, via verifyTwoFactor abaixo.
+      if (body?.requires2fa) {
+        setLoading(false);
+        return { success: false, requires2fa: true, method: body.method, challengeId: body.challenge_id };
+      }
+
       const { error } = await supabase?.auth?.setSession({ access_token: body.access_token, refresh_token: body.refresh_token });
       if (error) {
         setAuthError(error?.message);
@@ -126,6 +134,36 @@ export const AuthProvider = ({ children }) => {
       setLoading(false)
     }
   }
+
+  // Segundo passo do login quando signIn devolveu requires2fa — troca o código
+  // (TOTP ou email) pelos tokens que o backend segurou, e só então abre a sessão.
+  const verifyTwoFactor = async (challengeId, code) => {
+    setAuthError(null);
+    try {
+      const res = await fetch(apiPath('/api/auth-principal/verify-2fa'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challenge_id: challengeId, code }),
+      });
+      const body = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const mensagem = body?.message ?? 'Código inválido';
+        setAuthError(mensagem);
+        return { success: false, error: mensagem };
+      }
+
+      const { error } = await supabase?.auth?.setSession({ access_token: body.access_token, refresh_token: body.refresh_token });
+      if (error) {
+        setAuthError(error?.message);
+        return { success: false, error: error?.message };
+      }
+      return { success: true };
+    } catch {
+      setAuthError('Algo deu errado. Tente novamente.');
+      return { success: false, error: 'Verification failed' };
+    }
+  };
 
   const signUp = async (email, password, userData = {}) => {
     setAuthError(null)
@@ -212,6 +250,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     authError,
     signIn,
+    verifyTwoFactor,
     signUp,
     signOut,
     clearError,

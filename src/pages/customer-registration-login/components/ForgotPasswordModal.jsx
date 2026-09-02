@@ -35,7 +35,7 @@ const ForgotPasswordModal = ({
       await onResetPassword(email);
       setSent(true);
     } catch (error) {
-      setError('Erro ao enviar email de recuperação');
+      setError(error?.message || 'Erro ao enviar email de recuperação');
     } finally {
       setLoading(false);
     }
