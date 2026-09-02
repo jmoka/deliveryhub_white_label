@@ -7,6 +7,7 @@ import { ThemeToggle } from '../../contexts/ThemeContext';
 import Icon from '../../components/AppIcon';
 import { imgUrl } from '../../lib/imgUrl';
 import { aplicarFaviconLoja, restaurarFaviconPadrao } from '../../utils/faviconLoja';
+import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -392,7 +393,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             <div className="w-7 h-7 bg-[#FF441F] rounded-lg flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
               <Icon name="Utensils" size={14} className="text-white" />
             </div>
-            <span className="font-black text-[#18181B] dark:text-[#F4F4F5] text-sm hidden sm:block">DeliveryHub</span>
+            <span className="font-black text-[#18181B] dark:text-[#F4F4F5] text-sm hidden sm:block">{APP_NAME}</span>
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm truncate">{restaurante.name}</p>

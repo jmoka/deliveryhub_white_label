@@ -8,6 +8,7 @@ import { imgUrl } from '../../lib/imgUrl';
 import { apiPath } from '../../lib/apiUrl';
 import { getPerfil } from '../../services/perfilService';
 import { supabase } from '../../lib/supabase';
+import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -15,8 +16,16 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 // então a página renderiza igual até o fetch de /api/r/branding resolver
 // (ou se o admin nunca tiver configurado nada em /admin/aparencia).
 const DEFAULT_MARCA = {
+  logo_tipo: 'icone', // 'icone' | 'imagem'
   logo_icon: 'Utensils',
-  nome_marca: 'DeliveryHub',
+  logo_imagem_url: '',
+  logo_bg_color: '#FF441F',
+  logo_bg_opacity: 100,
+  logo_border_color: '',
+  nome_marca_bg_color: '',
+  nome_marca_bg_opacity: 100,
+  nome_marca_border_color: '',
+  nome_marca: APP_NAME,
   header_bg_color: '#FFFFFF',
   header_bg_opacity: 95,
   header_text_color: '#18181B',
@@ -41,14 +50,32 @@ const DEFAULT_MARCA = {
   hero_fundo_gradient_to: '#FF7A00',
   hero_fundo_imagem_url: '',
   hero_fundo_opacity: 100,
+  hero_fundo_transparente: false,
+  hero_busca_offset_x: 0, // px — ajuste fino lateral da barra de busca
+  hero_busca_offset_y: 0, // px — ajuste fino vertical da barra de busca
   stat1_label: 'Restaurantes',
   stat2_label: 'Avaliação média',
   stat3_label: 'Min. entrega',
   stat3_valor: '~30',
+  stats_valor_color: '#FFFFFF',
+  stats_valor_font_weight: '900',
+  stats_label_color: '#FFFFFF',
+  stats_label_opacity: 60,
   footer_bg_color: '#FFFFFF',
   footer_bg_opacity: 100,
   footer_text_color: '#71717A',
   footer_link_color: '#FF441F',
+  // Botão "Admin" no header, visível só pra quem é admin — só o texto é
+  // próprio dele, o resto do estilo é compartilhado com os demais botões
+  // do header (Carrinho, Pedidos, Sair, Seja um entregador/vendedor, Painel).
+  botao_admin_texto: 'Admin',
+  botoes_header_text_color: '#18181B',
+  botoes_header_font_weight: '600',
+  botoes_header_bg_color: '',
+  botoes_header_bg_opacity: 100,
+  botoes_header_border_color: '',
+  botoes_header_hover_bg_color: '#FF441F',
+  botoes_header_hover_bg_opacity: 5,
 };
 
 const hexToRgba = (hex, alpha) => {
@@ -633,7 +660,7 @@ const SidebarRight = ({ restaurantes, navigate }) => {
 /* ── Hero ────────────────────────────────────────────────────────── */
 const Hero = ({ busca, setBusca, totalRest, mediaNota, marca }) => (
   <section className="relative overflow-hidden">
-    {marca.hero_fundo_tipo === 'imagem' && marca.hero_fundo_imagem_url ? (
+    {marca.hero_fundo_transparente ? null : marca.hero_fundo_tipo === 'imagem' && marca.hero_fundo_imagem_url ? (
       <>
         <div className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${marca.hero_fundo_imagem_url})`, opacity: pct(marca.hero_fundo_opacity) }} />
@@ -668,7 +695,8 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota, marca }) => (
         transition={{ delay: 0.2, duration: 0.4 }}
         className="max-w-xl mx-auto mb-8"
       >
-        <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-2xl shadow-black/20">
+        <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-2xl shadow-black/20"
+          style={{ marginTop: marca.hero_busca_offset_y || 0, marginLeft: marca.hero_busca_offset_x || 0 }}>
           <Icon name="Search" size={18} className="text-[var(--texto-secundario)] flex-shrink-0" />
           <input
             value={busca}
@@ -692,21 +720,21 @@ const Hero = ({ busca, setBusca, totalRest, mediaNota, marca }) => (
         className="flex justify-around items-center max-w-md mx-auto"
       >
         <div className="flex flex-col items-center gap-0.5">
-          <Icon name="Store" size={16} className="text-white/60 mb-0.5" />
-          <span className="text-xl font-black">{totalRest > 0 ? `${totalRest}+` : '—'}</span>
-          <span className="text-[11px] text-white/60">{marca.stat1_label}</span>
+          <Icon name="Store" size={16} className="mb-0.5" color={hexToRgba(marca.stats_label_color, pct(marca.stats_label_opacity))} />
+          <span className="text-xl" style={{ color: marca.stats_valor_color, fontWeight: marca.stats_valor_font_weight }}>{totalRest > 0 ? `${totalRest}+` : '—'}</span>
+          <span className="text-[11px]" style={{ color: hexToRgba(marca.stats_label_color, pct(marca.stats_label_opacity)) }}>{marca.stat1_label}</span>
         </div>
         <div className="w-px h-10 bg-white/20" />
         <div className="flex flex-col items-center gap-0.5">
-          <Icon name="Star" size={16} className="text-white/60 mb-0.5" fill="currentColor" />
-          <span className="text-xl font-black">{mediaNota > 0 ? mediaNota.toFixed(1) : '4.8'}</span>
-          <span className="text-[11px] text-white/60">{marca.stat2_label}</span>
+          <Icon name="Star" size={16} className="mb-0.5" fill="currentColor" color={hexToRgba(marca.stats_label_color, pct(marca.stats_label_opacity))} />
+          <span className="text-xl" style={{ color: marca.stats_valor_color, fontWeight: marca.stats_valor_font_weight }}>{mediaNota > 0 ? mediaNota.toFixed(1) : '4.8'}</span>
+          <span className="text-[11px]" style={{ color: hexToRgba(marca.stats_label_color, pct(marca.stats_label_opacity)) }}>{marca.stat2_label}</span>
         </div>
         <div className="w-px h-10 bg-white/20" />
         <div className="flex flex-col items-center gap-0.5">
-          <Icon name="Truck" size={16} className="text-white/60 mb-0.5" />
-          <span className="text-xl font-black">{marca.stat3_valor}</span>
-          <span className="text-[11px] text-white/60 whitespace-nowrap">{marca.stat3_label}</span>
+          <Icon name="Truck" size={16} className="mb-0.5" color={hexToRgba(marca.stats_label_color, pct(marca.stats_label_opacity))} />
+          <span className="text-xl" style={{ color: marca.stats_valor_color, fontWeight: marca.stats_valor_font_weight }}>{marca.stat3_valor}</span>
+          <span className="text-[11px] whitespace-nowrap" style={{ color: hexToRgba(marca.stats_label_color, pct(marca.stats_label_opacity)) }}>{marca.stat3_label}</span>
         </div>
       </motion.div>
     </div>
@@ -734,6 +762,7 @@ const MenuCatalogProductBrowse = () => {
   const [busca, setBusca]               = useState('');
   const [catAtiva, setCatAtiva]         = useState(null);
   const [viewMode, setViewMode]         = useState('grid');
+  const [hoveredHeaderBtn, setHoveredHeaderBtn] = useState(null);
   const [badgeCount, setBadgeCount]     = useState(() => cartCount());
   const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
   const [perfilCliente, setPerfilCliente] = useState(null);
@@ -745,6 +774,25 @@ const MenuCatalogProductBrowse = () => {
       .then((d) => setMarca((m) => ({ ...m, ...d })))
       .catch(() => {});
   }, []);
+
+  // Estilo compartilhado por todos os botões do header (Admin, Carrinho,
+  // Pedidos, Sair, Seja um entregador/vendedor, Painel do motoboy/restaurante)
+  // — uma config só em /admin/aparencia. `id` identifica qual botão está com
+  // hover no momento.
+  const headerBtnProps = (id) => ({
+    onMouseEnter: () => setHoveredHeaderBtn(id),
+    onMouseLeave: () => setHoveredHeaderBtn((cur) => (cur === id ? null : cur)),
+    style: {
+      color: marca.botoes_header_text_color,
+      fontWeight: marca.botoes_header_font_weight,
+      backgroundColor: hoveredHeaderBtn === id && marca.botoes_header_hover_bg_color
+        ? hexToRgba(marca.botoes_header_hover_bg_color, pct(marca.botoes_header_hover_bg_opacity))
+        : marca.botoes_header_bg_color
+          ? hexToRgba(marca.botoes_header_bg_color, pct(marca.botoes_header_bg_opacity))
+          : 'transparent',
+      border: marca.botoes_header_border_color ? `1px solid ${marca.botoes_header_border_color}` : 'none',
+    },
+  });
 
   // Filtro geográfico — localização automática (GPS do navegador) + filtros manuais
   // de Estado/Cidade/Bairro/CEP. Sem filtro manual ativo, a localização já limita a
@@ -1005,24 +1053,41 @@ const MenuCatalogProductBrowse = () => {
         style={{ backgroundColor: hexToRgba(marca.header_bg_color, pct(marca.header_bg_opacity)), '--header-text': marca.header_text_color }}>
         <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-9 h-9 bg-[#FF441F] rounded-xl flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
-              <Icon name={marca.logo_icon} size={18} className="text-white" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm shadow-[#FF441F]/30 overflow-hidden"
+              style={{
+                backgroundColor: hexToRgba(marca.logo_bg_color || '#FF441F', pct(marca.logo_bg_opacity)),
+                border: marca.logo_border_color ? `1px solid ${marca.logo_border_color}` : 'none',
+              }}>
+              {marca.logo_tipo === 'imagem' && marca.logo_imagem_url ? (
+                <img src={marca.logo_imagem_url} alt={marca.nome_marca} className="w-full h-full object-cover" />
+              ) : (
+                <Icon name={marca.logo_icon} size={18} className="text-white" />
+              )}
             </div>
-            <span className="font-black text-[var(--header-text)] text-lg hidden sm:block tracking-tight">{marca.nome_marca}</span>
+            <span
+              className="font-black text-[var(--header-text)] text-lg hidden sm:block tracking-tight rounded-lg"
+              style={{
+                backgroundColor: marca.nome_marca_bg_color ? hexToRgba(marca.nome_marca_bg_color, pct(marca.nome_marca_bg_opacity)) : 'transparent',
+                border: marca.nome_marca_border_color ? `1px solid ${marca.nome_marca_border_color}` : 'none',
+                padding: (marca.nome_marca_bg_color || marca.nome_marca_border_color) ? '2px 8px' : undefined,
+              }}
+            >
+              {marca.nome_marca}
+            </span>
           </button>
 
           <div className="flex items-center gap-1 min-w-0 overflow-x-auto">
             {isMotoboy() ? (
-              <button onClick={() => navigate('/motoboy')}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Painel do motoboy">
+              <button onClick={() => navigate('/motoboy')} {...headerBtnProps('painel-motoboy')}
+                className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 rounded-lg transition-colors" title="Painel do motoboy">
                 <Icon name="Bike" size={18} className="sm:hidden" />
                 <Icon name="Bike" size={16} className="hidden sm:block" />
-                <span className="hidden sm:inline text-xs font-semibold">Painel do motoboy</span>
+                <span className="hidden sm:inline text-xs">Painel do motoboy</span>
               </button>
             ) : (
               isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
-                <button onClick={() => navigate('/motoboy/cadastro')}
-                  className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[var(--header-text)] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um entregador">
+                <button onClick={() => navigate('/motoboy/cadastro')} {...headerBtnProps('seja-entregador')}
+                  className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 text-xs rounded-lg transition-colors" title="Seja um entregador">
                   <Icon name="Bike" size={18} className="sm:hidden" />
                   <Icon name="Bike" size={16} className="hidden sm:block" />
                   <span className="hidden sm:inline">Seja um entregador</span>
@@ -1030,54 +1095,55 @@ const MenuCatalogProductBrowse = () => {
               )
             )}
             {!isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
-              <button onClick={() => navigate('/restaurant-registration-setup')}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 text-xs font-semibold text-[var(--header-text)] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Seja um vendedor">
+              <button onClick={() => navigate('/restaurant-registration-setup')} {...headerBtnProps('seja-vendedor')}
+                className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 text-xs rounded-lg transition-colors" title="Seja um vendedor">
                 <Icon name="Store" size={18} className="sm:hidden" />
                 <Icon name="Store" size={16} className="hidden sm:block" />
                 <span className="hidden sm:inline">Seja um vendedor</span>
               </button>
             )}
-            <button onClick={() => navigate('/shopping-cart-checkout')}
-              className="relative p-2 text-[var(--header-text)] hover:text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg transition-colors" title="Carrinho">
+            <button onClick={() => navigate('/shopping-cart-checkout')} {...headerBtnProps('carrinho')}
+              className="relative inline-flex items-center justify-center h-10 w-10 rounded-lg transition-colors" title="Carrinho">
               <Icon name="ShoppingCart" size={20} />
             </button>
             {isAuthenticated() ? (
               <>
                 {isAdmin() && (
-                  <button onClick={() => navigate('/admin')}
-                    className="p-2 sm:px-3 sm:py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Painel Admin">
-                    <span className="hidden sm:inline text-xs font-semibold">Admin</span>
+                  <button onClick={() => navigate('/admin')} {...headerBtnProps('admin')}
+                    className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 rounded-lg transition-colors"
+                    title="Painel Admin">
+                    <span className="hidden sm:inline text-xs">{marca.botao_admin_texto || 'Admin'}</span>
                     <Icon name="LayoutDashboard" size={18} className="sm:hidden" />
                   </button>
                 )}
                 {isRestaurantOwner() && (
-                  <button onClick={() => navigate('/restaurante')}
-                    className="p-2 sm:px-3 sm:py-1.5 text-[#FF441F] hover:bg-[#FF441F]/5 rounded-lg" title="Meu Painel">
-                    <span className="hidden sm:inline text-xs font-semibold">Painel</span>
+                  <button onClick={() => navigate('/restaurante')} {...headerBtnProps('painel-restaurante')}
+                    className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 rounded-lg transition-colors" title="Meu Painel">
+                    <span className="hidden sm:inline text-xs">Painel</span>
                     <Icon name="Store" size={18} className="sm:hidden" />
                   </button>
                 )}
                 {!isAdmin() && !isRestaurantOwner() && (
                   <button onClick={() => navigate('/customer-profile')}
-                    className="w-8 h-8 rounded-full overflow-hidden bg-[#F4F4F5] flex-shrink-0 border border-[#E4E4E7] flex items-center justify-center"
+                    className="h-10 w-10 rounded-full overflow-hidden bg-[#F4F4F5] flex-shrink-0 border border-[#E4E4E7] flex items-center justify-center"
                     title="Meu perfil">
                     {perfilCliente?.foto_perfil_url
                       ? <img src={perfilCliente.foto_perfil_url} alt="Meu perfil" className="w-full h-full object-cover" />
                       : <Icon name="User" size={16} className="text-[var(--header-text)]" />}
                   </button>
                 )}
-                <button onClick={() => navigate('/customer-account-order-history')}
-                  className="p-2 text-[var(--header-text)] hover:text-[#27272A] hover:bg-[#F4F4F5] rounded-lg" title="Pedidos">
+                <button onClick={() => navigate('/customer-account-order-history')} {...headerBtnProps('pedidos')}
+                  className="inline-flex items-center justify-center h-10 w-10 rounded-lg transition-colors" title="Pedidos">
                   <Icon name="ClipboardList" size={19} />
                 </button>
-                <button onClick={async () => { await signOut(); }}
-                  className="p-2 text-[var(--header-text)] hover:text-red-500 hover:bg-red-50 rounded-lg" title="Sair">
+                <button onClick={async () => { await signOut(); }} {...headerBtnProps('sair')}
+                  className="inline-flex items-center justify-center h-10 w-10 rounded-lg transition-colors" title="Sair">
                   <Icon name="LogOut" size={18} />
                 </button>
               </>
             ) : (
               <button onClick={() => navigate('/customer-registration-login')}
-                className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] shadow-sm shadow-[#FF441F]/30 transition-colors">
+                className="inline-flex items-center justify-center h-10 px-4 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] shadow-sm shadow-[#FF441F]/30 transition-colors">
                 Entrar
               </button>
             )}
@@ -1089,7 +1155,7 @@ const MenuCatalogProductBrowse = () => {
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} marca={marca} />
 
       {/* ── Filtro geográfico — Estado/Cidade/Bairro/CEP + raio KM ── */}
-      <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+      <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-3 flex flex-wrap items-center gap-2">
           <button
             onClick={pedirLocalizacao}
@@ -1156,7 +1222,7 @@ const MenuCatalogProductBrowse = () => {
       </div>
 
       {/* ── Ícones de categorias coloridos (só desktop) ──────────── */}
-      <div className="hidden lg:block border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+      <div className="hidden lg:block" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5 overflow-x-auto pb-3">
           <div className="flex gap-4" style={{ width: 'max-content', margin: '0 auto' }}>
             {categoriasParaExibir.map((c, i) => {
@@ -1199,7 +1265,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrossel restaurantes populares ─────────────────────── */}
       {restaurantes.length > 0 && (
-        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+        <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Flame" size={15} className="text-[#FF441F]" />
@@ -1212,7 +1278,7 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrossel de combos ativos ────────────────────────────── */}
       {combosComDestaque.length > 0 && (
-        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+        <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
               <Icon name="Package" size={15} className="text-[#FF441F]" />
@@ -1225,14 +1291,14 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
       {loadProd ? (
-        <div className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+        <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
           </div>
         </div>
       ) : (
         carrosseis.map(({ tag, prods }) => (
-          <div key={tag.id} className="border-b border-[#E4E4E7]" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+          <div key={tag.id} style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
               <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
                 <Icon name={tag.is_auto ? 'TrendingUp' : 'Tag'} size={15} className={tag.is_auto ? 'text-amber-500' : 'text-green-600'} />
@@ -1245,7 +1311,7 @@ const MenuCatalogProductBrowse = () => {
       )}
 
       {/* ── Categorias mobile (com cor + label) ─────────────────── */}
-      <div className="lg:hidden border-b border-[#E4E4E7] px-4 py-3" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+      <div className="lg:hidden px-4 py-3" style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
         <div className="flex gap-3 overflow-x-auto pb-2">
           {categoriasParaExibir.map((c, i) => {
             const ativo = catAtiva === c.id;

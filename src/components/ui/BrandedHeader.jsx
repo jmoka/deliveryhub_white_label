@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Image from '../AppImage';
 import { useAuth } from '../../contexts/AuthContext';
+import { APP_NAME } from '../../constants/brand';
 
 const BrandedHeader = ({
   restaurantLogo = '/assets/images/no_image.png',
-  restaurantName = 'DeliveryHub',
+  restaurantName = APP_NAME,
   primaryColor = '#2563EB',
   cartItemCount = 0,
   onSearchClick = () => {},

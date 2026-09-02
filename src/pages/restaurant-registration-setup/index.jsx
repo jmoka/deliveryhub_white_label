@@ -12,6 +12,7 @@ import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaMo
 import AvisoTrialModal from './components/AvisoTrialModal';
 import { registrarRestauranteInicial, finalizarCadastroRestaurante, getTiposEstabelecimento, getPlanosDisponiveisCadastro, verificarDisponibilidadeCadastro } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
+import { APP_NAME } from '../../constants/brand';
 
 const RestaurantRegistrationSetup = () => {
   const navigate = useNavigate();
@@ -479,7 +480,7 @@ const RestaurantRegistrationSetup = () => {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-foreground">
-                  DeliveryHub
+                  {APP_NAME}
                 </h1>
                 <p className="text-xs text-muted-foreground">
                   Configuração do Estabelecimento

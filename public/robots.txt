@@ -2,4 +2,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://deliveryhub.teusite.top/sitemap.xml
+Sitemap: https://pediuvai.com.br/sitemap.xml

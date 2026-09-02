@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
+import { APP_NAME } from '../../../constants/brand';
 
-const LiveChatButton = ({ 
-  restaurantName = 'DeliveryHub',
+const LiveChatButton = ({
+  restaurantName = APP_NAME,
   restaurantPhone = '5511999999999',
   orderId = '#12345',
   primaryColor = '#2563EB',

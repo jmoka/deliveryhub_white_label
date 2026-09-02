@@ -6,6 +6,7 @@ import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
+import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -87,7 +88,7 @@ const CustomerAccountOrderHistory = () => {
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
             <Icon name="Utensils" size={18} className="text-white" />
           </div>
-          <span className="text-sm font-bold text-gray-900 dark:text-[#F4F4F5]">DeliveryHub</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-[#F4F4F5]">{APP_NAME}</span>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/menu-catalog-product-browse')} className="px-3 py-1.5 text-xs text-gray-600 dark:text-[#A1A1AA] hover:bg-gray-100 dark:hover:bg-[#27272A] rounded-lg">

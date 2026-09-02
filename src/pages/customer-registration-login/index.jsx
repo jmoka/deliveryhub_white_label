@@ -6,6 +6,7 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import ForgotPasswordModal from './components/ForgotPasswordModal';
 import { authService } from '../../services/authService';
+import { APP_NAME } from '../../constants/brand';
 
 const TAB_LOGIN = 'login';
 const TAB_REGISTER = 'register';
@@ -94,7 +95,7 @@ const CustomerRegistrationLogin = () => {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
             <Icon name="Utensils" size={18} className="text-white" />
           </div>
-          <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">DeliveryHub</span>
+          <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{APP_NAME}</span>
         </div>
         <div className="w-10" />
       </header>

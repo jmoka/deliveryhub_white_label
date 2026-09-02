@@ -6,6 +6,7 @@ import {
   getPacotesBoost, getMeusBoosts, criarBoost, getBoostDetalhe, pagarBoost,
   getMeusProdutos, getMeusCombos,
 } from '../../services/restauranteService';
+import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -146,7 +147,7 @@ const RestauranteImpulsionar = () => {
       <div className="max-w-3xl mx-auto p-4">
         <h1 className="text-lg font-black text-[#18181B] mb-1">Impulsionar no Marketplace</h1>
         <p className="text-sm text-[#71717A] mb-4">
-          Pague pra aparecer em destaque nos carrosséis da home do DeliveryHub, ao lado de outras lojas. Item patrocinado ganha uma etiqueta "Patrocinado" pro cliente final.
+          Pague pra aparecer em destaque nos carrosséis da home do {APP_NAME}, ao lado de outras lojas. Item patrocinado ganha uma etiqueta "Patrocinado" pro cliente final.
         </p>
 
         {carregando ? (
