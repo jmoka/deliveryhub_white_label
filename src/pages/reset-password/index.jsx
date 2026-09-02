@@ -39,7 +39,7 @@ const ResetPassword = () => {
     if (isMotoboy()) return '/motoboy';
     if (isAdmin()) return '/admin';
     if (isRestaurantOwner()) return '/restaurante';
-    return '/menu-catalog-product-browse';
+    return '/customer-profile';
   };
 
   const handleSubmit = async (e) => {
