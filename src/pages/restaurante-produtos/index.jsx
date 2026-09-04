@@ -95,7 +95,9 @@ const RestauranteProdutos = () => {
   };
 
   useEffect(() => { carregar(); }, []);
-  useEffect(() => { if (moduloSalao) listarImpressoras().then(setImpressoras).catch(() => {}); }, [moduloSalao]);
+  // Impressora do produto roteia pedido de delivery pro KDS certo (Cozinha/Bar/pontos
+  // de preparo) — não é exclusivo de Salão, então busca sempre, independente do módulo.
+  useEffect(() => { listarImpressoras().then(setImpressoras).catch(() => {}); }, []);
 
   const abrirNovo = () => {
     setEditando(null);
@@ -255,6 +257,8 @@ const RestauranteProdutos = () => {
     } else if (campo === 'category_id') {
       novoValor = bruto ? parseInt(bruto) : null;
       if (!novoValor) { cancelarEdicaoCelula(); return; }
+    } else if (campo === 'impressora_id') {
+      novoValor = bruto ? parseInt(bruto) : null;
     } else if (CAMPOS_NUMERICOS.includes(campo)) {
       if (String(bruto).trim() === '') {
         novoValor = campo === 'price' ? valorOriginal : (campo === 'preco_promo' ? null : 0);
@@ -389,6 +393,7 @@ const RestauranteProdutos = () => {
   const catMap = Object.fromEntries(
     [...categorias, ...categoriasGlobais].map((c) => [c.id, c.name])
   );
+  const impMap = Object.fromEntries(impressoras.map((i) => [i.id, i.nome]));
   const tagsMap = Object.fromEntries(tagsDisponiveis.map((t) => [t.slug, t]));
   // Identifica se alguma tag de promoção está ativa (slug contém 'promo')
   const temPromo = form.tags.some((s) => s.includes('promo'));
@@ -464,6 +469,40 @@ const RestauranteProdutos = () => {
         className={`w-full px-1.5 py-1 rounded hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] text-xs text-left ${salvando ? 'opacity-40' : ''}`}
       >
         {salvando ? '...' : (catMap[produto.category_id] ?? 'Sem categoria')}
+      </button>
+    );
+  };
+
+  const renderImpressoraCell = (produto) => {
+    const emEdicao = editCell?.id === produto.id && editCell?.campo === 'impressora_id';
+    const salvando = salvandoCell === `${produto.id}-impressora_id`;
+
+    if (emEdicao) {
+      return (
+        <select
+          autoFocus
+          value={editValue}
+          onChange={(e) => { setEditValue(e.target.value); salvarEdicaoCelula(produto, 'impressora_id', e.target.value); }}
+          onBlur={cancelarEdicaoCelula}
+          className="w-full min-w-0 border border-[#FF441F] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded px-1 py-1 text-xs"
+        >
+          <option value="">Sem impressora</option>
+          {impressoras.map((imp) => (
+            <option key={imp.id} value={imp.id}>{imp.nome}{imp.setor ? ` (${imp.setor})` : ''}</option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => iniciarEdicaoCelula(produto, 'impressora_id')}
+        disabled={!!salvandoCell}
+        title="Clique para editar"
+        className={`w-full px-1.5 py-1 rounded hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] text-xs text-left ${salvando ? 'opacity-40' : ''}`}
+      >
+        {salvando ? '...' : (impMap[produto.impressora_id] ?? '—')}
       </button>
     );
   };
@@ -707,6 +746,7 @@ const RestauranteProdutos = () => {
                   <th className="text-right font-medium px-2 py-2 whitespace-nowrap">Custo</th>
                   <th className="text-right font-medium px-2 py-2 whitespace-nowrap">Estoque</th>
                   <th className="text-right font-medium px-2 py-2 whitespace-nowrap">Estoque mín.</th>
+                  <th className="text-left font-medium px-2 py-2 whitespace-nowrap">Impressora</th>
                   <th className="text-center font-medium px-2 py-2 whitespace-nowrap">⭐</th>
                   <th className="text-center font-medium px-2 py-2 whitespace-nowrap">Status</th>
                   <th className="text-center font-medium px-2 py-2 whitespace-nowrap">Ações</th>
@@ -722,6 +762,7 @@ const RestauranteProdutos = () => {
                     <td className="px-2 py-1 min-w-[90px]">{renderEditableCell(p, 'preco_custo', { numero: true, align: 'right', formatar: fmt })}</td>
                     <td className="px-2 py-1 min-w-[70px]">{renderEditableCell(p, 'quantidade_estoque', { numero: true, align: 'right' })}</td>
                     <td className="px-2 py-1 min-w-[70px]">{renderEditableCell(p, 'quantidade_minima', { numero: true, align: 'right' })}</td>
+                    <td className="px-2 py-1 min-w-[120px]">{renderImpressoraCell(p)}</td>
                     <td className="px-2 py-1 text-center">
                       <button
                         type="button"
@@ -942,21 +983,19 @@ const RestauranteProdutos = () => {
                   />
                 </div>
               </div>
-              {moduloSalao && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Impressora / setor</label>
-                  <select
-                    value={form.impressora_id}
-                    onChange={(e) => setForm((f) => ({ ...f, impressora_id: e.target.value }))}
-                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="">Sem impressora</option>
-                    {impressoras.map((imp) => (
-                      <option key={imp.id} value={imp.id}>{imp.nome} ({imp.setor})</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Impressora / setor</label>
+                <select
+                  value={form.impressora_id}
+                  onChange={(e) => setForm((f) => ({ ...f, impressora_id: e.target.value }))}
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">Sem impressora</option>
+                  {impressoras.map((imp) => (
+                    <option key={imp.id} value={imp.id}>{imp.nome} ({imp.setor})</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Imagem do produto</label>
                 <ImageUpload
