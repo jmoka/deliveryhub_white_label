@@ -12,37 +12,54 @@ const pesoGrupo = (grupo) => 1 + grupo.categorias.reduce((s, c) => s + pesoCateg
 // bloco independente, livre pra ser distribuída separadamente.
 const construirBlocos = (grupos) => {
   const blocos = [];
+  let numeroGrupo = 0;
+  let numeroCategoriaAvulsa = 0;
   for (const grupo of grupos) {
     if (grupo.nome) {
-      blocos.push({ tipo: 'grupo', grupo, peso: pesoGrupo(grupo) });
+      numeroGrupo += 1;
+      blocos.push({ tipo: 'grupo', grupo, peso: pesoGrupo(grupo), numero: numeroGrupo });
     } else {
       for (const categoria of grupo.categorias) {
-        blocos.push({ tipo: 'categoria', categoria, peso: pesoCategoria(categoria) });
+        numeroCategoriaAvulsa += 1;
+        blocos.push({ tipo: 'categoria', categoria, peso: pesoCategoria(categoria), numero: numeroCategoriaAvulsa });
       }
     }
   }
   return blocos;
 };
 
-// Distribui os blocos entre 2 colunas tentando equilibrar a altura impressa —
-// bin-packing guloso: bloco maior primeiro, sempre entra na coluna que está
-// com menos linhas até agora.
+// Distribui os blocos entre 2 colunas respeitando a ORDEM escolhida pelo dono
+// (setas/número no modal) — preenche a coluna 1 em sequência até passar da
+// metade do conteúdo total, só então continua na coluna 2. Antes disso era um
+// bin-packing por tamanho (reordenava tudo sozinho pra "equilibrar" as
+// colunas), o que fazia a ordem configurada não bater com o que saía na
+// impressão — o dono não tinha controle nenhum de qual coluna cada bloco caía.
 const distribuirEmColunas = (grupos) => {
   const blocos = construirBlocos(grupos);
-  const ordenados = [...blocos].sort((a, b) => b.peso - a.peso);
+  const pesoTotal = blocos.reduce((s, b) => s + b.peso, 0);
+  const metade = pesoTotal / 2;
   const colunas = [[], []];
-  const linhas = [0, 0];
-  for (const bloco of ordenados) {
-    const alvo = linhas[0] <= linhas[1] ? 0 : 1;
-    colunas[alvo].push(bloco);
-    linhas[alvo] += bloco.peso;
+  let acumulado = 0;
+  let colunaAtual = 0;
+  for (const bloco of blocos) {
+    colunas[colunaAtual].push(bloco);
+    acumulado += bloco.peso;
+    if (colunaAtual === 0 && acumulado >= metade) colunaAtual = 1;
   }
   return colunas;
 };
 
-const blocoCategoria = (categoria) => `
+// Selo numérico só de orientação (prévia) — nunca aparece na impressão real,
+// serve pra conferir visualmente se a ordem batendo com o número digitado no
+// modal (grupo e categoria têm sua própria numeração, cada um dentro do seu nível).
+const seloNumero = (numero, mostrarNumeracao) =>
+  mostrarNumeracao && numero != null ? `<span class="num-badge">${numero}</span>` : '';
+
+const blocoCategoria = (categoria, ocultarTitulo, mostrarNumeracao, numero) => `
   <div class="categoria">
-    <div class="categoria-titulo">${esc(categoria.nome)}</div>
+    ${ocultarTitulo
+      ? (mostrarNumeracao ? `<div class="categoria-titulo categoria-titulo--so-numero">${seloNumero(numero, mostrarNumeracao)}</div>` : '')
+      : `<div class="categoria-titulo">${seloNumero(numero, mostrarNumeracao)}${esc(categoria.nome)}</div>`}
     ${categoria.produtos.map((p) => `
       <div class="item">
         <div class="item-linha">
@@ -56,14 +73,17 @@ const blocoCategoria = (categoria) => `
   </div>
 `;
 
-const blocoGrupo = (grupo) => `
+const blocoGrupo = (grupo, ocultarTitulo, mostrarNumeracao, numero) => `
   <div class="grupo">
-    <div class="grupo-titulo">${esc(grupo.nome)}</div>
-    ${grupo.categorias.map(blocoCategoria).join('')}
+    <div class="grupo-titulo">${seloNumero(numero, mostrarNumeracao)}${esc(grupo.nome)}</div>
+    ${grupo.categorias.map((c, i) => blocoCategoria(c, ocultarTitulo, mostrarNumeracao, i + 1)).join('')}
   </div>
 `;
 
-const renderBloco = (bloco) => (bloco.tipo === 'grupo' ? blocoGrupo(bloco.grupo) : blocoCategoria(bloco.categoria));
+const renderBloco = (bloco, ocultarTitulo, mostrarNumeracao) =>
+  (bloco.tipo === 'grupo'
+    ? blocoGrupo(bloco.grupo, ocultarTitulo, mostrarNumeracao, bloco.numero)
+    : blocoCategoria(bloco.categoria, ocultarTitulo, mostrarNumeracao, bloco.numero));
 
 /**
  * @param {Object} args
@@ -76,21 +96,24 @@ const renderBloco = (bloco) => (bloco.tipo === 'grupo' ? blocoGrupo(bloco.grupo)
  * @param {string} args.rodape
  * @param {string} [args.observacaoGeral]
  * @param {string} [args.imagemFundoUrl]
+ * @param {boolean} [args.ocultarTituloCategoria]
+ * @param {boolean} [args.autoImprimir] — false pra só gerar o HTML de prévia, sem abrir o diálogo de impressão sozinho.
+ * @param {boolean} [args.mostrarNumeracao] — selos com a posição de cada grupo/categoria, só orientação (prévia).
  */
-export const printCardapioImpresso = ({
+export const montarHtmlCardapioImpresso = ({
   grupos, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
-  observacaoGeral, imagemFundoUrl,
+  observacaoGeral, imagemFundoUrl, ocultarTituloCategoria = false, autoImprimir = true, mostrarNumeracao = false,
 }) => {
   const [colunaEsq, colunaDir] = distribuirEmColunas(grupos);
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio - ${esc(restauranteNome ?? '')}</title>
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio - ${esc(restauranteNome ?? '')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-@page{size:A4;margin:0}
+@page{size:A4;margin:12mm}
 html,body{position:relative}
 body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .fundo{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0.12;z-index:0}
-.conteudo{position:relative;z-index:1;padding:12mm}
+.conteudo{position:relative;z-index:1}
 .header{display:flex;flex-direction:column;align-items:center;margin-bottom:16px}
 .logo{max-width:90px;max-height:90px;object-fit:contain;margin-bottom:8px;border-radius:12px}
 .nome{font-size:26px;font-weight:900;text-align:center;letter-spacing:-0.5px}
@@ -100,6 +123,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .grupo-titulo{font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#18181B;margin-bottom:10px;padding-bottom:5px;border-bottom:3px solid #18181B}
 .categoria{break-inside:avoid;margin-bottom:16px}
 .categoria-titulo{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#FF441F;border-bottom:2px solid #FF441F;padding-bottom:3px;margin-bottom:8px}
+.categoria-titulo--so-numero{border-bottom:none;padding-bottom:0}
+.num-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;margin-right:6px;border-radius:9px;background:#2563EB;color:#fff;font-size:11px;font-weight:900;vertical-align:middle}
+@media print{.num-badge{display:none!important}}
 .item{break-inside:avoid;margin-bottom:7px}
 .item-linha{display:flex;align-items:baseline;gap:6px}
 .item-nome{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -112,6 +138,13 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .rodape-frase{font-size:12px;font-style:italic;color:#27272A;margin-bottom:4px}
 .rodape-contato{font-size:11px;color:#71717A}
 @media print{button{display:none!important}}
+/* Só pra prévia em tela (iframe) — simula a folha A4 num fundo cinza, já que
+@page/margin nativo não tem efeito nenhum fora da impressão de verdade. Padding
+fica no body (não em .conteudo) pra não inflar a medição de altura do script
+de encolher-pra-caber lá embaixo — senão a prévia encolheria mais que o real. */
+@media screen{
+  body{max-width:210mm;margin:16px auto;padding:12mm;box-shadow:0 0 14px rgba(0,0,0,.25)}
+}
 </style></head><body>
 ${imagemFundoUrl ? `<img class="fundo" src="${esc(imagemFundoUrl)}" />` : ''}
 <div class="conteudo">
@@ -120,8 +153,8 @@ ${imagemFundoUrl ? `<img class="fundo" src="${esc(imagemFundoUrl)}" />` : ''}
   <div class="nome">${esc(restauranteNome ?? '')}</div>
 </div>
 <div class="colunas">
-  <div class="coluna">${colunaEsq.map(renderBloco).join('')}</div>
-  <div class="coluna">${colunaDir.map(renderBloco).join('')}</div>
+  <div class="coluna">${colunaEsq.map((bloco) => renderBloco(bloco, ocultarTituloCategoria, mostrarNumeracao)).join('')}</div>
+  <div class="coluna">${colunaDir.map((bloco) => renderBloco(bloco, ocultarTituloCategoria, mostrarNumeracao)).join('')}</div>
 </div>
 ${(observacaoGeral || rodape || endereco || whatsapp) ? `
 <div class="rodape">
@@ -132,11 +165,32 @@ ${(observacaoGeral || rodape || endereco || whatsapp) ? `
 </div>
 <script>
 window.addEventListener('load', function(){
-  window.print();
-  setTimeout(function(){ try{ window.frameElement.parentNode.removeChild(window.frameElement) }catch(e){} }, 500);
+  // Encolhe pra caber em no máximo 2 folhas A4 — sem isso, um cardápio grande
+  // simplesmente vaza pra 3ª/4ª página sem nenhum controle. "zoom" (não
+  // "transform") porque reflui o layout de verdade, então a paginação de
+  // impressão já calcula certo quantas páginas vão sair depois de encolher.
+  try {
+    var conteudo = document.querySelector('.conteudo');
+    var mmParaPx = 96 / 25.4;
+    var alturaUtilPorPagina = (297 - 24) * mmParaPx; // A4 menos 12mm de margem em cima/embaixo
+    var orcamento = alturaUtilPorPagina * 2;
+    var altura = conteudo.scrollHeight;
+    if (altura > orcamento) {
+      var escala = Math.max(0.62, orcamento / altura);
+      conteudo.style.zoom = escala;
+    }
+  } catch (e) {}
+  ${autoImprimir ? `window.print();
+  setTimeout(function(){ try{ window.frameElement.parentNode.removeChild(window.frameElement) }catch(e){} }, 500);` : ''}
 });
 </script>
 </body></html>`;
+};
+
+// Gera o HTML e já dispara a impressão sozinho (fluxo de sempre — botão
+// "Gerar cardápio impresso"), num iframe escondido descartado logo depois.
+export const printCardapioImpresso = (args) => {
+  const html = montarHtmlCardapioImpresso({ ...args, autoImprimir: true });
 
   const iframe = document.createElement('iframe');
   iframe.id = `cardapio-impresso-frame-${Date.now()}`;

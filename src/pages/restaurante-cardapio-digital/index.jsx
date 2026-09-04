@@ -6,7 +6,7 @@ import {
   getMinhaEmpresa, getMeusProdutos, getObservacoesCategorias, salvarObservacaoCategoria,
 } from '../../services/restauranteService';
 import { printCartazCardapioDigital, printTicketCardapioDigital } from '../../utils/printComanda';
-import { printCardapioImpresso } from '../../utils/printCardapioImpresso';
+import { printCardapioImpresso, montarHtmlCardapioImpresso } from '../../utils/printCardapioImpresso';
 import ImageUpload from '../../components/ui/ImageUpload';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
@@ -17,6 +17,9 @@ const LS_RODAPE = 'cardapioImpresso.rodape';
 const LS_USAR_LOGO = 'cardapioImpresso.usarLogo';
 const LS_OBS_GERAL = 'cardapioImpresso.observacaoGeral';
 const LS_IMAGEM_FUNDO = 'cardapioImpresso.imagemFundo';
+const LS_OCULTAR_TITULO_CATEGORIA = 'cardapioImpresso.ocultarTituloCategoria';
+const LS_ORDEM_CATEGORIAS = 'cardapioImpresso.ordemCategorias';
+const LS_ORDEM_GRUPOS = 'cardapioImpresso.ordemGrupos';
 
 const CardapioImpressoModal = ({ onClose }) => {
   const [carregando, setCarregando] = useState(true);
@@ -27,8 +30,22 @@ const CardapioImpressoModal = ({ onClose }) => {
   const [rodape, setRodape] = useState(() => localStorage.getItem(LS_RODAPE) ?? '');
   const [observacaoGeral, setObservacaoGeral] = useState(() => localStorage.getItem(LS_OBS_GERAL) ?? '');
   const [imagemFundo, setImagemFundo] = useState(() => localStorage.getItem(LS_IMAGEM_FUNDO) ?? '');
+  const [ocultarTituloCategoria, setOcultarTituloCategoria] = useState(() => localStorage.getItem(LS_OCULTAR_TITULO_CATEGORIA) === 'true');
+  // Nomes de categoria na ordem manual escolhida pelo dono (ex: Lanches antes de
+  // Bebidas) — categoria que ainda não apareceu aqui cai no fim, em ordem alfabética.
+  const [ordemCategorias, setOrdemCategorias] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(LS_ORDEM_CATEGORIAS) ?? '[]'); } catch { return []; }
+  });
+  // Mesma ideia, mas pro nível de GRUPO (ex: mover "Tira Gosto" inteiro pra
+  // cima de "Refeição 4 Pessoas") — grupo "sem grupo" (nome null) não entra
+  // aqui, fica sempre por último como já era antes.
+  const [ordemGrupos, setOrdemGrupos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(LS_ORDEM_GRUPOS) ?? '[]'); } catch { return []; }
+  });
   // category_id -> observação (salva no banco, ver GET/PUT /restaurante/categorias/observacoes)
   const [observacoesCategoria, setObservacoesCategoria] = useState({});
+  // HTML da prévia (null = prévia fechada) — só computador, ver botão "Visualizar".
+  const [htmlPreview, setHtmlPreview] = useState(null);
 
   useEffect(() => {
     Promise.all([getMeusProdutos(), getMinhaEmpresa(), getObservacoesCategorias()])
@@ -51,6 +68,92 @@ const CardapioImpressoModal = ({ onClose }) => {
 
   const salvarObservacaoAoSair = (categoryId, texto) => {
     salvarObservacaoCategoria(categoryId, texto).catch(() => {});
+  };
+
+  // Aplica a ordem manual (por nome) dentro de um mesmo bucket (grupo ou "sem
+  // grupo") — quem ainda não foi reordenado cai no fim, alfabético entre si.
+  const ordenarCategorias = (categorias) => {
+    const comIndice = categorias.map((c) => ({ c, i: ordemCategorias.indexOf(c.nome) }));
+    comIndice.sort((a, b) => {
+      if (a.i === -1 && b.i === -1) return a.c.nome.localeCompare(b.c.nome);
+      if (a.i === -1) return 1;
+      if (b.i === -1) return -1;
+      return a.i - b.i;
+    });
+    return comIndice.map(({ c }) => c);
+  };
+
+  const moverCategoria = (categoriasDoBucket, indice, direcao) => {
+    const alvo = indice + direcao;
+    if (alvo < 0 || alvo >= categoriasDoBucket.length) return;
+    const nomeA = categoriasDoBucket[indice].nome;
+    const nomeB = categoriasDoBucket[alvo].nome;
+    setOrdemCategorias((atual) => {
+      const base = [...atual];
+      for (const c of categoriasDoBucket) if (!base.includes(c.nome)) base.push(c.nome);
+      const ia = base.indexOf(nomeA);
+      const ib = base.indexOf(nomeB);
+      [base[ia], base[ib]] = [base[ib], base[ia]];
+      return base;
+    });
+  };
+
+  // Digitar a posição direto, em vez de clicar ↑/↓ várias vezes — reaproveita
+  // moverCategoria em sucessivos passos de 1, que já sabe reordenar certo.
+  const moverCategoriaParaPosicao = (categoriasDoBucket, indiceAtual, novaPosicao1based) => {
+    const total = categoriasDoBucket.length;
+    const alvo = Math.min(Math.max(1, novaPosicao1based || 1), total) - 1;
+    let atual = [...categoriasDoBucket];
+    let idx = indiceAtual;
+    while (idx !== alvo) {
+      const direcao = alvo > idx ? 1 : -1;
+      moverCategoria(atual, idx, direcao);
+      const tmp = atual[idx]; atual[idx] = atual[idx + direcao]; atual[idx + direcao] = tmp;
+      idx += direcao;
+    }
+  };
+
+  // Mesma lógica de ordenarCategorias/moverCategoria, um nível acima (grupos
+  // nomeados entre si — "sem grupo" nunca entra, sempre fica por último).
+  const ordenarGrupos = (listaGrupos) => {
+    const nomeados = listaGrupos.filter((g) => g.nome);
+    const semGrupo = listaGrupos.filter((g) => !g.nome);
+    const comIndice = nomeados.map((g) => ({ g, i: ordemGrupos.indexOf(g.nome) }));
+    comIndice.sort((a, b) => {
+      if (a.i === -1 && b.i === -1) return a.g.nome.localeCompare(b.g.nome);
+      if (a.i === -1) return 1;
+      if (b.i === -1) return -1;
+      return a.i - b.i;
+    });
+    return [...comIndice.map(({ g }) => g), ...semGrupo];
+  };
+
+  const moverGrupo = (gruposNomeados, indice, direcao) => {
+    const alvo = indice + direcao;
+    if (alvo < 0 || alvo >= gruposNomeados.length) return;
+    const nomeA = gruposNomeados[indice].nome;
+    const nomeB = gruposNomeados[alvo].nome;
+    setOrdemGrupos((atual) => {
+      const base = [...atual];
+      for (const g of gruposNomeados) if (!base.includes(g.nome)) base.push(g.nome);
+      const ia = base.indexOf(nomeA);
+      const ib = base.indexOf(nomeB);
+      [base[ia], base[ib]] = [base[ib], base[ia]];
+      return base;
+    });
+  };
+
+  const moverGrupoParaPosicao = (gruposNomeados, indiceAtual, novaPosicao1based) => {
+    const total = gruposNomeados.length;
+    const alvo = Math.min(Math.max(1, novaPosicao1based || 1), total) - 1;
+    let atual = [...gruposNomeados];
+    let idx = indiceAtual;
+    while (idx !== alvo) {
+      const direcao = alvo > idx ? 1 : -1;
+      moverGrupo(atual, idx, direcao);
+      const tmp = atual[idx]; atual[idx] = atual[idx + direcao]; atual[idx + direcao] = tmp;
+      idx += direcao;
+    }
   };
 
   // Agrupa em 2 níveis direto dos produtos (já vêm com category_name/grupo_name)
@@ -110,16 +213,19 @@ const CardapioImpressoModal = ({ onClose }) => {
     setSelecionados((atual) => (atual.size === produtos.length ? new Set() : new Set(produtos.map((p) => p.id))));
   };
 
-  const gerar = () => {
+  const montarArgsImpressao = () => {
     localStorage.setItem(LS_RODAPE, rodape);
     localStorage.setItem(LS_USAR_LOGO, String(usarLogo));
     localStorage.setItem(LS_OBS_GERAL, observacaoGeral);
     localStorage.setItem(LS_IMAGEM_FUNDO, imagemFundo);
+    localStorage.setItem(LS_OCULTAR_TITULO_CATEGORIA, String(ocultarTituloCategoria));
+    localStorage.setItem(LS_ORDEM_CATEGORIAS, JSON.stringify(ordemCategorias));
+    localStorage.setItem(LS_ORDEM_GRUPOS, JSON.stringify(ordemGrupos));
 
-    const gruposSelecionados = grupos
+    const gruposSelecionados = ordenarGrupos(grupos)
       .map((g) => ({
         nome: g.nome,
-        categorias: g.categorias
+        categorias: ordenarCategorias(g.categorias)
           .map((c) => ({
             nome: c.nome,
             produtos: c.produtos.filter((p) => selecionados.has(p.id)),
@@ -133,7 +239,7 @@ const CardapioImpressoModal = ({ onClose }) => {
       ? [empresa.address, empresa.neighborhood, empresa.city].filter(Boolean).join(', ')
       : '';
 
-    printCardapioImpresso({
+    return {
       grupos: gruposSelecionados,
       restauranteNome: empresa?.name,
       logoUrl: empresa?.logo_url,
@@ -143,9 +249,21 @@ const CardapioImpressoModal = ({ onClose }) => {
       rodape: rodape.trim(),
       observacaoGeral: observacaoGeral.trim(),
       imagemFundoUrl: imagemFundo,
-    });
+      ocultarTituloCategoria,
+    };
+  };
+
+  const gerar = () => {
+    printCardapioImpresso(montarArgsImpressao());
     onClose();
   };
+
+  const visualizar = () => {
+    setHtmlPreview(montarHtmlCardapioImpresso({ ...montarArgsImpressao(), autoImprimir: false, mostrarNumeracao: true }));
+  };
+
+  const gruposOrdenados = ordenarGrupos(grupos);
+  const gruposNomeadosOrdenados = gruposOrdenados.filter((g) => g.nome);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -165,6 +283,10 @@ const CardapioImpressoModal = ({ onClose }) => {
             <label className="flex items-center gap-2 text-sm text-[#27272A] dark:text-[#F4F4F5] cursor-pointer">
               <input type="checkbox" checked={usarLogo} onChange={(e) => setUsarLogo(e.target.checked)} className="w-4 h-4 accent-[#FF441F]" />
               Incluir logomarca no topo
+            </label>
+            <label className="flex items-start gap-2 text-sm text-[#27272A] dark:text-[#F4F4F5] cursor-pointer">
+              <input type="checkbox" checked={ocultarTituloCategoria} onChange={(e) => setOcultarTituloCategoria(e.target.checked)} className="w-4 h-4 accent-[#FF441F] mt-0.5" />
+              <span>Ocultar título das categorias (ex: "BEBIDAS") na impressão — reduz a altura e ajuda a caber em menos páginas</span>
             </label>
             <div>
               <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Observação geral (opcional)</label>
@@ -199,22 +321,72 @@ const CardapioImpressoModal = ({ onClose }) => {
           ) : grupos.length === 0 ? (
             <p className="text-xs text-[#A1A1AA] py-8 text-center">Nenhum produto cadastrado ainda.</p>
           ) : (
-            grupos.map((grupo) => (
+            gruposOrdenados.map((grupo) => (
               <div key={grupo.nome ?? '__sem_grupo__'} className="space-y-3">
                 {grupo.nome && (
-                  <div className="text-xs font-black uppercase tracking-wide text-[#FF441F] border-b border-[#FF441F]/30 pb-1">
-                    {grupo.nome}
+                  <div className="flex items-center gap-2 border-b border-[#FF441F]/30 pb-1">
+                    <div className="text-xs font-black uppercase tracking-wide text-[#FF441F] flex-1 min-w-0 truncate">
+                      {grupo.nome}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <input
+                        type="number"
+                        min={1}
+                        max={gruposNomeadosOrdenados.length}
+                        value={gruposNomeadosOrdenados.indexOf(grupo) + 1}
+                        onChange={(e) => moverGrupoParaPosicao(gruposNomeadosOrdenados, gruposNomeadosOrdenados.indexOf(grupo), parseInt(e.target.value, 10))}
+                        title="Posição deste grupo na impressão"
+                        className="w-11 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1 py-0.5 text-xs text-center"
+                      />
+                      <button type="button"
+                        onClick={() => moverGrupo(gruposNomeadosOrdenados, gruposNomeadosOrdenados.indexOf(grupo), -1)}
+                        disabled={gruposNomeadosOrdenados.indexOf(grupo) === 0}
+                        title="Mover grupo pra cima na impressão"
+                        className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                        <Icon name="ChevronUp" size={14} />
+                      </button>
+                      <button type="button"
+                        onClick={() => moverGrupo(gruposNomeadosOrdenados, gruposNomeadosOrdenados.indexOf(grupo), 1)}
+                        disabled={gruposNomeadosOrdenados.indexOf(grupo) === gruposNomeadosOrdenados.length - 1}
+                        title="Mover grupo pra baixo na impressão"
+                        className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                        <Icon name="ChevronDown" size={14} />
+                      </button>
+                    </div>
                   </div>
                 )}
-                {grupo.categorias.map((categoria) => {
+                {ordenarCategorias(grupo.categorias).map((categoria, indice, categoriasDoBucket) => {
                   const ids = categoria.produtos.map((p) => p.id);
                   const todosSelecionados = ids.every((id) => selecionados.has(id));
                   return (
                     <div key={categoria.nome}>
-                      <label className="flex items-center gap-2 mb-2 cursor-pointer">
-                        <input type="checkbox" checked={todosSelecionados} onChange={() => toggleCategoria(categoria)} className="w-4 h-4 accent-[#FF441F]" />
-                        <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{categoria.nome}</span>
-                      </label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                          <input type="checkbox" checked={todosSelecionados} onChange={() => toggleCategoria(categoria)} className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
+                          <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{categoria.nome}</span>
+                        </label>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <input
+                            type="number"
+                            min={1}
+                            max={categoriasDoBucket.length}
+                            value={indice + 1}
+                            onChange={(e) => moverCategoriaParaPosicao(categoriasDoBucket, indice, parseInt(e.target.value, 10))}
+                            title="Posição desta categoria na impressão"
+                            className="w-11 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1 py-0.5 text-xs text-center"
+                          />
+                          <button type="button" onClick={() => moverCategoria(categoriasDoBucket, indice, -1)} disabled={indice === 0}
+                            title="Mover pra cima na impressão"
+                            className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                            <Icon name="ChevronUp" size={14} />
+                          </button>
+                          <button type="button" onClick={() => moverCategoria(categoriasDoBucket, indice, 1)} disabled={indice === categoriasDoBucket.length - 1}
+                            title="Mover pra baixo na impressão"
+                            className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                            <Icon name="ChevronDown" size={14} />
+                          </button>
+                        </div>
+                      </div>
                       <div className="pl-6 space-y-1.5">
                         {categoria.produtos.map((p) => (
                           <label key={p.id} className="flex items-center justify-between gap-2 cursor-pointer">
@@ -246,13 +418,40 @@ const CardapioImpressoModal = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+        <div className="px-6 py-4 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex gap-2">
+          {/* Prévia de página inteira só faz sentido com espaço de tela — em
+              celular o formulário já ocupa tudo, então some fora do desktop. */}
+          <button onClick={visualizar} disabled={selecionados.size === 0}
+            className="hidden md:flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-40">
+            <Icon name="Eye" size={15} /> Visualizar
+          </button>
           <button onClick={gerar} disabled={selecionados.size === 0}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl bg-[#FF441F] text-white hover:bg-[#E63A19] disabled:opacity-40">
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-bold rounded-xl bg-[#FF441F] text-white hover:bg-[#E63A19] disabled:opacity-40">
             <Icon name="Printer" size={15} /> Gerar cardápio impresso ({selecionados.size})
           </button>
         </div>
       </div>
+
+      {htmlPreview != null && (
+        <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-6">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-3xl h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
+              <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Prévia da impressão</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => document.getElementById('cardapio-preview-iframe')?.contentWindow?.print()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-[#FF441F] text-white hover:bg-[#E63A19]">
+                  <Icon name="Printer" size={13} /> Imprimir
+                </button>
+                <button onClick={() => setHtmlPreview(null)} className="text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+                  <Icon name="X" size={20} />
+                </button>
+              </div>
+            </div>
+            <iframe id="cardapio-preview-iframe" title="Prévia do cardápio impresso" srcDoc={htmlPreview} className="flex-1 w-full border-0 bg-[#525659]" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
