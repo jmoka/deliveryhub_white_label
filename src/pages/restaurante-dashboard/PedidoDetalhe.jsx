@@ -497,6 +497,8 @@ const PedidoDetalhe = ({
           <p className="text-xs text-amber-700 dark:text-amber-400">
             {pedido.comprovante_pagamento_url
               ? 'Confira o comprovante acima antes de confirmar.'
+              : pedido.comprovante_pulado
+              ? `Cliente avisou que vai mostrar/pagar direto ${pedido.retirada_balcao ? 'no balcão' : 'ao motoboy'} — sem comprovante anexado ainda.`
               : 'Cliente ainda não anexou comprovante — confirme só se já recebeu por outro meio.'}
           </p>
           <button

@@ -65,13 +65,41 @@ const comprimirImagem = (file) =>
     img.src = url;
   });
 
-const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId }) => {
+const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, retirada = false }) => {
   const [copiado, setCopiado] = useState(false);
   const [comprovantePreview, setComprovantePreview] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [erroUpload, setErroUpload] = useState(null);
+  const [showAvisoComprovante, setShowAvisoComprovante] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  // Cutucão pra anexar comprovante antes de sair da tela — mas nunca trava o
+  // cliente aqui: quem prefere mostrar/pagar na hora (motoboy ou balcão) segue
+  // em frente sem anexar nada.
+  const handleContinuar = () => {
+    if (manual && !comprovantePreview) { setShowAvisoComprovante(true); return; }
+    onIrAcompanhar();
+  };
+
+  // Avisa o backend que o cliente optou por mostrar/pagar em pessoa em vez de
+  // anexar agora — dono vê essa intenção explícita no painel do pedido.
+  const handlePularComprovante = async () => {
+    setShowAvisoComprovante(false);
+    try {
+      const sessionResult = await supabase.auth.getSession();
+      const token = sessionResult?.data?.session?.access_token;
+      if (token) {
+        await fetch(apiPath(`/api/pedidos/${pedidoId}/pular-comprovante`), {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch {
+      // não trava o cliente por causa disso — é só um aviso pro dono
+    }
+    onIrAcompanhar();
+  };
 
   const copiar = () => {
     navigator.clipboard.writeText(pixData.pix_code).then(() => {
@@ -160,14 +188,46 @@ const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId })
         )}
         <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-400 text-left">
           {manual
-            ? 'Pague com o app do seu banco. O pagamento será confirmado pelo motoboy na entrega.'
+            ? `Pague com o app do seu banco. O pagamento será confirmado ${retirada ? 'na retirada do pedido' : 'pelo motoboy na entrega'}.`
             : 'Após o pagamento, seu pedido é confirmado automaticamente. Válido por 24h.'}
         </div>
-        <button onClick={onIrAcompanhar}
+        <button onClick={handleContinuar}
           className="w-full py-3 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
-          Acompanhar pedido
+          {manual ? 'Enviar o comprovante' : 'Acompanhar pedido'}
         </button>
       </motion.div>
+
+      {showAvisoComprovante && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-sm bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-950/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon name="AlertTriangle" size={18} className="text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Comprovante do pagamento não anexado</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
+                  Você pode anexar o comprovante agora, ou pular e {retirada ? 'mostrar o pagamento no balcão' : 'mostrar/pagar direto ao motoboy'} na hora.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => { setShowAvisoComprovante(false); fileInputRef.current?.click(); }}
+                className="w-full py-2.5 bg-[#FF441F] text-white font-bold text-sm rounded-xl hover:bg-[#E63A19] flex items-center justify-center gap-2">
+                <Icon name="Camera" size={15} /> Anexar comprovante
+              </button>
+              <button
+                onClick={handlePularComprovante}
+                className="w-full py-2.5 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] font-semibold text-sm rounded-xl hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] flex items-center justify-center gap-2">
+                <Icon name={retirada ? 'Store' : 'Bike'} size={15} />
+                {retirada ? 'Mostrar/pagar no balcão' : 'Mostrar/pagar ao motoboy'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
@@ -642,6 +702,7 @@ const SingleCartCheckout = () => {
         total={total}
         manual={pixManual}
         pedidoId={orderId}
+        retirada={retirada}
         onIrAcompanhar={() =>
           navigate('/order-tracking-status', { state: { orderId, restauranteSlug }, replace: true })
         }
