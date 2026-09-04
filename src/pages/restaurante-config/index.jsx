@@ -7,6 +7,7 @@ import {
   gerarTokenGdoor, getStatusGdoor, salvarCnpjEsperadoGdoor,
   getCatalogoGdoor, bloquearSyncGdoor, importarDeGdoor, exportarParaGdoor, getStatusExportacaoGdoor,
   getCatalogoClientesGdoor, bloquearSyncClienteGdoor, importarClientesDeGdoor, exportarClientesParaGdoor, getStatusExportacaoClientesGdoor,
+  getStripeStatus, gerarLinkOnboardingStripe,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -1109,6 +1110,83 @@ const ComissoesConfig = () => {
   );
 };
 
+const STRIPE_STATUS_ROTULO = {
+  ativo: { texto: 'Stripe conectado e ativo', cor: 'green', icone: 'CheckCircle' },
+  em_verificacao: { texto: 'Stripe em verificação pela própria Stripe', cor: 'yellow', icone: 'Clock' },
+  pendente: { texto: 'Stripe conectado — falta concluir o cadastro', cor: 'yellow', icone: 'AlertCircle' },
+  nao_conectado: { texto: 'Stripe não conectado', cor: 'gray', icone: 'AlertCircle' },
+};
+
+const STRIPE_STATUS_CORES = {
+  green: 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400',
+  yellow: 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-400',
+  gray: 'bg-gray-50 dark:bg-[#3F3F46]/40 border-gray-200 dark:border-[#3F3F46] text-gray-700 dark:text-gray-400',
+};
+
+const StripeConectarCard = () => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [conectando, setConectando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  useEffect(() => {
+    getStripeStatus()
+      .then(setStatus)
+      .catch((e) => setErro(e.message))
+      .finally(() => setLoading(false));
+
+    // Voltou do onboarding hospedado do Stripe — limpa o parâmetro da URL,
+    // o status já é buscado de qualquer forma acima.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('stripe')) {
+      params.delete('stripe');
+      const query = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''));
+    }
+  }, []);
+
+  const conectar = async () => {
+    setConectando(true);
+    setErro(null);
+    try {
+      const { url } = await gerarLinkOnboardingStripe();
+      window.location.href = url;
+    } catch (e) {
+      setErro(e.message);
+      setConectando(false);
+    }
+  };
+
+  const s = STRIPE_STATUS_ROTULO[status?.status] ?? STRIPE_STATUS_ROTULO.nao_conectado;
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">Stripe</h2>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+            Outra forma de receber pagamentos online — sem colar tokens: clique em conectar e o Stripe cuida da verificação.
+          </p>
+        </div>
+        {!loading && (
+          <button type="button" onClick={conectar} disabled={conectando}
+            className="px-4 py-2 bg-[#635BFF] hover:bg-[#4b45c9] text-white rounded-lg text-sm font-bold disabled:opacity-50 flex-shrink-0">
+            {conectando ? 'Abrindo...' : status?.conectado ? 'Gerenciar no Stripe' : 'Conectar com Stripe'}
+          </button>
+        )}
+      </div>
+
+      {!loading && (
+        <div className={`mt-3 rounded-lg border px-3 py-2 flex items-center gap-2 text-xs font-medium ${STRIPE_STATUS_CORES[s.cor]}`}>
+          <Icon name={s.icone} size={16} />
+          {s.texto}
+        </div>
+      )}
+      {erro && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erro}</p>}
+    </div>
+  );
+};
+
 const RestauranteConfig = () => {
   const { moduloSalao, moduloGdoor } = useModulosEmpresa();
   const [config, setConfig] = useState(null);
@@ -1258,6 +1336,9 @@ const RestauranteConfig = () => {
                 </p>
               </div>
             </div>
+
+            {/* Stripe — forma alternativa de receber, onboarding hospedado (sem tokens) */}
+            <StripeConectarCard />
 
             {/* Modo de pagamento — PagBank (API) ou manual (motoboy cobra na entrega) */}
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-start gap-3">

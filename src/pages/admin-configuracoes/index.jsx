@@ -17,6 +17,11 @@ const AdminConfiguracoes = () => {
   });
   const [redeInfo, setRedeInfo] = useState(null);
 
+  const [formStripe, setFormStripe] = useState({ stripe_secret_key: '', stripe_webhook_secret: '' });
+  const [salvandoStripe, setSalvandoStripe] = useState(false);
+  const [sucessoStripe, setSucessoStripe] = useState(false);
+  const [erroStripe, setErroStripe] = useState(null);
+
   const [modoIndividual, setModoIndividual] = useState(false);
   const [modoIndividualRestauranteId, setModoIndividualRestauranteId] = useState('');
   const [empresas, setEmpresas] = useState([]);
@@ -94,6 +99,27 @@ const AdminConfiguracoes = () => {
       setErroComissao(err.message);
     } finally {
       setSalvandoComissao(false);
+    }
+  };
+
+  const handleSalvarStripe = async (e) => {
+    e.preventDefault();
+    setSalvandoStripe(true);
+    setErroStripe(null);
+    setSucessoStripe(false);
+    try {
+      const payload = {};
+      if (formStripe.stripe_secret_key.trim()) payload.stripe_secret_key = formStripe.stripe_secret_key.trim();
+      if (formStripe.stripe_webhook_secret.trim()) payload.stripe_webhook_secret = formStripe.stripe_webhook_secret.trim();
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setFormStripe({ stripe_secret_key: '', stripe_webhook_secret: '' });
+      setSucessoStripe(true);
+      setTimeout(() => setSucessoStripe(false), 3000);
+    } catch (err) {
+      setErroStripe(err.message);
+    } finally {
+      setSalvandoStripe(false);
     }
   };
 
@@ -275,6 +301,82 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+            {/* ── Stripe Connect ───────────────────────────────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <div className={`rounded-xl border p-3 mb-5 flex items-center gap-3 ${
+                config?.stripe_configurado ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900'
+              }`}>
+                <Icon name={config?.stripe_configurado ? 'CheckCircle' : 'AlertCircle'} size={18}
+                  className={config?.stripe_configurado ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'} />
+                <p className={`text-xs font-medium ${config?.stripe_configurado ? 'text-green-800 dark:text-green-300' : 'text-yellow-800 dark:text-yellow-300'}`}>
+                  {config?.stripe_configurado ? `Stripe configurado (${config.stripe_secret_key_masked})` : 'Stripe não configurado'}
+                </p>
+              </div>
+
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Stripe Connect</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Chave única da plataforma — usada para criar as contas Express de cada restaurante. O dono da loja nunca
+                digita nada, só clica em "Conectar com Stripe" no painel dele.
+              </p>
+
+              <form onSubmit={handleSalvarStripe} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                    Secret Key
+                    {config?.stripe_configurado && (
+                      <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter atual)</span>
+                    )}
+                  </label>
+                  <input
+                    type="password"
+                    value={formStripe.stripe_secret_key}
+                    onChange={(e) => setFormStripe((f) => ({ ...f, stripe_secret_key: e.target.value }))}
+                    placeholder={config?.stripe_secret_key_masked ?? 'sk_test_... ou sk_live_...'}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Dashboard da Stripe → Developers → API keys
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                    Webhook Signing Secret
+                    {config?.stripe_webhook_secret_masked && (
+                      <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter atual)</span>
+                    )}
+                  </label>
+                  <input
+                    type="password"
+                    value={formStripe.stripe_webhook_secret}
+                    onChange={(e) => setFormStripe((f) => ({ ...f, stripe_webhook_secret: e.target.value }))}
+                    placeholder={config?.stripe_webhook_secret_masked ?? 'whsec_...'}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Dashboard da Stripe → Developers → Webhooks → endpoint <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">/stripe/webhook</code>, evento <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">account.updated</code>
+                  </p>
+                </div>
+
+                {erroStripe && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroStripe}</div>
+                )}
+                {sucessoStripe && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoStripe || (!formStripe.stripe_secret_key.trim() && !formStripe.stripe_webhook_secret.trim())}
+                  className="w-full py-2.5 bg-[#635BFF] text-white rounded-lg font-medium text-sm hover:bg-[#4b45c9] disabled:opacity-50"
+                >
+                  {salvandoStripe ? 'Salvando...' : 'Salvar Stripe'}
+                </button>
+              </form>
+            </div>
+
             {/* ── Modo de instalação ──────────────────────────────── */}
             <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Modo de instalação</h2>
