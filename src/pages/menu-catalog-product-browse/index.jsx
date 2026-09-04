@@ -11,6 +11,11 @@ import { supabase } from '../../lib/supabase';
 import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+const faixaPrecoServico = (min, max) => {
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}`;
+  if (min != null) return `A partir de ${fmt(min)}`;
+  return 'Sob consulta';
+};
 
 // Defaults do branding do marketplace — batem com os valores hoje hardcoded,
 // então a página renderiza igual até o fetch de /api/r/branding resolver
@@ -122,6 +127,7 @@ const RestCardGrid = ({ r, i }) => {
   const tempo  = r.tempo ?? `${20 + (i % 5) * 5}-${35 + (i % 5) * 5} min`;
   const gratis = !r.frete || r.frete === 0;
   const aberto = r.aparencia?.aberto !== false;
+  const somenteServicos = r.modulo_servicos && !r.modulo_delivery;
 
   return (
     <motion.button
@@ -144,7 +150,8 @@ const RestCardGrid = ({ r, i }) => {
             </div>}
         <div className="absolute top-2 left-2 flex gap-1">
           {!aberto && <span className="text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full shadow">Fechado</span>}
-          {aberto && gratis && <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full shadow">Grátis</span>}
+          {aberto && r.modulo_servicos && <span className="flex items-center gap-1 text-[10px] font-bold bg-sky-500 text-white px-2 py-0.5 rounded-full shadow"><Icon name="Wrench" size={10}/> Serviços</span>}
+          {aberto && !somenteServicos && gratis && <span className="text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full shadow">Grátis</span>}
           {aberto && i < 3   && <span className="text-[10px] font-bold bg-blue-500 text-white px-2 py-0.5 rounded-full shadow">Novo</span>}
         </div>
         <div className="absolute top-2 right-2 flex items-center gap-0.5 bg-white/95 backdrop-blur-sm rounded-lg px-1.5 py-0.5 shadow">
@@ -162,12 +169,16 @@ const RestCardGrid = ({ r, i }) => {
           )}
         </div>
         {r.address && <p className="text-xs text-[var(--texto-secundario)] mt-0.5 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
-        <div className="flex items-center gap-3 mt-2.5">
-          <span className="flex items-center gap-1 text-xs text-[var(--texto-secundario)]"><Icon name="Clock" size={11}/> {tempo}</span>
-          <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[var(--texto-secundario)]'}`}>
-            <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$ ${r.frete?.toFixed(2)}`}
-          </span>
-        </div>
+        {somenteServicos ? (
+          <p className="flex items-center gap-1 text-xs font-medium text-sky-600 mt-2.5"><Icon name="ClipboardList" size={11}/> Solicitar orçamento</p>
+        ) : (
+          <div className="flex items-center gap-3 mt-2.5">
+            <span className="flex items-center gap-1 text-xs text-[var(--texto-secundario)]"><Icon name="Clock" size={11}/> {tempo}</span>
+            <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[var(--texto-secundario)]'}`}>
+              <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$ ${r.frete?.toFixed(2)}`}
+            </span>
+          </div>
+        )}
       </div>
     </motion.button>
   );
@@ -180,6 +191,7 @@ const RestCardList = ({ r, i }) => {
   const tempo  = r.tempo ?? `${20 + (i % 5) * 5}-${35 + (i % 5) * 5} min`;
   const gratis = !r.frete || r.frete === 0;
   const aberto = r.aparencia?.aberto !== false;
+  const somenteServicos = r.modulo_servicos && !r.modulo_delivery;
 
   return (
     <motion.button
@@ -212,11 +224,20 @@ const RestCardList = ({ r, i }) => {
         </div>
         {r.address && <p className="text-xs text-[var(--texto-secundario)] mt-1 flex items-center gap-1 truncate"><Icon name="MapPin" size={10}/> {r.address}</p>}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
-          <span className="flex items-center gap-1 text-xs text-[var(--texto-secundario)]"><Icon name="Clock" size={11}/> {tempo}</span>
-          <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[var(--texto-secundario)]'}`}>
-            <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$${r.frete?.toFixed(2)}`}
-          </span>
-          {gratis && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Frete grátis</span>}
+          {r.modulo_servicos && (
+            <span className="flex items-center gap-1 text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full"><Icon name="Wrench" size={10}/> Serviços</span>
+          )}
+          {somenteServicos ? (
+            <span className="flex items-center gap-1 text-xs font-medium text-sky-600"><Icon name="ClipboardList" size={11}/> Solicitar orçamento</span>
+          ) : (
+            <>
+              <span className="flex items-center gap-1 text-xs text-[var(--texto-secundario)]"><Icon name="Clock" size={11}/> {tempo}</span>
+              <span className={`flex items-center gap-1 text-xs font-medium ${gratis ? 'text-green-600' : 'text-[var(--texto-secundario)]'}`}>
+                <Icon name="Truck" size={11}/> {gratis ? 'Grátis' : `R$${r.frete?.toFixed(2)}`}
+              </span>
+              {gratis && <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Frete grátis</span>}
+            </>
+          )}
           {r.distancia_km != null && (
             <span className="text-[10px] font-bold text-[#FF441F] bg-[#FF441F]/10 px-2 py-0.5 rounded-full">{fmtDistancia(r.distancia_km)}</span>
           )}
@@ -361,6 +382,46 @@ const ComboCompCard = ({ combo, i, navigate }) => {
             </div>
             <p className="text-[10px] text-[var(--texto-secundario)] font-medium truncate">{rest.name}</p>
             {restFechado && <span className="text-[9px] text-red-500 font-bold flex-shrink-0">• Fechado</span>}
+          </div>
+        )}
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Card serviço (grid comparação) ───────────────────────────────── */
+const ServicoCompCard = ({ servico, i, navigate }) => {
+  const rest = servico.restaurante;
+  const restFechado = rest?.aparencia?.aberto === false;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: (i % 12) * 0.04, duration: 0.25 }}
+      whileHover={restFechado ? {} : { y: -2, transition: { duration: 0.12 } }}
+      onClick={() => rest && navigate(`/r/${rest.slug}`)}
+      className="bg-white rounded-2xl border overflow-hidden transition-all text-left w-full relative border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/20"
+    >
+      <div className="relative h-36 bg-[#F4F4F5] overflow-hidden">
+        {servico.image_url
+          ? <img src={imgUrl(servico.image_url)} alt={servico.name} className="w-full h-full object-cover" />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="Wrench" size={36} className="text-[#E4E4E7]" /></div>}
+        <span className="absolute top-2 left-2 flex items-center gap-1 text-[10px] font-bold bg-sky-500 text-white px-2 py-0.5 rounded-full shadow">
+          <Icon name="Wrench" size={10} /> SERVIÇO
+        </span>
+      </div>
+      <div className="p-3">
+        <p className="text-xs font-bold text-[var(--texto-principal)] leading-tight line-clamp-2">{servico.name}</p>
+        <p className="text-sm font-black text-sky-600 mt-1.5">{faixaPrecoServico(servico.preco_min, servico.preco_max)}</p>
+        {rest && (
+          <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[#F4F4F5]">
+            <div className="w-5 h-5 rounded-md overflow-hidden bg-[#F4F4F5] flex-shrink-0">
+              {rest.logo_url
+                ? <img src={imgUrl(rest.logo_url)} alt={rest.name} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><Icon name="Store" size={10} className="text-[#FF441F]/40" /></div>}
+            </div>
+            <p className="text-[10px] text-[var(--texto-secundario)] font-medium truncate">{rest.name}</p>
           </div>
         )}
       </div>
@@ -749,6 +810,7 @@ const MenuCatalogProductBrowse = () => {
   const [restaurantes, setRestaurantes] = useState([]);
   const [produtos, setProdutos]         = useState([]);
   const [combos, setCombos]             = useState([]);
+  const [servicosMarketplace, setServicosMarketplace] = useState([]);
   const [categorias, setCategorias]     = useState(CATEGORIAS_FALLBACK);
   const [tagsCatalogo, setTagsCatalogo] = useState([]); // tags ativas do admin
   // Marketplace boost: item_ids em destaque pago por carrossel (ver módulo
@@ -875,6 +937,11 @@ const MenuCatalogProductBrowse = () => {
       .then((d) => setCombos(d.combos ?? []))
       .catch(() => setCombos([]));
 
+    fetch(apiPath('/api/r/servicos'))
+      .then((r) => r.json())
+      .then((d) => setServicosMarketplace(d.servicos ?? []))
+      .catch(() => setServicosMarketplace([]));
+
     fetch(apiPath('/api/categorias/globais'))
       .then((r) => r.json())
       .then((d) => { const cats = d.categorias ?? []; if (cats.length > 0) setCategorias(cats); })
@@ -953,20 +1020,26 @@ const MenuCatalogProductBrowse = () => {
     })();
   }, [statusLocalizacao, localizacao, raioKm, filtroEstado, filtroCidade, filtroBairro, filtroCep, temFiltroManual]);
 
-  // Chip sintético de combo junto das categorias reais — não tem category_id, é
-  // tratado à parte (ver mostrandoCombos) pra trocar o conteúdo da seção de produtos.
-  const categoriasParaExibir = combos.length > 0
-    ? [...categorias, { id: 'combos', name: 'Combos', icon_name: 'Package', color_primary: '#FF441F', color_secondary: '#FF7A00' }]
-    : categorias;
+  // Chips sintéticos junto das categorias reais — não têm category_id, são
+  // tratados à parte (ver mostrandoCombos/mostrandoServicos).
+  const temServicos = restaurantes.some((r) => r.modulo_servicos);
+  const categoriasParaExibir = [
+    ...categorias,
+    ...(combos.length > 0 ? [{ id: 'combos', name: 'Combos', icon_name: 'Package', color_primary: '#FF441F', color_secondary: '#FF7A00' }] : []),
+    ...(temServicos ? [{ id: 'servicos', name: 'Serviços', icon_name: 'Wrench', color_primary: '#0EA5E9', color_secondary: '#38BDF8' }] : []),
+  ];
   const mostrandoCombos = catAtiva === 'combos';
+  const mostrandoServicos = catAtiva === 'servicos';
 
   // catAtiva === null: sem filtro de categoria (mostra tudo)
-  const produtosPorCategoria = catAtiva === null || mostrandoCombos
+  const produtosPorCategoria = catAtiva === null || mostrandoCombos || mostrandoServicos
     ? produtos
     : produtos.filter((p) => p.category_id === catAtiva);
 
   const restaurantesComCategoria = catAtiva === null
     ? null
+    : mostrandoServicos
+    ? new Set(restaurantes.filter((r) => r.modulo_servicos).map((r) => r.id))
     : new Set(produtosPorCategoria.map((p) => p.restaurant_id));
 
   const filtrados = restaurantes.filter((r) =>
@@ -988,6 +1061,20 @@ const MenuCatalogProductBrowse = () => {
         c.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
       )
     : combos;
+
+  const servicosFiltrados = busca
+    ? servicosMarketplace.filter((s) =>
+        s.name.toLowerCase().includes(busca.toLowerCase()) ||
+        s.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
+      )
+    : servicosMarketplace;
+
+  // Sem categoria de produto selecionada, "Compare preços" mostra produtos e
+  // serviços misturados — só assim o chip "Serviços" funciona como um filtro
+  // de verdade (reduzindo a lista mista), em vez de ser a única forma de ver serviço.
+  const itensComparePadrao = catAtiva === null
+    ? [...produtosFiltrados, ...servicosFiltrados.map((s) => ({ ...s, tipo: 'servico' }))]
+    : produtosFiltrados;
 
   // Carrosseis dinâmicos baseados nas tags ativas do admin
   const carrosseis = tagsCatalogo
@@ -1156,11 +1243,11 @@ const MenuCatalogProductBrowse = () => {
 
       {/* ── Filtro geográfico — Estado/Cidade/Bairro/CEP + raio KM ── */}
       <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-3 flex flex-wrap items-center gap-2">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-3 grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2">
           <button
             onClick={pedirLocalizacao}
             disabled={statusLocalizacao === 'pedindo'}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors flex-shrink-0 ${
+            className={`col-span-2 sm:col-span-1 flex items-center justify-center sm:justify-start gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors w-full sm:w-auto sm:flex-shrink-0 ${
               statusLocalizacao === 'ok'
                 ? 'bg-green-50 text-green-700 border border-green-200'
                 : 'bg-[#F4F4F5] text-[var(--texto-secundario)] hover:bg-[#E4E4E7]'
@@ -1173,7 +1260,7 @@ const MenuCatalogProductBrowse = () => {
 
           {localizacao && !temFiltroManual && (
             <select value={raioKm} onChange={(e) => setRaioKm(Number(e.target.value))}
-              className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0">
+              className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white w-full sm:w-auto sm:flex-shrink-0">
               {raioOpcoesDisponiveis.map((km) => (
                 <option key={km} value={km}>{fmtRaioLabel(km)}</option>
               ))}
@@ -1181,31 +1268,31 @@ const MenuCatalogProductBrowse = () => {
           )}
 
           <select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setFiltroCidade(''); setFiltroBairro(''); }}
-            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0">
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white w-full sm:w-auto sm:flex-shrink-0">
             <option value="">Estado</option>
             {estadosDisponiveis.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
           <select value={filtroCidade} onChange={(e) => { setFiltroCidade(e.target.value); setFiltroBairro(''); }}
             disabled={cidadesDisponiveis.length === 0}
-            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0 disabled:opacity-40">
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white w-full sm:w-auto sm:flex-shrink-0 disabled:opacity-40">
             <option value="">Cidade</option>
             {cidadesDisponiveis.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
 
           <select value={filtroBairro} onChange={(e) => setFiltroBairro(e.target.value)}
             disabled={bairrosDisponiveis.length === 0}
-            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0 disabled:opacity-40">
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white w-full sm:w-auto sm:flex-shrink-0 disabled:opacity-40">
             <option value="">Bairro</option>
             {bairrosDisponiveis.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
 
           <input value={filtroCep} onChange={(e) => setFiltroCep(e.target.value)} placeholder="CEP"
-            className="w-24 text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white flex-shrink-0 outline-none focus:border-[#FF441F]" />
+            className="text-xs font-semibold border border-[#E4E4E7] rounded-xl px-2.5 py-2 text-[var(--texto-principal)] bg-white w-full sm:w-24 sm:flex-shrink-0 outline-none focus:border-[#FF441F]" />
 
           {temFiltroManual && (
             <button onClick={limparFiltrosGeo}
-              className="flex items-center gap-1 text-xs font-semibold text-[#FF441F] bg-[#FF441F]/10 hover:bg-[#FF441F]/20 rounded-full px-2.5 py-1.5 flex-shrink-0">
+              className="col-span-2 sm:col-span-1 flex items-center justify-center sm:justify-start gap-1 text-xs font-semibold text-[#FF441F] bg-[#FF441F]/10 hover:bg-[#FF441F]/20 rounded-full px-2.5 py-1.5 w-full sm:w-auto sm:flex-shrink-0">
               <Icon name="X" size={12} /> Limpar filtros
             </button>
           )}
@@ -1367,7 +1454,7 @@ const MenuCatalogProductBrowse = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 text-base w-fit">
-                    {catAtiva === null ? 'Todos os restaurantes' : categoriasParaExibir.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
+                    {catAtiva === null ? 'Todos os Estabelecimentos' : categoriasParaExibir.find((c) => c.id === catAtiva)?.name ?? 'Restaurantes'}
                   </h2>
                   {catAtiva !== null && (
                     <button
@@ -1391,6 +1478,12 @@ const MenuCatalogProductBrowse = () => {
                 )}
               </div>
               <div className="flex items-center gap-1 bg-white border border-[#E4E4E7] rounded-xl p-1">
+                {temServicos && (
+                  <button onClick={() => setCatAtiva(mostrandoServicos ? null : 'servicos')} title="Serviços"
+                    className={`p-1.5 rounded-lg transition-colors ${mostrandoServicos ? 'bg-[#FF441F] text-white' : 'text-[var(--texto-secundario)]'}`}>
+                    <Icon name="Wrench" size={16} />
+                  </button>
+                )}
                 <button onClick={() => setViewMode('grid')}
                   className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-[#FF441F] text-white' : 'text-[var(--texto-secundario)]'}`}>
                   <Icon name="LayoutGrid" size={16} />
@@ -1454,22 +1547,34 @@ const MenuCatalogProductBrowse = () => {
             </AnimatePresence>
           </section>
 
-          {/* ── Seção comparação de preços / combos ──────────────── */}
-          {(loadProd || produtos.length > 0 || combos.length > 0) && (
+          {/* ── Seção comparação de preços / combos / serviços ────── */}
+          {(loadProd || produtos.length > 0 || combos.length > 0 || servicosMarketplace.length > 0) && (
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex-1">
                   <h2 className="font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 text-base flex items-center gap-2 w-fit">
-                    <Icon name={mostrandoCombos ? 'Package' : 'BarChart2'} size={16} className="text-[#FF441F]" />
-                    {mostrandoCombos ? 'Combos' : 'Compare preços'}
+                    <Icon name={mostrandoServicos ? 'Wrench' : mostrandoCombos ? 'Package' : 'BarChart2'} size={16} className="text-[#FF441F]" />
+                    {mostrandoServicos ? 'Serviços' : mostrandoCombos ? 'Combos' : 'Compare preços'}
                   </h2>
                   <p className="text-xs text-[var(--texto-secundario)] bg-[var(--texto-secundario-bg)] rounded-lg px-2 py-0.5 -ml-2 mt-0.5 w-fit">
-                    {mostrandoCombos ? 'Combos ativos de todos os restaurantes' : 'Produtos de todos os restaurantes'}
+                    {mostrandoServicos ? 'Serviços disponíveis em todos os estabelecimentos' : mostrandoCombos ? 'Combos ativos de todos os restaurantes' : 'Produtos de todos os restaurantes'}
                   </p>
                 </div>
               </div>
 
-              {mostrandoCombos ? (
+              {mostrandoServicos ? (
+                servicosFiltrados.length === 0 ? (
+                  <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
+                    <p className="text-[var(--texto-secundario)] text-sm">Nenhum serviço encontrado</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {servicosFiltrados.slice(0, 24).map((s, i) => (
+                      <ServicoCompCard key={s.id} servico={s} i={i} navigate={navigate} />
+                    ))}
+                  </div>
+                )
+              ) : mostrandoCombos ? (
                 combosFiltrados.length === 0 ? (
                   <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
                     <p className="text-[var(--texto-secundario)] text-sm">Nenhum combo encontrado</p>
@@ -1485,26 +1590,33 @@ const MenuCatalogProductBrowse = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
-              ) : produtosFiltrados.length === 0 ? (
+              ) : itensComparePadrao.length === 0 ? (
                 <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
                   <p className="text-[var(--texto-secundario)] text-sm">Nenhum produto encontrado</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {produtosFiltrados.slice(0, 24).map((p, i) => (
-                    <ProdutoCompCard key={p.id} produto={p} i={i} navigate={navigate} onAdd={handleAddToCart} />
+                  {itensComparePadrao.slice(0, 24).map((p, i) => (
+                    p.tipo === 'servico'
+                      ? <ServicoCompCard key={`servico-${p.id}`} servico={p} i={i} navigate={navigate} />
+                      : <ProdutoCompCard key={`produto-${p.id}`} produto={p} i={i} navigate={navigate} onAdd={handleAddToCart} />
                   ))}
                 </div>
               )}
 
-              {!mostrandoCombos && produtosFiltrados.length > 24 && (
+              {!mostrandoCombos && !mostrandoServicos && itensComparePadrao.length > 24 && (
                 <p className="text-center text-xs text-[var(--texto-secundario)] mt-4">
-                  Mostrando 24 de {produtosFiltrados.length} produtos
+                  Mostrando 24 de {itensComparePadrao.length} {catAtiva === null ? 'itens' : 'produtos'}
                 </p>
               )}
               {mostrandoCombos && combosFiltrados.length > 24 && (
                 <p className="text-center text-xs text-[var(--texto-secundario)] mt-4">
                   Mostrando 24 de {combosFiltrados.length} combos
+                </p>
+              )}
+              {mostrandoServicos && servicosFiltrados.length > 24 && (
+                <p className="text-center text-xs text-[var(--texto-secundario)] mt-4">
+                  Mostrando 24 de {servicosFiltrados.length} serviços
                 </p>
               )}
             </section>

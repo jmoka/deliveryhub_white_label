@@ -6,7 +6,7 @@ import Icon from '../AppIcon';
 // Menu lateral só pra desktop/telas grandes (md+) — substitui a barra horizontal de
 // botões que ficava poluída com muitos links. Mobile continua com o próprio menu de cada
 // página (hamburger + lista já existente), este componente nunca renderiza abaixo de md.
-const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy = 0, slugLoja, onSair, onMeuPerfil, isFavorito, onToggleFavorito }) => {
+const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesPorPath = {}, slugLoja, onSair, onMeuPerfil, isFavorito, onToggleFavorito }) => {
   const navigate = useNavigate();
   const ir = (path) => { navigate(path); onClose(); };
 
@@ -38,9 +38,9 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesMotoboy
                   <button onClick={() => ir(l.path)}
                     className="flex-1 flex items-center justify-between text-left pl-4 pr-2 py-2.5 text-sm font-semibold min-w-0">
                     {l.label}
-                    {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+                    {pendentesPorPath[l.path] > 0 && (
                       <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full ml-2">
-                        {pendentesMotoboy}
+                        {pendentesPorPath[l.path]}
                       </span>
                     )}
                   </button>

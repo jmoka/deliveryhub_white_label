@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCardapioPorSlug } from '../../services/restauranteService';
+import { getCardapioPorSlug, solicitarOrcamentoServico } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeToggle } from '../../contexts/ThemeContext';
 import Icon from '../../components/AppIcon';
@@ -97,6 +97,125 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVit
         </div>
       )}
     </motion.div>
+  );
+};
+
+/* ── Card serviço (módulo Serviços — sob orçamento, sem carrinho) ──── */
+const faixaPrecoServico = (min, max) => {
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}`;
+  if (min != null) return `A partir de ${fmt(min)}`;
+  return 'Sob consulta';
+};
+
+const ServicoCard = ({ servico, onSolicitar }) => (
+  <div className="flex gap-4 p-4 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] transition-all h-full hover:shadow-md hover:border-[#FF441F]/20">
+    <div className="flex-1 flex flex-col justify-between min-w-0">
+      <div>
+        <div className="flex items-start gap-2 flex-wrap">
+          <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm leading-snug flex-1">{servico.name}</p>
+          {servico.categoria && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] rounded font-bold flex-shrink-0">{servico.categoria}</span>
+          )}
+        </div>
+        {servico.description && (
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 line-clamp-2">{servico.description}</p>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+        <p className="text-sm font-bold text-[#FF441F]">{faixaPrecoServico(servico.preco_min, servico.preco_max)}</p>
+        <button onClick={() => onSolicitar(servico)}
+          className="px-3.5 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] transition-colors">
+          Solicitar orçamento
+        </button>
+      </div>
+    </div>
+
+    {servico.image_url && (
+      <div className="relative flex-shrink-0 w-28 h-24">
+        <img src={servico.image_url} alt={servico.name} className="w-full h-full object-cover rounded-xl" />
+      </div>
+    )}
+  </div>
+);
+
+/* ── Modal solicitar orçamento (serviço) ──────────────────────────── */
+const SolicitarOrcamentoModal = ({ slug, servico, onFechar }) => {
+  const [nome, setNome] = useState('');
+  const [telefone, setTelefone] = useState('');
+  const [mensagem, setMensagem] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState(null);
+  const [enviado, setEnviado] = useState(false);
+
+  const handleEnviar = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    if (!nome.trim() || !telefone.trim()) { setErro('Preencha nome e telefone'); return; }
+    setEnviando(true);
+    try {
+      await solicitarOrcamentoServico(slug, servico.id, {
+        nome_cliente: nome.trim(), telefone_cliente: telefone.trim(), mensagem: mensagem.trim() || undefined,
+      });
+      setEnviado(true);
+    } catch (e) {
+      setErro(e.message ?? 'Não foi possível enviar. Tente novamente.');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-md md:max-w-[85%] max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Solicitar orçamento</h2>
+          <button type="button" onClick={onFechar} className="text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+            <Icon name="X" size={20} />
+          </button>
+        </div>
+
+        {enviado ? (
+          <div className="text-center py-6">
+            <Icon name="CheckCircle2" size={40} className="text-green-500 mx-auto mb-3" />
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">Solicitação enviada!</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">O estabelecimento vai entrar em contato em breve.</p>
+            <button onClick={onFechar} className="mt-5 w-full px-4 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19]">
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleEnviar} className="space-y-3">
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+              Orçamento para <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">{servico.name}</span>
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Seu nome *</label>
+              <input value={nome} onChange={(e) => setNome(e.target.value)}
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                placeholder="Nome completo" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Telefone / WhatsApp *</label>
+              <input value={telefone} onChange={(e) => setTelefone(e.target.value)}
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                placeholder="(00) 00000-0000" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Mensagem</label>
+              <textarea value={mensagem} onChange={(e) => setMensagem(e.target.value)}
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                rows={3} placeholder="Detalhes do que você precisa (opcional)" />
+            </div>
+            {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+            <button type="submit" disabled={enviando}
+              className="w-full px-4 py-2.5 bg-[#FF441F] text-white text-sm font-bold rounded-xl hover:bg-[#E63A19] disabled:opacity-50">
+              {enviando ? 'Enviando...' : 'Enviar solicitação'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -259,6 +378,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   const [carrinho, setCarrinho] = useState([]);
   const [catAtiva, setCatAtiva] = useState('todos');
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
+  const [servicoOrcamento, setServicoOrcamento] = useState(null);
 
   // Quando aberto via domínio customizado (dadosPreCarregados vindo do HomeRouter),
   // não existe :slug na URL — o fetch abaixo é pulado, os dados já chegam prontos.
@@ -346,10 +466,13 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     </div>
   );
 
-  const { restaurante, cardapio, destaques, promos, combos } = data;
+  const { restaurante, cardapio, destaques, promos, combos, servicos } = data;
   const ap = restaurante.aparencia ?? {};
   // Sem plano delivery, a loja funciona só como vitrine — sem carrinho/checkout.
   const temDelivery = restaurante.modulo_delivery !== false;
+  // Módulo novo — default é sempre desligado (sem checkbox marcado no plano),
+  // diferente de modulo_delivery que assume true na ausência do campo.
+  const temServicos = restaurante.modulo_servicos === true;
 
   const tabs = [
     { id: 'todos', label: 'Todos' },
@@ -357,13 +480,20 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     ...(promos?.length ? [{ id: 'promos', label: '🔥 Promoções' }] : []),
     ...(combos?.length ? [{ id: 'combos', label: '🍱 Combos' }] : []),
     ...cardapio.map((c) => ({ id: c.id, label: c.name })),
+    ...(temServicos && servicos?.length ? [{ id: 'servicos', label: '🛠️ Serviços' }] : []),
   ];
 
+  const servicosComTipo = (servicos ?? []).map((s) => ({ ...s, tipo: 'servico' }));
+
   const produtosDaTab = () => {
-    if (catAtiva === 'todos') return cardapio.flatMap((c) => c.produtos ?? []);
+    // "Todos" também mostra os serviços junto do cardápio — é a aba que o
+    // cliente vê primeiro ao abrir a loja, não faz sentido esconder serviço
+    // atrás de uma aba separada que ele pode nem notar.
+    if (catAtiva === 'todos') return [...cardapio.flatMap((c) => c.produtos ?? []), ...(temServicos ? servicosComTipo : [])];
     if (catAtiva === 'destaques') return destaques ?? [];
     if (catAtiva === 'promos') return promos ?? [];
     if (catAtiva === 'combos') return combos ?? [];
+    if (catAtiva === 'servicos') return servicosComTipo;
     return cardapio.find((c) => c.id === catAtiva)?.produtos ?? [];
   };
 
@@ -590,25 +720,42 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             <div className="text-center py-10 text-[#71717A] dark:text-[#A1A1AA]">
               <p className="text-sm">Nenhum produto nesta categoria</p>
             </div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={catAtiva}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="grid grid-cols-1 xl:grid-cols-2 gap-3"
-              >
-                {produtosDaTab().map((p, i) => (
-                  <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04, duration: 0.2 }}>
-                    <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
-                  </motion.div>
-                ))}
-              </motion.div>
-            </AnimatePresence>
-          )}
+          ) : (() => {
+            const itens = produtosDaTab();
+            const itensProdutos = itens.filter((p) => p.tipo !== 'servico');
+            const itensServicos = itens.filter((p) => p.tipo === 'servico');
+            return (
+              <AnimatePresence mode="wait">
+                <motion.div key={catAtiva} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                  {itensProdutos.length > 0 && (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                      {itensProdutos.map((p, i) => (
+                        <motion.div key={`produto-${p.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.04, duration: 0.2 }}>
+                          <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                  {itensServicos.length > 0 && (
+                    <>
+                      <h3 className={`font-bold text-[#18181B] dark:text-[#F4F4F5] text-sm ${itensProdutos.length > 0 ? 'mt-6' : ''} mb-3`}>
+                        🛠️ Serviços
+                      </h3>
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                        {itensServicos.map((p, i) => (
+                          <motion.div key={`servico-${p.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04, duration: 0.2 }}>
+                            <ServicoCard servico={p} onSolicitar={setServicoOrcamento} />
+                          </motion.div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            );
+          })()}
         </main>
 
         {/* Carrinho desktop (sidebar) */}
@@ -642,6 +789,11 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
           />
         )}
       </AnimatePresence>
+
+      {/* ── Modal solicitar orçamento (serviço) ──────────────────────── */}
+      {servicoOrcamento && (
+        <SolicitarOrcamentoModal slug={slug} servico={servicoOrcamento} onFechar={() => setServicoOrcamento(null)} />
+      )}
     </div>
   );
 };

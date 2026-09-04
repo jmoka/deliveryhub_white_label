@@ -41,7 +41,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, cobra_comissao: false, inclui_favicon_personalizado: false };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -59,6 +59,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           inclui_delivery: plano.inclui_delivery ?? true,
           inclui_salao: plano.inclui_salao ?? false,
           inclui_gdoor: plano.inclui_gdoor ?? false,
+          inclui_servicos: plano.inclui_servicos ?? false,
           cobra_comissao: plano.cobra_comissao ?? false,
           inclui_favicon_personalizado: plano.inclui_favicon_personalizado ?? false,
         }
@@ -99,6 +100,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         inclui_delivery: form.inclui_delivery,
         inclui_salao: form.inclui_salao,
         inclui_gdoor: form.inclui_gdoor,
+        inclui_servicos: form.inclui_servicos,
         cobra_comissao: form.cobra_comissao,
         inclui_favicon_personalizado: form.inclui_favicon_personalizado,
       };
@@ -117,7 +119,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-md md:max-w-[85%] max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">
             {isEdicao ? 'Editar Plano' : 'Novo Plano'}
@@ -197,7 +199,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-2">Módulos incluídos</label>
-                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2.5 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={form.inclui_delivery} onChange={(e) => set('inclui_delivery', e.target.checked)}
                       className="w-4 h-4 shrink-0 rounded accent-blue-600" />
@@ -217,6 +219,11 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <input type="checkbox" checked={form.inclui_favicon_personalizado} onChange={(e) => set('inclui_favicon_personalizado', e.target.checked)}
                       className="w-4 h-4 shrink-0 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Favicon personalizado</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={form.inclui_servicos} onChange={(e) => set('inclui_servicos', e.target.checked)}
+                      className="w-4 h-4 shrink-0 rounded accent-blue-600" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">Serviços (orçamento)</span>
                   </label>
                 </div>
               </div>
@@ -411,6 +418,11 @@ const TabPlanos = () => {
                     {plano.inclui_favicon_personalizado && (
                       <span className="text-xs font-medium bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-400 px-2 py-0.5 rounded-full">
                         Favicon
+                      </span>
+                    )}
+                    {plano.inclui_servicos && (
+                      <span className="text-xs font-medium bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full">
+                        Serviços
                       </span>
                     )}
                   </div>

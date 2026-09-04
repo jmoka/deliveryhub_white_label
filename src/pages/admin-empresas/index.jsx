@@ -18,6 +18,7 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
     modulo_salao: empresa?.modulo_salao ?? false,
     modulo_gdoor: empresa?.modulo_gdoor ?? false,
     modulo_favicon_personalizado: empresa?.modulo_favicon_personalizado ?? false,
+    modulo_servicos: empresa?.modulo_servicos ?? false,
   });
   const [salvando, setSalvando] = useState(false);
   const usaPadraoGlobal = form.comissao_pct === null;
@@ -164,6 +165,14 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
                 />
                 Favicon personalizado
               </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={form.modulo_servicos}
+                  onChange={(e) => setForm({ ...form, modulo_servicos: e.target.checked })}
+                />
+                Serviços (orçamento)
+              </label>
             </div>
           </div>
           <div className="flex gap-3 pt-2">
@@ -203,7 +212,10 @@ const ModulosBadges = ({ empresa: e }) => (
     {e.modulo_favicon_personalizado && (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-400">Favicon</span>
     )}
-    {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && !e.modulo_favicon_personalizado && (
+    {e.modulo_servicos && (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">Serviços</span>
+    )}
+    {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && !e.modulo_favicon_personalizado && !e.modulo_servicos && (
       <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
     )}
   </div>

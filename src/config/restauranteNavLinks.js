@@ -50,6 +50,10 @@ const SALAO_LINKS = [
   { label: 'Impressoras', path: '/restaurante/impressoras', icon: 'Printer' },
 ];
 
+const SERVICOS_LINKS = [
+  { label: 'Serviços', path: '/restaurante/servicos', icon: 'Wrench' },
+];
+
 // Pontos de preparo customizados (Churrasqueira, Drinks...) usam o mesmo requisito de
 // visibilidade da Cozinha — precisam de algum módulo ativo pra fazer sentido no menu.
 const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurante/pontos-preparo', icon: 'LayoutGrid' };
@@ -57,7 +61,7 @@ const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurant
 // Estabelecimento tipo ≠ Restaurante (farmácia, material de construção...) chama
 // o entregador de "Entregadores" no menu, em vez de "Motoboys" (termo mais
 // específico de delivery de comida).
-export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPreparo = [], tipoRestaurante = true) => {
+export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServicos, pontosPreparo = [], tipoRestaurante = true) => {
   const temAlgumModulo = moduloDelivery || moduloSalao;
   const deliveryLinks = tipoRestaurante
     ? DELIVERY_LINKS
@@ -73,6 +77,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, pontosPrepar
     ...(moduloDelivery ? deliveryLinks.slice(1) : []), // Entregas, Motoboys/Entregadores
     ...BASE_LINKS.slice(3), // Clientes...Sessão
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
+    ...(moduloServicos ? SERVICOS_LINKS : []), // Serviços (orçamento)
   ], tipoRestaurante);
   // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só
   // controla quais links entram conforme os módulos ativos. Dashboard fica

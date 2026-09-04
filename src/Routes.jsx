@@ -31,6 +31,7 @@ import RestauranteGuard from './components/RestauranteGuard';
 import MotoboyGuard from './components/MotoboyGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
 import RestauranteProdutos from './pages/restaurante-produtos';
+import RestauranteServicos from './pages/restaurante-servicos';
 import RestaurantePedidos from './pages/restaurante-pedidos';
 import RestauranteCatalogo from './pages/restaurante-catalogo';
 import RestauranteConfig from './pages/restaurante-config';
@@ -141,6 +142,7 @@ const Routes = () => {
         <Route path="/restaurante/relatorios/produtos" element={<RestauranteGuard><RestauranteRelatorioProdutos /></RestauranteGuard>} />
         <Route path="/restaurante/cardapio-digital" element={<RestauranteGuard><RestauranteCardapioDigital /></RestauranteGuard>} />
         <Route path="/restaurante/impulsionar" element={<RestauranteGuard><RestauranteImpulsionar /></RestauranteGuard>} />
+        <Route path="/restaurante/servicos" element={<RestauranteGuard><RestauranteServicos /></RestauranteGuard>} />
 
         {/* Módulo Salão — só estabelecimentos tipo Restaurante */}
         <Route path="/restaurante/salao" element={<RestauranteGuard><RestauranteSalao /></RestauranteGuard>} />

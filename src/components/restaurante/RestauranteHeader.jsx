@@ -10,6 +10,7 @@ import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
+import { useSolicitacoesServicoCount } from '../../hooks/useSolicitacoesServicoCount';
 import { usePontosPreparoLinks } from '../../hooks/usePontosPreparoLinks';
 import { useRestauranteFavoritos } from '../../hooks/useRestauranteFavoritos';
 import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
@@ -63,8 +64,13 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
   const { signOut, planoStatus } = useAuth();
   const slugLoja = useMinhaLojaSlug();
   const logoUrl = useMinhaLojaLogo();
-  const { moduloDelivery, moduloSalao, tipoRestaurante } = useModulosEmpresa();
+  const { moduloDelivery, moduloSalao, moduloServicos, tipoRestaurante } = useModulosEmpresa();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
+  const pendentesServicos = useSolicitacoesServicoCount();
+  const pendentesPorPath = {
+    '/restaurante/motoboys': pendentesMotoboy,
+    '/restaurante/servicos': pendentesServicos,
+  };
   const pontosPreparoLinks = usePontosPreparoLinks();
   const { favoritos, toggleFavorito, isFavorito, mostrarNomes, toggleMostrarNomes } = useRestauranteFavoritos();
   const [sidebarAberto, setSidebarAberto] = useState(false);
@@ -83,7 +89,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
     }
   };
 
-  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, pontosPreparoLinks, tipoRestaurante);
+  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, moduloServicos, pontosPreparoLinks, tipoRestaurante);
   const linksFavoritos = links.filter((l) => favoritos.includes(l.path));
 
   return (
@@ -110,9 +116,9 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
                       l.path === active ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#27272A] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]'
                     }`}>
                     <Icon name={l.icon} size={icone} /> {mostrarNomes && l.label}
-                    {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+                    {pendentesPorPath[l.path] > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
-                        {pendentesMotoboy}
+                        {pendentesPorPath[l.path]}
                       </span>
                     )}
                   </button>
@@ -158,7 +164,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
           <MobileMenu
             links={links}
             currentPath={active}
-            pendentesMotoboy={pendentesMotoboy}
+            pendentesPorPath={pendentesPorPath}
             slugLoja={slugLoja}
             onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
             onMeuPerfil={() => { navigate('/restaurante/meu-perfil'); setMenuAberto(false); }}
@@ -172,7 +178,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
         onClose={() => setSidebarAberto(false)}
         links={links}
         activePath={active}
-        pendentesMotoboy={pendentesMotoboy}
+        pendentesPorPath={pendentesPorPath}
         slugLoja={slugLoja}
         onSair={async () => { await signOut(); navigate('/customer-registration-login'); }}
         onMeuPerfil={() => { navigate('/restaurante/meu-perfil'); setSidebarAberto(false); }}

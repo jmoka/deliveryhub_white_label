@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const MobileMenu = ({ links, currentPath, onNavigate, onSair, onMeuPerfil, pendentesMotoboy = 0, slugLoja }) => (
+const MobileMenu = ({ links, currentPath, onNavigate, onSair, onMeuPerfil, pendentesPorPath = {}, slugLoja }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
     animate={{ opacity: 1, y: 0 }}
@@ -14,9 +14,9 @@ const MobileMenu = ({ links, currentPath, onNavigate, onSair, onMeuPerfil, pende
           l.path === currentPath ? 'text-white bg-[#FF441F]' : 'text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A]'
         }`}>
         {l.label}
-        {l.path === '/restaurante/motoboys' && pendentesMotoboy > 0 && (
+        {pendentesPorPath[l.path] > 0 && (
           <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
-            {pendentesMotoboy}
+            {pendentesPorPath[l.path]}
           </span>
         )}
       </button>

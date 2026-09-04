@@ -83,6 +83,46 @@ export const toggleProduto = (id, ativo) =>
 export const ajustarEstoqueProduto = (id, quantidade_estoque) =>
   apiFetch(`/produtos/${id}`, { method: 'PATCH', body: JSON.stringify({ quantidade_estoque }) });
 
+// Módulo Serviços (prestação sob orçamento) — CRUD do dono da loja
+export const getMeusServicos = () => apiFetch('/servicos');
+
+export const criarServico = (data) =>
+  apiFetch('/servicos', { method: 'POST', body: JSON.stringify(data) });
+
+export const editarServico = (id, data) =>
+  apiFetch(`/servicos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const deletarServico = (id) =>
+  apiFetch(`/servicos/${id}`, { method: 'DELETE' });
+
+export const toggleServico = (id, ativo) =>
+  apiFetch(`/servicos/${id}/toggle`, { method: 'PATCH', body: JSON.stringify({ ativo }) });
+
+export const getSolicitacoesServico = (status) =>
+  apiFetch(`/servicos/solicitacoes${status ? `?status=${status}` : ''}`);
+
+export const contarSolicitacoesServicoPendentes = () =>
+  apiFetch('/servicos/solicitacoes/count');
+
+export const marcarSolicitacaoServicoContatada = (id) =>
+  apiFetch(`/servicos/solicitacoes/${id}/contatado`, { method: 'PATCH' });
+
+// Vitrine pública — cliente pede orçamento sem login (mesmo padrão de getCardapioPorSlug)
+export const solicitarOrcamentoServico = async (slug, servicoId, data) => {
+  const res = await fetch(`${apiPath('/api/r')}/${slug}/servicos/${servicoId}/solicitar-orcamento`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const contentType = res.headers.get('content-type') ?? '';
+  const isJson = contentType.includes('application/json');
+  if (!res.ok) {
+    const err = isJson ? await res.json().catch(() => ({})) : {};
+    throw new Error(err?.message ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+};
+
 // Categorias globais da plataforma (sem auth — endpoint público)
 export const getCategoriasGlobais = () =>
   fetch(apiPath('/api/categorias/globais')).then((r) => r.json());
