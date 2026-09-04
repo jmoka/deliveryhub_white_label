@@ -36,7 +36,7 @@ const Campo = ({ label, value, onChange, placeholder, required, half }) => (
   </div>
 );
 
-const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
+const StepEndereco = ({ perfil, restauranteId, permiteRetirada, retirada, setRetirada, onNext, onBack }) => {
   const [form, setForm] = useState({
     name: '', phone_e164: '', cpf_cnpj: '',
     logradouro: '', numero: '', complemento: '',
@@ -162,11 +162,15 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
   };
 
   const handleNext = async () => {
-    if (!form.name.trim() || !form.phone_e164.trim() || !form.logradouro.trim() || !form.numero.trim() || !form.cidade.trim() || !form.estado.trim()) {
-      setErro('Preencha nome, telefone, endereço, número, cidade e estado.');
+    if (!form.name.trim() || !form.phone_e164.trim()) {
+      setErro('Preencha nome e telefone.');
       return;
     }
-    if (previewDistancia?.foraDoRaio) {
+    if (!retirada && (!form.logradouro.trim() || !form.numero.trim() || !form.cidade.trim() || !form.estado.trim())) {
+      setErro('Preencha endereço, número, cidade e estado.');
+      return;
+    }
+    if (!retirada && previewDistancia?.foraDoRaio) {
       setErro('Esse endereço está fora da área de entrega do estabelecimento.');
       return;
     }
@@ -177,20 +181,22 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
         name: form.name.trim(),
         phone_e164: form.phone_e164.trim(),
         cpf_cnpj: form.cpf_cnpj.trim(),
-        address_json: {
-          logradouro: form.logradouro.trim(),
-          numero: form.numero.trim(),
-          complemento: form.complemento.trim(),
-          bairro: form.bairro.trim(),
-          cidade: form.cidade.trim(),
-          estado: form.estado.trim(),
-          cep: form.cep.trim(),
-          referencia: form.referencia.trim(),
-        },
+        ...(retirada ? {} : {
+          address_json: {
+            logradouro: form.logradouro.trim(),
+            numero: form.numero.trim(),
+            complemento: form.complemento.trim(),
+            bairro: form.bairro.trim(),
+            cidade: form.cidade.trim(),
+            estado: form.estado.trim(),
+            cep: form.cep.trim(),
+            referencia: form.referencia.trim(),
+          },
+        }),
       });
       // Pino ajustado manualmente no mapa tem prioridade sobre a geocodificação
       // automática do endereço que acabou de ser salvo.
-      if (pinAjustado) {
+      if (!retirada && pinAjustado) {
         try { await atualizarLocalizacaoPerfil(pinAjustado.lat, pinAjustado.lng); } catch {}
       }
       await onNext(updated);
@@ -203,6 +209,29 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+      {permiteRetirada && (
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-1.5 grid grid-cols-2 gap-1.5">
+          <button type="button" onClick={() => setRetirada(false)}
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              !retirada ? 'bg-[#FF441F] text-white' : 'text-[#71717A] dark:text-[#A1A1AA]'
+            }`}>
+            <Icon name="Bike" size={15} /> Entrega
+          </button>
+          <button type="button" onClick={() => setRetirada(true)}
+            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              retirada ? 'bg-[#FF441F] text-white' : 'text-[#71717A] dark:text-[#A1A1AA]'
+            }`}>
+            <Icon name="Store" size={15} /> Retirar no balcão
+          </button>
+        </div>
+      )}
+
+      {retirada && (
+        <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
+          <Icon name="CheckCircle2" size={16} className="flex-shrink-0" /> Sem taxa de entrega — retire seu pedido direto no estabelecimento.
+        </div>
+      )}
+
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
         <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-1">
           <Icon name="User" size={15} className="text-[#FF441F]" /> Seus dados
@@ -212,6 +241,7 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
         <Campo label="CPF/CNPJ (opcional)" value={form.cpf_cnpj} onChange={(v) => set('cpf_cnpj')(formatCpfCnpj(v))} placeholder="000.000.000-00" />
       </div>
 
+      {!retirada && (
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
         <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-1">
           <Icon name="MapPin" size={15} className="text-[#FF441F]" /> Endereço de entrega
@@ -264,6 +294,7 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
         <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-1">Cidade e estado corretos são necessários pra calcular a distância de entrega</p>
         <Campo label="Ponto de referência" value={form.referencia} onChange={set('referencia')} placeholder="Próximo ao mercado..." />
       </div>
+      )}
 
       {erro && (
         <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-600 dark:text-red-400">{erro}</div>
@@ -274,9 +305,9 @@ const StepEndereco = ({ perfil, restauranteId, onNext, onBack }) => {
           className="flex-1 py-3.5 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] font-semibold rounded-2xl hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] text-sm">
           Voltar
         </button>
-        <button onClick={handleNext} disabled={salvando || previewDistancia?.foraDoRaio}
+        <button onClick={handleNext} disabled={salvando || (!retirada && previewDistancia?.foraDoRaio)}
           className="flex-[2] py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] disabled:opacity-50">
-          {salvando ? 'Calculando distância...' : previewDistancia?.foraDoRaio ? 'Fora da área de entrega' : 'Usar este endereço'}
+          {salvando ? 'Salvando...' : retirada ? 'Continuar' : previewDistancia?.foraDoRaio ? 'Fora da área de entrega' : 'Usar este endereço'}
         </button>
       </div>
     </motion.div>

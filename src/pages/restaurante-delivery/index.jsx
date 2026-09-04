@@ -33,6 +33,7 @@ const filterTabs = (tipoRestaurante) => {
   const termos = getTermos(tipoRestaurante);
   return [
     { value: 'todos',            label: 'Todos',      activeColor: 'border-[#18181B] bg-[#18181B] text-white' },
+    { value: 'retirada_balcao',  label: 'Retirada Balcão', activeColor: 'border-sky-400 dark:border-sky-800 bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400' },
     { value: 'pending',          label: 'Recebido',   activeColor: 'border-yellow-400 dark:border-yellow-800 bg-yellow-100 dark:bg-yellow-950/40 text-yellow-800 dark:text-yellow-400' },
     { value: 'confirmed',        label: 'Ag. Preparo', activeColor: 'border-blue-400 dark:border-blue-800 bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-400' },
     { value: 'preparing',        label: termos.praca,    activeColor: 'border-orange-400 dark:border-orange-800 bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-400' },
@@ -141,8 +142,14 @@ const RestauranteDelivery = () => {
   );
 
   const todosPedidos = (caixa?.pedidos ?? []).filter((p) => p.canal !== 'presencial');
-  const contagem = todosPedidos.reduce((acc, p) => { acc[p.status] = (acc[p.status] ?? 0) + 1; return acc; }, {});
-  const pedidosFiltrados = filtroStatus === 'todos' ? todosPedidos : todosPedidos.filter((p) => p.status === filtroStatus);
+  const contagem = todosPedidos.reduce((acc, p) => {
+    acc[p.status] = (acc[p.status] ?? 0) + 1;
+    if (p.retirada_balcao) acc.retirada_balcao = (acc.retirada_balcao ?? 0) + 1;
+    return acc;
+  }, {});
+  const pedidosFiltrados = filtroStatus === 'todos' ? todosPedidos
+    : filtroStatus === 'retirada_balcao' ? todosPedidos.filter((p) => p.retirada_balcao)
+    : todosPedidos.filter((p) => p.status === filtroStatus);
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/delivery" title="Delivery" onRefresh={recarregarCaixa} />
@@ -245,6 +252,11 @@ const RestauranteDelivery = () => {
                                     <div className="flex items-center gap-2 mb-0.5">
                                       <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">#{p.id}</p>
                                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${sl.color}`}>{sl.label}</span>
+                                      {p.retirada_balcao && (
+                                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-sky-100 dark:bg-sky-950/40 text-sky-800 dark:text-sky-400">
+                                          <Icon name="Store" size={9} /> Retirada
+                                        </span>
+                                      )}
                                       {isAtivo && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-auto flex-shrink-0" />}
                                     </div>
                                     {clienteNome && (
@@ -256,7 +268,7 @@ const RestauranteDelivery = () => {
                                     {new Date(p.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 </div>
-                                <PedidoTimeline status={p.status} />
+                                <PedidoTimeline status={p.status} retiradaBalcao={p.retirada_balcao} />
                                 <PracasStatus pracas={p.pracas} compact />
                               </div>
                             </button>

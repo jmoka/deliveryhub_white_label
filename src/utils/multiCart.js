@@ -28,6 +28,7 @@ export const cartAdd = (produto, restaurante) => {
       restaurante_frete: parseFloat(restaurante.frete_motoboy ?? 0),
       restaurante_pagamento_manual: !!restaurante.pagamento_manual,
       restaurante_chave_pix: restaurante.chave_pix ?? null,
+      restaurante_permite_retirada_balcao: !!restaurante.permite_retirada_balcao,
     });
   }
   localStorage.setItem(KEY, JSON.stringify(cart));
@@ -73,6 +74,7 @@ export const cartByRestaurant = () => {
         frete_motoboy: item.restaurante_frete ?? 0,
         pagamento_manual: !!item.restaurante_pagamento_manual,
         chave_pix: item.restaurante_chave_pix ?? null,
+        permite_retirada_balcao: !!item.restaurante_permite_retirada_balcao,
         items: [],
       };
     }

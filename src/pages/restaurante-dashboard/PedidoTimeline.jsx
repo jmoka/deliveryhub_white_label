@@ -10,21 +10,24 @@ const STEPS = [
   { key: 'delivered',          color: 'bg-green-400',  label: 'Entregue' },
 ];
 
-const PedidoTimeline = ({ status }) => {
+const PedidoTimeline = ({ status, retiradaBalcao }) => {
   if (status === 'canceled') return (
     <p className="hidden md:block text-[10px] text-red-500 font-semibold mt-1.5 pt-1.5 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
       Cancelado
     </p>
   );
 
-  const currentIdx = STEPS.findIndex((s) => s.key === status);
+  // Retirada no balcão não passa por motoboy — depois de "Pronto" o próximo (e
+  // último) passo é o cliente retirar, direto pra "Entregue".
+  const steps = retiradaBalcao ? STEPS.filter((s) => !['motoboy_collecting', 'out_for_delivery'].includes(s.key)) : STEPS;
+  const currentIdx = steps.findIndex((s) => s.key === status);
 
   return (
     <div className="hidden md:flex items-end mt-2 pt-2 border-t border-[#F4F4F5] dark:border-[#3F3F46]">
-      {STEPS.map((step, idx) => {
+      {steps.map((step, idx) => {
         const isPast    = idx < currentIdx;
         const isCurrent = idx === currentIdx;
-        const isLast    = idx === STEPS.length - 1;
+        const isLast    = idx === steps.length - 1;
         return (
           <React.Fragment key={step.key}>
             <div className="flex flex-col items-center gap-1 flex-shrink-0">

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   getPedidosCozinha, getMinhaEmpresa, renovarTokenCozinha,
-  listarImpressoras, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
+  listarImpressoras, atualizarImpressora, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante,
 } from '../../services/restauranteService';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken, resgatarToken,
@@ -14,7 +14,7 @@ import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
 import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
-import { barcodeValue, getPrinterName, setPrinterName } from '../../utils/printComanda';
+import { barcodeValue, printTesteImpressora } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
@@ -112,11 +112,13 @@ const RestauranteCozinha = () => {
   const [highlightedSalaoItemId, setHighlightedSalaoItemId] = useState(null);
   const [scanMsg, setScanMsg] = useState(null);
   const [showPrinterSettings, setShowPrinterSettings] = useState(false);
-  const [printerInput, setPrinterInput] = useState('');
-  const [printerSaved, setPrinterSaved] = useState(false);
   const [copiadoLink, setCopiadoLink] = useState(false);
   const [gerandoLink, setGerandoLink] = useState(false);
   const [impressorasCozinha, setImpressorasCozinha] = useState(null);
+  const [todasImpressoras, setTodasImpressoras] = useState([]);
+  const [impressoraSelecionada, setImpressoraSelecionada] = useState('');
+  const [definindoImpressora, setDefinindoImpressora] = useState(false);
+  const [impressoraDefinida, setImpressoraDefinida] = useState(null); // { nome, setor } | null — confirmação visual após "Definir"
   const [itensSalao, setItensSalao] = useState([]);
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
   const [verTodosProntos, setVerTodosProntos] = useState(false);
@@ -175,12 +177,6 @@ const RestauranteCozinha = () => {
     }
   };
 
-  const handleSavePrinter = () => {
-    setPrinterName(printerInput.trim());
-    setPrinterSaved(true);
-    setTimeout(() => setPrinterSaved(false), 2000);
-  };
-
   const carregar = useCallback(async (currentRestauranteNome, usarToken = false) => {
     try {
       const data = usarToken ? await getCozinhaPedidos() : await getPedidosCozinha();
@@ -227,14 +223,40 @@ const RestauranteCozinha = () => {
     }
   }, []);
 
+  const carregarImpressoras = useCallback(() => {
+    const getImpressoras = modoToken ? getKdsImpressoras : listarImpressoras;
+    getImpressoras()
+      .then((lista) => {
+        setTodasImpressoras(lista ?? []);
+        setImpressorasCozinha((lista ?? []).filter((i) => (i.setor ?? '').toLowerCase().includes('cozinha')));
+      })
+      .catch(() => setImpressorasCozinha([]));
+  }, [modoToken]);
+
+  // Dono escolhe explicitamente qual impressora recebe os itens dessa praça —
+  // grava o setor certo nela (o filtro acima é por texto, então digitar
+  // "Cozinha" errado deixava a praça pra sempre vazia sem nenhum aviso).
+  const handleDefinirImpressoraCozinha = async () => {
+    if (!impressoraSelecionada) return;
+    setDefinindoImpressora(true);
+    try {
+      const nomeEscolhida = todasImpressoras.find((i) => String(i.id) === impressoraSelecionada)?.nome ?? '';
+      await atualizarImpressora(Number(impressoraSelecionada), { setor: 'Cozinha' });
+      setImpressoraSelecionada('');
+      setImpressoraDefinida({ nome: nomeEscolhida, setor: 'Cozinha' });
+      carregarImpressoras();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setDefinindoImpressora(false);
+    }
+  };
+
   useEffect(() => {
     if (modoToken && !authed) return;
 
     let nome = '';
-    const getImpressoras = modoToken ? getKdsImpressoras : listarImpressoras;
-    getImpressoras()
-      .then((lista) => setImpressorasCozinha((lista ?? []).filter((i) => (i.setor ?? '').toLowerCase().includes('cozinha'))))
-      .catch(() => setImpressorasCozinha([]));
+    carregarImpressoras();
 
     if (modoToken) {
       getCozinhaMe()
@@ -285,11 +307,6 @@ const RestauranteCozinha = () => {
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [restauranteId, carregar, restauranteNome]);
-
-  useEffect(() => {
-    const saved = getPrinterName();
-    setPrinterInput(saved);
-  }, []);
 
   // Não limpa scanInput no final de propósito — ele fica ativo como filtro (ver
   // idEscaneado/passaFiltro abaixo), igual Produção/Bar filtram pelo campo de busca.
@@ -472,6 +489,23 @@ const RestauranteCozinha = () => {
               <p className="text-[#71717A] text-xs">{restauranteNome}</p>
             </div>
           </div>
+
+          {/* Deixa claro qual impressora alimenta essa tela — Bar e Cozinha são visualmente
+              quase idênticas, fácil confundir qual painel está configurado com qual impressora. */}
+          {impressorasCozinha && (
+            impressorasCozinha.length > 0 ? (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-900/30 border border-green-700 text-green-400">
+                <Icon name="Printer" size={12} />
+                {impressorasCozinha.map((i) => i.nome).join(', ')}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-900/30 border border-red-700 text-red-400">
+                <Icon name="AlertTriangle" size={12} />
+                Sem impressora conectada
+              </span>
+            )
+          )}
+
           <div className="ml-auto flex items-center gap-2">
             <div className="flex items-center gap-2 text-xs text-[#71717A]">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -489,7 +523,7 @@ const RestauranteCozinha = () => {
                   className={gerandoLink ? 'animate-spin' : ''} />
               </button>
             )}
-            <button onClick={() => { setShowPrinterSettings((v) => !v); setPrinterInput(getPrinterName()); }}
+            <button onClick={() => { setShowPrinterSettings((v) => !v); setImpressoraSelecionada(''); }}
               className={`p-2 rounded-lg transition-colors ${showPrinterSettings ? 'text-[#FF441F] bg-[#FF441F]/10' : 'text-[#71717A] hover:text-white hover:bg-[#2A2A2A]'}`}
               title="Configurar impressora">
               <Icon name="Printer" size={16} />
@@ -505,27 +539,43 @@ const RestauranteCozinha = () => {
           <div className="mb-3 flex items-center gap-3 bg-[#111111] border border-[#2A2A2A] rounded-xl px-4 py-3">
             <Icon name="Printer" size={15} className="text-[#FF441F] flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-xs text-[#71717A] mb-1">Nome da impressora padrão (como aparece no Windows/Mac)</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={printerInput}
-                  onChange={(e) => setPrinterInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSavePrinter()}
-                  placeholder="Ex: EPSON TM-T20, HP LaserJet..."
-                  className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-[#3A3A3A] outline-none focus:border-[#FF441F]"
-                />
-                <button onClick={handleSavePrinter}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${printerSaved ? 'bg-green-600 text-white' : 'bg-[#FF441F] text-white hover:bg-[#E63A19]'}`}>
-                  {printerSaved ? '✓ Salvo' : 'Salvar'}
-                </button>
-                {getPrinterName() && (
-                  <button onClick={() => { setPrinterName(''); setPrinterInput(''); }}
-                    className="px-3 py-1.5 text-xs font-bold bg-[#2A2A2A] text-[#71717A] hover:text-white rounded-lg">
-                    Limpar
-                  </button>
-                )}
-              </div>
+              {!modoToken && (
+                <div>
+                  <p className="text-xs text-[#71717A] mb-1">Qual impressora recebe os pedidos dessa {termos.pracaLower}?</p>
+                  <div className="flex gap-2">
+                    <select
+                      value={impressoraSelecionada}
+                      onChange={(e) => setImpressoraSelecionada(e.target.value)}
+                      className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-[#FF441F]"
+                    >
+                      <option value="">Selecione uma impressora...</option>
+                      {todasImpressoras.map((i) => (
+                        <option key={i.id} value={i.id}>{i.nome}{i.setor ? ` (setor atual: ${i.setor})` : ' (sem setor)'}</option>
+                      ))}
+                    </select>
+                    <button onClick={handleDefinirImpressoraCozinha} disabled={!impressoraSelecionada || definindoImpressora}
+                      className="px-4 py-1.5 text-xs font-bold rounded-lg bg-[#FF441F] text-white hover:bg-[#E63A19] disabled:opacity-50 transition-colors">
+                      {definindoImpressora ? '...' : 'Definir'}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-[#71717A] mt-1">
+                    Marca essa impressora com o setor "Cozinha" — produtos configurados com ela passam a aparecer aqui.
+                  </p>
+                  {impressoraDefinida && (
+                    <div className="mt-2 flex items-center gap-2 bg-green-900/20 border border-green-700 rounded-lg px-3 py-2">
+                      <Icon name="CheckCircle2" size={14} className="text-green-400 flex-shrink-0" />
+                      <p className="text-xs text-green-400 flex-1">
+                        "{impressoraDefinida.nome}" definida como <strong>{impressoraDefinida.setor}</strong>.
+                      </p>
+                      <button
+                        onClick={() => printTesteImpressora(impressoraDefinida.nome, impressoraDefinida.setor, restauranteNome)}
+                        className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-green-700 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        <Icon name="Printer" size={11} /> Imprimir teste
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

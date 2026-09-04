@@ -79,6 +79,76 @@ setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameEleme
   printIframe(html, `motoboy-frame-${pedido.id}-${Date.now()}`);
 };
 
+// Ticket de teste pra confirmar que uma impressora/setor foi configurada certo
+// (ex. depois de "Definir" a impressora da Cozinha/Bar) — sem depender de ter
+// um pedido de verdade pra saber se saiu no lugar certo.
+export const printTesteImpressora = (nomeImpressora, setor, restauranteNome) => {
+  const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Teste de impressão</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}hr{border:none;border-top:1px dashed #000;margin:8px 0}.bold{font-weight:700}@media print{button{display:none!important}}</style>
+</head><body>
+<div class="c bold" style="font-size:11px;letter-spacing:1px">TESTE DE IMPRESSÃO</div>
+<div class="c" style="font-size:12px">${esc(restauranteNome ?? '')}</div>
+<hr/>
+<div>Impressora: <span class="bold">${esc(nomeImpressora ?? '')}</span></div>
+<div>Setor: <span class="bold">${esc(setor ?? '')}</span></div>
+<div style="margin-top:4px">${hora}</div>
+<hr/>
+<div class="c" style="font-size:12px">Se você está lendo isso na impressora certa, a configuração está OK.</div>
+<script>
+window.print();
+setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000);
+</script>
+</body></html>`;
+  printIframe(html, `teste-impressora-frame-${Date.now()}`);
+};
+
+// Comprovante impresso ao marcar retirada no balcão como concluída — mesmo
+// modelo visual da ficha de motoboy, mas em 2 vias (cliente/loja) na mesma
+// tira contínua, cada uma com campo de assinatura dando ciência do recebimento.
+export const printFichaRetirada = (pedido, itens, cliente, restauranteNome) => {
+  const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+  const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const pgto = PAYMENT_LABELS[pedido.payment_method] ?? pedido.payment_method;
+  const subtotal = itens.reduce((s, i) => s + (i.unit_price ?? 0) * (i.quantity ?? 0), 0);
+
+  const via = (rotulo) => `
+<div class="c bold" style="font-size:11px;letter-spacing:1px">COMPROVANTE DE RETIRADA</div>
+<div class="c" style="font-size:12px">${esc(restauranteNome ?? '')}</div>
+<div class="c bold" style="font-size:12px;letter-spacing:1px;margin:2px 0">— ${rotulo} —</div>
+<div class="big">PEDIDO #${pedido.id}</div>
+<div class="c" style="font-size:11px">${hora}</div>
+<hr/>
+<div class="bold">${esc(cliente?.name ?? 'Cliente')}</div>
+${cliente?.phone_e164 ? `<div>${esc(cliente.phone_e164)}</div>` : ''}
+<hr/>
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>`).join('')}
+<hr/>
+<div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+<div class="linha"><span>Retirada no balcão</span><span>Grátis</span></div>
+<hr/>
+<div class="c bold" style="font-size:16px">TOTAL: ${fmt(pedido.total)}</div>
+<div class="c">Pagamento: ${esc(pgto)}</div>
+<hr/>
+<div style="font-size:11px;margin-top:6px">Declaro que recebi o pedido acima.</div>
+<div style="margin-top:22px;border-top:1px solid #000"></div>
+<div class="c" style="font-size:10px;margin-top:2px">Assinatura do cliente</div>`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Retirada #${pedido.id}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.linha{display:flex;justify-content:space-between;font-size:12px;padding:1px 0}.bold{font-weight:700}.corte{text-align:center;font-size:11px;margin:14px 0;border-top:1px dashed #000;padding-top:4px}@media print{button{display:none!important}}</style>
+</head><body>
+${via('VIA CLIENTE')}
+<div class="corte">✂ - - - - - - - - - - - - - - - - - - - -</div>
+${via('VIA LOJA')}
+<div class="c" style="font-size:10px;margin-top:8px">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
+<script>
+window.print();
+setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}},2000);
+</script>
+</body></html>`;
+  printIframe(html, `retirada-frame-${pedido.id}-${Date.now()}`);
+};
+
 // Cartaz A4 pra fixar tipo poster no salão — QR grande, logo, nome e frase de chamada.
 export const printCartazCardapioDigital = (qrUrl, nomeRestaurante, logoUrl, tipoRestaurante = true) => {
   const termos = getTermos(tipoRestaurante);

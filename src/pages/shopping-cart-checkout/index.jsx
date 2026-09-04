@@ -384,7 +384,7 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
 );
 
 /* ── Step 3: Confirmar ───────────────────────────────────────────── */
-const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, excedente, total, perfil, loading, erro, onConfirmar, onBack }) => {
+const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, excedente, total, perfil, retirada, loading, erro, onConfirmar, onBack }) => {
   const payOpt = PAYMENT_OPTIONS.find((o) => o.key === paymentMethod);
   const addr = perfil?.address_json ?? {};
   const linhaRua = [addr.logradouro, addr.numero].filter(Boolean).join(', ');
@@ -392,8 +392,18 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, exced
   const linhaCidade = [addr.cidade, addr.estado].filter(Boolean).join(', ');
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
-      {/* Endereço entrega */}
-      {perfil && (
+      {/* Endereço entrega / retirada */}
+      {retirada ? (
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] px-4 py-3 flex items-start gap-3">
+          <div className="w-9 h-9 bg-green-50 dark:bg-green-950/40 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Icon name="Store" size={16} className="text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA]">Retirar no balcão — <span className="text-[#18181B] dark:text-[#F4F4F5]">{perfil?.name}</span></p>
+            {perfil?.phone_e164 && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{perfil.phone_e164}</p>}
+          </div>
+        </div>
+      ) : perfil && (
         <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] px-4 py-3 flex items-start gap-3">
           <div className="w-9 h-9 bg-[#FF441F]/10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
             <Icon name="MapPin" size={16} className="text-[#FF441F]" />
@@ -419,9 +429,11 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, exced
           ))}
           <div className="flex justify-between text-sm">
             <span className="text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1">
-              <Icon name="Truck" size={13} /> Frete motoboy
+              <Icon name={retirada ? 'Store' : 'Truck'} size={13} /> {retirada ? 'Retirada no balcão' : 'Frete motoboy'}
             </span>
-            <span className="font-medium text-[#27272A] dark:text-[#F4F4F5]">{fmt(frete)}</span>
+            <span className={`font-medium ${retirada ? 'text-green-600' : 'text-[#27272A] dark:text-[#F4F4F5]'}`}>
+              {retirada ? 'Grátis' : fmt(frete)}
+            </span>
           </div>
           {excedente?.distanciaKm != null && (
             <div className="flex justify-between text-sm">
@@ -490,7 +502,7 @@ const SingleCartCheckout = () => {
     return {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null } = restored;
+  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false } = restored;
 
   const [itens, setItens] = useState(carrinho);
   const [perfil, setPerfil] = useState(null);
@@ -505,6 +517,7 @@ const SingleCartCheckout = () => {
   const [etapa, setEtapa] = useState(0); // 0=endereço 1=itens 2=pagamento 3=confirmar
   const [excedente, setExcedente] = useState(null); // { distanciaKm, valorExcedente } | null
   const [calculandoDistancia, setCalculandoDistancia] = useState(false);
+  const [retirada, setRetirada] = useState(false); // true = retirar no balcão, sem frete
 
   useEffect(() => {
     getPerfil().then(setPerfil).catch(() => {});
@@ -533,9 +546,9 @@ const SingleCartCheckout = () => {
     }
   };
 
-  const frete = parseFloat(freteMotoboy) || 0;
+  const frete = retirada ? 0 : (parseFloat(freteMotoboy) || 0);
   const subtotal = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
-  const total = subtotal + frete + (excedente?.valorExcedente ?? 0);
+  const total = subtotal + frete + (retirada ? 0 : (excedente?.valorExcedente ?? 0));
 
   const irParaStep = (n) => { setErro(null); setEtapa(n); };
 
@@ -573,6 +586,7 @@ const SingleCartCheckout = () => {
           payment_method: paymentMethod,
           troco_para: paymentMethod === 'cash' && trocoParsed > 0 ? trocoParsed : undefined,
           itens: itens.map((i) => (i.tipo === 'combo' ? { combo_id: i.id, quantity: i.qtd } : { product_id: i.id, quantity: i.qtd })),
+          retirada_balcao: retirada,
         }),
       });
       const pedido = await resP.json();
@@ -688,7 +702,10 @@ const SingleCartCheckout = () => {
               key="endereco"
               perfil={perfil}
               restauranteId={restauranteId}
-              onNext={async (updated) => { setPerfil(updated); await buscarEstimativaExcedente(); irParaStep(1); }}
+              permiteRetirada={permiteRetiradaBalcao}
+              retirada={retirada}
+              setRetirada={setRetirada}
+              onNext={async (updated) => { setPerfil(updated); if (!retirada) await buscarEstimativaExcedente(); irParaStep(1); }}
               onBack={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : -1)}
             />
           )}
@@ -734,6 +751,7 @@ const SingleCartCheckout = () => {
               excedente={excedente}
               total={total}
               perfil={perfil}
+              retirada={retirada}
               loading={loading}
               erro={erro}
               onConfirmar={handleFinalizar}

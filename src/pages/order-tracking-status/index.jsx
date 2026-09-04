@@ -28,7 +28,10 @@ const buildStatusInfo = (tipoRestaurante) => {
   };
 };
 
-const TIMELINE = ['pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered'];
+const TIMELINE_PADRAO = ['pending', 'confirmed', 'preparing', 'ready', 'motoboy_collecting', 'out_for_delivery', 'delivered'];
+// Retirada no balcão não passa por motoboy — depois de "pronto" o próximo
+// passo já é "entregue" (cliente veio buscar).
+const TIMELINE_RETIRADA = ['pending', 'confirmed', 'preparing', 'ready', 'delivered'];
 
 const OrderTrackingStatus = () => {
   const navigate = useNavigate();
@@ -151,6 +154,7 @@ const OrderTrackingStatus = () => {
   const termos = getTermos(tipoRestaurante);
   const STATUS_INFO = buildStatusInfo(tipoRestaurante);
   const statusInfo = STATUS_INFO[pedido.status] ?? STATUS_INFO.pending;
+  const TIMELINE = pedido.retirada_balcao ? TIMELINE_RETIRADA : TIMELINE_PADRAO;
   const timelineIdx = TIMELINE.indexOf(pedido.status);
   const valorDevolver = pagamentoPago?.valor ?? 0;
 

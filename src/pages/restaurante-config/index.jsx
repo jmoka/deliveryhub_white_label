@@ -1126,6 +1126,7 @@ const RestauranteConfig = () => {
     pagamento_manual: false,
     frete_motoboy: '',
     usa_motoboy: true,
+    permite_retirada_balcao: false,
     motoboy_comissao_tipo: 'fixo',
     motoboy_comissao_valor_fixo: '',
     motoboy_comissao_percentual: '',
@@ -1160,6 +1161,7 @@ const RestauranteConfig = () => {
           pagamento_manual: d.pagamento_manual ?? false,
           frete_motoboy: d.frete_motoboy != null ? String(d.frete_motoboy) : '',
           usa_motoboy: d.usa_motoboy ?? true,
+          permite_retirada_balcao: d.permite_retirada_balcao ?? false,
           motoboy_comissao_tipo: d.motoboy_comissao_tipo ?? 'fixo',
           motoboy_comissao_valor_fixo: d.motoboy_comissao_valor_fixo != null ? String(d.motoboy_comissao_valor_fixo) : '',
           motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
@@ -1195,6 +1197,7 @@ const RestauranteConfig = () => {
         pagamento_manual: form.pagamento_manual,
         frete_motoboy: form.frete_motoboy !== '' ? parseFloat(form.frete_motoboy) : 0,
         usa_motoboy: form.usa_motoboy,
+        permite_retirada_balcao: form.permite_retirada_balcao,
         motoboy_comissao_tipo: form.motoboy_comissao_tipo,
         motoboy_comissao_valor_fixo: form.motoboy_comissao_valor_fixo !== '' ? parseFloat(form.motoboy_comissao_valor_fixo) : 0,
         motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
@@ -1430,6 +1433,23 @@ const RestauranteConfig = () => {
                     </span>
                     <input type="checkbox" checked={form.usa_motoboy}
                       onChange={(e) => setForm((f) => ({ ...f, usa_motoboy: e.target.checked }))}
+                      className="w-5 h-5 accent-orange-500 flex-shrink-0" />
+                  </label>
+                </div>
+
+                {/* Retirada no balcão — independente de usar motoboy ou não */}
+                <div className="border-t pt-4 mt-2">
+                  <label className="flex items-center justify-between gap-3 cursor-pointer">
+                    <span>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">Permitir retirada no balcão</span>
+                      <span className="block text-xs text-gray-400 mt-0.5">
+                        {form.permite_retirada_balcao
+                          ? 'No checkout, o cliente pode escolher retirar o pedido no estabelecimento em vez de receber em casa — sem cobrar frete'
+                          : 'Desligado: cliente só pode receber o pedido via entrega'}
+                      </span>
+                    </span>
+                    <input type="checkbox" checked={form.permite_retirada_balcao}
+                      onChange={(e) => setForm((f) => ({ ...f, permite_retirada_balcao: e.target.checked }))}
                       className="w-5 h-5 accent-orange-500 flex-shrink-0" />
                   </label>
                 </div>

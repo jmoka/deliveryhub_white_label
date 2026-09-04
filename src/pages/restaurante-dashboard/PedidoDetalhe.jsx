@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../components/AppIcon';
-import { printFichaMotoboy } from '../../utils/printComanda';
+import { printFichaMotoboy, printFichaRetirada } from '../../utils/printComanda';
 import MapaDistanciaEntrega from '../../components/MapaDistanciaEntrega';
 import { setTrocoPara, setFreteGratis, cancelarPedidoAdmin, marcarPedidoPago, getStatusGdoorPedido, enviarGdoorPedido } from '../../services/restauranteService';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
@@ -35,8 +35,12 @@ const statusLabel = (tipoRestaurante) => {
   };
 };
 
-const PROXIMOS    = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready', ready: 'motoboy_collecting', motoboy_collecting: 'out_for_delivery', out_for_delivery: 'delivered' };
-const ANTERIORES  = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing', motoboy_collecting: 'ready', out_for_delivery: 'motoboy_collecting', delivered: 'out_for_delivery' };
+const PROXIMOS_PADRAO    = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready', ready: 'motoboy_collecting', motoboy_collecting: 'out_for_delivery', out_for_delivery: 'delivered' };
+const ANTERIORES_PADRAO  = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing', motoboy_collecting: 'ready', out_for_delivery: 'motoboy_collecting', delivered: 'out_for_delivery' };
+// Retirada no balcão não passa por motoboy — "Pronto" avança direto pro
+// cliente retirar (ver botão "Marcar como retirado" na seção de Retirada).
+const PROXIMOS_RETIRADA   = { pending: 'confirmed', confirmed: 'preparing', preparing: 'ready', ready: 'delivered' };
+const ANTERIORES_RETIRADA = { confirmed: 'pending', preparing: 'confirmed', ready: 'preparing', delivered: 'ready' };
 
 const timeAgo = (iso) => {
   if (!iso) return null;
@@ -135,9 +139,16 @@ const PedidoDetalhe = ({
   };
 
   const handleEntregarProprio = async () => {
-    if (!confirm('Marcar este pedido como entregue pela própria loja (sem motoboy)?')) return;
+    const confirmMsg = pedido.retirada_balcao
+      ? 'Confirmar que o cliente já retirou este pedido no balcão?'
+      : 'Marcar este pedido como entregue pela própria loja (sem motoboy)?';
+    if (!confirm(confirmMsg)) return;
     setEntregandoProprio(true);
-    try { await onEntregarProprio?.(pedido); onDetalheMudou?.(); }
+    try {
+      await onEntregarProprio?.(pedido);
+      if (pedido.retirada_balcao) printFichaRetirada(pedido, itens, cliente, empresa?.name);
+      onDetalheMudou?.();
+    }
     catch (e) { alert(e.message); }
     finally { setEntregandoProprio(false); }
   };
@@ -152,6 +163,8 @@ const PedidoDetalhe = ({
   };
 
   const isCanceled = pedido.status === 'canceled';
+  const PROXIMOS   = pedido.retirada_balcao ? PROXIMOS_RETIRADA : PROXIMOS_PADRAO;
+  const ANTERIORES = pedido.retirada_balcao ? ANTERIORES_RETIRADA : ANTERIORES_PADRAO;
   const proxStatus = PROXIMOS[pedido.status];
   const antStatus  = ANTERIORES[pedido.status];
   const statusBadge = STATUS_COLORS[pedido.status] ?? 'bg-gray-100 dark:bg-gray-950/40 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800';
@@ -198,6 +211,13 @@ const PedidoDetalhe = ({
         </div>
       </div>
 
+      {pedido.retirada_balcao && (
+        <div className="bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <Icon name="Store" size={18} className="text-sky-600 dark:text-sky-400 flex-shrink-0" />
+          <p className="text-sm font-bold text-sky-800 dark:text-sky-400">Retirada no balcão — sem entrega, o cliente vem buscar</p>
+        </div>
+      )}
+
       <PracasStatus pracas={pracas} />
 
       {isCanceled && (
@@ -243,7 +263,12 @@ const PedidoDetalhe = ({
                 <p className="text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5]">{cliente.phone_e164}</p>
               )}
 
-              {enderecoCompleto ? (
+              {pedido.retirada_balcao ? (
+                <div className="bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-800 rounded-xl p-3 flex items-center gap-2">
+                  <Icon name="Store" size={15} className="text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                  <p className="text-xs font-semibold text-sky-800 dark:text-sky-400">Cliente vai retirar no balcão — endereço não se aplica</p>
+                </div>
+              ) : enderecoCompleto ? (
                 <div className="bg-[#F8F8FF] dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800 rounded-xl p-3">
                   <div className="flex items-start gap-2 mb-2.5">
                     <Icon name="MapPin" size={15} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
@@ -327,12 +352,17 @@ const PedidoDetalhe = ({
         </Section>
       )}
 
-      {/* Sem motoboy atribuído ainda — atribuir ou entregar pela própria loja */}
+      {/* Sem motoboy atribuído ainda — atribuir, entregar pela própria loja, ou
+          (retirada no balcão) só confirmar que o cliente já retirou. */}
       {!isCanceled && !pedido.motoboy_id && ['ready', 'out_for_delivery'].includes(pedido.status) && (
         <Section>
-          <SectionTitle icon="Truck" label="Entrega" color="text-indigo-600 dark:text-indigo-400" />
+          <SectionTitle
+            icon={pedido.retirada_balcao ? 'Store' : 'Truck'}
+            label={pedido.retirada_balcao ? 'Retirada no balcão' : 'Entrega'}
+            color={pedido.retirada_balcao ? 'text-sky-600 dark:text-sky-400' : 'text-indigo-600 dark:text-indigo-400'}
+          />
           <div className="p-4 space-y-3">
-            {motoboys.length > 0 && (
+            {!pedido.retirada_balcao && motoboys.length > 0 && (
               <div className="flex gap-2">
                 <select
                   value={motoboySelecionado}
@@ -359,7 +389,7 @@ const PedidoDetalhe = ({
               className="w-full py-2.5 border-2 border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 text-sm font-bold rounded-xl hover:bg-green-100 dark:hover:bg-green-900/40 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
             >
               <Icon name="Store" size={15} />
-              {entregandoProprio ? 'Confirmando...' : 'Marcar como entregue (entrega própria)'}
+              {entregandoProprio ? 'Confirmando...' : pedido.retirada_balcao ? 'Marcar como retirado pelo cliente' : 'Marcar como entregue (entrega própria)'}
             </button>
           </div>
         </Section>
@@ -501,8 +531,8 @@ const PedidoDetalhe = ({
           {/* Frete motoboy */}
           <div className="flex items-center justify-between pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-2">
             <div className="flex items-center gap-1.5">
-              <Icon name="Truck" size={13} className="text-[#71717A] dark:text-[#A1A1AA]" />
-              <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Frete motoboy</span>
+              <Icon name={pedido.retirada_balcao ? 'Store' : 'Truck'} size={13} className="text-[#71717A] dark:text-[#A1A1AA]" />
+              <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{pedido.retirada_balcao ? 'Retirada no balcão' : 'Frete motoboy'}</span>
             </div>
             <div className="flex items-center gap-2">
               {pedido.frete_cobrado > 0 ? (
@@ -692,6 +722,7 @@ const PedidoDetalhe = ({
                   Reimprimir Comanda
                 </button>
               )}
+              {!pedido.retirada_balcao && (
               <button
                 onClick={() => printFichaMotoboy(pedido, itens, cliente, null)}
                 className="flex-1 py-3 border-2 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 text-sm font-bold rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors flex items-center justify-center gap-0.5"
@@ -699,6 +730,7 @@ const PedidoDetalhe = ({
                 <Icon name="Bike" size={15} />
                 Imprimir Motoboy
               </button>
+              )}
             </div>
           )}
 
