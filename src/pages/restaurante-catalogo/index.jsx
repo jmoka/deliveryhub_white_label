@@ -441,12 +441,13 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     const chavePix = data?.restaurante?.chave_pix ?? null;
     const restauranteNome = data?.restaurante?.name ?? null;
     const permiteRetiradaBalcao = !!data?.restaurante?.permite_retirada_balcao;
+    const stripeDisponivel = !!data?.restaurante?.stripe_disponivel;
     if (!isAuthenticated()) {
-      sessionStorage.setItem('pending_cart', JSON.stringify({ carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao }));
+      sessionStorage.setItem('pending_cart', JSON.stringify({ carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, stripeDisponivel }));
       navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
       return;
     }
-    navigate('/shopping-cart-checkout', { state: { carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao } });
+    navigate('/shopping-cart-checkout', { state: { carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, stripeDisponivel } });
   };
 
   if (loading) return (

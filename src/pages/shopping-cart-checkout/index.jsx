@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
@@ -11,6 +13,10 @@ import MultiCartCheckout from './MultiCartCheckout';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+
+// Uma instância só, reaproveitada entre montagens — recriar a cada render
+// dispara um warning da própria Stripe.js e recarrega o script à toa.
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const PAYMENT_OPTIONS = [
   { key: 'pix', label: 'PIX', icon: 'QrCode', desc: 'Aprovação instantânea' },
@@ -232,6 +238,77 @@ const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, r
   );
 };
 
+/* ── Cobrança via Stripe (cartão) ────────────────────────────────── */
+const StripeCardForm = ({ total, onSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processando, setProcessando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const confirmar = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setProcessando(true);
+    setErro(null);
+
+    // redirect:'if_required' evita sair da página no caminho feliz (maioria dos
+    // cartões BR); só redireciona de verdade se o banco exigir 3DS.
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      redirect: 'if_required',
+      confirmParams: { return_url: window.location.href },
+    });
+
+    if (error) {
+      setErro(error.message ?? 'Não foi possível processar o cartão.');
+      setProcessando(false);
+      return;
+    }
+    if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
+      onSuccess();
+      return;
+    }
+    setErro('Pagamento não concluído. Tente outro cartão.');
+    setProcessando(false);
+  };
+
+  return (
+    <form onSubmit={confirmar} className="space-y-4">
+      <PaymentElement />
+      {erro && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-600 dark:text-red-400">
+          {erro}
+        </div>
+      )}
+      <button type="submit" disabled={!stripe || processando}
+        className="w-full py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] disabled:opacity-50 transition-colors">
+        {processando ? 'Processando...' : `Pagar ${fmt(total)}`}
+      </button>
+    </form>
+  );
+};
+
+const StripeCardScreen = ({ clientSecret, total, onSuccess }) => (
+  <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B] flex flex-col items-center justify-center p-6">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="w-full max-w-sm bg-white dark:bg-[#27272A] rounded-3xl border border-[#E4E4E7] dark:border-[#3F3F46] shadow-lg p-6 space-y-5"
+    >
+      <div className="text-center">
+        <div className="w-14 h-14 bg-[#FF441F]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+          <Icon name="CreditCard" size={28} className="text-[#FF441F]" />
+        </div>
+        <h1 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Dados do cartão</h1>
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Pagamento processado com segurança pela Stripe</p>
+      </div>
+      <Elements stripe={stripePromise} options={{ clientSecret }}>
+        <StripeCardForm total={total} onSuccess={onSuccess} />
+      </Elements>
+    </motion.div>
+  </div>
+);
+
 /* ── Step 1: Itens ───────────────────────────────────────────────── */
 const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total }) => {
   const remover = (id) => setItens((p) => p.filter((i) => i.id !== id));
@@ -303,7 +380,7 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total 
 };
 
 /* ── Step 2: Pagamento ───────────────────────────────────────────── */
-const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, excedente, total, onNext, onBack, pagamentoManual = false, chavePix = null }) => (
+const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, excedente, total, onNext, onBack, pagamentoManual = false, chavePix = null, stripeDisponivel = false }) => (
   <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
     {/* Resumo do valor — sempre visível */}
     <div className="bg-[#18181B] dark:bg-[#3F3F46] rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -333,36 +410,41 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
       <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-3">Forma de pagamento</p>
       <div className="space-y-2">
         {PAYMENT_OPTIONS.map((op) => {
-          const pixIndisponivel = pagamentoManual && op.key === 'pix' && !chavePix;
+          const isCartao = op.key === 'credit_card' || op.key === 'debit_card';
+          const opcaoIndisponivel =
+            (pagamentoManual && op.key === 'pix' && !chavePix) ||
+            (!pagamentoManual && isCartao && !stripeDisponivel);
           return (
-            <button key={op.key} onClick={() => !pixIndisponivel && setPaymentMethod(op.key)}
-              disabled={pixIndisponivel}
+            <button key={op.key} onClick={() => !opcaoIndisponivel && setPaymentMethod(op.key)}
+              disabled={opcaoIndisponivel}
               className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all text-left ${
-                pixIndisponivel
+                opcaoIndisponivel
                   ? 'border-[#E4E4E7] dark:border-[#3F3F46] opacity-50 cursor-not-allowed'
                   : paymentMethod === op.key
                     ? 'border-[#FF441F] bg-[#FF441F]/5'
                     : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]/40'
               }`}>
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                paymentMethod === op.key && !pixIndisponivel ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
+                paymentMethod === op.key && !opcaoIndisponivel ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
               }`}>
                 <Icon name={op.icon} size={18} />
               </div>
               <div className="flex-1">
-                <p className={`text-sm font-semibold ${paymentMethod === op.key && !pixIndisponivel ? 'text-[#FF441F]' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>
+                <p className={`text-sm font-semibold ${paymentMethod === op.key && !opcaoIndisponivel ? 'text-[#FF441F]' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>
                   {op.label}
                 </p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-                  {pixIndisponivel
+                  {pagamentoManual && op.key === 'pix' && !chavePix
                     ? 'Indisponível — restaurante não configurou chave PIX'
-                    : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
+                    : !pagamentoManual && isCartao && !stripeDisponivel
+                      ? 'Indisponível — restaurante não conectou pagamento online'
+                      : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
                 </p>
               </div>
               <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                paymentMethod === op.key && !pixIndisponivel ? 'border-[#FF441F] bg-[#FF441F]' : 'border-[#E4E4E7] dark:border-[#3F3F46]'
+                paymentMethod === op.key && !opcaoIndisponivel ? 'border-[#FF441F] bg-[#FF441F]' : 'border-[#E4E4E7] dark:border-[#3F3F46]'
               }`}>
-                {paymentMethod === op.key && !pixIndisponivel && <div className="w-2 h-2 bg-white rounded-full m-auto mt-0.5" />}
+                {paymentMethod === op.key && !opcaoIndisponivel && <div className="w-2 h-2 bg-white rounded-full m-auto mt-0.5" />}
               </div>
             </button>
           );
@@ -562,7 +644,7 @@ const SingleCartCheckout = () => {
     return {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false } = restored;
+  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, stripeDisponivel = false } = restored;
 
   const [itens, setItens] = useState(carrinho);
   const [perfil, setPerfil] = useState(null);
@@ -573,6 +655,7 @@ const SingleCartCheckout = () => {
   const [erro, setErro] = useState(null);
   const [pixData, setPixData] = useState(null);
   const [pixManual, setPixManual] = useState(false);
+  const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
   const [etapa, setEtapa] = useState(0); // 0=endereço 1=itens 2=pagamento 3=confirmar
   const [excedente, setExcedente] = useState(null); // { distanciaKm, valorExcedente } | null
@@ -687,6 +770,18 @@ const SingleCartCheckout = () => {
         return;
       }
 
+      if (!pagamentoManual && (paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && stripeDisponivel) {
+        const resStripe = await fetch(apiPath('/api/pagamentos/stripe'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ order_id: newOrderId }),
+        });
+        const stripeResp = await resStripe.json();
+        if (!resStripe.ok) throw new Error(stripeResp?.message ?? `HTTP ${resStripe.status}`);
+        setStripeClientSecret(stripeResp.client_secret);
+        return;
+      }
+
       navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
     } catch (err) {
       setErro(err.message);
@@ -694,6 +789,18 @@ const SingleCartCheckout = () => {
       setLoading(false);
     }
   };
+
+  if (stripeClientSecret) {
+    return (
+      <StripeCardScreen
+        clientSecret={stripeClientSecret}
+        total={total}
+        onSuccess={() =>
+          navigate('/order-tracking-status', { state: { orderId, restauranteSlug }, replace: true })
+        }
+      />
+    );
+  }
 
   if (pixData) {
     return (
@@ -791,6 +898,7 @@ const SingleCartCheckout = () => {
               setCpf={setCpf}
               pagamentoManual={pagamentoManual}
               chavePix={chavePix}
+              stripeDisponivel={stripeDisponivel}
               trocoPara={trocoPara}
               setTrocoPara={setTrocoPara}
               subtotal={subtotal}
