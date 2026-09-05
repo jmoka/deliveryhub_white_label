@@ -13,36 +13,58 @@ const Modal = ({ pacote, carrosseis, onClose, onSave }) => {
     pacote
       ? {
           nome: pacote.nome,
-          carrossel: pacote.carrossel,
           qtd_produtos: String(pacote.qtd_produtos),
           dias: String(pacote.dias),
           preco: String(pacote.preco),
           ativo: pacote.ativo,
         }
-      : { nome: '', carrossel: carrosseis[0]?.carrossel ?? '', qtd_produtos: '1', dias: '7', preco: '', ativo: true }
+      : { nome: '', qtd_produtos: '1', dias: '7', preco: '', ativo: true }
+  );
+  // Só faz sentido escolher vários carrosséis na criação — editar um pacote já
+  // vinculado a um carrossel continua 1 pra 1 (mudar isso significaria criar
+  // pacote novo, não editar o existente).
+  const [carrosselSelecionados, setCarrosselSelecionados] = useState(
+    pacote ? [pacote.carrossel] : []
   );
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const isEdicao = !!pacote;
+  const todosSelecionados = !isEdicao && carrosseis.length > 0 && carrosselSelecionados.length === carrosseis.length;
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  const toggleCarrossel = (carrossel) =>
+    setCarrosselSelecionados((sel) =>
+      sel.includes(carrossel) ? sel.filter((c) => c !== carrossel) : [...sel, carrossel]
+    );
+
+  const toggleTodos = () =>
+    setCarrosselSelecionados(todosSelecionados ? [] : carrosseis.map((c) => c.carrossel));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (carrosselSelecionados.length === 0) {
+      setErro('Escolha ao menos um carrossel.');
+      return;
+    }
     setSalvando(true);
     setErro(null);
     try {
-      const body = {
+      const base = {
         nome: form.nome.trim(),
-        carrossel: form.carrossel,
         qtd_produtos: parseInt(form.qtd_produtos, 10),
         dias: parseInt(form.dias, 10),
         preco: parseFloat(form.preco),
       };
       if (isEdicao) {
-        await atualizarPacoteBoost(pacote.id, { ...body, ativo: form.ativo });
+        await atualizarPacoteBoost(pacote.id, { ...base, ativo: form.ativo });
       } else {
-        await criarPacoteBoost(body);
+        // Um pacote por carrossel selecionado, mesma configuração — o schema
+        // (marketplace_boost_pacotes) é 1 carrossel por linha, não dá pra
+        // vincular um pacote só a vários carrosséis ao mesmo tempo.
+        for (const carrossel of carrosselSelecionados) {
+          await criarPacoteBoost({ ...base, carrossel });
+        }
       }
       onSave();
     } catch (err) {
@@ -66,11 +88,34 @@ const Modal = ({ pacote, carrosseis, onClose, onSave }) => {
               className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Carrossel *</label>
-            <select value={form.carrossel} onChange={(e) => set('carrossel', e.target.value)} disabled={isEdicao}
-              className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm disabled:opacity-60">
-              {carrosseis.map((c) => <option key={c.carrossel} value={c.carrossel}>{c.label}</option>)}
-            </select>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300">Carrossel(is) *</label>
+              {!isEdicao && (
+                <button type="button" onClick={toggleTodos} className="text-xs font-semibold text-blue-600 hover:underline">
+                  {todosSelecionados ? 'Limpar seleção' : 'Selecionar todos'}
+                </button>
+              )}
+            </div>
+            {isEdicao ? (
+              <p className="text-sm text-gray-500 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-800 rounded-xl px-3 py-2.5">
+                {carrosseis.find((c) => c.carrossel === carrosselSelecionados[0])?.label ?? carrosselSelecionados[0]}
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-300 dark:border-zinc-700 rounded-xl p-3">
+                {carrosseis.map((c) => (
+                  <label key={c.carrossel} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
+                    <input type="checkbox" checked={carrosselSelecionados.includes(c.carrossel)}
+                      onChange={() => toggleCarrossel(c.carrossel)} className="w-4 h-4 accent-blue-600" />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            )}
+            {!isEdicao && carrosselSelecionados.length > 0 && (
+              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                Cria {carrosselSelecionados.length} pacote(s), um por carrossel selecionado.
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
