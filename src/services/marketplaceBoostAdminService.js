@@ -44,6 +44,15 @@ export const getVagasBoost = () => apiFetch('/marketplace-boost/vagas');
 export const salvarVagasBoost = (data) =>
   apiFetch('/marketplace-boost/vagas', { method: 'PUT', body: JSON.stringify(data) });
 
+// Admin — perfis nomeados de vagas (ex: "Padrão", "Black Friday")
+export const getPresetsVagasBoost = () => apiFetch('/marketplace-boost/vagas/presets');
+export const criarPresetVagasBoost = (nome, config) =>
+  apiFetch('/marketplace-boost/vagas/presets', { method: 'POST', body: JSON.stringify({ nome, config }) });
+export const aplicarPresetVagasBoost = (id) =>
+  apiFetch(`/marketplace-boost/vagas/presets/${id}/aplicar`, { method: 'POST' });
+export const removerPresetVagasBoost = (id) =>
+  apiFetch(`/marketplace-boost/vagas/presets/${id}`, { method: 'DELETE' });
+
 // Admin — CRUD de pacotes de destaque
 export const getPacotesBoostAdmin = () => apiFetch('/marketplace-boost/pacotes');
 export const criarPacoteBoost = (data) =>

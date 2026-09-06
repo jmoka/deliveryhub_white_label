@@ -22,7 +22,7 @@ const SelecionarItensModal = ({ pacote, onClose, onCriado }) => {
 
   useEffect(() => {
     const buscar = pacote.carrossel === 'combos'
-      ? getMeusCombos()
+      ? getMeusCombos().then((r) => r.combos ?? [])
       : getMeusProdutos().then((r) => r.produtos ?? []);
     buscar.then((lista) => setItens(lista ?? [])).catch(() => {}).finally(() => setCarregando(false));
   }, [pacote.carrossel]);

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   getVagasBoost, salvarVagasBoost, getPacotesBoostAdmin, getCarrosseisBoost,
   criarPacoteBoost, atualizarPacoteBoost, removerPacoteBoost,
+  getPresetsVagasBoost, criarPresetVagasBoost, aplicarPresetVagasBoost, removerPresetVagasBoost,
 } from '../../services/marketplaceBoostAdminService';
 import Icon from '../../components/AppIcon';
 import AdminHeader from '../../components/admin/AdminHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const Modal = ({ pacote, carrosseis, onClose, onSave }) => {
+const Modal = ({ pacote, carrosseis, presets, onClose, onSave }) => {
   const [form, setForm] = useState(
     pacote
       ? {
@@ -26,20 +27,26 @@ const Modal = ({ pacote, carrosseis, onClose, onSave }) => {
   const [carrosselSelecionados, setCarrosselSelecionados] = useState(
     pacote ? [pacote.carrossel] : []
   );
+  const [perfilId, setPerfilId] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const isEdicao = !!pacote;
-  const todosSelecionados = !isEdicao && carrosseis.length > 0 && carrosselSelecionados.length === carrosseis.length;
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const toggleCarrossel = (carrossel) =>
-    setCarrosselSelecionados((sel) =>
-      sel.includes(carrossel) ? sel.filter((c) => c !== carrossel) : [...sel, carrossel]
-    );
+  // Perfil de vagas (ex: "3 master") já diz quais carrosséis fazem parte dele
+  // (as chaves do config) — reaproveita isso em vez de marcar carrossel por
+  // carrossel de novo aqui.
+  const escolherPerfil = (id) => {
+    setPerfilId(id);
+    const preset = presets.find((p) => String(p.id) === id);
+    setCarrosselSelecionados(preset ? Object.keys(preset.config) : []);
+  };
 
-  const toggleTodos = () =>
-    setCarrosselSelecionados(todosSelecionados ? [] : carrosseis.map((c) => c.carrossel));
+  const selecionarTodos = () => {
+    setPerfilId('');
+    setCarrosselSelecionados(carrosseis.map((c) => c.carrossel));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,8 +98,8 @@ const Modal = ({ pacote, carrosseis, onClose, onSave }) => {
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300">Carrossel(is) *</label>
               {!isEdicao && (
-                <button type="button" onClick={toggleTodos} className="text-xs font-semibold text-blue-600 hover:underline">
-                  {todosSelecionados ? 'Limpar seleção' : 'Selecionar todos'}
+                <button type="button" onClick={selecionarTodos} className="text-xs font-semibold text-blue-600 hover:underline">
+                  Selecionar todos
                 </button>
               )}
             </div>
@@ -101,19 +108,23 @@ const Modal = ({ pacote, carrosseis, onClose, onSave }) => {
                 {carrosseis.find((c) => c.carrossel === carrosselSelecionados[0])?.label ?? carrosselSelecionados[0]}
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-300 dark:border-zinc-700 rounded-xl p-3">
-                {carrosseis.map((c) => (
-                  <label key={c.carrossel} className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300 cursor-pointer">
-                    <input type="checkbox" checked={carrosselSelecionados.includes(c.carrossel)}
-                      onChange={() => toggleCarrossel(c.carrossel)} className="w-4 h-4 accent-blue-600" />
-                    {c.label}
-                  </label>
-                ))}
-              </div>
+              <>
+                <select value={perfilId} onChange={(e) => escolherPerfil(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm">
+                  <option value="">Escolha um perfil de vagas...</option>
+                  {presets.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+                {presets.length === 0 && (
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Nenhum perfil de vagas salvo ainda — crie um na seção "Vagas pagas por carrossel" acima, ou use "Selecionar todos".
+                  </p>
+                )}
+              </>
             )}
             {!isEdicao && carrosselSelecionados.length > 0 && (
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                Cria {carrosselSelecionados.length} pacote(s), um por carrossel selecionado.
+              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+                Carrosséis: {carrosselSelecionados.map((c) => carrosseis.find((x) => x.carrossel === c)?.label ?? c).join(', ')}
+                {' — '}cria {carrosselSelecionados.length} pacote(s), um por carrossel.
               </p>
             )}
           </div>
@@ -163,11 +174,17 @@ const AdminMarketplaceBoost = () => {
   const [carregando, setCarregando] = useState(true);
   const [modalAberto, setModalAberto] = useState(false);
   const [editando, setEditando] = useState(null);
+  const [presets, setPresets] = useState([]);
+  const [nomePerfil, setNomePerfil] = useState('');
+  const [salvandoPerfil, setSalvandoPerfil] = useState(false);
+  const [aplicandoPerfilId, setAplicandoPerfilId] = useState(null);
 
   const carregar = () => {
     setCarregando(true);
-    Promise.all([getVagasBoost(), getPacotesBoostAdmin(), getCarrosseisBoost()])
-      .then(([v, p, c]) => { setVagas(v); setPacotes(p.pacotes ?? []); setCarrosseis(c ?? []); })
+    Promise.all([getVagasBoost(), getPacotesBoostAdmin(), getCarrosseisBoost(), getPresetsVagasBoost()])
+      .then(([v, p, c, presetsResp]) => {
+        setVagas(v); setPacotes(p.pacotes ?? []); setCarrosseis(c ?? []); setPresets(presetsResp ?? []);
+      })
       .catch(() => {})
       .finally(() => setCarregando(false));
   };
@@ -183,6 +200,45 @@ const AdminMarketplaceBoost = () => {
       alert(err.message);
     } finally {
       setSalvandoVagas(false);
+    }
+  };
+
+  // Salva a grade atual como um perfil nomeado novo (ex: "Black Friday") — não
+  // mexe no que está valendo agora, só guarda pra poder aplicar depois.
+  const salvarPerfil = async () => {
+    if (!nomePerfil.trim()) return;
+    setSalvandoPerfil(true);
+    try {
+      await criarPresetVagasBoost(nomePerfil.trim(), vagas);
+      setNomePerfil('');
+      carregar();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSalvandoPerfil(false);
+    }
+  };
+
+  const aplicarPerfil = async (preset) => {
+    if (!window.confirm(`Aplicar o perfil "${preset.nome}"? Isso substitui as vagas em vigor agora.`)) return;
+    setAplicandoPerfilId(preset.id);
+    try {
+      const novo = await aplicarPresetVagasBoost(preset.id);
+      setVagas(novo);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setAplicandoPerfilId(null);
+    }
+  };
+
+  const removerPerfil = async (id) => {
+    if (!window.confirm('Remover este perfil salvo?')) return;
+    try {
+      await removerPresetVagasBoost(id);
+      carregar();
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -227,6 +283,43 @@ const AdminMarketplaceBoost = () => {
                 className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
                 {salvandoVagas ? 'Salvando...' : 'Salvar vagas'}
               </button>
+
+              <div className="mt-5 pt-4 border-t border-gray-200 dark:border-zinc-800">
+                <p className="text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-2">
+                  Salvar esta combinação como um perfil nomeado (ex: "Padrão", "Black Friday") pra reaplicar depois sem precisar redigitar os números.
+                </p>
+                <div className="flex gap-2">
+                  <input value={nomePerfil} onChange={(e) => setNomePerfil(e.target.value)}
+                    placeholder="Nome do perfil"
+                    className="flex-1 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm" />
+                  <button onClick={salvarPerfil} disabled={salvandoPerfil || !nomePerfil.trim()}
+                    className="px-4 py-2 bg-gray-800 dark:bg-zinc-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 whitespace-nowrap">
+                    {salvandoPerfil ? 'Salvando...' : 'Salvar como novo perfil'}
+                  </button>
+                </div>
+
+                {presets.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {presets.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between bg-gray-50 dark:bg-zinc-800 rounded-xl px-4 py-2.5">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{p.nome}</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">
+                            {Object.entries(p.config).map(([carrossel, n]) => `${carrossel}: ${n}`).join(' · ')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <button onClick={() => aplicarPerfil(p)} disabled={aplicandoPerfilId === p.id}
+                            className="text-xs font-bold text-blue-600 hover:underline disabled:opacity-50">
+                            {aplicandoPerfilId === p.id ? 'Aplicando...' : 'Aplicar'}
+                          </button>
+                          <button onClick={() => removerPerfil(p.id)} className="text-xs font-semibold text-red-600 hover:underline">Remover</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between mb-3">
@@ -270,6 +363,7 @@ const AdminMarketplaceBoost = () => {
         <Modal
           pacote={editando}
           carrosseis={carrosseis}
+          presets={presets}
           onClose={() => setModalAberto(false)}
           onSave={() => { setModalAberto(false); carregar(); }}
         />
