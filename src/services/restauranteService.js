@@ -457,8 +457,8 @@ export const imprimirConferenciaSalao = (id, valores) =>
   apiFetch(`/salao/comandas/${id}/imprimir-conferencia`, { method: 'POST', body: JSON.stringify(valores ?? {}) });
 export const reimprimirReciboSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reimprimir-recibo`, { method: 'POST' });
-export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix) =>
-  apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix }) });
+export const pagarComandaSalao = (id, forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix, troco_do_garcom, taxa_cartao_nao_paga) =>
+  apiFetch(`/salao/comandas/${id}/pagar`, { method: 'POST', body: JSON.stringify({ forma_pagamento, gorjeta_valor, valor_recebido, gorjeta_direta, troco_via_pix, troco_do_garcom, taxa_cartao_nao_paga }) });
 export const adicionarItensComandaSalao = (id, itens) =>
   apiFetch(`/salao/comandas/${id}/itens`, { method: 'POST', body: JSON.stringify({ itens }) });
 export const enviarItensComandaSalao = (id) =>
@@ -473,8 +473,8 @@ export const confirmarEntregaItemSalao = (id, itemId) =>
   apiFetch(`/salao/comandas/${id}/itens/${itemId}/entregar`, { method: 'PATCH' });
 export const transferirGarcomComanda = (id, garcom_id) =>
   apiFetch(`/salao/comandas/${id}/transferir-garcom`, { method: 'PATCH', body: JSON.stringify({ garcom_id }) });
-export const registrarPagamentoParcialSalao = (id, valor, forma_pagamento, valor_recebido, troco_via_pix) =>
-  apiFetch(`/salao/comandas/${id}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento, valor_recebido, troco_via_pix }) });
+export const registrarPagamentoParcialSalao = (id, valor, forma_pagamento, valor_recebido, troco_via_pix, gorjeta_estimada_incluida, troco_do_garcom, taxa_cartao_nao_paga) =>
+  apiFetch(`/salao/comandas/${id}/pagamento`, { method: 'POST', body: JSON.stringify({ valor, forma_pagamento, valor_recebido, troco_via_pix, gorjeta_estimada_incluida, troco_do_garcom, taxa_cartao_nao_paga }) });
 export const editarPagamentoParcialSalao = (id, pagamentoId, valor, forma_pagamento) =>
   apiFetch(`/salao/comandas/${id}/pagamentos/${pagamentoId}`, { method: 'PATCH', body: JSON.stringify({ valor, forma_pagamento }) });
 export const alterarTrocoPixComandaSalao = (id, pagamentoId, troco_via_pix) =>

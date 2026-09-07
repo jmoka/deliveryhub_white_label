@@ -471,7 +471,7 @@ ${taxaCartao > 0 ? `<div class="item"><span>Taxa cartão</span><span>+ ${fmt(tax
 ${pagamentos.length > 0 ? `
 <hr/>
 <div class="center" style="font-size:11px;font-weight:bold">JÁ PAGO</div>
-${pagamentos.map((p) => `<div class="item"><span>${esc(PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento)} (${esc(PAGAMENTO_ORIGEM[p.origem] ?? p.origem)})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>`).join('')}
+${pagamentos.map((p) => `<div class="item"><span>${esc(PAYMENT_LABELS[p.forma_pagamento] ?? p.forma_pagamento)} (${esc(PAGAMENTO_ORIGEM[p.origem] ?? p.origem)})${p.taxa_cartao_valor > 0 ? ` + taxa ${fmt(p.taxa_cartao_valor)}` : ''}</span><span>${fmt(p.valor + (p.taxa_cartao_valor || 0))}</span></div>${p.troco_e_gorjeta ? `<div class="item" style="font-size:11px"><span>Troco ${fmt(p.troco || 0)} → gorjeta do garçom</span><span></span></div>` : ''}${p.taxa_cartao_prejuizo > 0 ? `<div class="item" style="font-size:11px"><span>Taxa não cobrada (prejuízo)</span><span>${fmt(p.taxa_cartao_prejuizo)}</span></div>` : ''}`).join('')}
 ` : formaPagamento ? `<div class="item"><span>Forma de pagamento</span><span>${esc(PAYMENT_LABELS[formaPagamento] ?? formaPagamento)}</span></div>` : ''}
 <hr/>
 <div class="foot">Confira os itens antes de fechar a conta</div>

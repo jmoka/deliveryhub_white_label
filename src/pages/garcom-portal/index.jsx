@@ -454,6 +454,8 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
   const [forma, setForma] = useState('pix');
   const [valorRecebido, setValorRecebido] = useState('');
   const [trocoViaPix, setTrocoViaPix] = useState(false);
+  const [trocoDoGarcom, setTrocoDoGarcom] = useState(false);
+  const [taxaCartaoNaoPaga, setTaxaCartaoNaoPaga] = useState(false);
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -489,16 +491,32 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
       setErro('Valor recebido não pode ser menor que o valor a pagar.');
       return;
     }
+    if (v > faltaPagarEfetivo + 0.01) {
+      setErro(`Valor informado (${fmt(v)}) é maior que o saldo devedor (${fmt(faltaPagarEfetivo)}). Confira o valor digitado.`);
+      return;
+    }
     emAndamentoRef.current = true;
     setErro(null);
     setSalvando(true);
     try {
       // Sem valor recebido digitado (pagamento exato, sem troco), manda o próprio valor
       // pago — senão o backend não credita a venda no caixa físico (fica só o fundo).
-      await registrarPagamento(comanda.id, v, forma, forma === 'cash' ? Number(valorRecebido || v) : undefined, forma === 'cash' && troco > 0 ? trocoViaPix : undefined);
+      // gorjetaEstimadaIncluida avisa o backend que esse valor pode cobrir produtos + a
+      // gorjeta sugerida numa tacada só — senão a validação de teto usa só o saldo dos
+      // produtos (ver validarValorPagamento em salao.service.ts) e barra o próprio valor
+      // que a tela pediu pro garçom cobrar.
+      await registrarPagamento(
+        comanda.id, v, forma, forma === 'cash' ? Number(valorRecebido || v) : undefined,
+        forma === 'cash' && troco > 0 ? trocoViaPix : undefined,
+        gorjetaConfirmadaComanda ? 0 : gorjetaComandaModal,
+        forma === 'cash' && troco > 0 ? trocoDoGarcom : undefined,
+        (forma === 'credit_card' || forma === 'debit_card') ? taxaCartaoNaoPaga : undefined,
+      );
       setValor('');
       setValorRecebido('');
       setTrocoViaPix(false);
+      setTrocoDoGarcom(false);
+      setTaxaCartaoNaoPaga(false);
       await onRegistrado();
     } catch (err) {
       setErro(err.message ?? 'Não foi possível registrar o pagamento.');
@@ -545,7 +563,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
     <div className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 space-y-2">
       <div className="flex justify-between items-center text-base">
         <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">Saldo devedor</span>
-        <strong className={`text-lg ${saldo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmt(saldo)}</strong>
+        <strong className={`text-lg ${faltaPagarEfetivo > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>{fmt(faltaPagarEfetivo)}</strong>
       </div>
       {(comanda.saldo?.total_pago ?? 0) > 0 && (
         <div className="flex justify-between items-center text-sm">
@@ -565,7 +583,7 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
       {mostrarModal && (
         <PagamentoParcialModal
           onFechar={() => setMostrarModal(false)}
-          saldo={saldo}
+          saldo={faltaPagarEfetivo}
           faltaPagar={faltaPagarEfetivo}
           totalPago={comanda.saldo?.total_pago}
           pagamentos={comanda.pagamentos ?? []}
@@ -584,6 +602,8 @@ const PagamentoParcial = ({ comanda, onRegistrado, podePagamentoParcial, faltaPa
           forma={forma} setForma={setForma}
           valorRecebido={valorRecebido} setValorRecebido={setValorRecebido}
           trocoViaPix={trocoViaPix} setTrocoViaPix={setTrocoViaPix}
+          trocoDoGarcom={trocoDoGarcom} setTrocoDoGarcom={setTrocoDoGarcom}
+          taxaCartaoNaoPaga={taxaCartaoNaoPaga} setTaxaCartaoNaoPaga={setTaxaCartaoNaoPaga}
           onRegistrar={registrar}
           salvando={salvando}
           erro={erro}
@@ -909,8 +929,11 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   const totalTaxaCartao = (comanda.pagamentos ?? []).reduce((acc, p) => acc + (p.taxa_cartao_valor ?? 0), 0);
   const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
   const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
-  const totalTrocoEspecie = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? 0 : Number(p.troco || 0)), 0);
+  // Troco marcado "é do garçom" sai desse bucket — não voltou pro cliente, ficou como
+  // gorjeta (ver totalTrocoGorjeta) — misturar os dois faria parecer devolução ao cliente.
+  const totalTrocoEspecie = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix || p.troco_e_gorjeta ? 0 : Number(p.troco || 0)), 0);
   const totalTrocoPix = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? Number(p.troco || 0) : 0), 0);
+  const totalTrocoGorjeta = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_e_gorjeta ? Number(p.troco || 0) : 0), 0);
 
   return (
     <div className={`min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] ${!travada ? 'pb-44' : 'pb-6'}`}>
@@ -1114,7 +1137,19 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
                           <span className="text-[#FF441F]">{fmt(totalTrocoPix)}</span>
                         </div>
                       )}
+                      {totalTrocoGorjeta > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco (ficou com você)</span>
+                          <span className="text-emerald-600 dark:text-emerald-400">{fmt(totalTrocoGorjeta)} → gorjeta</span>
+                        </div>
+                      )}
                     </>
+                  )}
+                  {totalTrocoGorjeta > 0 && (
+                    <div className="flex justify-between text-sm font-bold text-emerald-700 dark:text-emerald-400 pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+                      <span>Total gorjeta (comanda + troco)</span>
+                      <span>{fmt(gorjetaExibida + totalTrocoGorjeta)}</span>
+                    </div>
                   )}
                   <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                     <span>Falta pagar (com gorjeta)</span>

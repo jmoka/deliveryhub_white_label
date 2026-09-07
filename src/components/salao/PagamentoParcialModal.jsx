@@ -52,6 +52,8 @@ const PagamentoParcialModal = ({
   forma, setForma,
   valorRecebido, setValorRecebido,
   trocoViaPix, setTrocoViaPix,
+  trocoDoGarcom, setTrocoDoGarcom,
+  taxaCartaoNaoPaga, setTaxaCartaoNaoPaga,
   onRegistrar,
   salvando,
   erro,
@@ -77,6 +79,10 @@ const PagamentoParcialModal = ({
   const isCartao = forma === 'credit_card' || forma === 'debit_card';
   const taxaCartaoValor = isCartao ? parseFloat((Number(valor || 0) * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const troco = forma === 'cash' && valorRecebido ? Number(valorRecebido) - Number(valor || 0) : null;
+  // Soma de todo troco já marcado "é do garçom" nos pagamentos lançados — mostrado à parte
+  // pra deixar claro que essa gorjeta extra já entrou pro garçom, sem precisar abrir cada
+  // pagamento pra achar o badge individual (ver renderização em "Já lançados" abaixo).
+  const trocoGorjetaTotal = pagamentos.reduce((acc, p) => acc + (p.troco_e_gorjeta ? (p.troco || 0) : 0), 0);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[70] p-0 sm:p-4">
@@ -121,6 +127,12 @@ const PagamentoParcialModal = ({
                 <div className="flex justify-between text-sm">
                   <span className="text-[#71717A] dark:text-[#A1A1AA]">Taxa cartão (já paga)</span>
                   <span className="text-[#FF441F]">+ {fmt(resumoFinanceiro.taxaCartaoPaga)}</span>
+                </div>
+              )}
+              {trocoGorjetaTotal > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">Gorjeta extra (troco do garçom)</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">+ {fmt(trocoGorjetaTotal)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1.5 mt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
@@ -176,9 +188,17 @@ const PagamentoParcialModal = ({
                         {p.taxa_cartao_valor > 0 && (
                           <p className="text-xs text-[#FF441F]">+ taxa cartão {fmt(p.taxa_cartao_valor)}</p>
                         )}
+                        {p.taxa_cartao_prejuizo > 0 && (
+                          <p className="text-xs text-red-600 dark:text-red-400">Taxa não cobrada (prejuízo): {fmt(p.taxa_cartao_prejuizo)}</p>
+                        )}
                         {p.forma_pagamento === 'cash' && p.valor_recebido != null && (
                           <p className="text-[11px] text-[#A1A1AA]">
                             Recebido {fmt(p.valor_recebido)} · Troco{p.troco_via_pix ? ' (Pix)' : ''} {fmt(p.troco || 0)}
+                          </p>
+                        )}
+                        {p.troco_e_gorjeta && (
+                          <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Troco {fmt(p.troco || 0)} ficou com o garçom (gorjeta)
                           </p>
                         )}
                       </div>
@@ -224,10 +244,26 @@ const PagamentoParcialModal = ({
 
               <FormaPagamentoBotoes value={forma} onChange={setForma} />
 
-              {taxaCartaoValor > 0 && (
-                <p className="text-sm text-[#FF441F] font-semibold text-center">
-                  + taxa cartão ({taxaCartaoPercentual}%): {fmt(taxaCartaoValor)} — cobrar {fmt(Number(valor || 0) + taxaCartaoValor)}
-                </p>
+              {isCartao && (
+                <div className="space-y-2">
+                  {taxaCartaoValor > 0 && !taxaCartaoNaoPaga && (
+                    <p className="text-sm text-[#FF441F] font-semibold text-center">
+                      + taxa cartão ({taxaCartaoPercentual}%): {fmt(taxaCartaoValor)} — cobrar {fmt(Number(valor || 0) + taxaCartaoValor)}
+                    </p>
+                  )}
+                  {setTaxaCartaoNaoPaga && taxaCartaoPercentual > 0 && (
+                    <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" checked={!!taxaCartaoNaoPaga} onChange={(e) => setTaxaCartaoNaoPaga(e.target.checked)}
+                        className="w-4 h-4 rounded accent-[#FF441F]" />
+                      <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Não pagou taxa do cartão (prejuízo do estabelecimento)</span>
+                    </label>
+                  )}
+                  {taxaCartaoNaoPaga && taxaCartaoValor > 0 && (
+                    <p className="text-xs text-red-600 dark:text-red-400 text-center">
+                      Cliente paga só {fmt(Number(valor || 0))} — a taxa ({fmt(taxaCartaoValor)}) sai do caixa como prejuízo, não é cobrada.
+                    </p>
+                  )}
+                </div>
               )}
 
               {forma === 'cash' && (
@@ -241,11 +277,22 @@ const PagamentoParcialModal = ({
                     </p>
                   )}
                   {troco > 0 && (
-                    <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
-                      <input type="checkbox" checked={trocoViaPix} onChange={(e) => setTrocoViaPix(e.target.checked)}
-                        className="w-4 h-4 rounded accent-[#FF441F]" />
-                      <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix (não sai do caixa em espécie)</span>
-                    </label>
+                    <div className="space-y-1.5">
+                      <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" checked={trocoViaPix} disabled={!!trocoDoGarcom}
+                          onChange={(e) => setTrocoViaPix(e.target.checked)}
+                          className="w-4 h-4 rounded accent-[#FF441F] disabled:opacity-40" />
+                        <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Troco via Pix (não sai do caixa em espécie)</span>
+                      </label>
+                      {setTrocoDoGarcom && (
+                        <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
+                          <input type="checkbox" checked={!!trocoDoGarcom}
+                            onChange={(e) => { setTrocoDoGarcom(e.target.checked); if (e.target.checked) setTrocoViaPix(false); }}
+                            className="w-4 h-4 rounded accent-[#FF441F]" />
+                          <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Troco é do garçom (vira gorjeta, não volta pro cliente)</span>
+                        </label>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

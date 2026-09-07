@@ -349,6 +349,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [formaPagamentoParcial, setFormaPagamentoParcial] = useState('pix');
   const [valorRecebidoParcial, setValorRecebidoParcial] = useState('');
   const [trocoViaPixParcial, setTrocoViaPixParcial] = useState(false);
+  const [trocoDoGarcomParcial, setTrocoDoGarcomParcial] = useState(false);
+  const [taxaCartaoNaoPagaParcial, setTaxaCartaoNaoPagaParcial] = useState(false);
   const [mesaDestino, setMesaDestino] = useState('');
   const [mostrarQr, setMostrarQr] = useState(false);
   const [mostrarQrAuto, setMostrarQrAuto] = useState(false);
@@ -644,6 +646,13 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
       setErro('Valor recebido não pode ser menor que o valor a pagar.');
       return;
     }
+    // Saldo devedor sempre é o Total geral (produtos + gorjeta ainda não confirmada) menos
+    // já pago — nunca só os produtos, senão barra um pagamento que cobre a gorjeta sugerida
+    // junto (ver valorACobrarFinalBase, que é essa mesma conta usada no resto da tela).
+    if (v > valorACobrarFinalBase + 0.01) {
+      setErro(`Valor informado (${fmt(v)}) é maior que o saldo devedor (${fmt(valorACobrarFinalBase)}). Confira o valor digitado.`);
+      return;
+    }
     acao(async () => {
       await registrarPagamentoParcialSalao(
         comandaId, v, formaPagamentoParcial,
@@ -651,9 +660,14 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         // a venda em dinheiro no caixa físico.
         formaPagamentoParcial === 'cash' ? Number(valorRecebidoParcial || v) : undefined,
         formaPagamentoParcial === 'cash' && trocoParcial > 0 ? trocoViaPixParcial : undefined,
+        gorjetaCobrancaComanda,
+        formaPagamentoParcial === 'cash' && trocoParcial > 0 ? trocoDoGarcomParcial : undefined,
+        isCartao(formaPagamentoParcial) ? taxaCartaoNaoPagaParcial : undefined,
       );
       setValorPagamento('');
       setValorRecebidoParcial('');
+      setTrocoDoGarcomParcial(false);
+      setTaxaCartaoNaoPagaParcial(false);
       setTrocoViaPixParcial(false);
     });
   };
@@ -741,6 +755,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const subtotal = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const totalFinal = subtotal - Number(descontoInput || 0) + Number(acrescimoInput || 0);
   const saldoDevedor = comanda.saldo?.saldo ?? totalFinal;
+  // "Total geral" é o valor cheio da conta (produtos + gorjeta), constante — não encolhe
+  // conforme os pagamentos entram. "Saldo devedor" (valorACobrarFinalBase) é o que ainda
+  // falta, já descontando o que foi pago — os dois só coincidem quando nada foi pago ainda.
+  // Nunca rotular o valor só de produtos como "Saldo devedor" — é sempre o total com gorjeta.
+  const totalGeralComGorjeta = parseFloat(((comanda.saldo?.total ?? totalFinal) + gorjetaCobrancaComanda).toFixed(2));
   const valorACobrarFinalBase = parseFloat(((comanda.saldo?.saldo ?? totalFinal) + gorjetaCobrancaComanda).toFixed(2));
   const taxaCartaoValorFinal = isCartao(forma) ? parseFloat((valorACobrarFinalBase * (taxaCartaoPercentual / 100)).toFixed(2)) : 0;
   const valorACobrarFinal = parseFloat((valorACobrarFinalBase + taxaCartaoValorFinal).toFixed(2));
@@ -752,8 +771,13 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const trocoParcial = formaPagamentoParcial === 'cash' && valorRecebidoParcial ? Number(valorRecebidoParcial) - Number(valorPagamento || 0) : null;
   const pagamentosDinheiro = (comanda.pagamentos ?? []).filter((p) => p.forma_pagamento === 'cash' && p.valor_recebido != null);
   const totalRecebidoDinheiro = pagamentosDinheiro.reduce((acc, p) => acc + Number(p.valor_recebido), 0);
-  const totalTrocoEspecie = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? 0 : Number(p.troco || 0)), 0);
+  // Troco marcado "é do garçom" sai desse bucket — ele não voltou pro cliente (nem em
+  // espécie nem via Pix), ficou como gorjeta (ver totalTrocoGorjeta) — contar os dois
+  // juntos aqui faria parecer que o cliente recebeu de volta um troco que na verdade
+  // o garçom guardou.
+  const totalTrocoEspecie = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix || p.troco_e_gorjeta ? 0 : Number(p.troco || 0)), 0);
   const totalTrocoPix = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_via_pix ? Number(p.troco || 0) : 0), 0);
+  const totalTrocoGorjeta = pagamentosDinheiro.reduce((acc, p) => acc + (p.troco_e_gorjeta ? Number(p.troco || 0) : 0), 0);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
@@ -1121,7 +1145,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               <div className="flex justify-between text-sm"><span className="text-[#71717A] dark:text-[#A1A1AA]">Forma de pagamento</span><span>{PAGAMENTO_LABEL[comanda.payment_method] ?? comanda.payment_method}</span></div>
             )}
             <div className="flex justify-between text-base font-bold text-[#18181B] dark:text-[#F4F4F5] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
-              <span>Total geral</span><span>{fmt(comanda.saldo?.total ?? totalFinal)}</span>
+              <span>Total geral</span><span>{fmt(totalGeralComGorjeta)}</span>
             </div>
           </div>
         )}
@@ -1129,8 +1153,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         <div className="border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-3 pt-3 space-y-2">
           <div className="flex justify-between items-center text-base">
             <span className="text-[#71717A] dark:text-[#A1A1AA] font-medium">Saldo devedor</span>
-            <strong className={`text-lg ${(comanda.saldo?.saldo ?? 0) > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>
-              {fmt(comanda.saldo?.saldo ?? totalFinal)}
+            <strong className={`text-lg ${valorACobrarFinalBase > 0.01 ? 'text-[#FF441F]' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {fmt(valorACobrarFinalBase)}
             </strong>
           </div>
           {(comanda.saldo?.total_pago ?? 0) > 0 && (
@@ -1149,8 +1173,12 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         {mostrarPagamentoModal && (
           <PagamentoParcialModal
             onFechar={() => setMostrarPagamentoModal(false)}
-            saldo={comanda.saldo?.saldo ?? totalFinal}
-            faltaPagar={comanda.saldo?.saldo ?? totalFinal}
+            // Saldo devedor mostrado aqui é sempre o Total geral (produtos + gorjeta ainda
+            // não confirmada) menos já pago — nunca só os produtos, senão a tela mostra um
+            // teto (ex: R$34) diferente do "Total geral" (ex: R$37,40) logo acima, e barra
+            // um pagamento que cobre a gorjeta sugerida junto.
+            saldo={valorACobrarFinalBase}
+            faltaPagar={valorACobrarFinalBase}
             totalPago={comanda.saldo?.total_pago}
             pagamentos={comanda.pagamentos ?? []}
             podeRegistrar={podeEditar}
@@ -1162,12 +1190,14 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
               gorjeta: Number(comanda.gorjeta_valor || 0) > 0 ? comanda.gorjeta_valor : gorjetaCobrancaComanda,
               gorjetaEstimativa: !(Number(comanda.gorjeta_valor || 0) > 0) && gorjetaCobrancaComanda > 0,
               taxaCartaoPaga: taxaCartaoRegistrada,
-              total: (comanda.saldo?.total ?? totalFinal) + (Number(comanda.gorjeta_valor || 0) > 0 ? 0 : gorjetaCobrancaComanda),
+              total: valorACobrarFinalBase,
             }}
             valor={valorPagamento} setValor={setValorPagamento}
             forma={formaPagamentoParcial} setForma={setFormaPagamentoParcial}
             valorRecebido={valorRecebidoParcial} setValorRecebido={setValorRecebidoParcial}
             trocoViaPix={trocoViaPixParcial} setTrocoViaPix={setTrocoViaPixParcial}
+            trocoDoGarcom={trocoDoGarcomParcial} setTrocoDoGarcom={setTrocoDoGarcomParcial}
+            taxaCartaoNaoPaga={taxaCartaoNaoPagaParcial} setTaxaCartaoNaoPaga={setTaxaCartaoNaoPagaParcial}
             onRegistrar={registrarPagamento}
             salvando={salvando}
             erro={erro}
@@ -1279,7 +1309,19 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
                         <span className="text-[#FF441F]">{fmt(totalTrocoPix)}</span>
                       </div>
                     )}
+                    {totalTrocoGorjeta > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#71717A] dark:text-[#A1A1AA]">Troco (ficou com o garçom)</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">{fmt(totalTrocoGorjeta)} → gorjeta</span>
+                      </div>
+                    )}
                   </>
+                )}
+                {totalTrocoGorjeta > 0 && (
+                  <div className="flex justify-between text-sm font-bold text-emerald-700 dark:text-emerald-400 pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+                    <span>Total gorjeta do garçom (comanda + troco)</span>
+                    <span>{fmt(gorjetaEfetiva + totalTrocoGorjeta)}</span>
+                  </div>
                 )}
                 <div className="flex justify-between text-sm font-bold text-[#FF441F] pt-1 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
                   <span>Falta pagar (com gorjeta{taxaCartaoTotalExibida > 0 ? ' + taxa' : ''})</span>
