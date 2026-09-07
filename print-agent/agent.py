@@ -12,7 +12,7 @@ import config
 import printers
 from backend_client import BackendClient
 
-VERSAO = "1.0.0"
+VERSAO = "1.1.0"
 
 INTERVALO_POLL_SEGUNDOS = 3
 INTERVALO_REPORTAR_IMPRESSORAS_CICLOS = 100  # ~5 min com poll de 3s
@@ -47,6 +47,32 @@ def garantir_pareado(args: argparse.Namespace) -> dict:
         cfg = config.definir_token(token)
 
     return cfg
+
+
+def _versao_tupla(versao: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(parte) for parte in versao.strip().split("."))
+    except ValueError:
+        return (0,)
+
+
+def versao_mais_nova(remota: str, local: str) -> bool:
+    return _versao_tupla(remota) > _versao_tupla(local)
+
+
+def verificar_atualizacao(client: BackendClient) -> dict | None:
+    """Consulta a versão mais recente do agente no backend. Retorna as infos
+    (versao/download_url) se houver uma mais nova que a instalada, ou None se já
+    está atualizado ou a checagem falhou — nunca impede o agente de funcionar,
+    é só um aviso."""
+    try:
+        info = client.versao_disponivel()
+    except Exception:  # noqa: BLE001 — checagem é best-effort
+        return None
+    remota = info.get("versao")
+    if not remota or not versao_mais_nova(remota, VERSAO):
+        return None
+    return info
 
 
 def ciclo_reportar_impressoras(client: BackendClient) -> None:
@@ -154,6 +180,11 @@ def rodar() -> None:
         log(f"Não foi possível confirmar o pareamento: {exc}")
         log("Verifique o token e a conexão, e tente novamente.")
         sys.exit(1)
+
+    atualizacao = verificar_atualizacao(client)
+    if atualizacao:
+        log(f"Nova versão do agente disponível: v{atualizacao['versao']} (você está na v{VERSAO}).")
+        log(f"Baixe em: {atualizacao.get('download_url', '')}")
 
     ciclo_reportar_impressoras(client)
     revisar_pendentes_console(client)

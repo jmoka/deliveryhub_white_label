@@ -42,6 +42,20 @@ O mesmo fluxo existe no modo linha de comando (`python agent.py`): ao iniciar,
 lista as pendências no console e pergunta se quer imprimir todas, cancelar
 todas, ou escolher quais por número.
 
+## Aviso de versão nova
+
+Ao ligar, o agente consulta `GET /agente-impressao/versao` e compara com a
+própria versão (`VERSAO` em `agent.py`). Se o backend informar uma versão mais
+nova, aparece um aviso clicável na janela (abre o link de download) — no modo
+CLI, o aviso sai no console. Não é auto-update: o cliente ainda baixa e troca
+o `.exe` manualmente, só passa a ficar sabendo que existe versão nova.
+
+**A cada novo release do agente:** além de rebuildar e copiar o `.exe` pra
+`releases/` (ver seção abaixo), atualize `VERSAO_ATUAL_AGENTE` nos dois
+checkouts do backend (`agente-impressao.service.ts`) para o mesmo valor de
+`VERSAO` em `agent.py` — é a comparação entre esses dois valores que dispara o
+aviso pros agentes já instalados.
+
 ## Como funciona
 
 1. O agente se pareia com o restaurante via token (`x-agente-token`).

@@ -21,6 +21,7 @@ from agent import (
     definir_ouvinte_log,
     imprimir_job,
     preview_conteudo,
+    versao_mais_nova,
 )
 from config import DEFAULT_BACKEND_URL
 
@@ -144,6 +145,14 @@ class AgenteGUI:
         self.status_var = tk.StringVar(value="Desconectado")
         ttk.Label(frame, textvariable=self.status_var, foreground="#B91C1C").pack(anchor="w", pady=(0, 8))
 
+        self.atualizacao_url = None
+        self.atualizacao_var = tk.StringVar(value="")
+        self.atualizacao_label = ttk.Label(
+            frame, textvariable=self.atualizacao_var, foreground="#B45309", cursor="hand2", wraplength=440, justify=tk.LEFT,
+        )
+        self.atualizacao_label.pack(anchor="w", pady=(0, 8))
+        self.atualizacao_label.bind("<Button-1>", self._abrir_download_atualizacao)
+
         botoes = ttk.Frame(frame)
         botoes.pack(fill=tk.X, pady=(0, 4))
         self.btn_iniciar = ttk.Button(botoes, text="▶ Ligar", command=self._ligar)
@@ -222,6 +231,24 @@ class AgenteGUI:
         except Exception as exc:  # noqa: BLE001
             self._log(f"Erro ao reportar impressoras: {exc}")
 
+    def _abrir_download_atualizacao(self, _event=None) -> None:
+        if self.atualizacao_url:
+            webbrowser.open(self.atualizacao_url)
+
+    def _verificar_atualizacao(self) -> None:
+        if not self.client:
+            return
+        try:
+            info = self.client.versao_disponivel()
+        except Exception:  # noqa: BLE001 — checagem é best-effort, não pode travar o "Ligar"
+            return
+        remota = info.get("versao")
+        if not remota or not versao_mais_nova(remota, VERSAO):
+            return
+        self.atualizacao_url = info.get("download_url")
+        self.atualizacao_var.set(f"⚠ Nova versão disponível: v{remota} (você está na v{VERSAO}) — clique aqui pra baixar")
+        self._log(f"Nova versão do agente disponível: v{remota}.")
+
     def _revisar_pendentes(self) -> None:
         if not self.client:
             return
@@ -240,6 +267,7 @@ class AgenteGUI:
         if not self._conectar():
             return
 
+        self._verificar_atualizacao()
         self._atualizar_impressoras()
         self._revisar_pendentes()
 
