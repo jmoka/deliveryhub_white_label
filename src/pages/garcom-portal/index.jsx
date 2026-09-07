@@ -291,6 +291,7 @@ const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
 const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState('');
+  const [naoEnviarCozinha, setNaoEnviarCozinha] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const confirmar = async () => {
@@ -300,6 +301,7 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
         ...(produto.tipo === 'combo' ? { combo_id: produto.id } : { product_id: produto.id }),
         quantity: quantidade,
         observacao: observacao.trim() || undefined,
+        nao_enviar_cozinha: naoEnviarCozinha || undefined,
       });
     } finally {
       setSalvando(false);
@@ -344,7 +346,13 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
         <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Observação (opcional)</label>
         <textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={2}
           placeholder="Ex: sem cebola, ponto da carne..."
-          className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
+          className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm mt-1 mb-3 resize-none" />
+
+        <label className="flex items-center gap-2 mb-4 cursor-pointer">
+          <input type="checkbox" checked={naoEnviarCozinha} onChange={(e) => setNaoEnviarCozinha(e.target.checked)}
+            className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
+          <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Não enviar para a cozinha (item já foi feito)</span>
+        </label>
 
         <div className="flex gap-2">
           <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
@@ -861,6 +869,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
               <Icon name="X" size={14} />
             </button>
           </div>
+        ) : item.status === 'sem_preparo' ? (
+          <span className="text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+            Já feito
+          </span>
         ) : (item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom ? (
           <span className="text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
             {item.status === 'pronto' ? 'Pronto' : 'Em preparo'}
@@ -874,14 +886,14 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
         )}
       </div>
 
-      {(item.status === 'preparando' || item.status === 'pronto') && !item.entregue_garcom && (
+      {item.status === 'pronto' && !item.entregue_garcom && (
         <div className="grid grid-cols-2 gap-1.5 mt-2">
           <button onClick={() => confirmarEntrega(item)}
             className="text-sm px-2.5 py-2.5 rounded-lg font-bold bg-[#FF441F] text-white flex items-center justify-center gap-1">
             <Icon name="Check" size={14} /> Entregar
           </button>
-          <button onClick={() => naoEntregou(item)} disabled={item.status !== 'pronto'}
-            className="text-sm px-2.5 py-2.5 rounded-lg font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center justify-center gap-1 disabled:opacity-30">
+          <button onClick={() => naoEntregou(item)}
+            className="text-sm px-2.5 py-2.5 rounded-lg font-bold border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center justify-center gap-1">
             <Icon name="X" size={14} /> Não entreguei
           </button>
         </div>
@@ -910,7 +922,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
 
   const total = (comanda.itens ?? []).reduce((acc, i) => acc + i.quantity * i.unit_price, 0);
   const temPendente = (comanda.itens ?? []).some((i) => i.status === 'pendente');
-  const temEntregaPendente = (comanda.itens ?? []).some((i) => (i.status === 'preparando' || i.status === 'pronto') && !i.entregue_garcom);
+  const temEntregaPendente = (comanda.itens ?? []).some((i) => i.status === 'pronto' && !i.entregue_garcom);
   const fechada = comanda.status === 'fechada_garcom';
   const paga = comanda.status === 'paga';
   // Comanda paga aparece aqui só quando ainda tem item não entregue (cliente pagou

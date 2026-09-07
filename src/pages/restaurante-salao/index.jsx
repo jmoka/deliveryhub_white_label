@@ -115,7 +115,7 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
 
 // Picker de produto com busca + filtro por categoria — mesmo padrão do garçom
 // (garcom-portal), reaproveitado aqui pro estabelecimento incluir item na comanda.
-const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
+const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado, permitirNaoEnviarCozinha = false }) => {
   const [busca, setBusca] = useState('');
   const [categoria, setCategoria] = useState('todas');
   const [produtoAtivo, setProdutoAtivo] = useState(null);
@@ -197,6 +197,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
           produto={produtoAtivo}
           onFechar={() => setProdutoAtivo(null)}
           onConfirmar={async (item) => { await onAdicionado(item); setProdutoAtivo(null); }}
+          permitirNaoEnviarCozinha={permitirNaoEnviarCozinha}
         />
       )}
     </div>
@@ -625,11 +626,19 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         <p onClick={() => ['aberta', 'fechada_garcom'].includes(comanda.status) && abrirEdicaoObservacao(item)}
           className="text-sm text-blue-600 dark:text-blue-400 pl-11 cursor-pointer">Obs: {item.observacao}</p>
       ) : null}
-      {['preparando', 'pronto'].includes(item.status) && !item.entregue_garcom && (
+      {item.status === 'sem_preparo' && (
         <div className="flex items-center justify-between gap-2 mt-1 pl-11">
-          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-            {item.status === 'pronto' ? 'Pronto — aguardando entrega' : 'Em preparo'}
-          </span>
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Já feito — sem envio pra cozinha</span>
+        </div>
+      )}
+      {item.status === 'preparando' && !item.entregue_garcom && (
+        <div className="flex items-center justify-between gap-2 mt-1 pl-11">
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Em preparo</span>
+        </div>
+      )}
+      {item.status === 'pronto' && !item.entregue_garcom && (
+        <div className="flex items-center justify-between gap-2 mt-1 pl-11">
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Pronto — aguardando entrega</span>
           <button onClick={() => confirmarEntregaItem(item)}
             className="flex-shrink-0 flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg px-2 py-1 hover:bg-emerald-100 dark:hover:bg-emerald-950/60">
             <Icon name="Check" size={12} /> Confirmar entrega
@@ -722,7 +731,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   // pagar a comanda com prato pronto sem confirmar entrega. Venda balcão nunca cai
   // aqui: os itens só são enviados (e só então podem virar 'pronto') no pagamento.
   const temEntregaPendente = !comanda.is_venda_balcao
-    && (comanda.itens ?? []).some((i) => ['preparando', 'pronto'].includes(i.status) && !i.entregue_garcom);
+    && (comanda.itens ?? []).some((i) => i.status === 'pronto' && !i.entregue_garcom);
 
   // Fechar pelo X (sem passar por "Confirmar pagamento"/"Cancelar comanda" explícito):
   // comanda vazia (mesa aberta e ninguém pediu nada) não pode ficar "esquecida" ocupando
@@ -1034,6 +1043,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
             produtos={produtos}
             onFechar={() => setMostrarPicker(false)}
             onAdicionado={async (item) => { await incluirItem(item); setMostrarPicker(false); }}
+            permitirNaoEnviarCozinha={!comanda.is_venda_balcao}
           />
         )}
 

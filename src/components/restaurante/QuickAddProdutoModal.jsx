@@ -4,10 +4,13 @@ import Icon from '../AppIcon';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 // Modal de quantidade/observação ao clicar num produto — usado tanto pelo picker da
-// comanda quanto pela venda balcão, pra ficarem sempre idênticos.
-const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar }) => {
+// comanda quanto pela venda balcão, pra ficarem sempre idênticos. O checkbox de "não
+// enviar pra cozinha" só faz sentido em comanda (venda balcão só envia pro preparo no
+// pagamento, tem lógica própria) — controlado pela prop `permitirNaoEnviarCozinha`.
+const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar, permitirNaoEnviarCozinha = false }) => {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState('');
+  const [naoEnviarCozinha, setNaoEnviarCozinha] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const confirmar = async () => {
@@ -17,6 +20,7 @@ const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar }) => {
         ...(produto.tipo === 'combo' ? { combo_id: produto.id } : { product_id: produto.id }),
         quantity: quantidade,
         observacao: observacao.trim() || undefined,
+        ...(permitirNaoEnviarCozinha ? { nao_enviar_cozinha: naoEnviarCozinha || undefined } : {}),
       });
     } finally {
       setSalvando(false);
@@ -61,7 +65,15 @@ const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar }) => {
         <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Observação (opcional)</label>
         <textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={2}
           placeholder="Ex: sem cebola, ponto da carne..."
-          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm mt-1 mb-4 resize-none" />
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm mt-1 mb-3 resize-none" />
+
+        {permitirNaoEnviarCozinha && (
+          <label className="flex items-center gap-2 mb-4 cursor-pointer">
+            <input type="checkbox" checked={naoEnviarCozinha} onChange={(e) => setNaoEnviarCozinha(e.target.checked)}
+              className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
+            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Não enviar para a cozinha (item já foi feito)</span>
+          </label>
+        )}
 
         <div className="flex gap-2">
           <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
