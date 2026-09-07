@@ -265,7 +265,14 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, retirada, setRet
             <Icon name="AlertTriangle" size={12} /> Distância parece incorreta ({previewDistancia.distanciaKm}km) — confirme sua localização no mapa abaixo
           </p>
         )}
-        {previewDistancia?.distanciaKm != null && (
+        {previewDistancia?.distanciaKm != null && (previewDistancia?.suspeito || previewDistancia?.foraDoRaio) && (
+          <button type="button" onClick={() => setMostrarMapa((v) => !v)}
+            className="w-full flex items-center justify-center gap-1.5 text-sm font-bold text-white bg-[#FF441F] hover:bg-[#E63A19] rounded-xl py-2.5 -mt-1">
+            <Icon name={mostrarMapa ? 'ChevronUp' : 'MapPinned'} size={16} />
+            {mostrarMapa ? 'Ocultar mapa' : 'Ajustar localização no mapa'}
+          </button>
+        )}
+        {previewDistancia?.distanciaKm != null && !previewDistancia?.suspeito && !previewDistancia?.foraDoRaio && (
           <button type="button" onClick={() => setMostrarMapa((v) => !v)}
             className="text-[11px] font-semibold text-[#FF441F] -mt-1 flex items-center gap-1">
             <Icon name={mostrarMapa ? 'ChevronUp' : 'MapPinned'} size={12} />
