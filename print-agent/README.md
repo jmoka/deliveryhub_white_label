@@ -29,10 +29,18 @@ Na primeira vez, gere um token em `/restaurante/impressoras` (botão "Gerar
 token de pareamento") e cole na janela do agente (ou passe via
 `python agent.py --token SEU_TOKEN`).
 
-Na janela (`gui.py`): **▶ Ligar** conecta e começa a imprimir os trabalhos
-pendentes; **■ Parar** interrompe (sem perder o pareamento); **↻ Atualizar
-impressoras** reescaneia o sistema e reenvia a lista pro backend (útil depois
-de instalar uma impressora nova).
+Na janela (`gui.py`): **▶ Ligar** conecta e, se houver trabalhos pendentes
+acumulados (ex.: agente ficou desligado por um tempo), abre a tela **Impressões
+pendentes** antes de imprimir qualquer coisa — cada job vem desmarcado por
+padrão; o que for marcado é impresso, o resto é cancelado (não fica esperando
+pra imprimir depois). Só então o agente entra no modo automático de
+imprimir os trabalhos novos que chegarem. **■ Parar** interrompe (sem perder o
+pareamento); **↻ Atualizar impressoras** reescaneia o sistema e reenvia a
+lista pro backend (útil depois de instalar uma impressora nova).
+
+O mesmo fluxo existe no modo linha de comando (`python agent.py`): ao iniciar,
+lista as pendências no console e pergunta se quer imprimir todas, cancelar
+todas, ou escolher quais por número.
 
 ## Como funciona
 

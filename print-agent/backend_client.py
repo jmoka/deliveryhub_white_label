@@ -40,3 +40,7 @@ class BackendClient:
             timeout=TIMEOUT,
         )
         r.raise_for_status()
+
+    def marcar_cancelado(self, job_id: int) -> None:
+        r = requests.post(f"{self.base}/jobs/{job_id}/cancelado", headers=self.headers, timeout=TIMEOUT)
+        r.raise_for_status()

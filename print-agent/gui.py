@@ -7,12 +7,110 @@ import queue
 import threading
 import tkinter as tk
 import webbrowser
+from datetime import datetime
 from tkinter import ttk, messagebox
 
 import config
 import printers
-from agent import BackendClient, VERSAO, ciclo_processar_jobs, ciclo_reportar_impressoras, definir_ouvinte_log
+from agent import (
+    BackendClient,
+    VERSAO,
+    cancelar_job,
+    ciclo_processar_jobs,
+    ciclo_reportar_impressoras,
+    definir_ouvinte_log,
+    imprimir_job,
+    preview_conteudo,
+)
 from config import DEFAULT_BACKEND_URL
+
+
+def _formatar_data(iso: str) -> str:
+    try:
+        return datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone().strftime("%d/%m %H:%M")
+    except (ValueError, AttributeError):
+        return iso or "—"
+
+
+class TelaPendentes(tk.Toplevel):
+    """Mostra os trabalhos de impressão acumulados enquanto o agente estava desligado
+    e exige uma decisão explícita antes do loop automático começar — sem isso, ligar
+    o agente depois de um período parado reimprimia tudo de uma vez (desperdício de
+    papel com comandas de um caixa já fechado)."""
+
+    def __init__(self, parent: tk.Tk, client: BackendClient, jobs: list[dict]) -> None:
+        super().__init__(parent)
+        self.client = client
+        self.jobs = jobs
+        self.vars: list[tk.BooleanVar] = [tk.BooleanVar(value=False) for _ in jobs]
+
+        self.title("Impressões pendentes")
+        self.geometry("560x420")
+        self.transient(parent)
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self._confirmar)
+        self.resizable(True, True)
+
+        self._montar_widgets()
+
+    def _montar_widgets(self) -> None:
+        topo = ttk.Frame(self, padding=(12, 12, 12, 4))
+        topo.pack(fill=tk.X)
+        ttk.Label(
+            topo,
+            text=f"{len(self.jobs)} impressão(ões) pendente(s) acumulada(s) enquanto o agente estava desligado.",
+            wraplength=520,
+            justify=tk.LEFT,
+        ).pack(anchor="w")
+        ttk.Label(
+            topo,
+            text="Marque o que ainda vale a pena imprimir. O que ficar desmarcado é cancelado (não imprime).",
+            wraplength=520,
+            justify=tk.LEFT,
+            foreground="#71717A",
+        ).pack(anchor="w", pady=(4, 0))
+
+        acoes = ttk.Frame(self, padding=(12, 4))
+        acoes.pack(fill=tk.X)
+        ttk.Button(acoes, text="Selecionar todas", command=self._selecionar_todas).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(acoes, text="Limpar seleção", command=self._limpar_selecao).pack(side=tk.LEFT)
+
+        container = ttk.Frame(self, padding=(12, 4))
+        container.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(container, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        lista = ttk.Frame(canvas)
+        lista.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=lista, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        for var, job in zip(self.vars, self.jobs):
+            texto = f"[{job['nome_sistema']}] {_formatar_data(job.get('criado_em'))} — {preview_conteudo(job['conteudo'])}"
+            ttk.Checkbutton(lista, text=texto, variable=var).pack(anchor="w", pady=2)
+
+        rodape = ttk.Frame(self, padding=12)
+        rodape.pack(fill=tk.X)
+        ttk.Button(rodape, text="Confirmar", command=self._confirmar).pack(side=tk.RIGHT)
+
+    def _selecionar_todas(self) -> None:
+        for var in self.vars:
+            var.set(True)
+
+    def _limpar_selecao(self) -> None:
+        for var in self.vars:
+            var.set(False)
+
+    def _confirmar(self) -> None:
+        for var, job in zip(self.vars, self.jobs):
+            if var.get():
+                imprimir_job(self.client, job)
+            else:
+                cancelar_job(self.client, job)
+        self.grab_release()
+        self.destroy()
 
 
 class AgenteGUI:
@@ -124,6 +222,18 @@ class AgenteGUI:
         except Exception as exc:  # noqa: BLE001
             self._log(f"Erro ao reportar impressoras: {exc}")
 
+    def _revisar_pendentes(self) -> None:
+        if not self.client:
+            return
+        try:
+            jobs = self.client.jobs_pendentes()
+        except Exception as exc:  # noqa: BLE001 — não bloqueia o "Ligar" por falha de rede aqui
+            self._log(f"Erro ao consultar impressões pendentes: {exc}")
+            return
+        if not jobs:
+            return
+        self.root.wait_window(TelaPendentes(self.root, self.client, jobs))
+
     def _ligar(self) -> None:
         if self.rodando:
             return
@@ -131,6 +241,7 @@ class AgenteGUI:
             return
 
         self._atualizar_impressoras()
+        self._revisar_pendentes()
 
         self.rodando = True
         self.btn_iniciar.configure(state="disabled")

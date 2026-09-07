@@ -58,23 +58,82 @@ def ciclo_reportar_impressoras(client: BackendClient) -> None:
     log(f"Impressoras reportadas: {', '.join(nomes)}")
 
 
+def imprimir_job(client: BackendClient, job: dict) -> None:
+    job_id = job["id"]
+    nome_sistema = job["nome_sistema"]
+    conteudo = job["conteudo"]
+    try:
+        printers.imprimir_texto(nome_sistema, conteudo)
+        client.marcar_concluido(job_id)
+        log(f"Job {job_id} impresso em '{nome_sistema}'.")
+    except Exception as exc:  # noqa: BLE001 — reporta qualquer falha de hardware/driver
+        mensagem = str(exc)
+        log(f"Erro ao imprimir job {job_id} em '{nome_sistema}': {mensagem}")
+        try:
+            client.marcar_erro(job_id, mensagem)
+        except Exception:  # noqa: BLE001 — não deixa a falha de rede matar o loop
+            log("Também falhou ao reportar o erro pro backend — vai tentar de novo no próximo ciclo.")
+
+
+def cancelar_job(client: BackendClient, job: dict) -> None:
+    job_id = job["id"]
+    try:
+        client.marcar_cancelado(job_id)
+        log(f"Job {job_id} cancelado (descartado sem imprimir).")
+    except Exception as exc:  # noqa: BLE001
+        log(f"Erro ao cancelar job {job_id}: {exc}")
+
+
 def ciclo_processar_jobs(client: BackendClient) -> None:
     jobs = client.jobs_pendentes()
     for job in jobs:
-        job_id = job["id"]
-        nome_sistema = job["nome_sistema"]
-        conteudo = job["conteudo"]
+        imprimir_job(client, job)
+
+
+def preview_conteudo(conteudo: str, tamanho: int = 40) -> str:
+    """Primeira linha não-vazia do ticket, cortada — só pra identificar o job numa lista."""
+    for linha in conteudo.splitlines():
+        linha = linha.strip()
+        if linha:
+            return linha if len(linha) <= tamanho else linha[: tamanho - 1] + "…"
+    return "(sem conteúdo)"
+
+
+def revisar_pendentes_console(client: BackendClient) -> None:
+    """Mostra os jobs acumulados enquanto o agente estava desligado e pede uma decisão
+    explícita antes do loop automático começar — evita reimprimir comandas antigas
+    (ex.: caixa já fechado) de uma vez só e desperdiçar papel."""
+    jobs = client.jobs_pendentes()
+    if not jobs:
+        return
+
+    print(f"\nHá {len(jobs)} impressão(ões) pendente(s) acumulada(s):")
+    for i, job in enumerate(jobs, start=1):
+        print(f"  {i}. [{job['nome_sistema']}] {preview_conteudo(job['conteudo'])}")
+
+    print("\nO que fazer com elas?")
+    print("  [T] Imprimir todas")
+    print("  [C] Cancelar todas (não imprime nenhuma)")
+    print("  [S] Selecionar quais imprimir por número (ex: 1,3) — as demais são canceladas")
+    escolha = input("Escolha (T/C/S) [C]: ").strip().upper() or "C"
+
+    if escolha == "T":
+        selecionados = set(range(1, len(jobs) + 1))
+    elif escolha == "S":
+        bruto = input("Números a imprimir (separados por vírgula): ").strip()
         try:
-            printers.imprimir_texto(nome_sistema, conteudo)
-            client.marcar_concluido(job_id)
-            log(f"Job {job_id} impresso em '{nome_sistema}'.")
-        except Exception as exc:  # noqa: BLE001 — reporta qualquer falha de hardware/driver
-            mensagem = str(exc)
-            log(f"Erro ao imprimir job {job_id} em '{nome_sistema}': {mensagem}")
-            try:
-                client.marcar_erro(job_id, mensagem)
-            except Exception:  # noqa: BLE001 — não deixa a falha de rede matar o loop
-                log("Também falhou ao reportar o erro pro backend — vai tentar de novo no próximo ciclo.")
+            selecionados = {int(n) for n in bruto.split(",") if n.strip()}
+        except ValueError:
+            log("Entrada inválida — nada será impresso, todas as pendências serão canceladas.")
+            selecionados = set()
+    else:
+        selecionados = set()
+
+    for i, job in enumerate(jobs, start=1):
+        if i in selecionados:
+            imprimir_job(client, job)
+        else:
+            cancelar_job(client, job)
 
 
 def rodar() -> None:
@@ -97,6 +156,7 @@ def rodar() -> None:
         sys.exit(1)
 
     ciclo_reportar_impressoras(client)
+    revisar_pendentes_console(client)
 
     ciclos = 0
     log("Agente rodando — aguardando trabalhos de impressão...")
