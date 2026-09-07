@@ -42,7 +42,8 @@ const AlertaMotoboy = ({ item }) => {
 // já marcaram seus itens (ver marcarItemPronto no backend).
 const SalaoItemCard = ({
   item, posicao, now, onReimprimir, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar,
-  onMover, ehPrimeiro, ehUltimo, onAbrirComanda, onSalvarObservacao, highlighted = false, tipoRestaurante = true,
+  onMover, ehPrimeiro, ehUltimo, onAbrirComanda, onSalvarObservacao, highlighted = false, tipoRestaurante = true, setor = null,
+  onConfirmarEntregaGarcom,
 }) => {
   const termos = getTermos(tipoRestaurante);
   const enviadoEm = new Date(item.enviado_em).getTime();
@@ -51,6 +52,10 @@ const SalaoItemCard = ({
   const tempoPreparo = preparandoEm ? now - preparandoEm : 0;
   const tempoTotal = now - enviadoEm;
   const ehDelivery = item.tipo === 'delivery';
+  // Bar: item "pronto" é o bar entregando pro garçom, não pro cliente — fica esperando o
+  // garçom confirmar (mesmo item.entregue_garcom que a tela do garçom já usa). Só vale
+  // pra item de Salão; delivery no Bar segue o fluxo normal (vai pro motoboy).
+  const ehBar = !ehDelivery && setor?.trim().toLowerCase() === 'bar';
   const podeAbrirComanda = !ehDelivery && !!item.numero_comanda && !!onAbrirComanda;
   const podeEditarObs = !ehDelivery && !!onSalvarObservacao;
 
@@ -75,19 +80,41 @@ const SalaoItemCard = ({
               <Icon name="X" size={13} /> Cancelar
             </button>
           )}
-          <button onClick={() => onIniciarPreparo(item)}
-            className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-            <Icon name={termos.icone} size={13} /> {termos.iniciarPreparo}
-          </button>
+          {ehBar ? (
+            // Bar pula a etapa "Em Preparo" — vai direto de "Pedido Feito" pra
+            // "Esperando Garçom Entregar" (marcarPronto aceita enviado -> pronto direto).
+            <button onClick={() => onMarcarPronto(item.id)}
+              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+              <Icon name="Check" size={13} /> Entregue p/ Garçom
+            </button>
+          ) : (
+            <button onClick={() => onIniciarPreparo(item)}
+              className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+              <Icon name={termos.icone} size={13} /> {termos.iniciarPreparo}
+            </button>
+          )}
         </>
       ) : item.status === 'pronto' ? (
-        <div className={`flex-1 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 ${ehDelivery ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-emerald-900/40 text-emerald-400'}`}>
-          <Icon name="Check" size={13} /> {item.entregue_garcom ? 'Entregue pelo garçom' : 'Pronto'}
-        </div>
+        item.entregue_garcom ? (
+          <div className={`flex-1 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 ${ehDelivery ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-emerald-900/40 text-emerald-400'}`}>
+            <Icon name="Check" size={13} /> Entregue pelo garçom
+          </div>
+        ) : ehBar ? (
+          // Garçom ainda não confirmou — produção/Bar tem controle total e pode
+          // confirmar a entrega em nome dele (onConfirmarEntregaGarcom).
+          <button onClick={() => onConfirmarEntregaGarcom(item.id)}
+            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
+            <Icon name="Check" size={13} /> Entregue
+          </button>
+        ) : (
+          <div className={`flex-1 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 ${ehDelivery ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-emerald-900/40 text-emerald-400'}`}>
+            <Icon name="Check" size={13} /> Pronto
+          </div>
+        )
       ) : (
         <button onClick={() => onMarcarPronto(item.id)}
           className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5">
-          <Icon name="Check" size={13} /> Pronto
+          <Icon name="Check" size={13} /> {ehBar ? 'Entregue p/ Garçom' : 'Pronto'}
         </button>
       )}
     </div>

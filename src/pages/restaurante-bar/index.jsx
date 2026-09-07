@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, atualizarImpressora, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
+import { listarImpressoras, atualizarImpressora, getKdsItensRestaurante, marcarItemProntoRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa } from '../../services/restauranteService';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
@@ -113,6 +113,11 @@ const RestauranteBar = () => {
 
   const iniciarPreparo = async (item) => {
     await iniciarPreparoItemRestaurante(item.id);
+    carregar(impressorasBar);
+  };
+
+  const confirmarEntregaGarcom = async (itemId) => {
+    await confirmarEntregaGarcomRestaurante(itemId);
     carregar(impressorasBar);
   };
 
@@ -395,7 +400,7 @@ const RestauranteBar = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-3 h-3 rounded-full bg-blue-400" />
-              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Motoboy</h2>
+              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Pedido Feito</h2>
               {aguardando.length > 0 && (
                 <span className="ml-auto bg-blue-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{aguardando.length}</span>
               )}
@@ -413,7 +418,7 @@ const RestauranteBar = () => {
                       atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                       onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
                   ) : (
-                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor="Bar" onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
                       highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                   )
                 ))}
@@ -424,7 +429,7 @@ const RestauranteBar = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse" />
-              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregue pra Motoboy</h2>
+              <h2 className="text-white font-bold text-sm uppercase tracking-wider">Aguardando Entregar</h2>
               {preparando.length > 0 && (
                 <span className="ml-auto bg-orange-500 text-white text-xs font-black px-2 py-0.5 rounded-full">{preparando.length}</span>
               )}
@@ -443,7 +448,7 @@ const RestauranteBar = () => {
                       onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
                       onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                   ) : (
-                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor="Bar" onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
                       highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                   )
                 ))}
@@ -455,7 +460,7 @@ const RestauranteBar = () => {
             <div className="lg:col-span-2">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregues hoje (clicou errado? desfaz aqui)</h2>
+                <h2 className="text-white font-bold text-sm uppercase tracking-wider">Entregue (clicou errado? desfaz aqui)</h2>
                 <span className="ml-auto bg-emerald-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{prontosRecentes.length}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -465,7 +470,7 @@ const RestauranteBar = () => {
                       atualizando={atualizando} codigoBarras={barcodeValue(entry.pedido.id)} cardId={`order-${entry.pedido.id}`}
                       onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                   ) : (
-                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar}
+                    <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor="Bar" onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltar} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
                       highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                   )
                 ))}

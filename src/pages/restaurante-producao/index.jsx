@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
@@ -244,6 +244,11 @@ const RestauranteProducao = () => {
     carregar(impressoras);
   };
 
+  const confirmarEntregaGarcom = async (itemId) => {
+    await confirmarEntregaGarcomRestaurante(itemId);
+    carregar(impressoras);
+  };
+
   const voltarItem = async (item) => {
     await voltarStatusItemRestaurante(item.id);
     carregar(impressoras);
@@ -479,6 +484,10 @@ const RestauranteProducao = () => {
       ) : (
         <main className="p-5 max-w-6xl mx-auto space-y-8">
           {(impressoras ?? []).map((imp) => {
+            // Bar: dono pediu rótulos e fluxo próprios — o item "pronto" fica esperando o
+            // garçom confirmar a entrega antes de sair da fila, em vez de já contar como
+            // entregue (só vale pra item de Salão; delivery no Bar não tem garçom).
+            const ehBar = imp.setor?.trim().toLowerCase() === 'bar';
             const itens = (itensPorImpressora[imp.id] ?? []).filter(passaFiltro);
             const aguardando = montarFilaAgrupadaDelivery(itens.filter((i) => i.status === 'enviado'));
             const preparando = montarFilaAgrupadaDelivery(itens.filter((i) => i.status === 'preparando'));
@@ -501,7 +510,7 @@ const RestauranteProducao = () => {
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">{termos.aguardandoPreparo}</p>
+                      <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">{ehBar ? 'Pedido Feito' : termos.aguardandoPreparo}</p>
                       {aguardando.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
@@ -512,9 +521,9 @@ const RestauranteProducao = () => {
                                 atualizando={atualizandoPedido}
                                 onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
                             ) : (
-                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante}
+                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor={imp.setor}
                                 ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
-                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onCancelar={cancelarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
                                 highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                             )
                           ))}
@@ -522,7 +531,7 @@ const RestauranteProducao = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">{termos.emPreparo}</p>
+                      <p className="text-xs font-bold text-orange-400 uppercase tracking-wider mb-2">{ehBar ? 'Aguardando Entregar' : termos.emPreparo}</p>
                       {preparando.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
@@ -534,8 +543,8 @@ const RestauranteProducao = () => {
                                 onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
                                 onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                             ) : (
-                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante}
-                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                              <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor={imp.setor}
+                                onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
                                 highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                             )
                           ))}
@@ -543,7 +552,7 @@ const RestauranteProducao = () => {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">Entregues hoje</p>
+                      <p className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2">{ehBar ? 'Entregue' : 'Entregues hoje'}</p>
                       {entregues.length === 0 ? (
                         <p className="text-xs text-[#71717A]">Nenhum</p>
                       ) : (
@@ -555,8 +564,8 @@ const RestauranteProducao = () => {
                                   atualizando={atualizandoPedido}
                                   onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
                               ) : (
-                                <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante}
-                                  onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao}
+                                <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor={imp.setor}
+                                  onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
                                   highlighted={numeroComandaEscaneado !== null && entry.item.numero_comanda === numeroComandaEscaneado} />
                               )
                             ))}

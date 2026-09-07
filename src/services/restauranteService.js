@@ -234,6 +234,8 @@ export const reenviarItemKds = (itemId, impressoraId) =>
   apiFetch(`/kds/itens/${itemId}/reenviar`, { method: 'PATCH', body: JSON.stringify({ impressora_id: impressoraId }) });
 export const iniciarPreparoItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
+export const confirmarEntregaGarcomRestaurante = (itemId) =>
+  apiFetch(`/kds/itens/${itemId}/entregar-garcom`, { method: 'PATCH' });
 export const voltarStatusItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/voltar`, { method: 'PATCH' });
 export const cancelarItemRestaurante = (itemId) =>
