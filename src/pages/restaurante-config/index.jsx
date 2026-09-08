@@ -15,9 +15,13 @@ import Icon from '../../components/AppIcon';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
+import { apiPath } from '../../lib/apiUrl';
 
-// URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento
-const WEBHOOK_URL = `${window.location.origin}/api/pagamentos/webhook`;
+// URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento.
+// Precisa ser a URL real do backend (apiPath resolve pra VITE_API_URL em produção), não
+// window.location.origin — esse domínio (o do site) nunca teve proxy pro backend, então
+// a PagBank recebia 200 (fallback do SPA) e nosso webhook nunca era chamado de verdade.
+const WEBHOOK_URL = apiPath('/api/pagamentos/webhook');
 
 const PAGBANK_URL = 'https://pagseguro.uol.com.br';
 
