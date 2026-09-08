@@ -67,6 +67,10 @@ export const getComissoes = (params = {}) => {
   return apiFetch(`/plataforma/comissoes${qs ? `?${qs}` : ''}`);
 };
 export const getComissoesPorEmpresa = (id) => apiFetch(`/plataforma/comissoes/empresa/${id}`);
+export const getPagamentosStripeAdmin = (params = {}) => {
+  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
+  return apiFetch(`/pagamentos/admin/stripe${qs ? `?${qs}` : ''}`);
+};
 
 // Empresas
 export const getEmpresas = () => apiFetch('/empresas');

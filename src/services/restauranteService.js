@@ -257,6 +257,19 @@ export const estornarRepasseMotoboy = (repasseId) =>
 export const getRelatorioProdutos = (de, ate) => apiFetch(`/relatorio/produtos?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`);
 export const setupStorage = () => apiFetch('/storage/setup', { method: 'POST' });
 
+// Vive em /pagamentos, não em /restaurante — helper próprio em vez do apiFetch acima.
+export const getPagamentosStripe = async (page = 1, limit = 50) => {
+  const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
+  const token = sessionResult?.data?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+  const res = await fetch(`${apiPath('/api/pagamentos/restaurante/stripe')}?page=${page}&limit=${limit}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
 export const uploadImagem = async (file, folder = 'geral') => {
   const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
   const token = sessionResult?.data?.session?.access_token;

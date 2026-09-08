@@ -17,7 +17,7 @@ const AdminConfiguracoes = () => {
   });
   const [redeInfo, setRedeInfo] = useState(null);
 
-  const [formStripe, setFormStripe] = useState({ stripe_secret_key: '', stripe_webhook_secret: '' });
+  const [formStripe, setFormStripe] = useState({ stripe_secret_key: '', stripe_webhook_secret: '', stripe_connect_webhook_secret: '' });
   const [salvandoStripe, setSalvandoStripe] = useState(false);
   const [sucessoStripe, setSucessoStripe] = useState(false);
   const [erroStripe, setErroStripe] = useState(null);
@@ -111,9 +111,10 @@ const AdminConfiguracoes = () => {
       const payload = {};
       if (formStripe.stripe_secret_key.trim()) payload.stripe_secret_key = formStripe.stripe_secret_key.trim();
       if (formStripe.stripe_webhook_secret.trim()) payload.stripe_webhook_secret = formStripe.stripe_webhook_secret.trim();
+      if (formStripe.stripe_connect_webhook_secret.trim()) payload.stripe_connect_webhook_secret = formStripe.stripe_connect_webhook_secret.trim();
       const updated = await updatePlataformaConfig(payload);
       setConfig(updated);
-      setFormStripe({ stripe_secret_key: '', stripe_webhook_secret: '' });
+      setFormStripe({ stripe_secret_key: '', stripe_webhook_secret: '', stripe_connect_webhook_secret: '' });
       setSucessoStripe(true);
       setTimeout(() => setSucessoStripe(false), 3000);
     } catch (err) {
@@ -354,7 +355,26 @@ const AdminConfiguracoes = () => {
                     className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
                   />
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                    Dashboard da Stripe → Developers → Webhooks → endpoint <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">/stripe/webhook</code>, evento <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">account.updated</code>
+                    Dashboard da Stripe → Developers → Webhooks → endpoint <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">/stripe/webhook</code> (escopo "Sua conta"), eventos <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">account.updated</code> e <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">payment_intent.*</code>
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
+                    Webhook Signing Secret — Contas Conectadas
+                    {config?.stripe_connect_webhook_secret_masked && (
+                      <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter atual)</span>
+                    )}
+                  </label>
+                  <input
+                    type="password"
+                    value={formStripe.stripe_connect_webhook_secret}
+                    onChange={(e) => setFormStripe((f) => ({ ...f, stripe_connect_webhook_secret: e.target.value }))}
+                    placeholder={config?.stripe_connect_webhook_secret_masked ?? 'whsec_...'}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                    Endpoint SEPARADO, criado com escopo <strong>"Contas conectadas"</strong> (não "Sua conta") — mesma URL base, path <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">/stripe/webhook-connect</code>, evento <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">payout.paid</code>. Gera um segredo diferente do de cima; usado pra marcar repasse automático quando a Stripe paga a loja.
                   </p>
                 </div>
 
@@ -369,7 +389,7 @@ const AdminConfiguracoes = () => {
 
                 <button
                   type="submit"
-                  disabled={salvandoStripe || (!formStripe.stripe_secret_key.trim() && !formStripe.stripe_webhook_secret.trim())}
+                  disabled={salvandoStripe || (!formStripe.stripe_secret_key.trim() && !formStripe.stripe_webhook_secret.trim() && !formStripe.stripe_connect_webhook_secret.trim())}
                   className="w-full py-2.5 bg-[#635BFF] text-white rounded-lg font-medium text-sm hover:bg-[#4b45c9] disabled:opacity-50"
                 >
                   {salvandoStripe ? 'Salvando...' : 'Salvar Stripe'}

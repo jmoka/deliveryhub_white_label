@@ -3,6 +3,7 @@ import { getRelatorio, getMinhaEmpresa, getCaixa, getCaixaHistorico, aprovarConf
 import Icon from '../../components/AppIcon';
 import CaixaAtualPanel from './CaixaAtualPanel';
 import HistoricoCaixasPanel from './HistoricoCaixasPanel';
+import StripeRepassePanel from './StripeRepassePanel';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import { escapeHtml as esc } from '../../utils/escapeHtml';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
@@ -479,6 +480,9 @@ const RestauranteFinanceiro = () => {
             <p className="text-[#71717A] dark:text-[#A1A1AA]">Selecione o período e clique em Buscar.</p>
           </div>
         )}
+
+        {/* Vendas via Stripe */}
+        <StripeRepassePanel />
 
         {/* Histórico de Caixas */}
         <HistoricoCaixasPanel historico={historico} />
