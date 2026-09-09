@@ -379,6 +379,8 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   const [catAtiva, setCatAtiva] = useState('todos');
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [servicoOrcamento, setServicoOrcamento] = useState(null);
+  const [busca, setBusca] = useState('');
+  const [ordenacao, setOrdenacao] = useState('padrao'); // padrao | menor_preco | maior_preco
 
   // Quando aberto via domínio customizado (dadosPreCarregados vindo do HomeRouter),
   // não existe :slug na URL — o fetch abaixo é pulado, os dados já chegam prontos.
@@ -498,6 +500,10 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     if (catAtiva === 'servicos') return servicosComTipo;
     return cardapio.find((c) => c.id === catAtiva)?.produtos ?? [];
   };
+
+  const normalizar = (s) => (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+  const precoOrdenacao = (p) => (p.tags?.includes('promo') && p.preco_promo != null ? p.preco_promo : p.price ?? p.preco_min ?? 0);
 
   const bgStyle = ap.background_url
     ? { backgroundImage: `url(${ap.background_url})`, backgroundSize: 'cover', backgroundAttachment: 'fixed' }
@@ -705,6 +711,35 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
               </button>
             ))}
           </div>
+          <div className="flex gap-2 pb-3">
+            <div className="relative flex-1 min-w-0">
+              <Icon name="Search" size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] pointer-events-none" />
+              <input
+                type="text"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar produto..."
+                aria-label="Buscar produto por nome"
+                className="w-full pl-9 pr-8 py-2 text-sm bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#18181B] dark:text-[#F4F4F5] placeholder:text-[#A1A1AA] rounded-xl border border-transparent focus:border-[#FF441F]/40 focus:bg-white dark:focus:bg-[#27272A] outline-none transition-colors"
+              />
+              {busca && (
+                <button onClick={() => setBusca('')} aria-label="Limpar busca"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#A1A1AA] hover:text-[#71717A] dark:hover:text-[#F4F4F5]">
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
+            <select
+              value={ordenacao}
+              onChange={(e) => setOrdenacao(e.target.value)}
+              aria-label="Ordenar por preço"
+              className="flex-shrink-0 text-sm bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#18181B] dark:text-[#F4F4F5] rounded-xl border border-transparent focus:border-[#FF441F]/40 outline-none px-2.5 py-2 max-w-[9.5rem]"
+            >
+              <option value="padrao">Ordenar</option>
+              <option value="menor_preco">Menor preço</option>
+              <option value="maior_preco">Maior preço</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -718,14 +753,20 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
               <Icon name="UtensilsCrossed" size={44} className="mx-auto mb-3 text-[#E4E4E7] dark:text-[#3F3F46]" />
               <p className="font-medium">Cardápio em breve</p>
             </div>
-          ) : produtosDaTab().length === 0 ? (
-            <div className="text-center py-10 text-[#71717A] dark:text-[#A1A1AA]">
-              <p className="text-sm">Nenhum produto nesta categoria</p>
-            </div>
           ) : (() => {
-            const itens = produtosDaTab();
-            const itensProdutos = itens.filter((p) => p.tipo !== 'servico');
+            const buscaNorm = normalizar(busca.trim());
+            const itens = produtosDaTab().filter((p) => !buscaNorm || normalizar(p.name).includes(buscaNorm));
+            let itensProdutos = itens.filter((p) => p.tipo !== 'servico');
             const itensServicos = itens.filter((p) => p.tipo === 'servico');
+            if (ordenacao === 'menor_preco') itensProdutos = [...itensProdutos].sort((a, b) => precoOrdenacao(a) - precoOrdenacao(b));
+            else if (ordenacao === 'maior_preco') itensProdutos = [...itensProdutos].sort((a, b) => precoOrdenacao(b) - precoOrdenacao(a));
+
+            if (itensProdutos.length === 0 && itensServicos.length === 0) return (
+              <div className="text-center py-10 text-[#71717A] dark:text-[#A1A1AA]">
+                <p className="text-sm">{buscaNorm ? 'Nenhum produto encontrado' : 'Nenhum produto nesta categoria'}</p>
+              </div>
+            );
+
             return (
               <AnimatePresence mode="wait">
                 <motion.div key={catAtiva} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
