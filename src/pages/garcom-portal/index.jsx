@@ -324,7 +324,7 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
             </p>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
               {produto.preco_promo != null && <span className="line-through text-[#A1A1AA] mr-1">{fmt(produto.price)}</span>}
-              {fmt(produto.preco_promo ?? produto.price)}
+              <span className={produto.preco_promo != null ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>{fmt(produto.preco_promo ?? produto.price)}</span>
             </p>
             {produto.quantidade_estoque != null && (
               <p className="text-[11px] text-[#A1A1AA] mt-0.5">Em estoque: {produto.quantidade_estoque}</p>
@@ -432,7 +432,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
                 {p.preco_promo != null && (
                   <span className="line-through text-[#A1A1AA] mr-1">{fmt(p.price)}</span>
                 )}
-                {fmt(p.preco_promo ?? p.price)}
+                <span className={p.preco_promo != null ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>{fmt(p.preco_promo ?? p.price)}</span>
                 {p.quantidade_estoque != null && <span className="text-[#A1A1AA]"> · estoque: {p.quantidade_estoque}</span>}
               </p>
               {p.tipo === 'combo' && p.description && (

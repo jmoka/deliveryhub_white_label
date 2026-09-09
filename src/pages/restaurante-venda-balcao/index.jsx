@@ -402,7 +402,7 @@ const RestauranteVendaBalcao = () => {
                 </p>
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
                   {p.preco_promo != null && <span className="line-through text-[#A1A1AA] mr-1">{fmt(p.price)}</span>}
-                  {fmt(p.preco_promo ?? p.price)}
+                  <span className={p.preco_promo != null ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>{fmt(p.preco_promo ?? p.price)}</span>
                 </p>
                 {p.quantidade_estoque != null && (
                   <p className="text-[10px] text-[#A1A1AA]">estoque: {p.quantidade_estoque}</p>
