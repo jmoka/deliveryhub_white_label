@@ -10,37 +10,83 @@ import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-// Seleção de produtos/combos que entram no pacote comprado — mesmo padrão do
-// CardapioImpressoModal (checkbox + contador), mas trava exatamente na
-// quantidade do pacote (não dá pra selecionar a mais nem gerar com menos).
-const SelecionarItensModal = ({ pacote, onClose, onCriado }) => {
+// Seleção de produtos/combos que entram no pacote comprado — uma seção por
+// carrossel da composição do pacote (ex: 1 no Combos + 3 em Bebidas), cada
+// uma travada na própria quantidade (não dá pra selecionar a mais nem menos
+// em nenhum carrossel). Mesmo padrão de checkbox+contador de antes, só que
+// repetido por seção em vez de uma lista única de 1 carrossel só.
+const SelecaoCarrossel = ({ carrossel, label, qtd, selecionados, onToggle }) => {
   const [carregando, setCarregando] = useState(true);
   const [itens, setItens] = useState([]);
-  const [selecionados, setSelecionados] = useState(new Set());
-  const [erro, setErro] = useState(null);
-  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    const buscar = pacote.carrossel === 'combos'
+    const buscar = carrossel === 'combos'
       ? getMeusCombos().then((r) => r.combos ?? [])
       : getMeusProdutos().then((r) => r.produtos ?? []);
     buscar.then((lista) => setItens(lista ?? [])).catch(() => {}).finally(() => setCarregando(false));
-  }, [pacote.carrossel]);
+  }, [carrossel]);
 
-  const toggle = (id) => {
+  const marcados = selecionados.size;
+
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2">
+        {label} — {marcados}/{qtd}
+      </p>
+      {carregando ? (
+        <p className="text-xs text-[#A1A1AA] py-4 text-center">Carregando...</p>
+      ) : itens.length === 0 ? (
+        <p className="text-xs text-[#A1A1AA] py-4 text-center">Nenhum item cadastrado ainda.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {itens.map((item) => (
+            <label key={item.id} className="flex items-center justify-between gap-2 cursor-pointer py-1">
+              <span className="flex items-center gap-2 text-sm text-[#27272A]">
+                <input
+                  type="checkbox"
+                  checked={selecionados.has(item.id)}
+                  onChange={() => onToggle(item.id)}
+                  disabled={!selecionados.has(item.id) && marcados >= qtd}
+                  className="w-4 h-4 accent-[#FF441F]"
+                />
+                {item.name}
+              </span>
+              <span className="text-xs text-[#71717A]">{fmt(item.preco_promo ?? item.price)}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SelecionarItensModal = ({ pacote, onClose, onCriado }) => {
+  const composicao = Object.entries(pacote.config ?? {}); // [[carrossel, qtd], ...]
+  const [selecionados, setSelecionados] = useState(() =>
+    Object.fromEntries(composicao.map(([c]) => [c, new Set()]))
+  );
+  const [erro, setErro] = useState(null);
+  const [enviando, setEnviando] = useState(false);
+
+  const toggle = (carrossel, qtd, id) => {
     setSelecionados((atual) => {
-      const novo = new Set(atual);
+      const novo = new Set(atual[carrossel]);
       if (novo.has(id)) novo.delete(id);
-      else if (novo.size < pacote.qtd_produtos) novo.add(id);
-      return novo;
+      else if (novo.size < qtd) novo.add(id);
+      return { ...atual, [carrossel]: novo };
     });
   };
+
+  const totalQtd = composicao.reduce((soma, [, qtd]) => soma + qtd, 0);
+  const totalSelecionado = Object.values(selecionados).reduce((soma, s) => soma + s.size, 0);
+  const completo = composicao.every(([c, qtd]) => (selecionados[c]?.size ?? 0) === qtd);
 
   const confirmar = async () => {
     setEnviando(true);
     setErro(null);
     try {
-      const boost = await criarBoost(pacote.id, [...selecionados]);
+      const itens = Object.fromEntries(composicao.map(([c]) => [c, [...selecionados[c]]]));
+      const boost = await criarBoost(pacote.id, itens);
       onCriado(boost);
     } catch (e) {
       setErro(e.message);
@@ -56,7 +102,7 @@ const SelecionarItensModal = ({ pacote, onClose, onCriado }) => {
           <div>
             <h2 className="text-lg font-bold text-[#18181B]">{pacote.nome}</h2>
             <p className="text-xs text-[#71717A]">
-              Escolha {pacote.qtd_produtos} item(ns) pra destacar em "{pacote.carrossel_label ?? pacote.carrossel}" por {pacote.dias} dias.
+              Escolha os itens pra destacar por {pacote.dias} dias.
             </p>
           </div>
           <button onClick={onClose} className="text-[#A1A1AA] hover:text-[#18181B]">
@@ -64,28 +110,17 @@ const SelecionarItensModal = ({ pacote, onClose, onCriado }) => {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1.5">
-          {carregando ? (
-            <p className="text-xs text-[#A1A1AA] py-8 text-center">Carregando...</p>
-          ) : itens.length === 0 ? (
-            <p className="text-xs text-[#A1A1AA] py-8 text-center">Nenhum item cadastrado ainda.</p>
-          ) : (
-            itens.map((item) => (
-              <label key={item.id} className="flex items-center justify-between gap-2 cursor-pointer py-1">
-                <span className="flex items-center gap-2 text-sm text-[#27272A]">
-                  <input
-                    type="checkbox"
-                    checked={selecionados.has(item.id)}
-                    onChange={() => toggle(item.id)}
-                    disabled={!selecionados.has(item.id) && selecionados.size >= pacote.qtd_produtos}
-                    className="w-4 h-4 accent-[#FF441F]"
-                  />
-                  {item.name}
-                </span>
-                <span className="text-xs text-[#71717A]">{fmt(item.preco_promo ?? item.price)}</span>
-              </label>
-            ))
-          )}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {composicao.map(([carrossel, qtd]) => (
+            <SelecaoCarrossel
+              key={carrossel}
+              carrossel={carrossel}
+              label={pacote.composicao?.find((c) => c.carrossel === carrossel)?.label ?? carrossel}
+              qtd={qtd}
+              selecionados={selecionados[carrossel] ?? new Set()}
+              onToggle={(id) => toggle(carrossel, qtd, id)}
+            />
+          ))}
         </div>
 
         {erro && <p className="px-6 pb-2 text-xs text-red-600">{erro}</p>}
@@ -93,9 +128,9 @@ const SelecionarItensModal = ({ pacote, onClose, onCriado }) => {
         <div className="px-6 py-4 border-t border-[#E4E4E7]">
           <button
             onClick={confirmar}
-            disabled={selecionados.size !== pacote.qtd_produtos || enviando}
+            disabled={!completo || enviando}
             className="w-full py-2.5 text-sm font-bold rounded-xl bg-[#FF441F] text-white disabled:opacity-40">
-            {enviando ? 'Enviando...' : `Continuar (${selecionados.size}/${pacote.qtd_produtos})`}
+            {enviando ? 'Enviando...' : `Continuar (${totalSelecionado}/${totalQtd})`}
           </button>
         </div>
       </div>
@@ -120,17 +155,11 @@ const RestauranteImpulsionar = () => {
 
   useEffect(() => { carregar(); }, []);
 
-  // Grupos na ordem em que os pacotes chegam do backend (já ordenado por
-  // carrossel) — dinâmico, não depende de uma lista fixa de carrosséis.
-  const gruposPorCarrossel = [];
-  const indicePorCarrossel = {};
-  for (const p of pacotes) {
-    if (!(p.carrossel in indicePorCarrossel)) {
-      indicePorCarrossel[p.carrossel] = gruposPorCarrossel.length;
-      gruposPorCarrossel.push({ carrossel: p.carrossel, label: p.carrossel_label ?? p.carrossel, pacotes: [] });
-    }
-    gruposPorCarrossel[indicePorCarrossel[p.carrossel]].pacotes.push(p);
-  }
+  // Um pacote agora pode cobrir vários carrosséis ao mesmo tempo (sua
+  // composição), então não faz mais sentido agrupar por carrossel único —
+  // lista os pacotes direto, cada um mostrando a própria composição.
+  const composicaoTexto = (p) =>
+    (p.composicao ?? []).map((c) => `${c.label}: ${c.qtd}`).join(' · ');
 
   const statusBoost = (b) => {
     if (!b.pago_em) return { label: 'Aguardando pagamento', cor: 'bg-amber-100 text-amber-700' };
@@ -154,21 +183,21 @@ const RestauranteImpulsionar = () => {
           <p className="text-sm text-[#71717A]">Carregando...</p>
         ) : (
           <>
-            {gruposPorCarrossel.map((grupo) => (
-              <div key={grupo.carrossel} className="bg-white rounded-2xl border border-[#E4E4E7] p-5 mb-4">
-                <h2 className="font-bold text-[#18181B] mb-3">{grupo.label}</h2>
+            {pacotes.length > 0 && (
+              <div className="bg-white rounded-2xl border border-[#E4E4E7] p-5 mb-4">
+                <h2 className="font-bold text-[#18181B] mb-3">Pacotes disponíveis</h2>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {grupo.pacotes.map((p) => (
+                  {pacotes.map((p) => (
                     <div key={p.id} className="border border-[#E4E4E7] rounded-xl p-4">
                       <p className="font-semibold text-sm text-[#18181B]">{p.nome}</p>
-                      <p className="text-xs text-[#71717A] mt-1">{p.qtd_produtos} item(ns) · {p.dias} dias</p>
+                      <p className="text-xs text-[#71717A] mt-1">{composicaoTexto(p)} · {p.dias} dias</p>
                       <p className="text-lg font-black text-[#18181B] mt-2">{fmt(p.preco)}</p>
                       <p className="text-xs mt-1 text-[#71717A]">
-                        {p.vagas_disponiveis > 0 ? `${p.vagas_disponiveis} vaga(s) disponível(is)` : 'Sem vagas no momento'}
+                        {p.disponivel ? 'Vagas disponíveis' : 'Sem vagas no momento em ao menos um carrossel'}
                       </p>
                       <button
                         onClick={() => setPacoteSelecionado(p)}
-                        disabled={p.vagas_disponiveis <= 0}
+                        disabled={!p.disponivel}
                         className="mt-3 w-full py-2 text-sm font-bold rounded-lg bg-[#FF441F] text-white disabled:opacity-40">
                         Comprar
                       </button>
@@ -176,7 +205,7 @@ const RestauranteImpulsionar = () => {
                   ))}
                 </div>
               </div>
-            ))}
+            )}
 
             {pacotes.length === 0 && (
               <div className="bg-white rounded-2xl border border-[#E4E4E7] p-6 text-center mb-4">
@@ -195,8 +224,8 @@ const RestauranteImpulsionar = () => {
                     return (
                       <div key={b.id} className="flex items-center justify-between border border-[#E4E4E7] rounded-lg px-3 py-2 gap-2 flex-wrap">
                         <div>
-                          <p className="text-sm font-semibold text-[#18181B]">{b.marketplace_boost_pacotes?.nome ?? b.carrossel_label}</p>
-                          <p className="text-xs text-[#71717A]">{b.carrossel_label ?? b.carrossel} · {b.item_ids?.length ?? 0} item(ns)</p>
+                          <p className="text-sm font-semibold text-[#18181B]">{b.marketplace_boost_pacotes?.nome ?? 'Campanha'}</p>
+                          <p className="text-xs text-[#71717A]">{(b.composicao ?? []).map((c) => `${c.label}: ${c.qtd}`).join(' · ')}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${st.cor}`}>{st.label}</span>

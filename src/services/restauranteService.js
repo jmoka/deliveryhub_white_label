@@ -533,8 +533,8 @@ export const assinarPlano = (planoId) =>
 // Marketplace boost — comprar destaque pago nos carrosséis da home pública
 export const getPacotesBoost = () => apiFetch('/boosts/pacotes');
 export const getMeusBoosts = () => apiFetch('/boosts');
-export const criarBoost = (pacoteId, itemIds) =>
-  apiFetch('/boosts', { method: 'POST', body: JSON.stringify({ pacote_id: pacoteId, item_ids: itemIds }) });
+export const criarBoost = (pacoteId, itens) =>
+  apiFetch('/boosts', { method: 'POST', body: JSON.stringify({ pacote_id: pacoteId, itens }) });
 export const getBoostDetalhe = (id) => apiFetch(`/boosts/${id}`);
 export const pagarBoost = (id, data) =>
   apiFetch(`/boosts/${id}/pagar`, { method: 'POST', body: JSON.stringify(data) });

@@ -12,21 +12,12 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 const Modal = ({ pacote, carrosseis, presets, onClose, onSave }) => {
   const [form, setForm] = useState(
     pacote
-      ? {
-          nome: pacote.nome,
-          qtd_produtos: String(pacote.qtd_produtos),
-          dias: String(pacote.dias),
-          preco: String(pacote.preco),
-          ativo: pacote.ativo,
-        }
-      : { nome: '', qtd_produtos: '1', dias: '7', preco: '', ativo: true }
+      ? { nome: pacote.nome, dias: String(pacote.dias), preco: String(pacote.preco), ativo: pacote.ativo }
+      : { nome: '', dias: '7', preco: '', ativo: true }
   );
-  // Só faz sentido escolher vários carrosséis na criação — editar um pacote já
-  // vinculado a um carrossel continua 1 pra 1 (mudar isso significaria criar
-  // pacote novo, não editar o existente).
-  const [carrosselSelecionados, setCarrosselSelecionados] = useState(
-    pacote ? [pacote.carrossel] : []
-  );
+  // Composição (quais carrosséis + quanto de cada) vem sempre de um perfil de
+  // vagas salvo — não dá pra escolher carrossel/quantidade na mão aqui. Uma
+  // vez criado, o pacote é congelado; editar não muda a composição.
   const [perfilId, setPerfilId] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -34,24 +25,15 @@ const Modal = ({ pacote, carrosseis, presets, onClose, onSave }) => {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Perfil de vagas (ex: "3 master") já diz quais carrosséis fazem parte dele
-  // (as chaves do config) — reaproveita isso em vez de marcar carrossel por
-  // carrossel de novo aqui.
-  const escolherPerfil = (id) => {
-    setPerfilId(id);
-    const preset = presets.find((p) => String(p.id) === id);
-    setCarrosselSelecionados(preset ? Object.keys(preset.config) : []);
-  };
+  const labelDoCarrossel = (c) => carrosseis.find((x) => x.carrossel === c)?.label ?? c;
 
-  const selecionarTodos = () => {
-    setPerfilId('');
-    setCarrosselSelecionados(carrosseis.map((c) => c.carrossel));
-  };
+  const composicaoEdicao = isEdicao ? Object.entries(pacote.config ?? {}) : [];
+  const perfilEscolhido = presets.find((p) => String(p.id) === perfilId);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (carrosselSelecionados.length === 0) {
-      setErro('Escolha ao menos um carrossel.');
+    if (!isEdicao && !perfilId) {
+      setErro('Escolha um perfil de vagas.');
       return;
     }
     setSalvando(true);
@@ -59,19 +41,13 @@ const Modal = ({ pacote, carrosseis, presets, onClose, onSave }) => {
     try {
       const base = {
         nome: form.nome.trim(),
-        qtd_produtos: parseInt(form.qtd_produtos, 10),
         dias: parseInt(form.dias, 10),
         preco: parseFloat(form.preco),
       };
       if (isEdicao) {
         await atualizarPacoteBoost(pacote.id, { ...base, ativo: form.ativo });
       } else {
-        // Um pacote por carrossel selecionado, mesma configuração — o schema
-        // (marketplace_boost_pacotes) é 1 carrossel por linha, não dá pra
-        // vincular um pacote só a vários carrosséis ao mesmo tempo.
-        for (const carrossel of carrosselSelecionados) {
-          await criarPacoteBoost({ ...base, carrossel });
-        }
+        await criarPacoteBoost({ ...base, preset_id: parseInt(perfilId, 10) });
       }
       onSave();
     } catch (err) {
@@ -95,45 +71,32 @@ const Modal = ({ pacote, carrosseis, presets, onClose, onSave }) => {
               className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300">Carrossel(is) *</label>
-              {!isEdicao && (
-                <button type="button" onClick={selecionarTodos} className="text-xs font-semibold text-blue-600 hover:underline">
-                  Selecionar todos
-                </button>
-              )}
-            </div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Composição *</label>
             {isEdicao ? (
               <p className="text-sm text-gray-500 dark:text-zinc-400 bg-gray-50 dark:bg-zinc-800 rounded-xl px-3 py-2.5">
-                {carrosseis.find((c) => c.carrossel === carrosselSelecionados[0])?.label ?? carrosselSelecionados[0]}
+                {composicaoEdicao.map(([c, qtd]) => `${labelDoCarrossel(c)}: ${qtd}`).join(' · ')}
               </p>
             ) : (
               <>
-                <select value={perfilId} onChange={(e) => escolherPerfil(e.target.value)}
+                <select required value={perfilId} onChange={(e) => setPerfilId(e.target.value)}
                   className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm">
                   <option value="">Escolha um perfil de vagas...</option>
                   {presets.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
                 </select>
-                {presets.length === 0 && (
+                {presets.length === 0 ? (
                   <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                    Nenhum perfil de vagas salvo ainda — crie um na seção "Vagas pagas por carrossel" acima, ou use "Selecionar todos".
+                    Nenhum perfil de vagas salvo ainda — crie um na seção "Vagas pagas por carrossel" acima antes de criar um pacote.
+                  </p>
+                ) : perfilEscolhido && (
+                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
+                    {Object.entries(perfilEscolhido.config).map(([c, qtd]) => `${labelDoCarrossel(c)}: ${qtd}`).join(' · ')}
+                    {' — '}esse é o pacote inteiro (1 preço, 1 prazo), não um pacote por carrossel.
                   </p>
                 )}
               </>
             )}
-            {!isEdicao && carrosselSelecionados.length > 0 && (
-              <p className="text-xs text-gray-500 dark:text-zinc-400 mt-2">
-                Carrosséis: {carrosselSelecionados.map((c) => carrosseis.find((x) => x.carrossel === c)?.label ?? c).join(', ')}
-                {' — '}cria {carrosselSelecionados.length} pacote(s), um por carrossel.
-              </p>
-            )}
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Produtos *</label>
-              <input required type="number" min="1" max="20" value={form.qtd_produtos} onChange={(e) => set('qtd_produtos', e.target.value)}
-                className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm" />
-            </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Dias *</label>
               <input required type="number" min="1" max="365" value={form.dias} onChange={(e) => set('dias', e.target.value)}
@@ -168,6 +131,11 @@ const Modal = ({ pacote, carrosseis, presets, onClose, onSave }) => {
 
 const AdminMarketplaceBoost = () => {
   const [vagas, setVagas] = useState(null);
+  // Espelha o que está de fato salvo no banco (platform_settings) — `vagas`
+  // é o rascunho editável nos campos, que pode divergir disso até clicar em
+  // "Salvar vagas". Sem essa cópia separada não dá pra saber, só olhando a
+  // tela, se um número já está valendo ou é só o que está digitado agora.
+  const [vagasSalvas, setVagasSalvas] = useState(null);
   const [salvandoVagas, setSalvandoVagas] = useState(false);
   const [pacotes, setPacotes] = useState([]);
   const [carrosseis, setCarrosseis] = useState([]);
@@ -183,7 +151,7 @@ const AdminMarketplaceBoost = () => {
     setCarregando(true);
     Promise.all([getVagasBoost(), getPacotesBoostAdmin(), getCarrosseisBoost(), getPresetsVagasBoost()])
       .then(([v, p, c, presetsResp]) => {
-        setVagas(v); setPacotes(p.pacotes ?? []); setCarrosseis(c ?? []); setPresets(presetsResp ?? []);
+        setVagas(v); setVagasSalvas(v); setPacotes(p.pacotes ?? []); setCarrosseis(c ?? []); setPresets(presetsResp ?? []);
       })
       .catch(() => {})
       .finally(() => setCarregando(false));
@@ -196,6 +164,7 @@ const AdminMarketplaceBoost = () => {
     try {
       const novo = await salvarVagasBoost(vagas);
       setVagas(novo);
+      setVagasSalvas(novo);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -225,6 +194,7 @@ const AdminMarketplaceBoost = () => {
     try {
       const novo = await aplicarPresetVagasBoost(preset.id);
       setVagas(novo);
+      setVagasSalvas(novo);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -252,10 +222,17 @@ const AdminMarketplaceBoost = () => {
     }
   };
 
-  const pacotesPorCarrossel = pacotes.reduce((acc, p) => {
-    (acc[p.carrossel] ??= []).push(p);
-    return acc;
-  }, {});
+  const labelPorCarrossel = Object.fromEntries(carrosseis.map((c) => [c.carrossel, c.label]));
+  const composicaoDoPacote = (p) =>
+    Object.entries(p.config ?? {}).map(([c, qtd]) => `${labelPorCarrossel[c] ?? c}: ${qtd}`).join(' · ');
+
+  // "Vagas pagas por carrossel" é um teto ÚNICO compartilhado por todos os
+  // pacotes ao mesmo tempo — se um pacote pede mais do que o teto atual
+  // permite em algum carrossel, ele nunca fica comprável, mesmo sem nenhum
+  // outro pacote ocupando vaga nenhuma. Avisa aqui pra não descobrir só
+  // quando o restaurante reclamar que o botão "Comprar" está desabilitado.
+  const carrosseisInsuficientes = (p) =>
+    Object.entries(p.config ?? {}).filter(([c, qtd]) => qtd > (vagasSalvas?.[c] ?? 0));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
@@ -270,14 +247,23 @@ const AdminMarketplaceBoost = () => {
               <h2 className="font-bold text-gray-900 dark:text-zinc-100 mb-1">Vagas pagas por carrossel</h2>
               <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">Quantas posições pagas cabem simultaneamente em cada carrossel (o resto continua orgânico).</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {carrosseis.map((c) => (
-                  <div key={c.carrossel}>
-                    <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-1">{c.label}</label>
-                    <input type="number" min="0" value={vagas?.[c.carrossel] ?? 0}
-                      onChange={(e) => setVagas((atual) => ({ ...atual, [c.carrossel]: parseInt(e.target.value || '0', 10) }))}
-                      className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm" />
-                  </div>
-                ))}
+                {carrosseis.map((c) => {
+                  const salvo = vagasSalvas?.[c.carrossel] ?? 0;
+                  const naoSalvo = (vagas?.[c.carrossel] ?? 0) !== salvo;
+                  return (
+                    <div key={c.carrossel}>
+                      <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-1">{c.label}</label>
+                      <input type="number" min="0" value={vagas?.[c.carrossel] ?? 0}
+                        onChange={(e) => setVagas((atual) => ({ ...atual, [c.carrossel]: parseInt(e.target.value || '0', 10) }))}
+                        className={`w-full border rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 ${
+                          naoSalvo ? 'border-amber-400 dark:border-amber-600' : 'border-gray-300 dark:border-zinc-700'
+                        }`} />
+                      <p className={`text-[11px] mt-1 ${naoSalvo ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-gray-400 dark:text-zinc-500'}`}>
+                        {naoSalvo ? `Salvo: ${salvo} (não salvo)` : `Salvo: ${salvo}`}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
               <button onClick={salvarVagas} disabled={salvandoVagas}
                 className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
@@ -305,7 +291,7 @@ const AdminMarketplaceBoost = () => {
                         <div>
                           <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{p.nome}</p>
                           <p className="text-xs text-gray-500 dark:text-zinc-400">
-                            {Object.entries(p.config).map(([carrossel, n]) => `${carrossel}: ${n}`).join(' · ')}
+                            {Object.entries(p.config).map(([carrossel, n]) => `${labelPorCarrossel[carrossel] ?? carrossel}: ${n}`).join(' · ')}
                           </p>
                         </div>
                         <div className="flex items-center gap-3 flex-shrink-0">
@@ -330,31 +316,35 @@ const AdminMarketplaceBoost = () => {
               </button>
             </div>
 
-            {carrosseis.map((c) => (
-              <div key={c.carrossel} className="mb-4">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-gray-400 dark:text-zinc-500 mb-2">{c.label}</h3>
-                {(pacotesPorCarrossel[c.carrossel] ?? []).length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhum pacote cadastrado.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {pacotesPorCarrossel[c.carrossel].map((p) => (
-                      <div key={p.id} className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl px-4 py-3">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
-                            {p.nome} {!p.ativo && <span className="text-xs font-normal text-gray-400">(inativo)</span>}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400">{p.qtd_produtos} produto(s) · {p.dias} dias · {fmt(p.preco)}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button onClick={() => { setEditando(p); setModalAberto(true); }} className="text-xs font-semibold text-blue-600 hover:underline">Editar</button>
-                          <button onClick={() => remover(p.id)} className="text-xs font-semibold text-red-600 hover:underline">Remover</button>
-                        </div>
-                      </div>
-                    ))}
+            {pacotes.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhum pacote cadastrado.</p>
+            ) : (
+              <div className="space-y-2">
+                {pacotes.map((p) => {
+                  const insuficientes = carrosseisInsuficientes(p);
+                  return (
+                  <div key={p.id} className="flex items-center justify-between bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">
+                        {p.nome} {!p.ativo && <span className="text-xs font-normal text-gray-400">(inativo)</span>}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{composicaoDoPacote(p)}</p>
+                      <p className="text-xs text-gray-500 dark:text-zinc-400">{p.dias} dias · {fmt(p.preco)}</p>
+                      {p.ativo && insuficientes.length > 0 && (
+                        <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-1">
+                          ⚠ Teto de vagas insuficiente em {insuficientes.map(([c, qtd]) => `${labelPorCarrossel[c] ?? c} (pede ${qtd}, teto salvo é ${vagasSalvas?.[c] ?? 0})`).join(', ')} — nunca fica comprável até subir "Vagas pagas por carrossel" acima.
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => { setEditando(p); setModalAberto(true); }} className="text-xs font-semibold text-blue-600 hover:underline">Editar</button>
+                      <button onClick={() => remover(p.id)} className="text-xs font-semibold text-red-600 hover:underline">Remover</button>
+                    </div>
                   </div>
-                )}
+                  );
+                })}
               </div>
-            ))}
+            )}
           </>
         )}
       </div>

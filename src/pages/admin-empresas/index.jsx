@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig, getUsuarios } from '../../services/adminService';
-import { getAssinaturas } from '../../services/planosService';
+import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura } from '../../services/planosService';
+import {
+  getPacotesDisponiveisBoostAdmin, getBoostsDaEmpresa, getItensBoostDaEmpresa,
+  criarBoostParaEmpresa, encerrarBoostAdmin,
+} from '../../services/marketplaceBoostAdminService';
 import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { ChevronDown } from 'lucide-react';
@@ -197,6 +201,309 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
   );
 };
 
+// Troca o plano/assinatura da empresa — reaproveita os mesmos endpoints já
+// usados pelo dono (atribuirAssinatura sincroniza os módulos liberados com o
+// que o plano novo inclui, cancelarAssinatura só marca status='cancelada').
+const PlanoModal = ({ empresa, planos, assinaturaAtual, onClose, onSave }) => {
+  const [planoId, setPlanoId] = useState(assinaturaAtual?.plano_id ? String(assinaturaAtual.plano_id) : '');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const planosSaas = planos.filter((p) => (p.tipo ?? 'saas') === 'saas' && (p.ativo || String(p.id) === planoId));
+
+  const handleAtribuir = async (e) => {
+    e.preventDefault();
+    if (!planoId) return;
+    setSalvando(true);
+    setErro(null);
+    try {
+      await atribuirAssinatura(empresa.id, { plano_id: parseInt(planoId, 10) });
+      onSave();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const handleCancelar = async () => {
+    if (!confirm(`Cancelar a assinatura de "${empresa.name}"? A loja perde os módulos do plano atual.`)) return;
+    setSalvando(true);
+    setErro(null);
+    try {
+      await cancelarAssinatura(empresa.id);
+      onSave();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-zinc-100">Plano de "{empresa.name}"</h3>
+        {assinaturaAtual ? (
+          <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">
+            Atual: {assinaturaAtual.planos?.nome ?? '—'} ({assinaturaAtual.status === 'ativa' ? 'Ativa' : assinaturaAtual.status === 'trial' ? 'Trial' : 'Cancelada'})
+          </p>
+        ) : (
+          <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">Sem plano atribuído ainda.</p>
+        )}
+        <form onSubmit={handleAtribuir} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Plano</label>
+            <select
+              required
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={planoId}
+              onChange={(e) => setPlanoId(e.target.value)}
+            >
+              <option value="">Escolha um plano...</option>
+              {planosSaas.map((p) => (
+                <option key={p.id} value={p.id}>{p.nome} — {fmt(p.valor)}/{p.periodicidade}{!p.ativo ? ' (inativo)' : ''}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+              Troca os módulos liberados da loja pelos que esse plano inclui.
+            </p>
+          </div>
+          {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando || !planoId} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Atribuir'}
+            </button>
+          </div>
+          {assinaturaAtual && assinaturaAtual.status !== 'cancelada' && (
+            <button type="button" onClick={handleCancelar} disabled={salvando}
+              className="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900 disabled:opacity-50">
+              Cancelar assinatura (loja fica sem plano)
+            </button>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Seleção de itens por carrossel na hora de conceder uma campanha — mesmo
+// padrão de src/pages/restaurante-impulsionar, só que buscando os itens DA
+// EMPRESA escolhida (endpoint admin) em vez dos itens do dono logado.
+const SelecaoCarrosselAdmin = ({ empresaId, carrossel, label, qtd, selecionados, onToggle }) => {
+  const [carregando, setCarregando] = useState(true);
+  const [itens, setItens] = useState([]);
+
+  useEffect(() => {
+    getItensBoostDaEmpresa(empresaId, carrossel)
+      .then((lista) => setItens(lista ?? []))
+      .catch(() => {})
+      .finally(() => setCarregando(false));
+  }, [empresaId, carrossel]);
+
+  const marcados = selecionados.size;
+
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-zinc-400 mb-2">
+        {label} — {marcados}/{qtd}
+      </p>
+      {carregando ? (
+        <p className="text-xs text-gray-400 dark:text-zinc-500 py-2 text-center">Carregando...</p>
+      ) : itens.length === 0 ? (
+        <p className="text-xs text-gray-400 dark:text-zinc-500 py-2 text-center">Essa empresa não tem itens cadastrados aqui.</p>
+      ) : (
+        <div className="space-y-1">
+          {itens.map((item) => (
+            <label key={item.id} className="flex items-center justify-between gap-2 cursor-pointer py-0.5">
+              <span className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={selecionados.has(item.id)}
+                  onChange={() => onToggle(item.id)}
+                  disabled={!selecionados.has(item.id) && marcados >= qtd}
+                  className="w-4 h-4 accent-purple-600"
+                />
+                {item.name}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-zinc-400">{fmt(item.preco_promo ?? item.price)}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const statusBoost = (b) => {
+  if (!b.pago_em) return { label: 'Aguardando pagamento', cor: 'bg-amber-100 text-amber-700' };
+  if (new Date(b.fim_em) > new Date()) {
+    return { label: `Ativo até ${new Date(b.fim_em).toLocaleDateString('pt-BR')}`, cor: 'bg-green-100 text-green-700' };
+  }
+  return { label: 'Expirado', cor: 'bg-gray-100 text-gray-500' };
+};
+
+// Admin concede/gerencia campanhas de destaque no marketplace em nome de uma
+// empresa — mesmo catálogo de pacotes que o dono vê em /restaurante/impulsionar,
+// mas a campanha nasce paga na hora (cortesia/venda manual), sem PagBank.
+const DestaqueModal = ({ empresa, onClose }) => {
+  const [carregando, setCarregando] = useState(true);
+  const [pacotes, setPacotes] = useState([]);
+  const [boosts, setBoosts] = useState([]);
+  const [pacoteId, setPacoteId] = useState('');
+  const [selecionados, setSelecionados] = useState({});
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const carregar = () => {
+    setCarregando(true);
+    Promise.all([getPacotesDisponiveisBoostAdmin(), getBoostsDaEmpresa(empresa.id)])
+      .then(([p, b]) => { setPacotes(p.pacotes ?? []); setBoosts(b.boosts ?? []); })
+      .catch((e) => setErro(e.message))
+      .finally(() => setCarregando(false));
+  };
+
+  useEffect(() => { carregar(); }, []);
+
+  const pacote = pacotes.find((p) => String(p.id) === pacoteId);
+  const composicao = pacote ? Object.entries(pacote.config ?? {}) : [];
+
+  const escolherPacote = (id) => {
+    setPacoteId(id);
+    const p = pacotes.find((x) => String(x.id) === id);
+    setSelecionados(Object.fromEntries(Object.keys(p?.config ?? {}).map((c) => [c, new Set()])));
+  };
+
+  const toggle = (carrossel, qtd, id) => {
+    setSelecionados((atual) => {
+      const novo = new Set(atual[carrossel]);
+      if (novo.has(id)) novo.delete(id);
+      else if (novo.size < qtd) novo.add(id);
+      return { ...atual, [carrossel]: novo };
+    });
+  };
+
+  const completo = pacote && composicao.every(([c, qtd]) => (selecionados[c]?.size ?? 0) === qtd);
+
+  const conceder = async () => {
+    setEnviando(true);
+    setErro(null);
+    try {
+      const itens = Object.fromEntries(composicao.map(([c]) => [c, [...selecionados[c]]]));
+      await criarBoostParaEmpresa(empresa.id, { pacote_id: parseInt(pacoteId, 10), itens });
+      setPacoteId('');
+      setSelecionados({});
+      carregar();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const encerrar = async (boostId) => {
+    if (!confirm('Encerrar essa campanha agora? A vaga é liberada imediatamente.')) return;
+    try {
+      await encerrarBoostAdmin(boostId);
+      carregar();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md md:max-w-[85%] max-h-[90vh] overflow-y-auto p-6">
+        <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-zinc-100">Destaque no marketplace — "{empresa.name}"</h3>
+        <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">
+          Conceder uma campanha aqui já nasce paga (cortesia/venda manual), sem passar pelo PagBank.
+        </p>
+
+        {carregando ? (
+          <p className="text-sm text-gray-500 dark:text-zinc-400">Carregando...</p>
+        ) : (
+          <>
+            <div className="mb-5">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-2">Campanhas dessa empresa</h4>
+              {boosts.length === 0 ? (
+                <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhuma campanha ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {boosts.map((b) => {
+                    const st = statusBoost(b);
+                    return (
+                      <div key={b.id} className="flex items-center justify-between border border-gray-200 dark:border-zinc-700 rounded-lg px-3 py-2 gap-2 flex-wrap">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-zinc-100">{b.marketplace_boost_pacotes?.nome ?? 'Campanha'}</p>
+                          <p className="text-xs text-gray-500 dark:text-zinc-400">{(b.composicao ?? []).map((c) => `${c.label}: ${c.qtd}`).join(' · ')}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${st.cor}`}>{st.label}</span>
+                          {b.pago_em && new Date(b.fim_em) > new Date() && (
+                            <button onClick={() => encerrar(b.id)} className="text-xs font-bold text-red-600 hover:underline">Encerrar</button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 dark:border-zinc-700 pt-4">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100 mb-2">Conceder nova campanha</h4>
+              <select
+                value={pacoteId}
+                onChange={(e) => escolherPacote(e.target.value)}
+                className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 mb-3"
+              >
+                <option value="">Escolha um pacote...</option>
+                {pacotes.map((p) => (
+                  <option key={p.id} value={p.id} disabled={!p.disponivel}>
+                    {p.nome} — {fmt(p.preco)} · {p.dias} dias{!p.disponivel ? ' (sem vagas)' : ''}
+                  </option>
+                ))}
+              </select>
+
+              {pacote && (
+                <>
+                  {composicao.map(([carrossel, qtd]) => (
+                    <SelecaoCarrosselAdmin
+                      key={carrossel}
+                      empresaId={empresa.id}
+                      carrossel={carrossel}
+                      label={pacote.composicao?.find((c) => c.carrossel === carrossel)?.label ?? carrossel}
+                      qtd={qtd}
+                      selecionados={selecionados[carrossel] ?? new Set()}
+                      onToggle={(id) => toggle(carrossel, qtd, id)}
+                    />
+                  ))}
+                  <button
+                    onClick={conceder}
+                    disabled={!completo || enviando}
+                    className="w-full py-2.5 text-sm font-bold rounded-xl bg-purple-600 text-white disabled:opacity-40"
+                  >
+                    {enviando ? 'Concedendo...' : 'Conceder campanha'}
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+
+        {erro && <p className="text-sm text-red-600 dark:text-red-400 mt-3">{erro}</p>}
+
+        <button onClick={onClose} className="w-full mt-4 py-2 text-sm font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-50 dark:hover:bg-zinc-700 rounded-lg border border-gray-300 dark:border-zinc-700">
+          Fechar
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Badge de módulos liberados, reaproveitado nos dois modos (card e lista).
 const ModulosBadges = ({ empresa: e }) => (
   <div className="flex flex-wrap gap-1">
@@ -254,7 +561,7 @@ const PlanoBadge = ({ empresa, assinaturas }) => {
   );
 };
 
-const EmpresaCard = ({ empresa: e, assinaturas, comissaoPadrao, isLocalMode, onVer, onEditar, onBloquear, onRemover }) => (
+const EmpresaCard = ({ empresa: e, assinaturas, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover }) => (
   <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
@@ -303,6 +610,12 @@ const EmpresaCard = ({ empresa: e, assinaturas, comissaoPadrao, isLocalMode, onV
       <button onClick={onEditar} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700">
         Editar
       </button>
+      <button onClick={onEditarPlano} className="px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-lg border border-purple-200 dark:border-purple-900">
+        Plano
+      </button>
+      <button onClick={onDestaque} className="px-3 py-1.5 text-xs font-medium text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/40 rounded-lg border border-pink-200 dark:border-pink-900">
+        Destaque
+      </button>
       <button onClick={onBloquear}
         className={`px-3 py-1.5 text-xs font-medium rounded-lg border ${
           e.bloqueado
@@ -327,8 +640,11 @@ const AdminEmpresas = () => {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [modal, setModal] = useState(null); // null | 'novo' | empresa_obj
+  const [modalPlano, setModalPlano] = useState(null); // null | empresa_obj
+  const [modalDestaque, setModalDestaque] = useState(null); // null | empresa_obj
   const [comissaoPadrao, setComissaoPadrao] = useState(5);
   const [assinaturas, setAssinaturas] = useState([]);
+  const [planos, setPlanos] = useState([]);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'lista'
   const [busca, setBusca] = useState(''); // nome ou endereço
   const [filtroPlano, setFiltroPlano] = useState(''); // '' | 'sem_plano' | plano_id
@@ -350,10 +666,15 @@ const AdminEmpresas = () => {
     }
   };
 
+  const carregarAssinaturas = () => {
+    getAssinaturas().then((d) => setAssinaturas(d.assinaturas ?? [])).catch(() => {});
+  };
+
   useEffect(() => {
     carregar();
     getPlataformaConfig().then((d) => setComissaoPadrao(d.comissao_padrao_pct ?? 5)).catch(() => {});
-    getAssinaturas().then((d) => setAssinaturas(d.assinaturas ?? [])).catch(() => {});
+    carregarAssinaturas();
+    getPlanos().then((d) => setPlanos(d.planos ?? [])).catch(() => {});
   }, []);
 
   const handleRemover = async (empresa) => {
@@ -584,6 +905,8 @@ const AdminEmpresas = () => {
                 isLocalMode={isLocalMode}
                 onVer={() => navigate(`/admin/empresas/${e.id}`)}
                 onEditar={() => setModal(e)}
+                onEditarPlano={() => setModalPlano(e)}
+                onDestaque={() => setModalDestaque(e)}
                 onBloquear={() => handleBloquear(e)}
                 onRemover={() => handleRemover(e)}
               />
@@ -672,6 +995,18 @@ const AdminEmpresas = () => {
                             Editar
                           </button>
                           <button
+                            onClick={() => setModalPlano(e)}
+                            className="px-3 py-1 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 rounded-lg"
+                          >
+                            Plano
+                          </button>
+                          <button
+                            onClick={() => setModalDestaque(e)}
+                            className="px-3 py-1 text-xs font-medium text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/40 rounded-lg"
+                          >
+                            Destaque
+                          </button>
+                          <button
                             onClick={() => handleBloquear(e)}
                             className={`px-3 py-1 text-xs font-medium rounded-lg ${
                               e.bloqueado
@@ -705,6 +1040,23 @@ const AdminEmpresas = () => {
           comissaoPadrao={comissaoPadrao}
           onClose={() => setModal(null)}
           onSave={() => { setModal(null); carregar(); }}
+        />
+      )}
+
+      {modalPlano && (
+        <PlanoModal
+          empresa={modalPlano}
+          planos={planos}
+          assinaturaAtual={assinaturas.find((a) => a.restaurant_id === modalPlano.id)}
+          onClose={() => setModalPlano(null)}
+          onSave={() => { setModalPlano(null); carregarAssinaturas(); carregar(); }}
+        />
+      )}
+
+      {modalDestaque && (
+        <DestaqueModal
+          empresa={modalDestaque}
+          onClose={() => setModalDestaque(null)}
         />
       )}
     </div>

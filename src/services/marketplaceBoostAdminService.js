@@ -61,3 +61,16 @@ export const atualizarPacoteBoost = (id, data) =>
   apiFetch(`/marketplace-boost/pacotes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const removerPacoteBoost = (id) =>
   apiFetch(`/marketplace-boost/pacotes/${id}`, { method: 'DELETE' });
+
+// Mesma visão enriquecida (composição + vagas restantes) que o dono vê pra
+// comprar — admin usa pra saber o que ainda cabe conceder pra uma empresa.
+export const getPacotesDisponiveisBoostAdmin = () => apiFetch('/marketplace-boost/pacotes-disponiveis');
+
+// Admin — conceder/gerir campanhas de destaque em nome de uma empresa
+export const getBoostsDaEmpresa = (restaurantId) => apiFetch(`/marketplace-boost/empresas/${restaurantId}/boosts`);
+export const getItensBoostDaEmpresa = (restaurantId, carrossel) =>
+  apiFetch(`/marketplace-boost/empresas/${restaurantId}/itens/${carrossel}`);
+export const criarBoostParaEmpresa = (restaurantId, data) =>
+  apiFetch(`/marketplace-boost/empresas/${restaurantId}/boosts`, { method: 'POST', body: JSON.stringify(data) });
+export const encerrarBoostAdmin = (boostId) =>
+  apiFetch(`/marketplace-boost/boosts/${boostId}/encerrar`, { method: 'PATCH' });
