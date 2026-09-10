@@ -3,7 +3,7 @@ import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaModal';
 import {
-  getPacotesBoost, getMeusBoosts, criarBoost, getBoostDetalhe, pagarBoost,
+  getPacotesBoost, getMeusBoosts, criarBoost, getBoostDetalhe, pagarBoost, removerBoost,
   getMeusProdutos, getMeusCombos,
 } from '../../services/restauranteService';
 import { APP_NAME } from '../../constants/brand';
@@ -169,6 +169,16 @@ const RestauranteImpulsionar = () => {
     return { label: 'Expirado', cor: 'bg-gray-100 text-gray-500' };
   };
 
+  const excluirBoost = async (boostId) => {
+    if (!window.confirm('Excluir essa campanha aguardando pagamento?')) return;
+    try {
+      await removerBoost(boostId);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F4F5]">
       <RestauranteHeader active="/restaurante/impulsionar" title="Impulsionar no Marketplace" />
@@ -189,9 +199,18 @@ const RestauranteImpulsionar = () => {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {pacotes.map((p) => (
                     <div key={p.id} className="border border-[#E4E4E7] rounded-xl p-4">
-                      <p className="font-semibold text-sm text-[#18181B]">{p.nome}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-sm text-[#18181B]">{p.nome}</p>
+                        {p.incluso_no_plano && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-white bg-emerald-500 px-1.5 py-0.5 rounded-full">
+                            Incluso no seu plano
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-[#71717A] mt-1">{composicaoTexto(p)} · {p.dias} dias</p>
-                      <p className="text-lg font-black text-[#18181B] mt-2">{fmt(p.preco)}</p>
+                      <p className="text-lg font-black text-[#18181B] mt-2">
+                        {p.incluso_no_plano ? 'Grátis' : fmt(p.preco)}
+                      </p>
                       <p className="text-xs mt-1 text-[#71717A]">
                         {p.disponivel ? 'Vagas disponíveis' : 'Sem vagas no momento em ao menos um carrossel'}
                       </p>
@@ -199,7 +218,7 @@ const RestauranteImpulsionar = () => {
                         onClick={() => setPacoteSelecionado(p)}
                         disabled={!p.disponivel}
                         className="mt-3 w-full py-2 text-sm font-bold rounded-lg bg-[#FF441F] text-white disabled:opacity-40">
-                        Comprar
+                        {p.incluso_no_plano ? 'Usar grátis' : 'Comprar'}
                       </button>
                     </div>
                   ))}
@@ -230,9 +249,14 @@ const RestauranteImpulsionar = () => {
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${st.cor}`}>{st.label}</span>
                           {!b.pago_em && (
-                            <button onClick={() => setBoostParaPagar(b)} className="text-xs font-bold text-[#FF441F] hover:underline">
-                              Pagar
-                            </button>
+                            <>
+                              <button onClick={() => setBoostParaPagar(b)} className="text-xs font-bold text-[#FF441F] hover:underline">
+                                Pagar
+                              </button>
+                              <button onClick={() => excluirBoost(b.id)} className="text-xs font-bold text-red-600 hover:underline">
+                                Excluir
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -249,7 +273,12 @@ const RestauranteImpulsionar = () => {
         <SelecionarItensModal
           pacote={pacoteSelecionado}
           onClose={() => setPacoteSelecionado(null)}
-          onCriado={(boost) => { setPacoteSelecionado(null); setBoostParaPagar(boost); carregar(); }}
+          onCriado={(boost) => {
+            setPacoteSelecionado(null);
+            // Já paga (cortesia/incluso no plano) — pula a etapa de pagamento.
+            if (boost.pago_em) carregar();
+            else setBoostParaPagar(boost);
+          }}
         />
       )}
 

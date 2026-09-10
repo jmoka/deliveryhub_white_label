@@ -538,3 +538,4 @@ export const criarBoost = (pacoteId, itens) =>
 export const getBoostDetalhe = (id) => apiFetch(`/boosts/${id}`);
 export const pagarBoost = (id, data) =>
   apiFetch(`/boosts/${id}/pagar`, { method: 'POST', body: JSON.stringify(data) });
+export const removerBoost = (id) => apiFetch(`/boosts/${id}`, { method: 'DELETE' });

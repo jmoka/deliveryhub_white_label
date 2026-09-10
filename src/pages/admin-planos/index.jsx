@@ -10,6 +10,7 @@ import {
   atribuirPlanoInstalacao, gerarFaturaManualInstalacao,
 } from '../../services/instalacoesService';
 import { getEmpresas } from '../../services/adminService';
+import { getPacotesBoostAdmin, getCarrosseisBoost } from '../../services/marketplaceBoostAdminService';
 import Icon from '../../components/AppIcon';
 import AdminHeader from '../../components/admin/AdminHeader';
 
@@ -41,7 +42,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, pacote_boost_ids: [] };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -62,6 +63,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           inclui_servicos: plano.inclui_servicos ?? false,
           cobra_comissao: plano.cobra_comissao ?? false,
           inclui_favicon_personalizado: plano.inclui_favicon_personalizado ?? false,
+          pacote_boost_ids: plano.pacote_boost_ids ?? [],
         }
       : { ...EMPTY }
   );
@@ -70,7 +72,24 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [erro, setErro] = useState(null);
   const isEdicao = !!plano;
 
+  const [pacotesBoost, setPacotesBoost] = useState([]);
+  const [carrosseisBoost, setCarrosseisBoost] = useState([]);
+  useEffect(() => {
+    getPacotesBoostAdmin().then((d) => setPacotesBoost(d.pacotes ?? [])).catch(() => {});
+    getCarrosseisBoost().then((d) => setCarrosseisBoost(d ?? [])).catch(() => {});
+  }, []);
+  const labelPorCarrosselBoost = Object.fromEntries(carrosseisBoost.map((c) => [c.carrossel, c.label]));
+  const composicaoDoPacoteBoost = (p) =>
+    Object.entries(p.config ?? {}).map(([c, qtd]) => `${labelPorCarrosselBoost[c] ?? c}: ${qtd}`).join(' · ');
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const togglePacoteBoost = (id) =>
+    setForm((f) => ({
+      ...f,
+      pacote_boost_ids: f.pacote_boost_ids.includes(id)
+        ? f.pacote_boost_ids.filter((x) => x !== id)
+        : [...f.pacote_boost_ids, id],
+    }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -103,6 +122,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         inclui_servicos: form.inclui_servicos,
         cobra_comissao: form.cobra_comissao,
         inclui_favicon_personalizado: form.inclui_favicon_personalizado,
+        pacote_boost_ids: form.pacote_boost_ids,
       };
       if (isEdicao) {
         await atualizarPlano(plano.id, { ...body, ativo: form.ativo });
@@ -226,6 +246,28 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Serviços (orçamento)</span>
                   </label>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Pacotes de destaque inclusos</label>
+                <p className="text-xs text-gray-400 dark:text-zinc-500 mb-2">
+                  Quem assina este plano usa esses pacotes de graça em /restaurante/impulsionar, sem pagar.
+                </p>
+                {pacotesBoost.length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">Nenhum pacote de destaque cadastrado ainda (crie em /admin/marketplace-boost).</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto border border-gray-200 dark:border-zinc-700 rounded-xl px-3 py-2">
+                    {pacotesBoost.map((p) => (
+                      <label key={p.id} className="flex items-start gap-2 cursor-pointer select-none py-0.5">
+                        <input type="checkbox" checked={form.pacote_boost_ids.includes(p.id)} onChange={() => togglePacoteBoost(p.id)}
+                          className="w-4 h-4 shrink-0 rounded accent-blue-600 mt-0.5" />
+                        <span className="text-sm text-gray-700 dark:text-zinc-300">
+                          {p.nome} <span className="text-xs text-gray-400 dark:text-zinc-500">— {composicaoDoPacoteBoost(p)} · {p.dias} dias</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -423,6 +465,11 @@ const TabPlanos = () => {
                     {plano.inclui_servicos && (
                       <span className="text-xs font-medium bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full">
                         Serviços
+                      </span>
+                    )}
+                    {plano.pacote_boost_ids?.length > 0 && (
+                      <span className="text-xs font-medium bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 px-2 py-0.5 rounded-full">
+                        {plano.pacote_boost_ids.length} pacote(s) de destaque
                       </span>
                     )}
                   </div>

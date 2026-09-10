@@ -74,3 +74,5 @@ export const criarBoostParaEmpresa = (restaurantId, data) =>
   apiFetch(`/marketplace-boost/empresas/${restaurantId}/boosts`, { method: 'POST', body: JSON.stringify(data) });
 export const encerrarBoostAdmin = (boostId) =>
   apiFetch(`/marketplace-boost/boosts/${boostId}/encerrar`, { method: 'PATCH' });
+export const removerBoostNaoPagoAdmin = (boostId) =>
+  apiFetch(`/marketplace-boost/boosts/${boostId}`, { method: 'DELETE' });

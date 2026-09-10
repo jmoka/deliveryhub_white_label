@@ -4,7 +4,7 @@ import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEm
 import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura } from '../../services/planosService';
 import {
   getPacotesDisponiveisBoostAdmin, getBoostsDaEmpresa, getItensBoostDaEmpresa,
-  criarBoostParaEmpresa, encerrarBoostAdmin,
+  criarBoostParaEmpresa, encerrarBoostAdmin, removerBoostNaoPagoAdmin,
 } from '../../services/marketplaceBoostAdminService';
 import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
 import AdminHeader from '../../components/admin/AdminHeader';
@@ -414,6 +414,16 @@ const DestaqueModal = ({ empresa, onClose }) => {
     }
   };
 
+  const excluir = async (boostId) => {
+    if (!confirm('Excluir essa campanha aguardando pagamento? Não pode ser desfeito.')) return;
+    try {
+      await removerBoostNaoPagoAdmin(boostId);
+      carregar();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md md:max-w-[85%] max-h-[90vh] overflow-y-auto p-6">
@@ -444,6 +454,9 @@ const DestaqueModal = ({ empresa, onClose }) => {
                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${st.cor}`}>{st.label}</span>
                           {b.pago_em && new Date(b.fim_em) > new Date() && (
                             <button onClick={() => encerrar(b.id)} className="text-xs font-bold text-red-600 hover:underline">Encerrar</button>
+                          )}
+                          {!b.pago_em && (
+                            <button onClick={() => excluir(b.id)} className="text-xs font-bold text-red-600 hover:underline">Excluir</button>
                           )}
                         </div>
                       </div>
