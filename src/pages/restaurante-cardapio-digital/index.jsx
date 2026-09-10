@@ -4,6 +4,7 @@ import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import {
   getMinhaEmpresa, getMeusProdutos, getObservacoesCategorias, salvarObservacaoCategoria,
+  getCardapioImpressoConfig, updateCardapioImpressoConfig,
 } from '../../services/restauranteService';
 import { printCartazCardapioDigital, printTicketCardapioDigital } from '../../utils/printComanda';
 import { printCardapioImpresso, montarHtmlCardapioImpresso } from '../../utils/printCardapioImpresso';
@@ -13,50 +14,61 @@ import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
 
 const fmtPreco = (v) => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
-const LS_RODAPE = 'cardapioImpresso.rodape';
-const LS_USAR_LOGO = 'cardapioImpresso.usarLogo';
-const LS_OBS_GERAL = 'cardapioImpresso.observacaoGeral';
-const LS_IMAGEM_FUNDO = 'cardapioImpresso.imagemFundo';
-const LS_OCULTAR_TITULO_CATEGORIA = 'cardapioImpresso.ocultarTituloCategoria';
-const LS_ORDEM_CATEGORIAS = 'cardapioImpresso.ordemCategorias';
-const LS_ORDEM_GRUPOS = 'cardapioImpresso.ordemGrupos';
-
 const CardapioImpressoModal = ({ onClose }) => {
   const [carregando, setCarregando] = useState(true);
   const [produtos, setProdutos] = useState([]);
   const [empresa, setEmpresa] = useState(null);
   const [selecionados, setSelecionados] = useState(new Set());
-  const [usarLogo, setUsarLogo] = useState(() => localStorage.getItem(LS_USAR_LOGO) !== 'false');
-  const [rodape, setRodape] = useState(() => localStorage.getItem(LS_RODAPE) ?? '');
-  const [observacaoGeral, setObservacaoGeral] = useState(() => localStorage.getItem(LS_OBS_GERAL) ?? '');
-  const [imagemFundo, setImagemFundo] = useState(() => localStorage.getItem(LS_IMAGEM_FUNDO) ?? '');
-  const [ocultarTituloCategoria, setOcultarTituloCategoria] = useState(() => localStorage.getItem(LS_OCULTAR_TITULO_CATEGORIA) === 'true');
+  // Toda essa configuração (abaixo) fica salva no banco (restaurants.cardapio_impresso_config,
+  // ver GET/PATCH /restaurante/cardapio-impresso/config) — antes ficava só no
+  // localStorage do navegador e se perdia ao trocar de dispositivo/limpar dados.
+  const [usarLogo, setUsarLogo] = useState(true);
+  const [rodape, setRodape] = useState('');
+  const [observacaoGeral, setObservacaoGeral] = useState('');
+  const [imagemFundo, setImagemFundo] = useState('');
+  const [ocultarTituloCategoria, setOcultarTituloCategoria] = useState(false);
   // Nomes de categoria na ordem manual escolhida pelo dono (ex: Lanches antes de
   // Bebidas) — categoria que ainda não apareceu aqui cai no fim, em ordem alfabética.
-  const [ordemCategorias, setOrdemCategorias] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LS_ORDEM_CATEGORIAS) ?? '[]'); } catch { return []; }
-  });
+  const [ordemCategorias, setOrdemCategorias] = useState([]);
   // Mesma ideia, mas pro nível de GRUPO (ex: mover "Tira Gosto" inteiro pra
   // cima de "Refeição 4 Pessoas") — grupo "sem grupo" (nome null) não entra
   // aqui, fica sempre por último como já era antes.
-  const [ordemGrupos, setOrdemGrupos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(LS_ORDEM_GRUPOS) ?? '[]'); } catch { return []; }
-  });
+  const [ordemGrupos, setOrdemGrupos] = useState([]);
+  // Tamanho de fonte (px) editável — texto vazio = usa o tamanho padrão fixo
+  // de sempre (13/14/17/26, ver printCardapioImpresso.js), pra não mudar a
+  // impressão de quem nunca mexeu nesse campo novo.
+  const [fonteItemPx, setFonteItemPx] = useState('');
+  const [fonteTituloPx, setFonteTituloPx] = useState('');
+  const [fonteNomeRestaurantePx, setFonteNomeRestaurantePx] = useState('');
   // category_id -> observação (salva no banco, ver GET/PUT /restaurante/categorias/observacoes)
   const [observacoesCategoria, setObservacoesCategoria] = useState({});
   // HTML da prévia (null = prévia fechada) — só computador, ver botão "Visualizar".
   const [htmlPreview, setHtmlPreview] = useState(null);
 
   useEffect(() => {
-    Promise.all([getMeusProdutos(), getMinhaEmpresa(), getObservacoesCategorias()])
-      .then(([p, e, obs]) => {
+    Promise.all([getMeusProdutos(), getMinhaEmpresa(), getObservacoesCategorias(), getCardapioImpressoConfig()])
+      .then(([p, e, obs, cfg]) => {
         const lista = p.produtos ?? [];
         setProdutos(lista);
         setEmpresa(e.empresa);
-        setSelecionados(new Set(lista.map((item) => item.id)));
+        // Produto novo (nunca visto na config salva) entra selecionado por
+        // padrão — só quem foi explicitamente desmarcado antes fica de fora.
+        const excluidosSalvos = new Set(cfg.produtos_excluidos ?? []);
+        setSelecionados(new Set(lista.filter((item) => !excluidosSalvos.has(item.id)).map((item) => item.id)));
         const mapa = {};
         for (const o of obs.observacoes ?? []) mapa[o.category_id] = o.observacao;
         setObservacoesCategoria(mapa);
+
+        setUsarLogo(cfg.usar_logo ?? true);
+        setRodape(cfg.rodape ?? '');
+        setObservacaoGeral(cfg.observacao_geral ?? '');
+        setImagemFundo(cfg.imagem_fundo ?? '');
+        setOcultarTituloCategoria(cfg.ocultar_titulo_categoria ?? false);
+        setOrdemCategorias(cfg.ordem_categorias ?? []);
+        setOrdemGrupos(cfg.ordem_grupos ?? []);
+        setFonteItemPx(cfg.fonte_item_px != null ? String(cfg.fonte_item_px) : '');
+        setFonteTituloPx(cfg.fonte_titulo_px != null ? String(cfg.fonte_titulo_px) : '');
+        setFonteNomeRestaurantePx(cfg.fonte_nome_restaurante_px != null ? String(cfg.fonte_nome_restaurante_px) : '');
       })
       .catch(() => {})
       .finally(() => setCarregando(false));
@@ -191,36 +203,59 @@ const CardapioImpressoModal = ({ onClose }) => {
     return [...nomeados, ...semGrupo];
   }, [produtos]);
 
+  // Quais produtos entram no cardápio impresso também é persistido — sem
+  // isso, desmarcar um produto (ex: fora de estoque no momento) só durava até
+  // a página recarregar. Guarda a lista de EXCLUÍDOS (não os selecionados),
+  // assim um produto novo entra selecionado por padrão sem precisar de ajuste.
+  const persistirSelecao = (novoSet) => {
+    const excluidos = produtos.map((p) => p.id).filter((id) => !novoSet.has(id));
+    salvarConfigAtual({ produtos_excluidos: excluidos });
+  };
+
   const toggleProduto = (id) => {
-    setSelecionados((atual) => {
-      const novo = new Set(atual);
-      if (novo.has(id)) novo.delete(id); else novo.add(id);
-      return novo;
-    });
+    const novo = new Set(selecionados);
+    if (novo.has(id)) novo.delete(id); else novo.add(id);
+    setSelecionados(novo);
+    persistirSelecao(novo);
   };
 
   const toggleCategoria = (categoria) => {
     const ids = categoria.produtos.map((p) => p.id);
     const todosSelecionados = ids.every((id) => selecionados.has(id));
-    setSelecionados((atual) => {
-      const novo = new Set(atual);
-      ids.forEach((id) => (todosSelecionados ? novo.delete(id) : novo.add(id)));
-      return novo;
-    });
+    const novo = new Set(selecionados);
+    ids.forEach((id) => (todosSelecionados ? novo.delete(id) : novo.add(id)));
+    setSelecionados(novo);
+    persistirSelecao(novo);
   };
 
   const selecionarTodos = () => {
-    setSelecionados((atual) => (atual.size === produtos.length ? new Set() : new Set(produtos.map((p) => p.id))));
+    const novo = selecionados.size === produtos.length ? new Set() : new Set(produtos.map((p) => p.id));
+    setSelecionados(novo);
+    persistirSelecao(novo);
+  };
+
+  // Salva a configuração no banco na hora — `overrides` serve pros campos que
+  // acabaram de mudar (o setState ainda não refletiu no closure quando isso é
+  // chamado dentro do próprio onChange, então o valor novo entra explícito
+  // em vez de confiar no state, que ainda está com o valor antigo).
+  const salvarConfigAtual = (overrides = {}) => {
+    updateCardapioImpressoConfig({
+      usar_logo: usarLogo,
+      rodape,
+      observacao_geral: observacaoGeral,
+      imagem_fundo: imagemFundo,
+      ocultar_titulo_categoria: ocultarTituloCategoria,
+      ordem_categorias: ordemCategorias,
+      ordem_grupos: ordemGrupos,
+      fonte_item_px: fonteItemPx ? parseInt(fonteItemPx, 10) : null,
+      fonte_titulo_px: fonteTituloPx ? parseInt(fonteTituloPx, 10) : null,
+      fonte_nome_restaurante_px: fonteNomeRestaurantePx ? parseInt(fonteNomeRestaurantePx, 10) : null,
+      ...overrides,
+    }).catch(() => {});
   };
 
   const montarArgsImpressao = () => {
-    localStorage.setItem(LS_RODAPE, rodape);
-    localStorage.setItem(LS_USAR_LOGO, String(usarLogo));
-    localStorage.setItem(LS_OBS_GERAL, observacaoGeral);
-    localStorage.setItem(LS_IMAGEM_FUNDO, imagemFundo);
-    localStorage.setItem(LS_OCULTAR_TITULO_CATEGORIA, String(ocultarTituloCategoria));
-    localStorage.setItem(LS_ORDEM_CATEGORIAS, JSON.stringify(ordemCategorias));
-    localStorage.setItem(LS_ORDEM_GRUPOS, JSON.stringify(ordemGrupos));
+    salvarConfigAtual();
 
     const gruposSelecionados = ordenarGrupos(grupos)
       .map((g) => ({
@@ -250,6 +285,9 @@ const CardapioImpressoModal = ({ onClose }) => {
       observacaoGeral: observacaoGeral.trim(),
       imagemFundoUrl: imagemFundo,
       ocultarTituloCategoria,
+      fonteItemPx: fonteItemPx ? parseInt(fonteItemPx, 10) : undefined,
+      fonteTituloPx: fonteTituloPx ? parseInt(fonteTituloPx, 10) : undefined,
+      fonteNomeRestaurantePx: fonteNomeRestaurantePx ? parseInt(fonteNomeRestaurantePx, 10) : undefined,
     };
   };
 
@@ -281,11 +319,11 @@ const CardapioImpressoModal = ({ onClose }) => {
         <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
           <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-[#E4E4E7] dark:border-[#3F3F46] overflow-y-auto px-6 py-3 space-y-3">
             <label className="flex items-center gap-2 text-sm text-[#27272A] dark:text-[#F4F4F5] cursor-pointer">
-              <input type="checkbox" checked={usarLogo} onChange={(e) => setUsarLogo(e.target.checked)} className="w-4 h-4 accent-[#FF441F]" />
+              <input type="checkbox" checked={usarLogo} onChange={(e) => { setUsarLogo(e.target.checked); salvarConfigAtual({ usar_logo: e.target.checked }); }} className="w-4 h-4 accent-[#FF441F]" />
               Incluir logomarca no topo
             </label>
             <label className="flex items-start gap-2 text-sm text-[#27272A] dark:text-[#F4F4F5] cursor-pointer">
-              <input type="checkbox" checked={ocultarTituloCategoria} onChange={(e) => setOcultarTituloCategoria(e.target.checked)} className="w-4 h-4 accent-[#FF441F] mt-0.5" />
+              <input type="checkbox" checked={ocultarTituloCategoria} onChange={(e) => { setOcultarTituloCategoria(e.target.checked); salvarConfigAtual({ ocultar_titulo_categoria: e.target.checked }); }} className="w-4 h-4 accent-[#FF441F] mt-0.5" />
               <span>Ocultar título das categorias (ex: "BEBIDAS") na impressão — reduz a altura e ajuda a caber em menos páginas</span>
             </label>
             <div>
@@ -303,6 +341,31 @@ const CardapioImpressoModal = ({ onClose }) => {
             <div>
               <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Imagem de fundo (opcional)</label>
               <ImageUpload value={imagemFundo} onChange={setImagemFundo} folder="cardapio-impresso" aspect="wide" previewOpacity={0.3} />
+            </div>
+
+            <div className="pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+              <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Tamanho da fonte (px) — vazio usa o padrão</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Itens</label>
+                  <input type="number" min="6" max="30" value={fonteItemPx} onChange={(e) => setFonteItemPx(e.target.value)}
+                    placeholder="13"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Títulos</label>
+                  <input type="number" min="6" max="40" value={fonteTituloPx} onChange={(e) => setFonteTituloPx(e.target.value)}
+                    placeholder="14/17"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Nome loja</label>
+                  <input type="number" min="6" max="60" value={fonteNomeRestaurantePx} onChange={(e) => setFonteNomeRestaurantePx(e.target.value)}
+                    placeholder="26"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+                </div>
+              </div>
+              <p className="text-[10px] text-[#A1A1AA] mt-1">"Títulos" define categoria e grupo com o mesmo tamanho.</p>
             </div>
           </div>
 

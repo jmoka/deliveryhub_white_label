@@ -99,11 +99,21 @@ const renderBloco = (bloco, ocultarTitulo, mostrarNumeracao) =>
  * @param {boolean} [args.ocultarTituloCategoria]
  * @param {boolean} [args.autoImprimir] — false pra só gerar o HTML de prévia, sem abrir o diálogo de impressão sozinho.
  * @param {boolean} [args.mostrarNumeracao] — selos com a posição de cada grupo/categoria, só orientação (prévia).
+ * @param {number} [args.fonteItemPx] — tamanho (px) do nome e preço de cada item.
+ * @param {number} [args.fonteTituloPx] — tamanho (px) do título de categoria E de grupo (mesmo valor pros dois).
+ * @param {number} [args.fonteNomeRestaurantePx] — tamanho (px) do nome do restaurante no cabeçalho.
  */
 export const montarHtmlCardapioImpresso = ({
   grupos, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
   observacaoGeral, imagemFundoUrl, ocultarTituloCategoria = false, autoImprimir = true, mostrarNumeracao = false,
+  fonteItemPx = 13, fonteTituloPx, fonteNomeRestaurantePx = 26,
 }) => {
+  // Categoria (14px) e grupo (17px) tinham tamanhos diferentes por padrão —
+  // só entra em jogo o valor default distinto quando o admin NUNCA configurou
+  // nada (fonteTituloPx undefined), pra não mudar a impressão de quem nunca
+  // mexeu nessa configuração nova. Configurando, o mesmo número vale pros dois.
+  const tituloCategoriaPx = fonteTituloPx ?? 14;
+  const tituloGrupoPx = fonteTituloPx ?? 17;
   const [colunaEsq, colunaDir] = distribuirEmColunas(grupos);
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio - ${esc(restauranteNome ?? '')}</title>
@@ -116,21 +126,21 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .conteudo{position:relative;z-index:1}
 .header{display:flex;flex-direction:column;align-items:center;margin-bottom:16px}
 .logo{max-width:90px;max-height:90px;object-fit:contain;margin-bottom:8px;border-radius:12px}
-.nome{font-size:26px;font-weight:900;text-align:center;letter-spacing:-0.5px}
+.nome{font-size:${fonteNomeRestaurantePx}px;font-weight:900;text-align:center;letter-spacing:-0.5px}
 .colunas{display:flex;gap:24px}
 .coluna{flex:1;min-width:0}
 .grupo{break-inside:avoid;margin-bottom:22px}
-.grupo-titulo{font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#18181B;margin-bottom:10px;padding-bottom:5px;border-bottom:3px solid #18181B}
+.grupo-titulo{font-size:${tituloGrupoPx}px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px;color:#18181B;margin-bottom:10px;padding-bottom:5px;border-bottom:3px solid #18181B}
 .categoria{break-inside:avoid;margin-bottom:16px}
-.categoria-titulo{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#FF441F;border-bottom:2px solid #FF441F;padding-bottom:3px;margin-bottom:8px}
+.categoria-titulo{font-size:${tituloCategoriaPx}px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#FF441F;border-bottom:2px solid #FF441F;padding-bottom:3px;margin-bottom:8px}
 .categoria-titulo--so-numero{border-bottom:none;padding-bottom:0}
 .num-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;margin-right:6px;border-radius:9px;background:#2563EB;color:#fff;font-size:11px;font-weight:900;vertical-align:middle}
 @media print{.num-badge{display:none!important}}
 .item{break-inside:avoid;margin-bottom:7px}
 .item-linha{display:flex;align-items:baseline;gap:6px}
-.item-nome{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-nome{font-size:${fonteItemPx}px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item-linha::after{content:"";flex:1;border-bottom:1px dotted #D4D4D8;margin:0 2px 3px}
-.item-preco{font-size:13px;font-weight:700;white-space:nowrap}
+.item-preco{font-size:${fonteItemPx}px;font-weight:700;white-space:nowrap}
 .item-desc{font-size:10.5px;color:#71717A;margin-top:1px}
 .categoria-obs{font-size:10.5px;font-style:italic;color:#71717A;margin-top:4px;padding-top:3px;border-top:1px dotted #D4D4D8}
 .rodape{margin-top:20px;padding-top:10px;border-top:1px solid #E4E4E7;text-align:center}

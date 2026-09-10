@@ -175,6 +175,10 @@ export const getAparencia = () => apiFetch('/aparencia');
 export const updateAparencia = (data) =>
   apiFetch('/aparencia', { method: 'PATCH', body: JSON.stringify(data) });
 
+export const getCardapioImpressoConfig = () => apiFetch('/cardapio-impresso/config');
+export const updateCardapioImpressoConfig = (data) =>
+  apiFetch('/cardapio-impresso/config', { method: 'PATCH', body: JSON.stringify(data) });
+
 export const getConfig = () => apiFetch('/config');
 
 export const updateConfig = (data) =>
