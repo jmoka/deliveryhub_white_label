@@ -51,7 +51,22 @@ const ImageUpload = ({ value, onChange, folder = 'geral', aspect = 'wide', place
 
   const handleFile = (e) => { const f = e.target.files?.[0]; if (f) upload(f); };
   const handleDrop = (e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files?.[0]; if (f) upload(f); };
-  const handleUrlConfirm = () => { const u = urlInput.trim(); if (u) { onChange(u); setUrlInput(''); } };
+  // Só aceita http(s) — sem isso, dava pra colar "javascript:"/"data:" aqui.
+  // Hoje isso é renderizado só em <img src>, onde o navegador já bloqueia
+  // esses esquemas (inerte), mas essa mesma URL pode acabar reaproveitada em
+  // outro contexto (ex. link clicável) no futuro — validar na entrada evita
+  // depender de onde o valor será usado depois.
+  const handleUrlConfirm = () => {
+    const u = urlInput.trim();
+    if (!u) return;
+    if (!/^https?:\/\//i.test(u)) {
+      setErro('Use uma URL começando com http:// ou https://');
+      return;
+    }
+    setErro(null);
+    onChange(u);
+    setUrlInput('');
+  };
 
   // ── Com imagem: preview + trocar/remover ─────────────────────────
   if (value) {
