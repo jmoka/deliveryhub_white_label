@@ -2,8 +2,34 @@ import { escapeHtml as esc } from './escapeHtml';
 
 const fmt = (v) => `R$ ${Number(v ?? 0).toFixed(2).replace('.', ',')}`;
 
-const pesoCategoria = (categoria) => 1 + categoria.produtos.length;
-const pesoGrupo = (grupo) => 1 + grupo.categorias.reduce((s, c) => s + pesoCategoria(c), 0);
+export const pesoCategoria = (categoria) => 1 + categoria.produtos.length;
+export const pesoGrupo = (grupo) => 1 + grupo.categorias.reduce((s, c) => s + pesoCategoria(c), 0);
+
+// Chave estável de um bloco (grupo nomeado ou categoria avulsa) — usada tanto
+// pra montar o layout manual de colunas (organizador visual) quanto aqui pra
+// aplicar esse layout. Exportada pra o front usar a MESMA chave ao salvar.
+export const chaveDoBloco = (bloco) =>
+  bloco.tipo === 'grupo' ? `g:${bloco.grupo.nome}` : `c:${bloco.categoria.nome}`;
+
+// Distribuição automática por peso — preenche a coluna 1 em sequência até
+// passar da metade do peso total, só então continua na coluna 2. Recebe
+// `itens` genérico ({chave, peso}[]) pra poder ser reaproveitado tanto aqui
+// (fallback de distribuirEmColunas, sem layout manual salvo) quanto no
+// organizador visual do front (estado inicial das colunas, antes do dono
+// arrastar qualquer coisa) — os dois precisam concordar no ponto de partida.
+export const distribuicaoAutomaticaPorPeso = (itens) => {
+  const pesoTotal = itens.reduce((s, i) => s + i.peso, 0);
+  const metade = pesoTotal / 2;
+  const colunas = [[], []];
+  let acumulado = 0;
+  let colunaAtual = 0;
+  for (const item of itens) {
+    colunas[colunaAtual].push(item.chave);
+    acumulado += item.peso;
+    if (colunaAtual === 0 && acumulado >= metade) colunaAtual = 1;
+  }
+  return { col1: colunas[0], col2: colunas[1] };
+};
 
 // Monta a lista de "blocos" a distribuir entre as colunas: um grupo nomeado
 // (com todas as suas categorias dentro) vira UM bloco indivisível, pra nunca
@@ -28,23 +54,36 @@ const construirBlocos = (grupos) => {
   return blocos;
 };
 
-// Distribui os blocos entre 2 colunas respeitando a ORDEM escolhida pelo dono
-// (setas/número no modal) — preenche a coluna 1 em sequência até passar da
-// metade do conteúdo total, só então continua na coluna 2. Antes disso era um
-// bin-packing por tamanho (reordenava tudo sozinho pra "equilibrar" as
-// colunas), o que fazia a ordem configurada não bater com o que saía na
-// impressão — o dono não tinha controle nenhum de qual coluna cada bloco caía.
-const distribuirEmColunas = (grupos) => {
+// Distribui os blocos entre 2 colunas. Se `layoutColunas` ({col1:[chave],
+// col2:[chave]}) foi configurado no organizador visual (arrastar/soltar),
+// usa exatamente essa distribuição manual. Sem layout manual, cai no
+// algoritmo automático por peso de sempre (distribuicaoAutomaticaPorPeso) —
+// antes disso era um bin-packing por tamanho que reordenava tudo sozinho pra
+// "equilibrar" as colunas, o que fazia a ordem configurada não bater com o
+// que saía na impressão. Bloco novo (criado depois do layout manual salvo,
+// ou nunca posicionado) entra no fim da coluna mais curta, pra nunca sumir.
+const distribuirEmColunas = (grupos, layoutColunas) => {
   const blocos = construirBlocos(grupos);
-  const pesoTotal = blocos.reduce((s, b) => s + b.peso, 0);
-  const metade = pesoTotal / 2;
-  const colunas = [[], []];
-  let acumulado = 0;
-  let colunaAtual = 0;
-  for (const bloco of blocos) {
-    colunas[colunaAtual].push(bloco);
-    acumulado += bloco.peso;
-    if (colunaAtual === 0 && acumulado >= metade) colunaAtual = 1;
+  const temLayoutManual = layoutColunas && ((layoutColunas.col1?.length ?? 0) + (layoutColunas.col2?.length ?? 0) > 0);
+  const layoutFinal = temLayoutManual
+    ? layoutColunas
+    : distribuicaoAutomaticaPorPeso(blocos.map((b) => ({ chave: chaveDoBloco(b), peso: b.peso })));
+
+  const porChave = new Map(blocos.map((b) => [chaveDoBloco(b), b]));
+  const usados = new Set();
+  const montarColuna = (chaves) => {
+    const lista = [];
+    for (const chave of chaves ?? []) {
+      const b = porChave.get(chave);
+      if (b && !usados.has(chave)) { lista.push(b); usados.add(chave); }
+    }
+    return lista;
+  };
+  const colunas = [montarColuna(layoutFinal.col1), montarColuna(layoutFinal.col2)];
+  for (const b of blocos) {
+    if (usados.has(chaveDoBloco(b))) continue;
+    const alvo = colunas[0].length <= colunas[1].length ? 0 : 1;
+    colunas[alvo].push(b);
   }
   return colunas;
 };
@@ -102,11 +141,12 @@ const renderBloco = (bloco, ocultarTitulo, mostrarNumeracao) =>
  * @param {number} [args.fonteItemPx] — tamanho (px) do nome e preço de cada item.
  * @param {number} [args.fonteTituloPx] — tamanho (px) do título de categoria E de grupo (mesmo valor pros dois).
  * @param {number} [args.fonteNomeRestaurantePx] — tamanho (px) do nome do restaurante no cabeçalho.
+ * @param {{col1: string[], col2: string[]}} [args.layoutColunas] — layout manual de colunas (organizador visual, arrastar/soltar); sem isso, cai no algoritmo automático por peso.
  */
 export const montarHtmlCardapioImpresso = ({
   grupos, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
   observacaoGeral, imagemFundoUrl, ocultarTituloCategoria = false, autoImprimir = true, mostrarNumeracao = false,
-  fonteItemPx = 13, fonteTituloPx, fonteNomeRestaurantePx = 26,
+  fonteItemPx = 13, fonteTituloPx, fonteNomeRestaurantePx = 26, layoutColunas,
 }) => {
   // Categoria (14px) e grupo (17px) tinham tamanhos diferentes por padrão —
   // só entra em jogo o valor default distinto quando o admin NUNCA configurou
@@ -114,7 +154,7 @@ export const montarHtmlCardapioImpresso = ({
   // mexeu nessa configuração nova. Configurando, o mesmo número vale pros dois.
   const tituloCategoriaPx = fonteTituloPx ?? 14;
   const tituloGrupoPx = fonteTituloPx ?? 17;
-  const [colunaEsq, colunaDir] = distribuirEmColunas(grupos);
+  const [colunaEsq, colunaDir] = distribuirEmColunas(grupos, layoutColunas);
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cardápio - ${esc(restauranteNome ?? '')}</title>
 <style>

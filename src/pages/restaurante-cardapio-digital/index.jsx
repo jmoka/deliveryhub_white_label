@@ -8,6 +8,7 @@ import {
 } from '../../services/restauranteService';
 import { printCartazCardapioDigital, printTicketCardapioDigital } from '../../utils/printComanda';
 import { printCardapioImpresso, montarHtmlCardapioImpresso } from '../../utils/printCardapioImpresso';
+import OrganizarPosicaoModal from './OrganizarPosicaoModal';
 import ImageUpload from '../../components/ui/ImageUpload';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
@@ -40,6 +41,11 @@ const CardapioImpressoModal = ({ onClose }) => {
   const [fonteItemPx, setFonteItemPx] = useState('');
   const [fonteTituloPx, setFonteTituloPx] = useState('');
   const [fonteNomeRestaurantePx, setFonteNomeRestaurantePx] = useState('');
+  // Layout manual de colunas (organizador visual, arrastar/soltar) —
+  // {col1: [chave], col2: [chave]}; null/vazio = usa o algoritmo automático
+  // por peso de sempre (ver printCardapioImpresso.js distribuirEmColunas).
+  const [layoutColunas, setLayoutColunas] = useState(null);
+  const [organizarAberto, setOrganizarAberto] = useState(false);
   // category_id -> observação (salva no banco, ver GET/PUT /restaurante/categorias/observacoes)
   const [observacoesCategoria, setObservacoesCategoria] = useState({});
   // HTML da prévia (null = prévia fechada) — só computador, ver botão "Visualizar".
@@ -69,6 +75,7 @@ const CardapioImpressoModal = ({ onClose }) => {
         setFonteItemPx(cfg.fonte_item_px != null ? String(cfg.fonte_item_px) : '');
         setFonteTituloPx(cfg.fonte_titulo_px != null ? String(cfg.fonte_titulo_px) : '');
         setFonteNomeRestaurantePx(cfg.fonte_nome_restaurante_px != null ? String(cfg.fonte_nome_restaurante_px) : '');
+        setLayoutColunas(cfg.layout_colunas ?? null);
       })
       .catch(() => {})
       .finally(() => setCarregando(false));
@@ -254,6 +261,7 @@ const CardapioImpressoModal = ({ onClose }) => {
       fonte_item_px: fonteItemPx ? parseInt(fonteItemPx, 10) : null,
       fonte_titulo_px: fonteTituloPx ? parseInt(fonteTituloPx, 10) : null,
       fonte_nome_restaurante_px: fonteNomeRestaurantePx ? parseInt(fonteNomeRestaurantePx, 10) : null,
+      layout_colunas: layoutColunas,
       ...overrides,
     }).catch(() => {});
   };
@@ -292,6 +300,7 @@ const CardapioImpressoModal = ({ onClose }) => {
       fonteItemPx: fonteItemPx ? parseInt(fonteItemPx, 10) : undefined,
       fonteTituloPx: fonteTituloPx ? parseInt(fonteTituloPx, 10) : undefined,
       fonteNomeRestaurantePx: fonteNomeRestaurantePx ? parseInt(fonteNomeRestaurantePx, 10) : undefined,
+      layoutColunas: layoutColunas ?? undefined,
     };
   };
 
@@ -306,6 +315,29 @@ const CardapioImpressoModal = ({ onClose }) => {
 
   const gruposOrdenados = ordenarGrupos(grupos);
   const gruposNomeadosOrdenados = gruposOrdenados.filter((g) => g.nome);
+
+  // Uma vez que o layout visual (organizador arrastar/soltar) é salvo, ele
+  // manda na ordem/coluna de verdade na impressão (ver printCardapioImpresso.js
+  // distribuirEmColunas) — as setas/número abaixo, se continuassem editáveis,
+  // pareceriam funcionar mas não mudariam nada na impressão real, recriando a
+  // mesma confusão que motivou esse organizador. Por isso ficam desativadas
+  // (só leitura) enquanto existir um layout visual salvo.
+  const layoutVisualAtivo = !!(layoutColunas && ((layoutColunas.col1?.length ?? 0) + (layoutColunas.col2?.length ?? 0) > 0));
+  const voltarModoNumerico = () => {
+    if (!window.confirm('Voltar pro modo numérico? O layout visual salvo é descartado.')) return;
+    setLayoutColunas(null);
+    salvarConfigAtual({ layout_colunas: null });
+  };
+
+  // A impressão remove grupo/categoria sem nenhum produto marcado (ver
+  // montarArgsImpressao) — contar a posição sobre a lista CHEIA (com os vazios)
+  // fazia o número mostrado aqui não bater com a posição real na impressão/
+  // prévia (ex: grupo aparecia como "posição 8" no editor, mas saía na 5ª
+  // posição de verdade, porque 2 grupos antes dele ficaram sem item nenhum
+  // selecionado). Contar só sobre quem tem pelo menos 1 item marcado resolve.
+  const categoriaTemSelecao = (categoria) => categoria.produtos.some((p) => selecionados.has(p.id));
+  const grupoTemSelecao = (grupo) => grupo.categorias.some(categoriaTemSelecao);
+  const gruposComSelecaoOrdenados = gruposNomeadosOrdenados.filter(grupoTemSelecao);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -376,6 +408,11 @@ const CardapioImpressoModal = ({ onClose }) => {
               </div>
               <p className="text-[10px] text-[#A1A1AA] mt-1">"Títulos" define categoria e grupo com o mesmo tamanho.</p>
             </div>
+
+            <button type="button" onClick={() => setOrganizarAberto(true)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 border border-[#FF441F]/40 text-[#FF441F] text-sm font-bold rounded-xl hover:bg-[#FF441F]/5">
+              <Icon name="LayoutGrid" size={15} /> Organizar posição (arrastar)
+            </button>
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden">
@@ -388,6 +425,14 @@ const CardapioImpressoModal = ({ onClose }) => {
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+          {layoutVisualAtivo && (
+            <div className="flex items-center justify-between gap-2 bg-[#FF441F]/10 border border-[#FF441F]/30 rounded-xl px-3 py-2">
+              <p className="text-xs text-[#FF441F] font-semibold">Layout visual ativo — a ordem por número abaixo está desativada.</p>
+              <button type="button" onClick={voltarModoNumerico} className="text-xs font-bold text-[#FF441F] hover:underline flex-shrink-0">
+                Voltar pro modo numérico
+              </button>
+            </div>
+          )}
           {carregando ? (
             <p className="text-xs text-[#A1A1AA] py-8 text-center">Carregando...</p>
           ) : grupos.length === 0 ? (
@@ -400,36 +445,45 @@ const CardapioImpressoModal = ({ onClose }) => {
                     <div className="text-xs font-black uppercase tracking-wide text-[#FF441F] flex-1 min-w-0 truncate">
                       {grupo.nome}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <input
-                        type="number"
-                        min={1}
-                        max={gruposNomeadosOrdenados.length}
-                        value={gruposNomeadosOrdenados.indexOf(grupo) + 1}
-                        onChange={(e) => moverGrupoParaPosicao(gruposNomeadosOrdenados, gruposNomeadosOrdenados.indexOf(grupo), parseInt(e.target.value, 10))}
-                        title="Posição deste grupo na impressão"
-                        className="w-11 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1 py-0.5 text-xs text-center"
-                      />
-                      <button type="button"
-                        onClick={() => moverGrupo(gruposNomeadosOrdenados, gruposNomeadosOrdenados.indexOf(grupo), -1)}
-                        disabled={gruposNomeadosOrdenados.indexOf(grupo) === 0}
-                        title="Mover grupo pra cima na impressão"
-                        className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
-                        <Icon name="ChevronUp" size={14} />
-                      </button>
-                      <button type="button"
-                        onClick={() => moverGrupo(gruposNomeadosOrdenados, gruposNomeadosOrdenados.indexOf(grupo), 1)}
-                        disabled={gruposNomeadosOrdenados.indexOf(grupo) === gruposNomeadosOrdenados.length - 1}
-                        title="Mover grupo pra baixo na impressão"
-                        className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
-                        <Icon name="ChevronDown" size={14} />
-                      </button>
-                    </div>
+                    {grupoTemSelecao(grupo) ? (
+                      <div className={`flex items-center gap-1 flex-shrink-0 ${layoutVisualAtivo ? 'opacity-40' : ''}`}>
+                        <input
+                          type="number"
+                          min={1}
+                          max={gruposComSelecaoOrdenados.length}
+                          value={gruposComSelecaoOrdenados.indexOf(grupo) + 1}
+                          onChange={(e) => moverGrupoParaPosicao(gruposComSelecaoOrdenados, gruposComSelecaoOrdenados.indexOf(grupo), parseInt(e.target.value, 10))}
+                          disabled={layoutVisualAtivo}
+                          title="Posição deste grupo na impressão"
+                          className="w-11 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1 py-0.5 text-xs text-center"
+                        />
+                        <button type="button"
+                          onClick={() => moverGrupo(gruposComSelecaoOrdenados, gruposComSelecaoOrdenados.indexOf(grupo), -1)}
+                          disabled={layoutVisualAtivo || gruposComSelecaoOrdenados.indexOf(grupo) === 0}
+                          title="Mover grupo pra cima na impressão"
+                          className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                          <Icon name="ChevronUp" size={14} />
+                        </button>
+                        <button type="button"
+                          onClick={() => moverGrupo(gruposComSelecaoOrdenados, gruposComSelecaoOrdenados.indexOf(grupo), 1)}
+                          disabled={layoutVisualAtivo || gruposComSelecaoOrdenados.indexOf(grupo) === gruposComSelecaoOrdenados.length - 1}
+                          title="Mover grupo pra baixo na impressão"
+                          className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                          <Icon name="ChevronDown" size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[#A1A1AA] flex-shrink-0" title="Nenhum item marcado neste grupo — não entra na impressão">
+                        sem itens
+                      </span>
+                    )}
                   </div>
                 )}
-                {ordenarCategorias(grupo.categorias).map((categoria, indice, categoriasDoBucket) => {
+                {ordenarCategorias(grupo.categorias).map((categoria, _indice, categoriasDoBucket) => {
                   const ids = categoria.produtos.map((p) => p.id);
                   const todosSelecionados = ids.every((id) => selecionados.has(id));
+                  const categoriasComSelecao = categoriasDoBucket.filter(categoriaTemSelecao);
+                  const temSelecao = categoriaTemSelecao(categoria);
                   return (
                     <div key={categoria.nome}>
                       <div className="flex items-center gap-2 mb-2">
@@ -437,27 +491,34 @@ const CardapioImpressoModal = ({ onClose }) => {
                           <input type="checkbox" checked={todosSelecionados} onChange={() => toggleCategoria(categoria)} className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
                           <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{categoria.nome}</span>
                         </label>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <input
-                            type="number"
-                            min={1}
-                            max={categoriasDoBucket.length}
-                            value={indice + 1}
-                            onChange={(e) => moverCategoriaParaPosicao(categoriasDoBucket, indice, parseInt(e.target.value, 10))}
-                            title="Posição desta categoria na impressão"
-                            className="w-11 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1 py-0.5 text-xs text-center"
-                          />
-                          <button type="button" onClick={() => moverCategoria(categoriasDoBucket, indice, -1)} disabled={indice === 0}
-                            title="Mover pra cima na impressão"
-                            className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
-                            <Icon name="ChevronUp" size={14} />
-                          </button>
-                          <button type="button" onClick={() => moverCategoria(categoriasDoBucket, indice, 1)} disabled={indice === categoriasDoBucket.length - 1}
-                            title="Mover pra baixo na impressão"
-                            className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
-                            <Icon name="ChevronDown" size={14} />
-                          </button>
-                        </div>
+                        {temSelecao ? (
+                          <div className={`flex items-center gap-1 flex-shrink-0 ${layoutVisualAtivo ? 'opacity-40' : ''}`}>
+                            <input
+                              type="number"
+                              min={1}
+                              max={categoriasComSelecao.length}
+                              value={categoriasComSelecao.indexOf(categoria) + 1}
+                              onChange={(e) => moverCategoriaParaPosicao(categoriasComSelecao, categoriasComSelecao.indexOf(categoria), parseInt(e.target.value, 10))}
+                              disabled={layoutVisualAtivo}
+                              title="Posição desta categoria na impressão"
+                              className="w-11 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-1 py-0.5 text-xs text-center"
+                            />
+                            <button type="button" onClick={() => moverCategoria(categoriasComSelecao, categoriasComSelecao.indexOf(categoria), -1)} disabled={layoutVisualAtivo || categoriasComSelecao.indexOf(categoria) === 0}
+                              title="Mover pra cima na impressão"
+                              className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                              <Icon name="ChevronUp" size={14} />
+                            </button>
+                            <button type="button" onClick={() => moverCategoria(categoriasComSelecao, categoriasComSelecao.indexOf(categoria), 1)} disabled={layoutVisualAtivo || categoriasComSelecao.indexOf(categoria) === categoriasComSelecao.length - 1}
+                              title="Mover pra baixo na impressão"
+                              className="p-1 rounded text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] disabled:opacity-30 disabled:cursor-not-allowed">
+                              <Icon name="ChevronDown" size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[#A1A1AA] flex-shrink-0" title="Nenhum item marcado nesta categoria — não entra na impressão">
+                            sem itens
+                          </span>
+                        )}
                       </div>
                       <div className="pl-6 space-y-1.5">
                         {categoria.produtos.map((p) => (
@@ -523,6 +584,16 @@ const CardapioImpressoModal = ({ onClose }) => {
             <iframe id="cardapio-preview-iframe" title="Prévia do cardápio impresso" srcDoc={htmlPreview} className="flex-1 w-full border-0 bg-[#525659]" />
           </div>
         </div>
+      )}
+
+      {organizarAberto && (
+        <OrganizarPosicaoModal
+          grupos={gruposOrdenados}
+          selecionados={selecionados}
+          layoutInicial={layoutColunas}
+          onSalvar={(novoLayout) => { setLayoutColunas(novoLayout); salvarConfigAtual({ layout_colunas: novoLayout }); }}
+          onClose={() => setOrganizarAberto(false)}
+        />
       )}
     </div>
   );
