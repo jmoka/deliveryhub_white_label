@@ -3,6 +3,7 @@ import {
   getVagasBoost, salvarVagasBoost, getPacotesBoostAdmin, getCarrosseisBoost,
   criarPacoteBoost, atualizarPacoteBoost, removerPacoteBoost,
   getPresetsVagasBoost, criarPresetVagasBoost, aplicarPresetVagasBoost, removerPresetVagasBoost,
+  getLimiteOrganicoBoost, salvarLimiteOrganicoBoost,
 } from '../../services/marketplaceBoostAdminService';
 import Icon from '../../components/AppIcon';
 import AdminHeader from '../../components/admin/AdminHeader';
@@ -147,11 +148,19 @@ const AdminMarketplaceBoost = () => {
   const [salvandoPerfil, setSalvandoPerfil] = useState(false);
   const [aplicandoPerfilId, setAplicandoPerfilId] = useState(null);
 
+  // Limite orgânico (grátis): um único número vale igual pra qualquer tag e
+  // pra combos — não é por carrossel como "vagas", por isso guardado à
+  // parte. Mesmo padrão rascunho/salvo de "vagas" pra mostrar o valor real.
+  const [limiteOrganico, setLimiteOrganico] = useState('');
+  const [limiteOrganicoSalvo, setLimiteOrganicoSalvo] = useState(null);
+  const [salvandoLimiteOrganico, setSalvandoLimiteOrganico] = useState(false);
+
   const carregar = () => {
     setCarregando(true);
-    Promise.all([getVagasBoost(), getPacotesBoostAdmin(), getCarrosseisBoost(), getPresetsVagasBoost()])
-      .then(([v, p, c, presetsResp]) => {
+    Promise.all([getVagasBoost(), getPacotesBoostAdmin(), getCarrosseisBoost(), getPresetsVagasBoost(), getLimiteOrganicoBoost()])
+      .then(([v, p, c, presetsResp, limiteResp]) => {
         setVagas(v); setVagasSalvas(v); setPacotes(p.pacotes ?? []); setCarrosseis(c ?? []); setPresets(presetsResp ?? []);
+        setLimiteOrganico(String(limiteResp.limite)); setLimiteOrganicoSalvo(limiteResp.limite);
       })
       .catch(() => {})
       .finally(() => setCarregando(false));
@@ -169,6 +178,19 @@ const AdminMarketplaceBoost = () => {
       alert(err.message);
     } finally {
       setSalvandoVagas(false);
+    }
+  };
+
+  const salvarLimiteOrganico = async () => {
+    setSalvandoLimiteOrganico(true);
+    try {
+      const { limite } = await salvarLimiteOrganicoBoost(parseInt(limiteOrganico || '0', 10));
+      setLimiteOrganico(String(limite));
+      setLimiteOrganicoSalvo(limite);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSalvandoLimiteOrganico(false);
     }
   };
 
@@ -306,6 +328,30 @@ const AdminMarketplaceBoost = () => {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 p-5 mb-5">
+              <h2 className="font-bold text-gray-900 dark:text-zinc-100 mb-1">Limite orgânico grátis por empresa</h2>
+              <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">
+                Quantos produtos (por tag) e quantos combos uma empresa pode ter em cada carrossel sem pagar destaque — mesmo número vale pra Combos e pra qualquer tag (Lançamentos, Promoção etc.), inclusive tags criadas depois. Produtos/combos que já passavam desse número antes de configurar continuam valendo — o limite só barra adicionar mais.
+              </p>
+              <div className="flex items-end gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-zinc-400 mb-1">Itens grátis por carrossel</label>
+                  <input type="number" min="0" value={limiteOrganico}
+                    onChange={(e) => setLimiteOrganico(e.target.value)}
+                    className={`w-32 border rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 ${
+                      parseInt(limiteOrganico || '0', 10) !== limiteOrganicoSalvo ? 'border-amber-400 dark:border-amber-600' : 'border-gray-300 dark:border-zinc-700'
+                    }`} />
+                </div>
+                <button onClick={salvarLimiteOrganico} disabled={salvandoLimiteOrganico}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+                  {salvandoLimiteOrganico ? 'Salvando...' : 'Salvar limite'}
+                </button>
+              </div>
+              <p className={`text-[11px] mt-1.5 ${parseInt(limiteOrganico || '0', 10) !== limiteOrganicoSalvo ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-gray-400 dark:text-zinc-500'}`}>
+                {parseInt(limiteOrganico || '0', 10) !== limiteOrganicoSalvo ? `Salvo: ${limiteOrganicoSalvo} (não salvo)` : `Salvo: ${limiteOrganicoSalvo}`}
+              </p>
             </div>
 
             <div className="flex items-center justify-between mb-3">

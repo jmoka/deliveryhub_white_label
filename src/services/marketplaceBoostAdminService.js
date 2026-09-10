@@ -44,6 +44,13 @@ export const getVagasBoost = () => apiFetch('/marketplace-boost/vagas');
 export const salvarVagasBoost = (data) =>
   apiFetch('/marketplace-boost/vagas', { method: 'PUT', body: JSON.stringify(data) });
 
+// Admin — limite orgânico (grátis): um único número, vale igual pra
+// qualquer tag e pra combos — quantos itens uma empresa pode colocar num
+// carrossel sem pagar destaque.
+export const getLimiteOrganicoBoost = () => apiFetch('/marketplace-boost/limite-organico');
+export const salvarLimiteOrganicoBoost = (limite) =>
+  apiFetch('/marketplace-boost/limite-organico', { method: 'PUT', body: JSON.stringify({ limite }) });
+
 // Admin — perfis nomeados de vagas (ex: "Padrão", "Black Friday")
 export const getPresetsVagasBoost = () => apiFetch('/marketplace-boost/vagas/presets');
 export const criarPresetVagasBoost = (nome, config) =>
