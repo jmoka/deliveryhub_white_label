@@ -95,34 +95,44 @@ const CardapioImpressoModal = ({ onClose }) => {
     return comIndice.map(({ c }) => c);
   };
 
-  const moverCategoria = (categoriasDoBucket, indice, direcao) => {
+  // Pura (não toca estado) — usada tanto pro clique único ↑/↓ quanto, em
+  // sucessivos passos de 1, por "mover para posição" (digitar o número).
+  const calcularNovaOrdem = (baseAtual, itensDoBucket, indice, direcao) => {
     const alvo = indice + direcao;
-    if (alvo < 0 || alvo >= categoriasDoBucket.length) return;
-    const nomeA = categoriasDoBucket[indice].nome;
-    const nomeB = categoriasDoBucket[alvo].nome;
-    setOrdemCategorias((atual) => {
-      const base = [...atual];
-      for (const c of categoriasDoBucket) if (!base.includes(c.nome)) base.push(c.nome);
-      const ia = base.indexOf(nomeA);
-      const ib = base.indexOf(nomeB);
-      [base[ia], base[ib]] = [base[ib], base[ia]];
-      return base;
-    });
+    if (alvo < 0 || alvo >= itensDoBucket.length) return baseAtual;
+    const nomeA = itensDoBucket[indice].nome;
+    const nomeB = itensDoBucket[alvo].nome;
+    const base = [...baseAtual];
+    for (const item of itensDoBucket) if (!base.includes(item.nome)) base.push(item.nome);
+    const ia = base.indexOf(nomeA);
+    const ib = base.indexOf(nomeB);
+    [base[ia], base[ib]] = [base[ib], base[ia]];
+    return base;
   };
 
-  // Digitar a posição direto, em vez de clicar ↑/↓ várias vezes — reaproveita
-  // moverCategoria em sucessivos passos de 1, que já sabe reordenar certo.
+  const moverCategoria = (categoriasDoBucket, indice, direcao) => {
+    const nova = calcularNovaOrdem(ordemCategorias, categoriasDoBucket, indice, direcao);
+    setOrdemCategorias(nova);
+    salvarConfigAtual({ ordem_categorias: nova });
+  };
+
+  // Digitar a posição direto, em vez de clicar ↑/↓ várias vezes — acumula a
+  // ordem em variáveis locais (não em estado) a cada passo, pra não depender
+  // de re-render entre eles, e só salva uma vez no final.
   const moverCategoriaParaPosicao = (categoriasDoBucket, indiceAtual, novaPosicao1based) => {
     const total = categoriasDoBucket.length;
-    const alvo = Math.min(Math.max(1, novaPosicao1based || 1), total) - 1;
-    let atual = [...categoriasDoBucket];
+    const alvoFinal = Math.min(Math.max(1, novaPosicao1based || 1), total) - 1;
+    let ordemAcumulada = ordemCategorias;
+    const listaAcumulada = [...categoriasDoBucket];
     let idx = indiceAtual;
-    while (idx !== alvo) {
-      const direcao = alvo > idx ? 1 : -1;
-      moverCategoria(atual, idx, direcao);
-      const tmp = atual[idx]; atual[idx] = atual[idx + direcao]; atual[idx + direcao] = tmp;
+    while (idx !== alvoFinal) {
+      const direcao = alvoFinal > idx ? 1 : -1;
+      ordemAcumulada = calcularNovaOrdem(ordemAcumulada, listaAcumulada, idx, direcao);
+      const tmp = listaAcumulada[idx]; listaAcumulada[idx] = listaAcumulada[idx + direcao]; listaAcumulada[idx + direcao] = tmp;
       idx += direcao;
     }
+    setOrdemCategorias(ordemAcumulada);
+    salvarConfigAtual({ ordem_categorias: ordemAcumulada });
   };
 
   // Mesma lógica de ordenarCategorias/moverCategoria, um nível acima (grupos
@@ -141,31 +151,25 @@ const CardapioImpressoModal = ({ onClose }) => {
   };
 
   const moverGrupo = (gruposNomeados, indice, direcao) => {
-    const alvo = indice + direcao;
-    if (alvo < 0 || alvo >= gruposNomeados.length) return;
-    const nomeA = gruposNomeados[indice].nome;
-    const nomeB = gruposNomeados[alvo].nome;
-    setOrdemGrupos((atual) => {
-      const base = [...atual];
-      for (const g of gruposNomeados) if (!base.includes(g.nome)) base.push(g.nome);
-      const ia = base.indexOf(nomeA);
-      const ib = base.indexOf(nomeB);
-      [base[ia], base[ib]] = [base[ib], base[ia]];
-      return base;
-    });
+    const nova = calcularNovaOrdem(ordemGrupos, gruposNomeados, indice, direcao);
+    setOrdemGrupos(nova);
+    salvarConfigAtual({ ordem_grupos: nova });
   };
 
   const moverGrupoParaPosicao = (gruposNomeados, indiceAtual, novaPosicao1based) => {
     const total = gruposNomeados.length;
-    const alvo = Math.min(Math.max(1, novaPosicao1based || 1), total) - 1;
-    let atual = [...gruposNomeados];
+    const alvoFinal = Math.min(Math.max(1, novaPosicao1based || 1), total) - 1;
+    let ordemAcumulada = ordemGrupos;
+    const listaAcumulada = [...gruposNomeados];
     let idx = indiceAtual;
-    while (idx !== alvo) {
-      const direcao = alvo > idx ? 1 : -1;
-      moverGrupo(atual, idx, direcao);
-      const tmp = atual[idx]; atual[idx] = atual[idx + direcao]; atual[idx + direcao] = tmp;
+    while (idx !== alvoFinal) {
+      const direcao = alvoFinal > idx ? 1 : -1;
+      ordemAcumulada = calcularNovaOrdem(ordemAcumulada, listaAcumulada, idx, direcao);
+      const tmp = listaAcumulada[idx]; listaAcumulada[idx] = listaAcumulada[idx + direcao]; listaAcumulada[idx + direcao] = tmp;
       idx += direcao;
     }
+    setOrdemGrupos(ordemAcumulada);
+    salvarConfigAtual({ ordem_grupos: ordemAcumulada });
   };
 
   // Agrupa em 2 níveis direto dos produtos (já vêm com category_name/grupo_name)
@@ -329,18 +333,20 @@ const CardapioImpressoModal = ({ onClose }) => {
             <div>
               <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Observação geral (opcional)</label>
               <input type="text" value={observacaoGeral} onChange={(e) => setObservacaoGeral(e.target.value)}
+                onBlur={(e) => salvarConfigAtual({ observacao_geral: e.target.value })}
                 placeholder="Ex: Preços sujeitos a alteração sem aviso prévio"
                 className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Frase do rodapé (opcional)</label>
               <input type="text" value={rodape} onChange={(e) => setRodape(e.target.value)}
+                onBlur={(e) => salvarConfigAtual({ rodape: e.target.value })}
                 placeholder="Ex: Peça também pelo nosso delivery!"
                 className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1">Imagem de fundo (opcional)</label>
-              <ImageUpload value={imagemFundo} onChange={setImagemFundo} folder="cardapio-impresso" aspect="wide" previewOpacity={0.3} />
+              <ImageUpload value={imagemFundo} onChange={(url) => { setImagemFundo(url); salvarConfigAtual({ imagem_fundo: url }); }} folder="cardapio-impresso" aspect="wide" previewOpacity={0.3} />
             </div>
 
             <div className="pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
@@ -349,18 +355,21 @@ const CardapioImpressoModal = ({ onClose }) => {
                 <div>
                   <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Itens</label>
                   <input type="number" min="6" max="30" value={fonteItemPx} onChange={(e) => setFonteItemPx(e.target.value)}
+                    onBlur={(e) => salvarConfigAtual({ fonte_item_px: e.target.value ? parseInt(e.target.value, 10) : null })}
                     placeholder="13"
                     className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Títulos</label>
                   <input type="number" min="6" max="40" value={fonteTituloPx} onChange={(e) => setFonteTituloPx(e.target.value)}
+                    onBlur={(e) => salvarConfigAtual({ fonte_titulo_px: e.target.value ? parseInt(e.target.value, 10) : null })}
                     placeholder="14/17"
                     className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Nome loja</label>
                   <input type="number" min="6" max="60" value={fonteNomeRestaurantePx} onChange={(e) => setFonteNomeRestaurantePx(e.target.value)}
+                    onBlur={(e) => salvarConfigAtual({ fonte_nome_restaurante_px: e.target.value ? parseInt(e.target.value, 10) : null })}
                     placeholder="26"
                     className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
                 </div>
