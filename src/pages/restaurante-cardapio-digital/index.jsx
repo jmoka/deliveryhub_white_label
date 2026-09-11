@@ -41,6 +41,7 @@ const CardapioImpressoModal = ({ onClose }) => {
   const [fonteItemPx, setFonteItemPx] = useState('');
   const [fonteTituloPx, setFonteTituloPx] = useState('');
   const [fonteNomeRestaurantePx, setFonteNomeRestaurantePx] = useState('');
+  const [fonteDescricaoPx, setFonteDescricaoPx] = useState('');
   // Layout manual de colunas (organizador visual, arrastar/soltar) —
   // {col1: [chave], col2: [chave]}; null/vazio = usa o algoritmo automático
   // por peso de sempre (ver printCardapioImpresso.js distribuirEmColunas).
@@ -75,6 +76,7 @@ const CardapioImpressoModal = ({ onClose }) => {
         setFonteItemPx(cfg.fonte_item_px != null ? String(cfg.fonte_item_px) : '');
         setFonteTituloPx(cfg.fonte_titulo_px != null ? String(cfg.fonte_titulo_px) : '');
         setFonteNomeRestaurantePx(cfg.fonte_nome_restaurante_px != null ? String(cfg.fonte_nome_restaurante_px) : '');
+        setFonteDescricaoPx(cfg.fonte_descricao_px != null ? String(cfg.fonte_descricao_px) : '');
         setLayoutColunas(cfg.layout_colunas ?? null);
       })
       .catch(() => {})
@@ -261,6 +263,7 @@ const CardapioImpressoModal = ({ onClose }) => {
       fonte_item_px: fonteItemPx ? parseInt(fonteItemPx, 10) : null,
       fonte_titulo_px: fonteTituloPx ? parseInt(fonteTituloPx, 10) : null,
       fonte_nome_restaurante_px: fonteNomeRestaurantePx ? parseInt(fonteNomeRestaurantePx, 10) : null,
+      fonte_descricao_px: fonteDescricaoPx ? parseInt(fonteDescricaoPx, 10) : null,
       layout_colunas: layoutColunas,
       ...overrides,
     }).catch(() => {});
@@ -300,6 +303,7 @@ const CardapioImpressoModal = ({ onClose }) => {
       fonteItemPx: fonteItemPx ? parseInt(fonteItemPx, 10) : undefined,
       fonteTituloPx: fonteTituloPx ? parseInt(fonteTituloPx, 10) : undefined,
       fonteNomeRestaurantePx: fonteNomeRestaurantePx ? parseInt(fonteNomeRestaurantePx, 10) : undefined,
+      fonteDescricaoPx: fonteDescricaoPx ? parseInt(fonteDescricaoPx, 10) : undefined,
       layoutColunas: layoutColunas ?? undefined,
     };
   };
@@ -383,7 +387,7 @@ const CardapioImpressoModal = ({ onClose }) => {
 
             <div className="pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
               <p className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-2">Tamanho da fonte (px) — vazio usa o padrão</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Itens</label>
                   <input type="number" min="6" max="30" value={fonteItemPx} onChange={(e) => setFonteItemPx(e.target.value)}
@@ -405,8 +409,15 @@ const CardapioImpressoModal = ({ onClose }) => {
                     placeholder="26"
                     className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
                 </div>
+                <div>
+                  <label className="block text-[10px] text-[#A1A1AA] mb-0.5">Descrição</label>
+                  <input type="number" min="6" max="24" value={fonteDescricaoPx} onChange={(e) => setFonteDescricaoPx(e.target.value)}
+                    onBlur={(e) => salvarConfigAtual({ fonte_descricao_px: e.target.value ? parseInt(e.target.value, 10) : null })}
+                    placeholder="10.5"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]" />
+                </div>
               </div>
-              <p className="text-[10px] text-[#A1A1AA] mt-1">"Títulos" define categoria e grupo com o mesmo tamanho.</p>
+              <p className="text-[10px] text-[#A1A1AA] mt-1">"Títulos" define categoria e grupo com o mesmo tamanho. "Descrição" define a descrição do produto e a observação da categoria com o mesmo tamanho.</p>
             </div>
 
             <button type="button" onClick={() => setOrganizarAberto(true)}

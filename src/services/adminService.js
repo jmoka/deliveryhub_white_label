@@ -36,6 +36,11 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+// Favoritos da barra superior (sidebar admin)
+export const getFavoritosMenuAdmin = () => apiFetch('/admin/favoritos-menu');
+export const updateFavoritosMenuAdmin = (data) =>
+  apiFetch('/admin/favoritos-menu', { method: 'PATCH', body: JSON.stringify(data) });
+
 // Plataforma
 export const getPlataformaConfig = () => apiFetch('/plataforma/config');
 export const updatePlataformaConfig = (data) =>

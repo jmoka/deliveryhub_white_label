@@ -179,6 +179,10 @@ export const getCardapioImpressoConfig = () => apiFetch('/cardapio-impresso/conf
 export const updateCardapioImpressoConfig = (data) =>
   apiFetch('/cardapio-impresso/config', { method: 'PATCH', body: JSON.stringify(data) });
 
+export const getFavoritosMenu = () => apiFetch('/favoritos-menu');
+export const updateFavoritosMenu = (data) =>
+  apiFetch('/favoritos-menu', { method: 'PATCH', body: JSON.stringify(data) });
+
 export const getConfig = () => apiFetch('/config');
 
 export const updateConfig = (data) =>

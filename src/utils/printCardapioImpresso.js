@@ -141,12 +141,13 @@ const renderBloco = (bloco, ocultarTitulo, mostrarNumeracao) =>
  * @param {number} [args.fonteItemPx] — tamanho (px) do nome e preço de cada item.
  * @param {number} [args.fonteTituloPx] — tamanho (px) do título de categoria E de grupo (mesmo valor pros dois).
  * @param {number} [args.fonteNomeRestaurantePx] — tamanho (px) do nome do restaurante no cabeçalho.
+ * @param {number} [args.fonteDescricaoPx] — tamanho (px) da descrição do produto e da observação de categoria (mesmo valor pros dois).
  * @param {{col1: string[], col2: string[]}} [args.layoutColunas] — layout manual de colunas (organizador visual, arrastar/soltar); sem isso, cai no algoritmo automático por peso.
  */
 export const montarHtmlCardapioImpresso = ({
   grupos, restauranteNome, logoUrl, usarLogo, endereco, whatsapp, rodape,
   observacaoGeral, imagemFundoUrl, ocultarTituloCategoria = false, autoImprimir = true, mostrarNumeracao = false,
-  fonteItemPx = 13, fonteTituloPx, fonteNomeRestaurantePx = 26, layoutColunas,
+  fonteItemPx = 13, fonteTituloPx, fonteNomeRestaurantePx = 26, fonteDescricaoPx = 10.5, layoutColunas,
 }) => {
   // Categoria (14px) e grupo (17px) tinham tamanhos diferentes por padrão —
   // só entra em jogo o valor default distinto quando o admin NUNCA configurou
@@ -181,8 +182,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:#18181B;background:#fff}
 .item-nome{font-size:${fonteItemPx}px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item-linha::after{content:"";flex:1;border-bottom:1px dotted #D4D4D8;margin:0 2px 3px}
 .item-preco{font-size:${fonteItemPx}px;font-weight:700;white-space:nowrap}
-.item-desc{font-size:10.5px;color:#71717A;margin-top:1px}
-.categoria-obs{font-size:10.5px;font-style:italic;color:#71717A;margin-top:4px;padding-top:3px;border-top:1px dotted #D4D4D8}
+.item-desc{font-size:${fonteDescricaoPx}px;color:#71717A;margin-top:1px}
+.categoria-obs{font-size:${fonteDescricaoPx}px;font-style:italic;color:#71717A;margin-top:4px;padding-top:3px;border-top:1px dotted #D4D4D8}
 .rodape{margin-top:20px;padding-top:10px;border-top:1px solid #E4E4E7;text-align:center}
 .rodape-obs-geral{font-size:11px;color:#27272A;margin-bottom:4px}
 .rodape-frase{font-size:12px;font-style:italic;color:#27272A;margin-bottom:4px}

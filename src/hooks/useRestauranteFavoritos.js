@@ -1,32 +1,30 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getFavoritosMenu, updateFavoritosMenu } from '../services/restauranteService';
 
-const keyFor = (userId) => `favoritos_restaurante_${userId}`;
-const keyForNomes = (userId) => `favoritos_restaurante_nomes_${userId}`;
-
-const readFavoritos = (userId) => {
-  if (!userId) return [];
-  try { return JSON.parse(localStorage.getItem(keyFor(userId)) ?? '[]'); } catch { return []; }
-};
-
-const readMostrarNomes = (userId) => {
-  if (!userId) return true;
-  return localStorage.getItem(keyForNomes(userId)) !== 'false';
-};
-
+// Favoritos da barra superior (pinados a partir do menu lateral) — persistidos
+// no banco (user_profiles.favoritos_menu, escopo "restaurante", cache Redis no
+// backend). Antes vivia em localStorage e se perdia ao trocar de dispositivo.
 export const useRestauranteFavoritos = () => {
   const { user } = useAuth();
-  const [favoritos, setFavoritos] = useState(() => readFavoritos(user?.id));
-  const [mostrarNomes, setMostrarNomes] = useState(() => readMostrarNomes(user?.id));
+  const [favoritos, setFavoritos] = useState([]);
+  const [mostrarNomes, setMostrarNomes] = useState(true);
 
-  useEffect(() => { setFavoritos(readFavoritos(user?.id)); }, [user?.id]);
-  useEffect(() => { setMostrarNomes(readMostrarNomes(user?.id)); }, [user?.id]);
+  useEffect(() => {
+    if (!user?.id) { setFavoritos([]); setMostrarNomes(true); return; }
+    getFavoritosMenu()
+      .then((cfg) => {
+        setFavoritos(cfg.paths ?? []);
+        setMostrarNomes(cfg.mostrar_nomes ?? true);
+      })
+      .catch(() => {});
+  }, [user?.id]);
 
   const toggleFavorito = useCallback((path) => {
     if (!user?.id) return;
     setFavoritos((prev) => {
       const next = prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path];
-      localStorage.setItem(keyFor(user.id), JSON.stringify(next));
+      updateFavoritosMenu({ paths: next }).catch(() => {});
       return next;
     });
   }, [user?.id]);
@@ -37,7 +35,7 @@ export const useRestauranteFavoritos = () => {
     if (!user?.id) return;
     setMostrarNomes((prev) => {
       const next = !prev;
-      localStorage.setItem(keyForNomes(user.id), String(next));
+      updateFavoritosMenu({ mostrar_nomes: next }).catch(() => {});
       return next;
     });
   }, [user?.id]);
