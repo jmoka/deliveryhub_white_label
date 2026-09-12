@@ -12,7 +12,7 @@ const PAYMENT_LABELS = { pix: 'PIX', credit_card: 'Cartão', debit_card: 'Débit
 // inteiro), porque um pedido pode ter itens espalhados por mais de uma praça — só o
 // backend (marcarItemPronto) decide quando TODAS já terminaram pra liberar pro motoboy.
 // `tipoRestaurante` troca o vocabulário pra "Embalagem" fora do tipo Restaurante.
-const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPreparo, onMarcarPronto, onVoltar, atualizando, highlighted = false, codigoBarras = null, cardId = null, tipoRestaurante = true }) => {
+const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPreparo, onMarcarPronto, onVoltar, onCancelar, atualizando, highlighted = false, codigoBarras = null, cardId = null, tipoRestaurante = true }) => {
   const isAtualizando = atualizando === pedido.id;
   const tempoDecorrido = now - new Date(pedido.created_at).getTime();
   const termos = getTermos(tipoRestaurante);
@@ -61,6 +61,16 @@ const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPrep
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-sky-100 text-sky-700">Delivery</span>
+          {onCancelar && (
+            <button
+              disabled={isAtualizando}
+              onClick={() => onCancelar(pedido.id)}
+              title="Cancelar este pedido — use quando ficar travado na produção"
+              className="flex items-center gap-1 text-[10px] font-bold text-red-600 hover:text-red-700 disabled:opacity-40"
+            >
+              <Icon name="Ban" size={11} /> Cancelar
+            </button>
+          )}
           {codigoBarras && (
             <div className="flex items-center justify-center gap-1 px-2 py-1 bg-[#F4F4F5] rounded-lg">
               <Icon name="Barcode" size={11} className="text-[#71717A]" />

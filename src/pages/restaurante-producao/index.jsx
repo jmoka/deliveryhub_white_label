@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao, cancelarPedidoAdmin } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
@@ -293,6 +293,23 @@ const RestauranteProducao = () => {
     }
   };
 
+  // Cancela o PEDIDO inteiro (não só os itens desta praça) — pra destravar pedido de
+  // delivery que ficou parado na produção (ex: motoboy nunca assumiu, cliente desistiu).
+  // Reusa o mesmo endpoint admin da tela de detalhe do pedido (exige motivo).
+  const cancelarPedidoDelivery = async (pedidoId) => {
+    const motivo = window.prompt('Motivo do cancelamento deste pedido:');
+    if (!motivo?.trim()) return;
+    setAtualizandoPedido(pedidoId);
+    try {
+      await cancelarPedidoAdmin(pedidoId, motivo.trim());
+      await carregar(impressoras);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setAtualizandoPedido(null);
+    }
+  };
+
   const moverItem = async (item, direcao) => {
     try {
       await moverItemRestaurante(item.id, direcao);
@@ -519,7 +536,8 @@ const RestauranteProducao = () => {
                             entry.tipo === 'delivery' ? (
                               <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="aguardando" tipoRestaurante={tipoRestaurante}
                                 atualizando={atualizandoPedido}
-                                onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)} />
+                                onIniciarPreparo={() => iniciarPreparoGrupo(entry.pedido.id, entry.itemIds)}
+                                onCancelar={cancelarPedidoDelivery} />
                             ) : (
                               <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor={imp.setor}
                                 ehPrimeiro={idx === 0} ehUltimo={idx === aguardando.length - 1} onMover={moverItem}
@@ -541,7 +559,8 @@ const RestauranteProducao = () => {
                               <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="preparando" tipoRestaurante={tipoRestaurante}
                                 atualizando={atualizandoPedido}
                                 onMarcarPronto={() => marcarProntoGrupo(entry.pedido.id, entry.itemIds)}
-                                onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
+                                onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)}
+                                onCancelar={cancelarPedidoDelivery} />
                             ) : (
                               <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor={imp.setor}
                                 onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
@@ -562,7 +581,8 @@ const RestauranteProducao = () => {
                               entry.tipo === 'delivery' ? (
                                 <PedidoDeliveryCard key={`d-${entry.pedido.id}`} pedido={entry.pedido} itens={entry.itens} posicao={idx + 1} now={now} bucket="pronto" tipoRestaurante={tipoRestaurante}
                                   atualizando={atualizandoPedido}
-                                  onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)} />
+                                  onVoltar={() => voltarGrupo(entry.pedido.id, entry.itemIds)}
+                                  onCancelar={cancelarPedidoDelivery} />
                               ) : (
                                 <SalaoItemCard key={`s-${entry.item.id}`} item={entry.item} posicao={idx + 1} now={now} tipoRestaurante={tipoRestaurante} setor={imp.setor}
                                   onReimprimir={(it) => reimprimir(it, imp.setor)} onIniciarPreparo={iniciarPreparo} onMarcarPronto={marcarPronto} onVoltar={voltarItem} onAbrirComanda={setComandaAbertaId} onSalvarObservacao={salvarObservacao} onConfirmarEntregaGarcom={confirmarEntregaGarcom}
