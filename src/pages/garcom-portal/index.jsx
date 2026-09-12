@@ -10,7 +10,7 @@ import {
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
-import { getAcompanharUrls, getAutoAtendimentoUrls } from '../../utils/mesaAcompanharUrl';
+import { getAcompanharUrls, getAutoAtendimentoUrls, getLocalUrls } from '../../utils/mesaAcompanharUrl';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import { formatDuracao } from '../../utils/formatDuracao';
@@ -1592,6 +1592,64 @@ const EncerrarSessaoModal = ({ onFechar, onEncerrado }) => {
   );
 };
 
+const QrCardapioModal = ({ slug, onFechar }) => {
+  const [qrModo, setQrModo] = useState('online'); // 'online' | 'local'
+  const [linkCopiado, setLinkCopiado] = useState(false);
+
+  const urls = getLocalUrls(`/cardapio/${slug}`);
+  const urlAtiva = qrModo === 'local' && urls.lan ? urls.lan : urls.principal;
+
+  const copiarLink = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(urlAtiva);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = urlAtiva; el.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(el); el.focus(); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+      }
+      setLinkCopiado(true);
+      setTimeout(() => setLinkCopiado(false), 2500);
+    } catch {}
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl w-full max-w-md p-6 flex flex-col items-center">
+        <div className="flex items-center justify-between w-full mb-3">
+          <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">QR do cardápio</h2>
+          <button onClick={onFechar} className="p-1 text-[#71717A] dark:text-[#A1A1AA]"><Icon name="X" size={20} /></button>
+        </div>
+        {urls.lan && (
+          <div className="flex gap-2 mb-3">
+            <button onClick={() => setQrModo('online')}
+              className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'online' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+              ONLINE
+            </button>
+            <button onClick={() => setQrModo('local')}
+              className={`px-3 py-1 rounded-lg text-[10px] font-bold ${qrModo === 'local' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+              LOCAL
+            </button>
+          </div>
+        )}
+        <div className="bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 inline-flex flex-col items-center gap-1">
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(urlAtiva)}`}
+            alt="QR do cardápio digital" width={200} height={200}
+          />
+          <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mt-1 text-center">Cliente escaneia pra ver o cardápio</p>
+          <button onClick={copiarLink}
+            className="flex items-center gap-1 text-[11px] font-bold text-[#FF441F] mt-1">
+            <Icon name={linkCopiado ? 'Check' : 'Copy'} size={12} />
+            {linkCopiado ? 'Link copiado!' : 'Copiar link (câmera com problema)'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
   const [permissoes, setPermissoes] = useState({});
@@ -1608,6 +1666,8 @@ const GarcomHome = () => {
   const [loading, setLoading] = useState(true);
   const [avisoPronto, setAvisoPronto] = useState(null);
   const [mostrarEncerrarSessao, setMostrarEncerrarSessao] = useState(false);
+  const [restauranteSlug, setRestauranteSlug] = useState(null);
+  const [mostrarQrCardapio, setMostrarQrCardapio] = useState(false);
 
   const tocarAlarmePronto = useNotificacaoSonora('motoboy');
   const idsProntosVistos = useRef(new Set());
@@ -1617,7 +1677,7 @@ const GarcomHome = () => {
   const primeiraCargaPedidoCliente = useRef(true);
 
   useEffect(() => {
-    getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); }).catch((err) => {
+    getMe().then((m) => { setMeuId(m.id); setPermissoes(m.permissoes ?? {}); setSalaoModo(m.salaoModo ?? 'ambos'); setRestauranteSlug(m.restauranteSlug ?? null); }).catch((err) => {
       if (err.message === RESTAURANTE_FECHADO_MSG) setBloqueado(true);
     });
   }, []);
@@ -1777,10 +1837,18 @@ const GarcomHome = () => {
       <div className="bg-white dark:bg-[#27272A] border-b border-[#E4E4E7] dark:border-[#3F3F46] p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Salão</h1>
-          <button onClick={() => setMostrarEncerrarSessao(true)}
-            className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 px-2 py-1">
-            <Icon name="LogOut" size={14} /> Sair
-          </button>
+          <div className="flex items-center gap-1">
+            {restauranteSlug && (
+              <button onClick={() => setMostrarQrCardapio(true)}
+                className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] px-2 py-1">
+                <Icon name="QrCode" size={14} /> QR Cardápio
+              </button>
+            )}
+            <button onClick={() => setMostrarEncerrarSessao(true)}
+              className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 px-2 py-1">
+              <Icon name="LogOut" size={14} /> Sair
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 mt-3 flex-wrap">
           {salaoModo !== 'comandas' && (
@@ -1895,6 +1963,10 @@ const GarcomHome = () => {
           onFechar={() => setMostrarEncerrarSessao(false)}
           onEncerrado={async () => { await logout(); clearGarcomToken(); window.location.reload(); }}
         />
+      )}
+
+      {mostrarQrCardapio && restauranteSlug && (
+        <QrCardapioModal slug={restauranteSlug} onFechar={() => setMostrarQrCardapio(false)} />
       )}
     </div>
   );
