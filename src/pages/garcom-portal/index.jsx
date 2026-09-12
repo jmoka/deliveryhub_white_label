@@ -1650,6 +1650,90 @@ const QrCardapioModal = ({ slug, onFechar }) => {
   );
 };
 
+const ConsultaPrecoTab = () => {
+  const [produtos, setProdutos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState('');
+  const [categoria, setCategoria] = useState('todas');
+
+  useEffect(() => {
+    let ativo = true;
+    Promise.all([getProdutos(), getCombos()]).then(([p, combos]) => {
+      if (!ativo) return;
+      // Mesmo truque do picker de adicionar item: combo entra na mesma lista,
+      // numa categoria própria, pra reusar a busca/filtro sem duplicar UI.
+      setProdutos([
+        ...p,
+        ...(combos ?? []).map((c) => ({ ...c, tipo: 'combo', category_name: 'Combos' })),
+      ]);
+      setLoading(false);
+    });
+    return () => { ativo = false; };
+  }, []);
+
+  const categorias = ['todas', ...new Set(produtos.map((p) => p.category_name ?? 'Outros'))];
+  const filtrados = produtos.filter((p) => {
+    const bateBusca = p.name.toLowerCase().includes(busca.toLowerCase());
+    const bateCategoria = categoria === 'todas' || (p.category_name ?? 'Outros') === categoria;
+    return bateBusca && bateCategoria;
+  });
+
+  return (
+    <div className="p-4">
+      <div className="relative mb-3">
+        <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]" />
+        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto pra ver o preço..."
+          className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+      </div>
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+        {categorias.map((c) => (
+          <button key={c} onClick={() => setCategoria(c)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+              categoria === c ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
+            }`}>
+            {c === 'todas' ? 'Todas' : c}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] text-center py-6">Carregando...</p>
+      ) : (
+        <div className="space-y-2">
+          {filtrados.map((p) => (
+            <div key={`${p.tipo ?? 'produto'}-${p.id}`}
+              className="w-full bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-2.5 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#F4F4F5] dark:bg-[#3F3F46] flex-shrink-0">
+                {p.image_url
+                  ? <img src={p.image_url} alt="" className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center"><Icon name={p.tipo === 'combo' ? 'Package' : 'UtensilsCrossed'} size={18} className="text-[#A1A1AA]" /></div>}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">
+                  {p.tipo === 'combo' && <span className="text-[10px] font-bold text-[#FF441F] mr-1">COMBO</span>}
+                  {p.name}
+                </p>
+                {p.quantidade_estoque != null && (
+                  <p className="text-[11px] text-[#A1A1AA]">Em estoque: {p.quantidade_estoque}</p>
+                )}
+              </div>
+              <div className="text-right flex-shrink-0">
+                {p.preco_promo != null && (
+                  <p className="text-[11px] line-through text-[#A1A1AA]">{fmt(p.price)}</p>
+                )}
+                <p className={`text-sm font-bold ${p.preco_promo != null ? 'text-blue-600 dark:text-blue-400' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>
+                  {fmt(p.preco_promo ?? p.price)}
+                </p>
+              </div>
+            </div>
+          ))}
+          {filtrados.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhum produto encontrado.</p>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const GarcomHome = () => {
   const [meuId, setMeuId] = useState(null);
   const [permissoes, setPermissoes] = useState({});
@@ -1865,6 +1949,10 @@ const GarcomHome = () => {
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'cozinha' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             Cozinha
           </button>
+          <button onClick={() => setAba('consulta')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'consulta' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+            Consulta
+          </button>
           <button onClick={() => setAba('financeiro')}
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'financeiro' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             Financeiro
@@ -1914,6 +2002,8 @@ const GarcomHome = () => {
           tempoMedioPreparoSegundos={filaCozinha.tempoMedioPreparoSegundos}
           tempoMedioGeralSegundos={filaCozinha.tempoMedioGeralSegundos}
         />
+      ) : aba === 'consulta' ? (
+        <ConsultaPrecoTab />
       ) : aba === 'financeiro' ? (
         <FinanceiroTab onEncerrarSessao={() => setMostrarEncerrarSessao(true)} />
       ) : (
