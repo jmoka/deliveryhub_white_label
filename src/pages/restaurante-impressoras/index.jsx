@@ -35,12 +35,11 @@ export const EspacoCortePanel = () => {
 
   return (
     <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
-      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Espaço no fim da impressão</p>
+      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Espaço no fim da impressão pelo navegador</p>
       <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
-        Se a impressora está cortando em cima da última linha da comanda/ticket, aumente esse
-        espaço. Vale pra toda impressão feita pelo navegador (comanda, ticket de setor, recibo,
-        ficha do motoboy...). Use o botão de teste pra ajustar até a impressora física cortar no
-        lugar certo.
+        Só vale pra impressoras <strong>sem agente pareado</strong> (impressão cai no fallback do
+        navegador). Se você tem o agente instalado, ajuste o espaço de corte direto no card da
+        impressora, mais abaixo — o teste de lá já imprime pela impressora de verdade.
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <div>
@@ -56,6 +55,42 @@ export const EspacoCortePanel = () => {
           {testando ? 'Imprimindo...' : '🖨 Testar impressão'}
         </button>
       </div>
+    </div>
+  );
+};
+
+// Espaço de corte por impressora física (agente local) — cada modelo/marca corta com uma
+// folga diferente, por isso fica salvo em impressoras.espaco_corte_linhas, não num valor
+// único global. O botão de teste do card (já existente, logo abaixo) já manda um job real
+// pra essa impressora aplicando esse valor — não precisa de botão de teste duplicado aqui.
+const EspacoCorteImpressora = ({ imp, onSalvo }) => {
+  const [valor, setValor] = useState(imp.espaco_corte_linhas ?? 6);
+  const [salvando, setSalvando] = useState(false);
+  const [salvo, setSalvo] = useState(false);
+
+  const salvar = async () => {
+    setSalvando(true);
+    try {
+      await atualizarImpressora(imp.id, { espaco_corte_linhas: valor });
+      setSalvo(true);
+      setTimeout(() => setSalvo(false), 2000);
+      await onSalvo?.();
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="flex items-end gap-2 mt-3">
+      <div className="flex-1">
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Espaço de corte (linhas)</label>
+        <input type="number" min={0} max={30} value={valor} onChange={(e) => setValor(Number(e.target.value))}
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
+      </div>
+      <button onClick={salvar} disabled={salvando}
+        className="px-3 py-2 bg-[#FF441F] text-white text-xs font-bold rounded-xl disabled:opacity-50">
+        {salvando ? 'Salvando...' : salvo ? 'Salvo!' : 'Salvar'}
+      </button>
     </div>
   );
 };
@@ -310,10 +345,13 @@ const RestauranteImpressoras = () => {
                 </button>
               )}
               {imp.nome_sistema && (
-                <button onClick={() => testar(imp.id)} disabled={testando === imp.id}
-                  className="w-full mt-3 py-1.5 text-xs font-bold border border-[#FF441F] text-[#FF441F] rounded-lg hover:bg-[#FF441F]/5 disabled:opacity-50">
-                  {testando === imp.id ? 'Enviando...' : '🖨 Testar impressão'}
-                </button>
+                <>
+                  <EspacoCorteImpressora imp={imp} onSalvo={carregar} />
+                  <button onClick={() => testar(imp.id)} disabled={testando === imp.id}
+                    className="w-full mt-3 py-1.5 text-xs font-bold border border-[#FF441F] text-[#FF441F] rounded-lg hover:bg-[#FF441F]/5 disabled:opacity-50">
+                    {testando === imp.id ? 'Enviando...' : '🖨 Testar impressão'}
+                  </button>
+                </>
               )}
               <div className="flex gap-2 mt-3">
                 <button onClick={() => toggleAtiva(imp)} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
