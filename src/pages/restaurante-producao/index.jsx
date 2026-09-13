@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao, cancelarPedidoAdmin } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, dispensarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao, cancelarPedidoAdmin } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
@@ -16,10 +16,11 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 // Seletor "escolher setor + enviar", reaproveitado no banner de itens sem setor e dentro
 // do ComandaModal — recebe só o callback de envio, quem chama decide o que fazer com o
 // resultado (imprimir via navegador, recarregar lista, etc).
-const ItemReenviarSelect = ({ impressoras, onEnviar, tipoRestaurante = true }) => {
+const ItemReenviarSelect = ({ impressoras, onEnviar, onDispensar, tipoRestaurante = true }) => {
   const termos = getTermos(tipoRestaurante);
   const [impressoraId, setImpressoraId] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [dispensando, setDispensando] = useState(false);
   const [erro, setErro] = useState(null);
 
   const enviar = async () => {
@@ -35,6 +36,18 @@ const ItemReenviarSelect = ({ impressoras, onEnviar, tipoRestaurante = true }) =
     }
   };
 
+  const dispensar = async () => {
+    setDispensando(true);
+    setErro(null);
+    try {
+      await onDispensar();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setDispensando(false);
+    }
+  };
+
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <div className="flex items-center gap-2">
@@ -43,11 +56,17 @@ const ItemReenviarSelect = ({ impressoras, onEnviar, tipoRestaurante = true }) =
           <option value="">Escolher setor...</option>
           {impressoras.map((imp) => <option key={imp.id} value={imp.id}>{imp.setor}</option>)}
         </select>
-        <button onClick={enviar} disabled={!impressoraId || enviando}
+        <button onClick={enviar} disabled={!impressoraId || enviando || dispensando}
           className="flex-shrink-0 px-3 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-40">
           {enviando ? 'Enviando...' : `Enviar p/ ${termos.pracaLower}`}
         </button>
       </div>
+      {onDispensar && (
+        <button onClick={dispensar} disabled={enviando || dispensando}
+          className="mt-1.5 text-[11px] text-[#71717A] hover:text-red-400 underline disabled:opacity-40">
+          {dispensando ? 'Dispensando...' : 'Não enviar a nenhum setor / cancelar item'}
+        </button>
+      )}
       {erro && <p className="text-[11px] text-red-400 mt-1">{erro}</p>}
     </div>
   );
@@ -65,6 +84,11 @@ const ItemSemSetorCard = ({ item, impressoras, onReenviado, tipoRestaurante = tr
     await onReenviado?.();
   };
 
+  const dispensar = async () => {
+    await dispensarItemKds(item.id);
+    await onReenviado?.();
+  };
+
   return (
     <div className="bg-[#111111] rounded-xl px-3 py-2.5">
       <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -75,7 +99,7 @@ const ItemSemSetorCard = ({ item, impressoras, onReenviado, tipoRestaurante = tr
         <p className="text-xs text-[#71717A] mb-1.5">{[item.mesa, item.cliente, item.garcom].filter(Boolean).join(' • ')}</p>
       )}
       {item.observacao && <p className="text-xs text-blue-400 mb-1.5">Obs: {item.observacao}</p>}
-      <ItemReenviarSelect impressoras={impressoras} onEnviar={enviar} tipoRestaurante={tipoRestaurante} />
+      <ItemReenviarSelect impressoras={impressoras} onEnviar={enviar} onDispensar={dispensar} tipoRestaurante={tipoRestaurante} />
     </div>
   );
 };
@@ -104,6 +128,12 @@ const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado, tipoRes
         imp?.setor,
       );
     }
+    carregarComanda();
+    await onItemReenviado?.();
+  };
+
+  const dispensarItemDaComanda = async (itemDaComanda) => {
+    await dispensarItemKds(itemDaComanda.id);
     carregarComanda();
     await onItemReenviado?.();
   };
@@ -144,7 +174,7 @@ const ComandaModal = ({ orderId, impressoras, onFechar, onItemReenviado, tipoRes
                           <p className="text-[11px] text-yellow-400 font-bold mb-1.5 flex items-center gap-1">
                             <Icon name="AlertTriangle" size={12} /> Não chegou na {termos.pracaLower} — produto sem impressora configurada
                           </p>
-                          <ItemReenviarSelect impressoras={impressoras} onEnviar={(impressoraId) => reenviarItemDaComanda(item, impressoraId)} tipoRestaurante={tipoRestaurante} />
+                          <ItemReenviarSelect impressoras={impressoras} onEnviar={(impressoraId) => reenviarItemDaComanda(item, impressoraId)} onDispensar={() => dispensarItemDaComanda(item)} tipoRestaurante={tipoRestaurante} />
                         </div>
                       )}
                     </div>

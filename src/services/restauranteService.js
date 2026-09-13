@@ -240,6 +240,8 @@ export const reimprimirItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/reimprimir`, { method: 'POST' });
 export const reenviarItemKds = (itemId, impressoraId) =>
   apiFetch(`/kds/itens/${itemId}/reenviar`, { method: 'PATCH', body: JSON.stringify({ impressora_id: impressoraId }) });
+export const dispensarItemKds = (itemId) =>
+  apiFetch(`/kds/itens/${itemId}/dispensar`, { method: 'PATCH' });
 export const iniciarPreparoItemRestaurante = (itemId) =>
   apiFetch(`/kds/itens/${itemId}/iniciar-preparo`, { method: 'PATCH' });
 export const confirmarEntregaGarcomRestaurante = (itemId) =>

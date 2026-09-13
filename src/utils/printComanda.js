@@ -289,6 +289,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .qty{font-weight:900;min-width:28px}
 .foot{font-size:11px;text-align:center;margin-top:6px}
 #barcode{display:block;margin:8px auto 4px;max-width:260px}
+.espaco-corte{height:70px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
@@ -308,6 +309,7 @@ ${barcodeSvg}
   <div style="font-size:10px;letter-spacing:1px;margin-top:2px">SCAN MOTOBOY</div>
 </div>
 <div class="foot">Impresso: ${new Date().toLocaleString('pt-BR')}</div>
+<div class="espaco-corte"></div>
 <script>
 window.print();
 try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
@@ -526,6 +528,7 @@ hr{border:none;border-top:2px dashed #000;margin:10px 0}
 .item-qtd{font-size:22px;font-weight:900}
 .item-desc,.item-obs{font-size:18px;font-weight:400;padding-left:4px;margin-top:2px}
 .separador{border:none;border-top:1px dashed #000;margin:14px 0}
+.espaco-corte{height:70px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="topo">
@@ -548,6 +551,7 @@ ${i.observacao ? `<div class="item-obs">Obs: ${esc(i.observacao)}</div>` : ''}
 ${idx < itens.length - 1 ? '<hr class="separador"/>' : ''}
 `).join('')}
 <hr/>
+<div class="espaco-corte"></div>
 <script>
 window.print();
 try{window.frameElement.parentNode.removeChild(window.frameElement)}catch(e){}
