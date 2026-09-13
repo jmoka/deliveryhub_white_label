@@ -48,7 +48,7 @@ export const printFichaMotoboy = (pedido, itens, cliente, restauranteNome) => {
   const subtotal = itens.reduce((s, i) => s + (i.unit_price ?? 0) * (i.quantity ?? 0), 0);
   const freteExcedente = parseFloat(pedido.frete_excedente_cobrado ?? 0);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha Motoboy #${pedido.id}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.linha{display:flex;justify-content:space-between;font-size:12px;padding:1px 0}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}.espaco-corte{height:120px}@media print{button{display:none!important}}</style>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.linha{display:flex;justify-content:space-between;font-size:12px;padding:1px 0}.addr{font-size:12px;line-height:1.5}.bold{font-weight:700}#bc{display:block;margin:6px auto 2px;max-width:260px}.espaco-corte{height:${getEspacoCorte()}px}@media print{button{display:none!important}}</style>
 </head><body>
 <div class="c bold" style="font-size:11px;letter-spacing:1px">FICHA DE ENTREGA</div>
 <div class="c" style="font-size:12px">${esc(restauranteNome ?? '')}</div>
@@ -86,7 +86,7 @@ setTimeout(()=>{try{window.frameElement.parentNode.removeChild(window.frameEleme
 export const printTesteImpressora = (nomeImpressora, setor, restauranteNome) => {
   const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Teste de impressão</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}hr{border:none;border-top:1px dashed #000;margin:8px 0}.bold{font-weight:700}.espaco-corte{height:120px}@media print{button{display:none!important}}</style>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}hr{border:none;border-top:1px dashed #000;margin:8px 0}.bold{font-weight:700}.espaco-corte{height:${getEspacoCorte()}px}@media print{button{display:none!important}}</style>
 </head><body>
 <div class="c bold" style="font-size:11px;letter-spacing:1px">TESTE DE IMPRESSÃO</div>
 <div class="c" style="font-size:12px">${esc(restauranteNome ?? '')}</div>
@@ -137,7 +137,7 @@ ${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><sp
 <div class="c" style="font-size:10px;margin-top:2px">Assinatura do cliente</div>`;
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Retirada #${pedido.id}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.linha{display:flex;justify-content:space-between;font-size:12px;padding:1px 0}.bold{font-weight:700}.corte{text-align:center;font-size:11px;margin:14px 0;border-top:1px dashed #000;padding-top:4px}.espaco-corte{height:120px}@media print{button{display:none!important}}</style>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:13px;padding:10px;max-width:300px;margin:0 auto;color:#000}.c{text-align:center}.big{font-size:26px;font-weight:900;text-align:center;letter-spacing:2px;margin:6px 0}hr{border:none;border-top:1px dashed #000;margin:6px 0}.item{display:flex;gap:6px;padding:2px 0}.qty{font-weight:900;min-width:24px}.linha{display:flex;justify-content:space-between;font-size:12px;padding:1px 0}.bold{font-weight:700}.corte{text-align:center;font-size:11px;margin:14px 0;border-top:1px dashed #000;padding-top:4px}.espaco-corte{height:${getEspacoCorte()}px}@media print{button{display:none!important}}</style>
 </head><body>
 ${via('VIA CLIENTE')}
 <div class="corte">✂ - - - - - - - - - - - - - - - - - - - -</div>
@@ -214,7 +214,7 @@ body{font-family:'Courier New',monospace;font-size:13px;padding:12px;color:#000;
 hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .qr{display:block;margin:6px auto}
 .frase{font-size:12px;text-align:center;margin-top:8px;font-weight:600;line-height:1.4}
-.espaco-corte{height:120px}
+.espaco-corte{height:${getEspacoCorte()}px}
 @media print{button{display:none!important}}
 </style></head><body>
 ${logoUrl ? `<img class="logo" src="${esc(logoUrl)}" />` : ''}
@@ -256,6 +256,16 @@ export const barcodeValue = (id) => String(id).padStart(8, '0');
 export const getPrinterName = () => localStorage.getItem('kitchen_printer_name') ?? '';
 export const setPrinterName = (name) => localStorage.setItem('kitchen_printer_name', name);
 
+// Espaço em branco deixado no fim de toda impressão térmica (via navegador) pra dar folga
+// à guilhotina automática da impressora não cortar em cima da última linha. Ajustável nas
+// configurações de Impressoras porque a folga necessária varia por modelo/marca de impressora.
+const ESPACO_CORTE_PADRAO = 200;
+export const getEspacoCorte = () => {
+  const v = parseInt(localStorage.getItem('espaco_corte_impressora'), 10);
+  return Number.isFinite(v) && v >= 0 ? v : ESPACO_CORTE_PADRAO;
+};
+export const setEspacoCorte = (valorPx) => localStorage.setItem('espaco_corte_impressora', String(valorPx));
+
 const showPrinterToast = (printerName) => {
   const existing = document.getElementById('printer-toast');
   if (existing) existing.remove();
@@ -294,7 +304,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .qty{font-weight:900;min-width:28px}
 .foot{font-size:11px;text-align:center;margin-top:6px}
 #barcode{display:block;margin:8px auto 4px;max-width:260px}
-.espaco-corte{height:120px}
+.espaco-corte{height:${getEspacoCorte()}px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>
@@ -369,7 +379,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .linha{display:flex;justify-content:space-between;font-size:13px;padding:1px 0}
 .total{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding:4px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
-.espaco-corte{height:120px}
+.espaco-corte{height:${getEspacoCorte()}px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="topo">
@@ -454,7 +464,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .item{display:flex;gap:8px;padding:3px 0;font-size:14px;justify-content:space-between}
 .total{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding:4px 0}
 .foot{font-size:11px;text-align:center;margin-top:8px}
-.espaco-corte{height:120px}
+.espaco-corte{height:${getEspacoCorte()}px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="topo">
@@ -537,7 +547,7 @@ hr{border:none;border-top:2px dashed #000;margin:10px 0}
 .item-qtd{font-size:22px;font-weight:900}
 .item-desc,.item-obs{font-size:18px;font-weight:400;padding-left:4px;margin-top:2px}
 .separador{border:none;border-top:1px dashed #000;margin:14px 0}
-.espaco-corte{height:120px}
+.espaco-corte{height:${getEspacoCorte()}px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="topo">
@@ -606,7 +616,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .total{padding:4px 0}
 .total .rotulo{font-size:12px}
 .total .valor-campo{font-size:24px;font-weight:900}
-.espaco-corte{height:120px}
+.espaco-corte{height:${getEspacoCorte()}px}
 @media print{button{display:none!important}}
 </style></head><body>
 <div class="rest">${esc(restauranteNome ?? 'RESTAURANTE')}</div>

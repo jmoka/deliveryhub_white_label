@@ -2,9 +2,63 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   listarImpressoras, criarImpressora, atualizarImpressora, removerImpressora,
   getImpressorasDetectadas, gerarTokenAgente, getStatusAgente, testarImpressora,
-  renovarTokenImpressora,
+  renovarTokenImpressora, getMinhaEmpresa,
 } from '../../services/restauranteService';
+import { getEspacoCorte, setEspacoCorte, printTesteImpressora } from '../../utils/printComanda';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+
+// Espaço em branco no fim de toda comanda/ticket impresso via navegador (não pelo agente) —
+// ajustável aqui porque a folga necessária pra guilhotina não cortar em cima da última linha
+// varia de impressora pra impressora. Guardado no navegador (localStorage), não no backend,
+// porque quem imprime é sempre o navegador de quem está no caixa/produção, não o servidor.
+export const EspacoCortePanel = () => {
+  const [valor, setValor] = useState(getEspacoCorte());
+  const [salvo, setSalvo] = useState(false);
+  const [testando, setTestando] = useState(false);
+
+  const salvar = () => {
+    setEspacoCorte(valor);
+    setSalvo(true);
+    setTimeout(() => setSalvo(false), 2000);
+  };
+
+  const testar = async () => {
+    setEspacoCorte(valor);
+    setTestando(true);
+    try {
+      const dados = await getMinhaEmpresa().catch(() => null);
+      printTesteImpressora('Teste de espaçamento', 'Ajuste de corte', dados?.empresa?.name);
+    } finally {
+      setTestando(false);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4">
+      <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1">Espaço no fim da impressão</p>
+      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
+        Se a impressora está cortando em cima da última linha da comanda/ticket, aumente esse
+        espaço. Vale pra toda impressão feita pelo navegador (comanda, ticket de setor, recibo,
+        ficha do motoboy...). Use o botão de teste pra ajustar até a impressora física cortar no
+        lugar certo.
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <div>
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Espaço (px)</label>
+          <input type="number" min={0} step={10} value={valor} onChange={(e) => setValor(Number(e.target.value))}
+            className="w-28 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <button onClick={salvar} className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl">
+          {salvo ? 'Salvo!' : 'Salvar'}
+        </button>
+        <button onClick={testar} disabled={testando}
+          className="px-4 py-2 border border-[#FF441F] text-[#FF441F] text-sm font-bold rounded-xl hover:bg-[#FF441F]/5 disabled:opacity-50">
+          {testando ? 'Imprimindo...' : '🖨 Testar impressão'}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const AgenteImpressaoPanel = () => {
   const [status, setStatus] = useState(null);
@@ -165,6 +219,7 @@ const RestauranteImpressoras = () => {
       <RestauranteHeader active="/restaurante/impressoras" title="Impressoras" onRefresh={carregar} />
       <div className="max-w-4xl mx-auto p-4">
         <AgenteImpressaoPanel />
+        <EspacoCortePanel />
 
         <form onSubmit={criar} className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 mb-4 flex flex-wrap gap-2 items-end">
           <div className="flex-1 min-w-[120px]">
