@@ -201,11 +201,30 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
   );
 };
 
+// "Grátis eterno" não é um flag — é só a data de validade bem longe no futuro
+// (usuário definiu +50 anos como referência).
+const ANOS_GRATIS_ETERNO = 50;
+const paraInputDate = (iso) => (iso ? iso.slice(0, 10) : '');
+const dataEterna = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + ANOS_GRATIS_ETERNO);
+  return paraInputDate(d.toISOString());
+};
+
 // Troca o plano/assinatura da empresa — reaproveita os mesmos endpoints já
 // usados pelo dono (atribuirAssinatura sincroniza os módulos liberados com o
 // que o plano novo inclui, cancelarAssinatura só marca status='cancelada').
+// Checkbox "Grátis" + data de validade vão juntos nesse mesmo formulário —
+// "grátis" não é um flag separado no banco, é a data de validade da cortesia
+// (assinaturas.cortesia_ate) bem longe no futuro (+50 anos = "eterno").
+// Enquanto não vencer, a mensalidade sai isenta na fatura gerada
+// (PlanosService.sincronizarPeriodo); ao vencer, volta a cobrar o plano
+// cadastrado normalmente — nunca isenta taxa de gateway (Stripe/PagBank),
+// só a mensalidade da plataforma.
 const PlanoModal = ({ empresa, planos, assinaturaAtual, onClose, onSave }) => {
   const [planoId, setPlanoId] = useState(assinaturaAtual?.plano_id ? String(assinaturaAtual.plano_id) : '');
+  const [gratis, setGratis] = useState(!!assinaturaAtual?.cortesia_ate);
+  const [validade, setValidade] = useState(paraInputDate(assinaturaAtual?.cortesia_ate) || dataEterna());
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
 
@@ -217,7 +236,9 @@ const PlanoModal = ({ empresa, planos, assinaturaAtual, onClose, onSave }) => {
     setSalvando(true);
     setErro(null);
     try {
-      await atribuirAssinatura(empresa.id, { plano_id: parseInt(planoId, 10) });
+      // Fim do dia escolhido, não meia-noite — senão "até hoje" já expira na hora.
+      const cortesiaAte = gratis && validade ? new Date(`${validade}T23:59:59`).toISOString() : null;
+      await atribuirAssinatura(empresa.id, { plano_id: parseInt(planoId, 10), cortesia_ate: cortesiaAte });
       onSave();
     } catch (err) {
       setErro(err.message);
@@ -242,7 +263,7 @@ const PlanoModal = ({ empresa, planos, assinaturaAtual, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md p-6">
+      <div className="bg-white dark:bg-zinc-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
         <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-zinc-100">Plano de "{empresa.name}"</h3>
         {assinaturaAtual ? (
           <p className="text-xs text-gray-500 dark:text-zinc-400 mb-4">
@@ -269,6 +290,31 @@ const PlanoModal = ({ empresa, planos, assinaturaAtual, onClose, onSave }) => {
               Troca os módulos liberados da loja pelos que esse plano inclui.
             </p>
           </div>
+
+          <div className="border border-gray-200 dark:border-zinc-700 rounded-lg p-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={gratis} onChange={(e) => setGratis(e.target.checked)}
+                className="w-4 h-4 rounded accent-blue-600" />
+              <span className="text-sm font-medium text-gray-700 dark:text-zinc-300">Grátis</span>
+            </label>
+            {gratis && (
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Válido até</label>
+                <div className="flex gap-2">
+                  <input type="date" value={validade} onChange={(e) => setValidade(e.target.value)}
+                    className="flex-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <button type="button" onClick={() => setValidade(dataEterna())}
+                    className="px-3 py-2 text-xs font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900 whitespace-nowrap">
+                    Eterno
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1.5">
+                  Isenta só a mensalidade até essa data — depois volta a cobrar o plano normalmente. Taxa de Stripe/PagBank (se a loja usar) continua sendo cobrada normalmente, mesmo grátis.
+                </p>
+              </div>
+            )}
+          </div>
+
           {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700">
@@ -560,8 +606,9 @@ const DominioBadge = ({ empresa: e }) => (
 const PlanoBadge = ({ empresa, assinaturas }) => {
   const assinatura = assinaturas.find((a) => a.restaurant_id === empresa.id);
   if (!assinatura) return <span className="text-xs text-gray-400 dark:text-zinc-500">Sem plano</span>;
+  const cortesiaAtiva = assinatura.cortesia_ate && new Date(assinatura.cortesia_ate) > new Date();
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 flex-wrap">
       <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">{assinatura.planos?.nome}</span>
       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
         assinatura.status === 'ativa' ? 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400'
@@ -570,6 +617,11 @@ const PlanoBadge = ({ empresa, assinaturas }) => {
       }`}>
         {assinatura.status === 'ativa' ? 'Ativa' : assinatura.status === 'trial' ? 'Trial' : 'Cancelada'}
       </span>
+      {cortesiaAtiva && (
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 whitespace-nowrap">
+          🎁 Grátis até {new Date(assinatura.cortesia_ate).toLocaleDateString('pt-BR')}
+        </span>
+      )}
     </div>
   );
 };

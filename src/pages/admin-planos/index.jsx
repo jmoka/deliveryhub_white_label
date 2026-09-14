@@ -42,7 +42,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, pacote_boost_ids: [] };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -63,6 +63,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           inclui_servicos: plano.inclui_servicos ?? false,
           cobra_comissao: plano.cobra_comissao ?? false,
           inclui_favicon_personalizado: plano.inclui_favicon_personalizado ?? false,
+          somente_novos_cadastros: plano.somente_novos_cadastros ?? false,
           pacote_boost_ids: plano.pacote_boost_ids ?? [],
         }
       : { ...EMPTY }
@@ -122,6 +123,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         inclui_servicos: form.inclui_servicos,
         cobra_comissao: form.cobra_comissao,
         inclui_favicon_personalizado: form.inclui_favicon_personalizado,
+        somente_novos_cadastros: form.somente_novos_cadastros,
         pacote_boost_ids: form.pacote_boost_ids,
       };
       if (isEdicao) {
@@ -305,6 +307,17 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
             )}
           </div>
 
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={form.somente_novos_cadastros} onChange={(e) => set('somente_novos_cadastros', e.target.checked)}
+                className="w-4 h-4 shrink-0 rounded accent-blue-600" />
+              <span className="text-sm font-semibold text-gray-700 dark:text-zinc-300">Somente para novos cadastros</span>
+            </label>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+              Some da tela de troca de plano de quem já é cliente — só aparece pra quem está cadastrando um restaurante novo.
+            </p>
+          </div>
+
           {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
         </div>
 
@@ -470,6 +483,11 @@ const TabPlanos = () => {
                     {plano.pacote_boost_ids?.length > 0 && (
                       <span className="text-xs font-medium bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-400 px-2 py-0.5 rounded-full">
                         {plano.pacote_boost_ids.length} pacote(s) de destaque
+                      </span>
+                    )}
+                    {plano.somente_novos_cadastros && (
+                      <span className="text-xs font-medium bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 px-2 py-0.5 rounded-full" title="Não aparece pra quem já é cliente">
+                        Só novos cadastros
                       </span>
                     )}
                   </div>

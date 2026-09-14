@@ -18,6 +18,7 @@ import AlertasToast from './AlertasToast';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTerminologiaEstabelecimento } from '../../hooks/useTerminologiaEstabelecimento';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -28,6 +29,7 @@ const RestauranteDashboard = () => {
   const navigate = useNavigate();
   const { planoStatus } = useAuth();
   const { termos } = useTerminologiaEstabelecimento();
+  const { moduloDelivery } = useModulosEmpresa();
 
   const [empresa, setEmpresa] = useState(null);
   const [statusAberto, setStatusAberto] = useState(false);
@@ -239,7 +241,7 @@ const RestauranteDashboard = () => {
 
   const handleToggleStatus = async (novoStatus) => {
     if (novoStatus && !caixa?.aberto) {
-      alert('Abra o caixa antes de abrir o restaurante para aceitar pedidos.');
+      alert('Abra o caixa antes de abrir a loja virtual para aceitar pedidos.');
       return;
     }
     setStatusAberto(novoStatus);
@@ -370,18 +372,26 @@ const RestauranteDashboard = () => {
           </motion.div>
         )}
 
-        {/* Status restaurante */}
+        {/* Status loja virtual (delivery) — independente do caixa/salão. Só faz
+            sentido se o módulo delivery estiver liberado pra essa empresa; sem
+            ele não existe loja virtual pra abrir/fechar. */}
+        {moduloDelivery && (
         <motion.div animate={{ borderColor: statusAberto ? '#22C55E' : '#EF4444' }}
           className={`rounded-2xl border-2 p-4 flex items-center justify-between ${statusAberto ? 'bg-green-50 dark:bg-green-950/40' : 'bg-red-50 dark:bg-red-950/40'}`}>
           <div>
-            <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">{statusAberto ? `🟢 ${termos.estabelecimento} ABERTO` : `🔴 ${termos.estabelecimento} FECHADO`}</p>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">{statusAberto ? 'Clientes podem fazer pedidos agora.' : 'Pedidos pausados.'}</p>
+            <p className="font-black text-[#18181B] dark:text-[#F4F4F5]">{statusAberto ? '🟢 LOJA VIRTUAL ABERTA' : '🔴 LOJA VIRTUAL FECHADA'}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+              {statusAberto
+                ? 'Clientes podem fazer pedidos pelo site/app agora.'
+                : `Site/app fora do ar pra pedidos. O caixa continua funcionando normalmente — use isso pra atender só no ${termos.estabelecimento.toLowerCase()} sem abrir a loja virtual.`}
+            </p>
           </div>
           <button type="button" onClick={() => handleToggleStatus(!statusAberto)}
             className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ${statusAberto ? 'bg-green-500' : 'bg-red-400'}`}>
             <span className={`absolute top-1.5 w-4 h-4 bg-white dark:bg-[#27272A] rounded-full shadow transition-transform ${statusAberto ? 'left-8' : 'left-1.5'}`} />
           </button>
         </motion.div>
+        )}
 
         {/* Caixa — expirado (8h) */}
         {caixa?.expirado && (

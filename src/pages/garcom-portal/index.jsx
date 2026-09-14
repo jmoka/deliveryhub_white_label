@@ -1254,7 +1254,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
   );
 };
 
-const RESTAURANTE_FECHADO_MSG = 'Restaurante fechado. Aguarde o caixa ser aberto para entrar.';
+const RESTAURANTE_FECHADO_MSG = 'Caixa fechado. Aguarde o caixa ser aberto para entrar.';
 
 const RestauranteFechado = () => (
   <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B] flex items-center justify-center p-4">

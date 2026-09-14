@@ -50,6 +50,9 @@ export const atribuirAssinatura = (restaurantId, data) =>
   apiFetch(`/planos/assinaturas/${restaurantId}`, { method: 'PUT', body: JSON.stringify(data) });
 export const cancelarAssinatura = (restaurantId) =>
   apiFetch(`/planos/assinaturas/${restaurantId}/cancelar`, { method: 'PATCH' });
+// cortesiaAte: string ISO ou null pra remover — não troca de plano nem reinicia o trial
+export const atualizarCortesia = (restaurantId, cortesiaAte) =>
+  apiFetch(`/planos/assinaturas/${restaurantId}/cortesia`, { method: 'PATCH', body: JSON.stringify({ cortesia_ate: cortesiaAte }) });
 export const gerarFaturaManual = (restaurantId) =>
   apiFetch(`/planos/assinaturas/${restaurantId}/gerar-fatura`, { method: 'POST' });
 
