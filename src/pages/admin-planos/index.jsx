@@ -42,7 +42,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', limite_servicos: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -54,6 +54,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           tipo: plano.tipo ?? 'saas',
           limite_produtos: plano.limite_produtos != null ? String(plano.limite_produtos) : '',
           limite_impressoras: plano.limite_impressoras != null ? String(plano.limite_impressoras) : '',
+          limite_servicos: plano.limite_servicos != null ? String(plano.limite_servicos) : '',
           piso_faturamento: plano.piso_faturamento != null ? String(plano.piso_faturamento) : '',
           trial_dias: String(plano.trial_dias ?? 0),
           ativo: plano.ativo,
@@ -115,6 +116,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         tipo: form.tipo,
         limite_produtos: form.limite_produtos.trim() ? parseInt(form.limite_produtos, 10) : null,
         limite_impressoras: form.limite_impressoras.trim() ? parseInt(form.limite_impressoras, 10) : null,
+        limite_servicos: form.limite_servicos.trim() ? parseInt(form.limite_servicos, 10) : null,
         piso_faturamento: form.piso_faturamento.trim() ? parseFloat(form.piso_faturamento) : null,
         trial_dias: form.trial_dias.trim() ? parseInt(form.trial_dias, 10) : 0,
         inclui_delivery: form.inclui_delivery,
@@ -248,6 +250,14 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Serviços (orçamento)</span>
                   </label>
                 </div>
+                {form.inclui_servicos && (
+                  <div className="mt-3 max-w-xs">
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Limite de serviços cadastráveis</label>
+                    <input type="number" min="1" value={form.limite_servicos} onChange={(e) => set('limite_servicos', e.target.value)}
+                      className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Vazio = ilimitado" />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -495,6 +505,12 @@ const TabPlanos = () => {
                     {plano.limite_produtos != null ? `Até ${plano.limite_produtos} produtos` : 'Produtos ilimitados'}
                     {' · '}
                     {plano.limite_impressoras != null ? `até ${plano.limite_impressoras} impressoras` : 'impressoras ilimitadas'}
+                    {plano.inclui_servicos && (
+                      <>
+                        {' · '}
+                        {plano.limite_servicos != null ? `até ${plano.limite_servicos} serviços` : 'serviços ilimitados'}
+                      </>
+                    )}
                     {' · '}
                     {plano.piso_faturamento != null ? `cobra a partir de ${fmt(plano.piso_faturamento)} faturados` : 'cobra sempre'}
                     {plano.trial_dias > 0 && ` · ${plano.trial_dias} dias grátis`}

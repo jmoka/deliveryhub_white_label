@@ -23,6 +23,7 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
     modulo_gdoor: empresa?.modulo_gdoor ?? false,
     modulo_favicon_personalizado: empresa?.modulo_favicon_personalizado ?? false,
     modulo_servicos: empresa?.modulo_servicos ?? false,
+    limite_servicos: empresa?.limite_servicos ?? null,
   });
   const [salvando, setSalvando] = useState(false);
   const usaPadraoGlobal = form.comissao_pct === null;
@@ -177,6 +178,20 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
                 />
                 Serviços (orçamento)
               </label>
+              {form.modulo_servicos && (
+                <div className="ml-6 max-w-xs">
+                  <label className="block text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1">Limite de serviços cadastráveis</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={form.limite_servicos ?? ''}
+                    placeholder="Vazio = usa o limite do plano"
+                    onChange={(e) => setForm({ ...form, limite_servicos: e.target.value ? parseInt(e.target.value, 10) : null })}
+                  />
+                  <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1">Sobrescreve o limite do plano só pra essa loja.</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex gap-3 pt-2">
