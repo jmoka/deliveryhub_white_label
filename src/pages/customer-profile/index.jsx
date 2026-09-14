@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPerfil, updatePerfil, uploadFoto } from '../../services/perfilService';
+import { getPerfil, updatePerfil, uploadFoto, listarEnderecos, criarEndereco, editarEndereco } from '../../services/perfilService';
 import { buscarCep } from '../../utils/viaCep';
+import { reverseGeocode, geocodeEndereco } from '../../utils/reverseGeocode';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import CredenciaisForm from '../../components/perfil/CredenciaisForm';
+import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
 
 const formatCEP = (v) => {
   const n = (v ?? '').replace(/\D/g, '');
@@ -46,14 +48,21 @@ const CustomerProfile = () => {
   const [msg, setMsg] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Endereço salvo (customer_addresses) que essa tela edita — null se o cliente
+  // nunca teve nenhum. pin é o pino confirmado no mapa; nulo enquanto o cliente
+  // não ajustar (mesmo padrão de pino obrigatório do checkout).
+  const [enderecoAtivo, setEnderecoAtivo] = useState(null);
+  const [pin, setPin] = useState(null); // { lat, lng } | null
+
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate('/customer-registration-login', { state: { from: '/customer-profile' } });
       return;
     }
-    getPerfil()
-      .then((p) => {
-        const a = p.address_json ?? {};
+    Promise.all([getPerfil(), listarEnderecos().catch(() => [])])
+      .then(([p, enderecos]) => {
+        const ativo = enderecos?.[0] ?? null;
+        const a = ativo?.address_json ?? p.address_json ?? {};
         setForm({
           name: p.name ?? '',
           phone_e164: p.phone_e164 ?? '',
@@ -67,12 +76,32 @@ const CustomerProfile = () => {
           referencia: a.referencia ?? '',
         });
         setFotoUrl(p.foto_perfil_url ?? null);
+        setEnderecoAtivo(ativo);
+        if (ativo?.lat != null && ativo?.lng != null) setPin({ lat: ativo.lat, lng: ativo.lng });
       })
       .catch((e) => setMsg({ tipo: 'erro', texto: e.message }))
       .finally(() => setLoading(false));
   }, []);
 
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Pino é a fonte de verdade: sempre que o cliente ajusta a localização no
+  // mapa (busca, GPS ou arrastar), o texto do endereço acompanha automaticamente.
+  const handlePinChange = (lat, lng) => {
+    setPin({ lat, lng });
+    reverseGeocode(lat, lng).then((dados) => {
+      if (!dados) return;
+      setForm((f) => ({
+        ...f,
+        logradouro: dados.logradouro || f.logradouro,
+        numero: dados.numero || f.numero,
+        bairro: dados.bairro || f.bairro,
+        cidade: dados.cidade || f.cidade,
+        estado: dados.estado || f.estado,
+        cep: dados.cep ? formatCEP(dados.cep) : f.cep,
+      }));
+    });
+  };
 
   const handleCepChange = async (v) => {
     const formatted = formatCEP(v);
@@ -84,13 +113,18 @@ const CustomerProfile = () => {
     const endereco = await buscarCep(digitos);
     setBuscandoCep(false);
     if (!endereco) return;
-    setForm((f) => ({
-      ...f,
-      logradouro: endereco.logradouro || f.logradouro,
-      bairro: endereco.bairro || f.bairro,
-      cidade: endereco.cidade || f.cidade,
-      estado: endereco.estado || f.estado,
-    }));
+    const novoForm = {
+      logradouro: endereco.logradouro || form.logradouro,
+      bairro: endereco.bairro || form.bairro,
+      cidade: endereco.cidade || form.cidade,
+      estado: endereco.estado || form.estado,
+    };
+    setForm((f) => ({ ...f, ...novoForm }));
+
+    // CEP resolveu um endereço — o pino acompanha automaticamente, sem precisar
+    // buscar/arrastar manualmente no mapa pra um endereço que já veio limpo.
+    const coords = await geocodeEndereco({ ...novoForm, cep: formatted, numero: form.numero });
+    if (coords) setPin(coords);
   };
 
   const handleFotoSelecionada = async (e) => {
@@ -114,17 +148,22 @@ const CustomerProfile = () => {
       setMsg({ tipo: 'erro', texto: 'Nome e telefone são obrigatórios.' });
       return;
     }
-    if (form.logradouro.trim() && !form.numero.trim()) {
+    const enderecoPreenchido = !!(form.logradouro.trim() || form.numero.trim());
+    if (enderecoPreenchido && !form.numero.trim()) {
       setMsg({ tipo: 'erro', texto: 'Informe o número do endereço.' });
+      return;
+    }
+    if (enderecoPreenchido && !pin) {
+      setMsg({ tipo: 'erro', texto: 'Ajuste o pino no mapa pra confirmar a localização exata antes de salvar.' });
       return;
     }
     setSalvando(true);
     setMsg(null);
     try {
-      await updatePerfil({
-        name: form.name.trim(),
-        phone_e164: form.phone_e164.trim(),
-        address_json: {
+      await updatePerfil({ name: form.name.trim(), phone_e164: form.phone_e164.trim() });
+
+      if (enderecoPreenchido) {
+        const address_json = {
           logradouro: form.logradouro.trim(),
           numero: form.numero.trim(),
           complemento: form.complemento.trim(),
@@ -133,8 +172,19 @@ const CustomerProfile = () => {
           estado: form.estado.trim(),
           cep: form.cep.trim(),
           referencia: form.referencia.trim(),
-        },
-      });
+        };
+        if (enderecoAtivo?.id) {
+          await editarEndereco(enderecoAtivo.id, { address_json, lat: pin.lat, lng: pin.lng });
+        } else {
+          await criarEndereco({ address_json, lat: pin.lat, lng: pin.lng, definirComoAtivo: true });
+        }
+        // criarEndereco/editarEndereco devolvem o perfil (customers), não a linha
+        // de customer_addresses — recarrega a lista pra saber o id certo da
+        // próxima vez que essa tela salvar (evita duplicar endereço a cada save).
+        const enderecosAtualizados = await listarEnderecos().catch(() => []);
+        setEnderecoAtivo(enderecosAtualizados?.[0] ?? null);
+      }
+
       setMsg({ tipo: 'ok', texto: 'Perfil salvo com sucesso!' });
       setTimeout(() => setMsg(null), 3000);
     } catch (err) {
@@ -200,6 +250,28 @@ const CustomerProfile = () => {
             <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2">
               <Icon name="MapPin" size={14} className="text-[#FF441F]" /> Endereço de entrega
             </p>
+
+            <div className="p-3 bg-[#FF441F]/5 border border-[#FF441F]/20 rounded-xl text-xs text-[#27272A] dark:text-[#F4F4F5] flex items-start gap-2">
+              <Icon name="MapPinned" size={15} className="text-[#FF441F] flex-shrink-0 mt-0.5" />
+              <span>Fixe o pino no mapa — é isso que o motoboy usa pra chegar. Só o endereço escrito não garante a entrega no lugar certo.</span>
+            </div>
+
+            {(enderecoAtivo?.semPino || enderecoAtivo?.textoDesatualizado) && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-2.5">
+                <Icon name="AlertTriangle" size={12} className="flex-shrink-0" />
+                {enderecoAtivo.semPino
+                  ? 'Esse endereço nunca teve o pino confirmado no mapa. Ajuste abaixo pra garantir a entrega certa.'
+                  : 'O endereço foi editado depois do último ajuste do pino. Confira se ele ainda está no lugar certo.'}
+              </p>
+            )}
+
+            <MapaLocalizacaoPicker lat={pin?.lat} lng={pin?.lng} onChange={handlePinChange} />
+            {!pin && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+                <Icon name="AlertTriangle" size={12} /> Busque o endereço ou use o GPS acima e ajuste o pino antes de salvar
+              </p>
+            )}
+
             <Campo label="Logradouro (Rua / Av.)" value={form.logradouro} onChange={set('logradouro')} placeholder="Rua das Flores" />
             <div className="flex gap-2">
               <div className="w-1/2">

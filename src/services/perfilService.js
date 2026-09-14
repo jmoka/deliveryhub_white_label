@@ -36,6 +36,22 @@ export const atualizarLocalizacaoPerfil = (lat, lng) =>
 // separadas que coincidem no email) — usado pra barrar telas de cliente pra ela.
 export const ehMotoboy = () => apiFetch({}, '/e-motoboy');
 
+// Múltiplos endereços salvos (StepEndereco do checkout) — customers.address_json
+// continua sendo o "endereço ativo"; selecionar/criar aqui copia pra lá.
+export const listarEnderecos = () => apiFetch({}, '/enderecos');
+export const criarEndereco = (data) =>
+  apiFetch({ method: 'POST', body: JSON.stringify(data) }, '/enderecos');
+export const editarEndereco = (id, data) =>
+  apiFetch({ method: 'PATCH', body: JSON.stringify(data) }, `/enderecos/${id}`);
+export const excluirEndereco = (id) =>
+  apiFetch({ method: 'DELETE' }, `/enderecos/${id}`);
+// Cenário 2 de desatualização (pino divergente do texto) — checado sob demanda,
+// ao abrir um endereço salvo pra confirmar, nunca ao listar (custo de geocoding).
+export const verificarEndereco = (id) =>
+  apiFetch({ method: 'POST' }, `/enderecos/${id}/verificar`);
+export const selecionarEndereco = (id, coords) =>
+  apiFetch({ method: 'PATCH', body: JSON.stringify(coords ?? {}) }, `/enderecos/${id}/selecionar`);
+
 export async function uploadFoto(file) {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
   const token = session?.access_token;

@@ -40,7 +40,7 @@ const ClickHandler = ({ onPick }) => {
 // automático (Nominatim) frequentemente erra rooftop-level em endereço brasileiro,
 // o que quebra o filtro de raio pequeno (20m-100m) mesmo o cliente estando no lugar
 // certo. Isso aqui é a fonte de verdade quando o dono confirma manualmente.
-const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
+const MapaLocalizacaoPicker = ({ lat, lng, onChange, autoGps = false }) => {
   const [posicao, setPosicao] = useState(
     lat != null && lng != null ? { lat, lng } : BRASIL_CENTRO,
   );
@@ -55,8 +55,21 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
   useEffect(() => {
     if (lat != null && lng != null) {
       setPosicao({ lat, lng });
-      setZoom((z) => (z < 15 ? 18 : z));
+      const targetZoom = zoom < 15 ? 18 : zoom;
+      setZoom(targetZoom);
+      // MapContainer só usa center/zoom como valor INICIAL — mudar a prop sozinha
+      // não move o mapa depois de montado (gotcha conhecido do react-leaflet).
+      // setTimeout(0) empurra pro próximo tick: quando esse componente acabou de
+      // montar (ex: mapa apareceu na hora que o CEP geocodificou), o container
+      // pode ainda não ter o tamanho final no mesmo commit — chamar flyTo/
+      // invalidateSize direto aqui às vezes não pega, o defer resolve.
+      const t = setTimeout(() => {
+        mapRef.current?.invalidateSize();
+        mapRef.current?.flyTo([lat, lng], targetZoom);
+      }, 0);
+      return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng]);
 
   const mover = (novoLat, novoLng) => {
@@ -79,6 +92,18 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange }) => {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
     );
   };
+
+  // Entrada "(b) usar GPS" do seletor de endereço no checkout — dispara a
+  // localização assim que o mapa abre, sem o cliente precisar achar o botão.
+  // Só uma vez (ref, não estado) pra não repetir a busca a cada re-render.
+  const gpsAutoDisparado = useRef(false);
+  useEffect(() => {
+    if (autoGps && !gpsAutoDisparado.current) {
+      gpsAutoDisparado.current = true;
+      usarGpsAtual();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGps]);
 
   // Busca por texto (Nominatim) — só um jeito rápido de pular perto do endereço; a
   // precisão de verdade continua sendo o dono arrastar o pino depois. limit=5 e
