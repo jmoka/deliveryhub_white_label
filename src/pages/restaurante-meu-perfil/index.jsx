@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import CredenciaisForm from '../../components/perfil/CredenciaisForm';
 import ImageUpload from '../../components/ui/ImageUpload';
+import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
 import Icon from '../../components/AppIcon';
-import { getMinhaEmpresa, updateEmpresa } from '../../services/restauranteService';
+import { getMinhaEmpresa, updateEmpresa, atualizarLocalizacaoManual } from '../../services/restauranteService';
 import { buscarCep } from '../../utils/viaCep';
+import { reverseGeocode, geocodeEndereco } from '../../utils/reverseGeocode';
 import { useAuth } from '../../contexts/AuthContext';
 
 // Endereço fica guardado como uma string só (address) — separa Logradouro/Número
@@ -24,6 +26,11 @@ const DadosEstabelecimentoForm = () => {
   const [erro, setErro] = useState(null);
   const [sucesso, setSucesso] = useState(false);
 
+  // Localização exata no mapa (mesma precisão do endereço do cliente): pino é a
+  // fonte de verdade, texto e pino ficam sincronizados nos dois sentidos.
+  const [localizacao, setLocalizacao] = useState({ lat: null, lng: null });
+  const [ajustadoManualmente, setAjustadoManualmente] = useState(false);
+
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   useEffect(() => {
@@ -40,6 +47,8 @@ const DadosEstabelecimentoForm = () => {
           city: e.city ?? '',
           state: e.state ?? '',
         });
+        setLocalizacao({ lat: e.lat ?? null, lng: e.lng ?? null });
+        setAjustadoManualmente(!!e.lat_ajustado_manualmente);
       })
       .catch((err) => setErro(err.message))
       .finally(() => setLoading(false));
@@ -60,19 +69,54 @@ const DadosEstabelecimentoForm = () => {
     const endereco = await buscarCep(digitos);
     setBuscandoCep(false);
     if (!endereco) return;
-    setForm((f) => ({
-      ...f,
-      logradouro: endereco.logradouro || f.logradouro,
-      neighborhood: endereco.bairro || f.neighborhood,
-      city: endereco.cidade || f.city,
-      state: endereco.estado || f.state,
-    }));
+    const novoForm = {
+      logradouro: endereco.logradouro || form.logradouro,
+      neighborhood: endereco.bairro || form.neighborhood,
+      city: endereco.cidade || form.city,
+      state: endereco.estado || form.state,
+    };
+    setForm((f) => ({ ...f, ...novoForm }));
+
+    // CEP resolveu um endereço — o pino segue automaticamente, mesma precisão
+    // do endereço do cliente.
+    const coords = await geocodeEndereco({
+      logradouro: novoForm.logradouro, numero: form.numero,
+      bairro: novoForm.neighborhood, cidade: novoForm.city, estado: novoForm.state, cep: formatted,
+    });
+    if (coords) setLocalizacao(coords);
+  };
+
+  // Pino é a fonte de verdade: sempre que ajustado no mapa (busca, GPS ou
+  // arrastar), o texto do endereço acompanha automaticamente.
+  const handlePinChange = (lat, lng) => {
+    setLocalizacao({ lat, lng });
+    reverseGeocode(lat, lng).then((dados) => {
+      if (!dados) return;
+      setForm((f) => ({
+        ...f,
+        logradouro: dados.logradouro || f.logradouro,
+        numero: dados.numero || f.numero,
+        neighborhood: dados.bairro || f.neighborhood,
+        city: dados.cidade || f.city,
+        state: dados.estado || f.state,
+        cep: dados.cep ? formatCEP(dados.cep) : f.cep,
+      }));
+    });
   };
 
   const handleSalvar = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
       setErro('Informe o nome do estabelecimento.');
+      return;
+    }
+    const enderecoPreenchido = !!form.logradouro.trim();
+    if (enderecoPreenchido && !form.numero.trim()) {
+      setErro('Informe o número do endereço.');
+      return;
+    }
+    if (enderecoPreenchido && (localizacao.lat == null || localizacao.lng == null)) {
+      setErro('Ajuste o pino no mapa pra confirmar a localização exata antes de salvar.');
       return;
     }
     setSalvando(true);
@@ -88,6 +132,10 @@ const DadosEstabelecimentoForm = () => {
         city: form.city.trim(),
         state: form.state.trim(),
       });
+      if (enderecoPreenchido) {
+        await atualizarLocalizacaoManual(localizacao.lat, localizacao.lng);
+        setAjustadoManualmente(true);
+      }
       setSucesso(true);
       setTimeout(() => setSucesso(false), 3000);
     } catch (err) {
@@ -168,6 +216,27 @@ const DadosEstabelecimentoForm = () => {
             <input value={form.state} onChange={(e) => set('state', e.target.value)} placeholder="UF" maxLength={2}
               className="w-full mt-1 border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase" />
           </div>
+        </div>
+
+        <div className="pt-2 border-t border-gray-200 dark:border-zinc-700">
+          <div className="flex items-center gap-2 mt-3 mb-1">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-zinc-100">Localização exata no mapa</h4>
+            {ajustadoManualmente && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 rounded-full px-2 py-0.5">
+                <Icon name="Check" size={10} /> Calibrado manualmente
+              </span>
+            )}
+          </div>
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-lg text-xs text-blue-700 dark:text-blue-400 flex items-start gap-2 mb-3">
+            <Icon name="MapPinned" size={15} className="flex-shrink-0 mt-0.5" />
+            <span>Fixe o pino no mapa — é a partir dele que o sistema calcula distância, rota e preço do frete pra cada cliente. Só o endereço escrito não garante precisão.</span>
+          </div>
+          <MapaLocalizacaoPicker lat={localizacao.lat} lng={localizacao.lng} onChange={handlePinChange} />
+          {form.logradouro.trim() && localizacao.lat == null && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1 mt-2">
+              <Icon name="AlertTriangle" size={12} /> Busque o endereço ou use o GPS acima e ajuste o pino antes de salvar
+            </p>
+          )}
         </div>
 
         {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}
