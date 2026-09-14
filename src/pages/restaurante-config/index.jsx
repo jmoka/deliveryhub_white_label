@@ -11,6 +11,7 @@ import {
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
+import { reverseGeocode, geocodeEndereco } from '../../utils/reverseGeocode';
 import Icon from '../../components/AppIcon';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
@@ -810,13 +811,39 @@ const EnderecoCard = ({ geocodeFalhou }) => {
     const endereco = await buscarCep(digitos);
     setBuscandoCep(false);
     if (!endereco) return;
-    setForm((f) => ({
-      ...f,
-      logradouro: endereco.logradouro || f.logradouro,
-      neighborhood: endereco.bairro || f.neighborhood,
-      city: endereco.cidade || f.city,
-      state: endereco.estado || f.state,
-    }));
+    const novoForm = {
+      logradouro: endereco.logradouro || form.logradouro,
+      neighborhood: endereco.bairro || form.neighborhood,
+      city: endereco.cidade || form.city,
+      state: endereco.estado || form.state,
+    };
+    setForm((f) => ({ ...f, ...novoForm }));
+
+    // CEP resolveu um endereço — o pino segue automaticamente, mesma precisão
+    // que o checkout/perfil do cliente já ganharam.
+    const coords = await geocodeEndereco({
+      logradouro: novoForm.logradouro, numero: form.numero,
+      bairro: novoForm.neighborhood, cidade: novoForm.city, estado: novoForm.state, cep: formatted,
+    });
+    if (coords) setLocalizacao(coords);
+  };
+
+  // Pino é a fonte de verdade: sempre que ajustado no mapa (busca, GPS ou
+  // arrastar), o texto do endereço acompanha automaticamente.
+  const handlePinChange = (lat, lng) => {
+    setLocalizacao({ lat, lng });
+    reverseGeocode(lat, lng).then((dados) => {
+      if (!dados) return;
+      setForm((f) => ({
+        ...f,
+        logradouro: dados.logradouro || f.logradouro,
+        numero: dados.numero || f.numero,
+        neighborhood: dados.bairro || f.neighborhood,
+        city: dados.cidade || f.city,
+        state: dados.estado || f.state,
+        cep: dados.cep ? formatCEP(dados.cep) : f.cep,
+      }));
+    });
   };
 
   useEffect(() => {
@@ -970,7 +997,7 @@ const EnderecoCard = ({ geocodeFalhou }) => {
           <MapaLocalizacaoPicker
             lat={localizacao.lat}
             lng={localizacao.lng}
-            onChange={(lat, lng) => setLocalizacao({ lat, lng })}
+            onChange={handlePinChange}
           />
 
           {erroLocalizacao && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erroLocalizacao}</p>}
