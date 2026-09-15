@@ -69,9 +69,12 @@ const PlanSelectionForm = ({
                   <div className="flex flex-wrap gap-1.5">
                     {p.inclui_delivery && <span className="text-xs font-medium bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full">Delivery</span>}
                     {p.inclui_salao && <span className="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">Salão</span>}
-                    <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                      {p.limite_produtos != null ? `Até ${p.limite_produtos} produtos` : 'Produtos ilimitados'}
-                    </span>
+                    {p.inclui_servicos && <span className="text-xs font-medium bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full">Serviços</span>}
+                    {(p.inclui_delivery || p.inclui_salao) && (
+                      <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                        {p.limite_produtos != null ? `Até ${p.limite_produtos} produtos` : 'Produtos ilimitados'}
+                      </span>
+                    )}
                   </div>
                 </button>
               );

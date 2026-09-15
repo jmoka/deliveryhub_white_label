@@ -157,15 +157,25 @@ const PlanosDisponiveisModal = ({ planoAtualId, onClose, onEscolher }) => {
                     {atual && <span className="text-xs font-semibold text-[#FF441F] bg-[#FF441F]/10 px-2 py-0.5 rounded-full">Plano atual</span>}
                   </div>
                   <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mb-2">{fmt(p.valor)} / {p.periodicidade}</p>
-                  <div className="flex gap-1.5 mb-3">
+                  <div className="flex gap-1.5 mb-3 flex-wrap">
                     {p.inclui_delivery && <span className="text-xs font-medium bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">Delivery</span>}
                     {p.inclui_salao && <span className="text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">Salão</span>}
-                    <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
-                      {p.limite_produtos != null ? `Até ${p.limite_produtos} produtos` : 'Produtos ilimitados'}
-                    </span>
-                    <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
-                      {p.limite_impressoras != null ? `Até ${p.limite_impressoras} impressoras` : 'Impressoras ilimitadas'}
-                    </span>
+                    {p.inclui_servicos && <span className="text-xs font-medium bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full">Serviços</span>}
+                    {(p.inclui_delivery || p.inclui_salao) && (
+                      <>
+                        <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
+                          {p.limite_produtos != null ? `Até ${p.limite_produtos} produtos` : 'Produtos ilimitados'}
+                        </span>
+                        <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
+                          {p.limite_impressoras != null ? `Até ${p.limite_impressoras} impressoras` : 'Impressoras ilimitadas'}
+                        </span>
+                      </>
+                    )}
+                    {p.inclui_servicos && (
+                      <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
+                        {p.limite_servicos != null ? `Até ${p.limite_servicos} serviços` : 'Serviços ilimitados'}
+                      </span>
+                    )}
                   </div>
                   {!atual && (
                     <button
