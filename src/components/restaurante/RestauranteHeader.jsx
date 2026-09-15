@@ -64,7 +64,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
   const { signOut, planoStatus } = useAuth();
   const slugLoja = useMinhaLojaSlug();
   const logoUrl = useMinhaLojaLogo();
-  const { moduloDelivery, moduloSalao, moduloServicos, tipoRestaurante } = useModulosEmpresa();
+  const { moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, tipoRestaurante } = useModulosEmpresa();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const pendentesServicos = useSolicitacoesServicoCount();
   const pendentesPorPath = {
@@ -89,7 +89,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
     }
   };
 
-  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, moduloServicos, pontosPreparoLinks, tipoRestaurante);
+  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparoLinks, tipoRestaurante);
   const linksFavoritos = links.filter((l) => favoritos.includes(l.path));
 
   return (

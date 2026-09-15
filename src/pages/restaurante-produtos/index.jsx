@@ -48,7 +48,7 @@ const RestauranteProdutos = () => {
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
   const [impressoras, setImpressoras] = useState([]);
-  const { moduloSalao } = useModulosEmpresa();
+  const { moduloDelivery, moduloSalao, moduloGdoor, carregado } = useModulosEmpresa();
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
@@ -98,6 +98,26 @@ const RestauranteProdutos = () => {
   // Impressora do produto roteia pedido de delivery pro KDS certo (Cozinha/Bar/pontos
   // de preparo) — não é exclusivo de Salão, então busca sempre, independente do módulo.
   useEffect(() => { listarImpressoras().then(setImpressoras).catch(() => {}); }, []);
+
+  // Prestador 100% serviço não tem produto — a aba só faz sentido com algum
+  // desses três módulos ativos (mesmo critério do link na nav, ver
+  // restauranteNavLinks.getRestauranteNavLinks).
+  if (carregado && !moduloDelivery && !moduloSalao && !moduloGdoor) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
+        <RestauranteHeader active="/restaurante/produtos" title="Produtos" />
+        <main className="p-6 max-w-2xl mx-auto">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
+            <Icon name="Lock" size={44} className="text-gray-300 dark:text-zinc-600 mx-auto mb-3" />
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Módulo não disponível neste plano</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+              A aba de Produtos só aparece com Delivery, Salão ou GDOOR ativos. Este plano é focado em Serviços.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const abrirNovo = () => {
     setEditando(null);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 
 const RELATORIOS = [
   {
@@ -40,6 +41,26 @@ const RELATORIOS = [
 
 const RestauranteRelatorios = () => {
   const navigate = useNavigate();
+  const { moduloDelivery, moduloSalao, moduloGdoor, carregado } = useModulosEmpresa();
+
+  // Prestador 100% serviço não tem produto/pedido pra conferir aqui — mesmo
+  // critério de acesso da aba Produtos (ver restauranteNavLinks.js).
+  if (carregado && !moduloDelivery && !moduloSalao && !moduloGdoor) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
+        <RestauranteHeader active="/restaurante/relatorios" title="Conferências" />
+        <main className="p-6 max-w-2xl mx-auto">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
+            <Icon name="Lock" size={44} className="text-gray-300 dark:text-zinc-600 mx-auto mb-3" />
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Módulo não disponível neste plano</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+              As Conferências só ficam disponíveis com Delivery, Salão ou GDOOR ativos. Este plano é focado em Serviços.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">

@@ -26,7 +26,7 @@ const RestauranteSessao = () => {
   const [loading, setLoading] = useState(true);
   const [filtroCanal, setFiltroCanal] = useState('todos');
   const [erro, setErro] = useState(null);
-  const { moduloGdoor } = useModulosEmpresa();
+  const { moduloDelivery, moduloSalao, moduloGdoor, carregado } = useModulosEmpresa();
   const [gdoorStatus, setGdoorStatus] = useState({});
   const [enviandoGdoorId, setEnviandoGdoorId] = useState(null);
 
@@ -72,6 +72,25 @@ const RestauranteSessao = () => {
   }, [carregar]);
 
   const pedidos = (caixa?.pedidos ?? []).filter((p) => filtroCanal === 'todos' || p.canal === filtroCanal);
+
+  // Prestador 100% serviço não tem sessão de caixa delivery/salão pra
+  // acompanhar aqui — mesmo critério de acesso da aba Produtos.
+  if (carregado && !moduloDelivery && !moduloSalao && !moduloGdoor) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
+        <RestauranteHeader active="/restaurante/sessao" title="Pedidos da Sessão" />
+        <main className="p-6 max-w-2xl mx-auto">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
+            <Icon name="Lock" size={44} className="text-gray-300 dark:text-zinc-600 mx-auto mb-3" />
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Módulo não disponível neste plano</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+              A Sessão só fica disponível com Delivery, Salão ou GDOOR ativos. Este plano é focado em Serviços.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">

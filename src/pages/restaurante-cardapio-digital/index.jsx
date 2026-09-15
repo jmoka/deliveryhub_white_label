@@ -625,11 +625,30 @@ const getCardapioUrls = (slug) => {
 
 const RestauranteCardapioDigital = () => {
   const slugLoja = useMinhaLojaSlug();
-  const { tipoRestaurante } = useModulosEmpresa();
+  const { tipoRestaurante, moduloDelivery, moduloSalao, moduloGdoor, carregado } = useModulosEmpresa();
   const termos = getTermos(tipoRestaurante);
   const [copiado, setCopiado] = useState(false);
   const [modo, setModo] = useState('online'); // 'online' | 'local'
   const [mostrarModalCardapioImpresso, setMostrarModalCardapioImpresso] = useState(false);
+
+  // Prestador 100% serviço não tem produto/cardápio pra expor aqui — mesmo
+  // critério de acesso da aba Produtos.
+  if (carregado && !moduloDelivery && !moduloSalao && !moduloGdoor) {
+    return (
+      <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
+        <RestauranteHeader active="/restaurante/cardapio-digital" title={termos.cardapio} />
+        <main className="p-6 max-w-2xl mx-auto">
+          <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-14 text-center">
+            <Icon name="Lock" size={44} className="text-gray-300 dark:text-zinc-600 mx-auto mb-3" />
+            <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1">Módulo não disponível neste plano</p>
+            <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
+              {termos.cardapio} só fica disponível com Delivery, Salão ou GDOOR ativos. Este plano é focado em Serviços.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   // Busca a empresa na hora do clique (não guarda em state) — evita imprimir sem
   // logo quando o botão é clicado antes do fetch inicial da tela terminar.

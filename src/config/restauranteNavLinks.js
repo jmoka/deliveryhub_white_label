@@ -61,21 +61,26 @@ const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurant
 // Estabelecimento tipo ≠ Restaurante (farmácia, material de construção...) chama
 // o entregador de "Entregadores" no menu, em vez de "Motoboys" (termo mais
 // específico de delivery de comida).
-export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServicos, pontosPreparo = [], tipoRestaurante = true) => {
+export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparo = [], tipoRestaurante = true) => {
   const temAlgumModulo = moduloDelivery || moduloSalao;
+  const temProdutos = moduloDelivery || moduloSalao || moduloGdoor;
   const deliveryLinks = tipoRestaurante
     ? DELIVERY_LINKS
     : DELIVERY_LINKS.map((l) => (l.path === '/restaurante/motoboys' ? { ...l, label: 'Entregadores' } : l));
   const links = relabelarParaTipo([
-    ...BASE_LINKS.slice(0, 2), // Dashboard, Relatórios
+    ...BASE_LINKS.slice(0, 1), // Dashboard
+    ...(temProdutos ? BASE_LINKS.slice(1, 2) : []), // Conferências/Relatórios — idem Produtos
     ...(moduloDelivery ? deliveryLinks.slice(0, 1) : []), // Delivery
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(0, 1) : []), // Cozinha
     ...(temAlgumModulo ? [PONTOS_PREPARO_CADASTRO, ...pontosPreparo] : []), // Cadastro + pontos criados
     ...(moduloSalao ? COPA_LINKS : []), // Produção, Bar
-    ...BASE_LINKS.slice(2, 3), // Produtos
+    ...(temProdutos ? BASE_LINKS.slice(2, 3) : []), // Produtos — só faz sentido com Delivery, Salão ou GDOOR
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(1) : []), // Combos, Pedidos
     ...(moduloDelivery ? deliveryLinks.slice(1) : []), // Entregas, Motoboys/Entregadores
-    ...BASE_LINKS.slice(3), // Clientes...Sessão
+    ...BASE_LINKS.slice(3, 7), // Clientes, Financeiro, Caixa, Designer
+    ...(temProdutos ? BASE_LINKS.slice(7, 8) : []), // Cardápio Digital — idem Produtos
+    ...BASE_LINKS.slice(8, 9), // Plano
+    ...(temProdutos ? BASE_LINKS.slice(9, 10) : []), // Sessão — idem Produtos
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
     ...(moduloServicos ? SERVICOS_LINKS : []), // Serviços (orçamento)
   ], tipoRestaurante);

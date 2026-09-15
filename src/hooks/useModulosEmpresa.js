@@ -5,6 +5,7 @@ import { useMinhaEmpresaData } from './useMinhaEmpresaData';
 export function useModulosEmpresa() {
   const data = useMinhaEmpresaData();
   return {
+    carregado: data != null,
     moduloDelivery: !!data?.empresa?.modulo_delivery,
     moduloSalao: !!data?.empresa?.modulo_salao,
     moduloGdoor: !!data?.empresa?.modulo_gdoor,
