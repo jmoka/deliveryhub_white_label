@@ -124,7 +124,7 @@ const Routes = () => {
         <Route path="/restaurante/aparencia" element={<RestauranteGuard><RestauranteAparencia /></RestauranteGuard>} />
         <Route path="/restaurante/motoboys" element={<RestauranteGuard><RestauranteMotoboys /></RestauranteGuard>} />
         <Route path="/restaurante/entregas" element={<RestauranteGuard><RestauranteEntregas /></RestauranteGuard>} />
-        <Route path="/restaurante/cozinha" element={<RestauranteCozinha />} />
+        <Route path="/restaurante/cozinha" element={<RestauranteGuard><RestauranteCozinha /></RestauranteGuard>} />
         <Route path="/restaurante/producao" element={<RestauranteGuard><RestauranteProducao /></RestauranteGuard>} />
         <Route path="/restaurante/pontos-preparo" element={<RestauranteGuard><RestaurantePontosPreparo /></RestauranteGuard>} />
         <Route path="/restaurante/ponto-preparo/:id" element={<RestauranteGuard><RestaurantePontoPreparo /></RestauranteGuard>} />
