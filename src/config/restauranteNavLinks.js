@@ -47,8 +47,12 @@ const SALAO_LINKS = [
   { label: 'Chamada', path: '/restaurante/chamada', icon: 'Volume2' },
   { label: 'Garçons', path: '/restaurante/garcons', icon: 'Contact' },
   { label: 'Mesas', path: '/restaurante/mesas', icon: 'Table2' },
-  { label: 'Impressoras', path: '/restaurante/impressoras', icon: 'Printer' },
 ];
+
+// Impressora roteia pedido de delivery pro KDS certo tanto quanto imprime
+// comanda de salão — não é exclusivo de Salão (ver comentário equivalente
+// em restaurante-produtos/index.jsx sobre a busca de impressoras).
+const IMPRESSORAS_LINK = { label: 'Impressoras', path: '/restaurante/impressoras', icon: 'Printer' };
 
 const SERVICOS_LINKS = [
   { label: 'Serviços', path: '/restaurante/servicos', icon: 'Wrench' },
@@ -73,6 +77,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServic
     ...(moduloDelivery ? deliveryLinks.slice(0, 1) : []), // Delivery
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(0, 1) : []), // Cozinha
     ...(temAlgumModulo ? [PONTOS_PREPARO_CADASTRO, ...pontosPreparo] : []), // Cadastro + pontos criados
+    ...(temAlgumModulo ? [IMPRESSORAS_LINK] : []), // Impressoras — Delivery e Salão usam
     ...(moduloSalao ? COPA_LINKS : []), // Produção, Bar
     ...(temProdutos ? BASE_LINKS.slice(2, 3) : []), // Produtos — só faz sentido com Delivery, Salão ou GDOOR
     ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(1) : []), // Combos, Pedidos
@@ -81,7 +86,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServic
     ...(temProdutos ? BASE_LINKS.slice(7, 8) : []), // Cardápio Digital — idem Produtos
     ...BASE_LINKS.slice(8, 9), // Plano
     ...(temProdutos ? BASE_LINKS.slice(9, 10) : []), // Sessão — idem Produtos
-    ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Impressoras
+    ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Mesas...
     ...(moduloServicos ? SERVICOS_LINKS : []), // Serviços (orçamento)
   ], tipoRestaurante);
   // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só
