@@ -355,8 +355,11 @@ const TabPlanos = () => {
   const [modal, setModal] = useState(null); // null | 'novo' | plano_obj
   const [removendo, setRemovendo] = useState(null);
   const [busca, setBusca] = useState('');
+  const [filtroCliente, setFiltroCliente] = useState('todos'); // 'todos' | 'novos'
 
-  const planosFiltrados = planos.filter((p) => normalizarNome(p.nome).includes(normalizarNome(busca)));
+  const planosFiltrados = planos
+    .filter((p) => filtroCliente === 'novos' ? !!p.somente_novos_cadastros : true)
+    .filter((p) => normalizarNome(p.nome).includes(normalizarNome(busca)));
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -400,6 +403,25 @@ const TabPlanos = () => {
         </button>
       </div>
 
+      <div className="flex gap-2 mb-4">
+        {[
+          { id: 'todos', label: 'Todos' },
+          { id: 'novos', label: 'Novos cadastros' },
+        ].map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFiltroCliente(f.id)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+              filtroCliente === f.id
+                ? 'bg-violet-600 text-white'
+                : 'bg-white dark:bg-zinc-800 text-gray-600 dark:text-zinc-400 border border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/40'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       <div className="relative mb-6">
         <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500" />
         <input
@@ -438,8 +460,12 @@ const TabPlanos = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className={`bg-white dark:bg-zinc-800 rounded-2xl border px-5 py-4 flex items-center gap-4 group transition-all ${
-                  plano.ativo ? 'border-gray-100 dark:border-zinc-700 hover:shadow-md' : 'border-dashed border-gray-200 dark:border-zinc-700 opacity-60'
+                className={`rounded-2xl border px-5 py-4 flex items-center gap-4 group transition-all ${
+                  !plano.ativo
+                    ? 'bg-white dark:bg-zinc-800 border-dashed border-gray-200 dark:border-zinc-700 opacity-60'
+                    : plano.somente_novos_cadastros
+                    ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800/60 hover:shadow-md'
+                    : 'bg-white dark:bg-zinc-800 border-gray-100 dark:border-zinc-700 hover:shadow-md'
                 }`}
               >
                 <div className="flex-1 min-w-0">
