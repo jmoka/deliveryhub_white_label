@@ -362,10 +362,14 @@ const TabPlanos = () => {
   const [modal, setModal] = useState(null); // null | 'novo' | plano_obj
   const [removendo, setRemovendo] = useState(null);
   const [busca, setBusca] = useState('');
-  const [filtroCliente, setFiltroCliente] = useState('todos'); // 'todos' | 'novos'
+  const [filtroCliente, setFiltroCliente] = useState('todos'); // 'todos' | 'novos' | 'clientes'
 
   const planosFiltrados = planos
-    .filter((p) => filtroCliente === 'novos' ? !!p.somente_novos_cadastros : true)
+    .filter((p) => {
+      if (filtroCliente === 'novos') return !!p.somente_novos_cadastros;
+      if (filtroCliente === 'clientes') return !p.somente_novos_cadastros;
+      return true;
+    })
     .filter((p) => normalizarNome(p.nome).includes(normalizarNome(busca)));
 
   const carregar = useCallback(() => {
@@ -414,6 +418,7 @@ const TabPlanos = () => {
         {[
           { id: 'todos', label: 'Todos' },
           { id: 'novos', label: 'Novos cadastros' },
+          { id: 'clientes', label: 'Para Clientes' },
         ].map((f) => (
           <button
             key={f.id}
