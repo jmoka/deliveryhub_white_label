@@ -287,7 +287,11 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
   const [email, setEmail] = useState(motoboy?.email ?? '');
   const [password, setPassword] = useState('');
   const [veiculoTipo, setVeiculoTipo] = useState('');
+  const [tipoVinculo, setTipoVinculo] = useState('prestador_servico'); // 'prestador_servico' | 'proprio'
+  const [motoboyClt, setMotoboyClt] = useState(false);
   const [cnpj, setCnpj] = useState('');
+  const [documentoCnpj, setDocumentoCnpj] = useState(null);
+  const [contratoSocial, setContratoSocial] = useState(null);
   const [veiculoFoto, setVeiculoFoto] = useState(null);
   const [veiculoDocumento, setVeiculoDocumento] = useState(null);
   const [veiculoDocumentoCarretinha, setVeiculoDocumentoCarretinha] = useState(null);
@@ -306,7 +310,14 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
     if (password) dados.password = password;
     if (!editando) {
       dados.veiculo_tipo = veiculoTipo;
-      dados.cnpj = cnpj.replace(/\D/g, '');
+      dados.tipo_vinculo = tipoVinculo;
+      if (tipoVinculo === 'prestador_servico') {
+        dados.cnpj = cnpj.replace(/\D/g, '');
+        dados.documento_cnpj = await arquivoParaBase64(documentoCnpj);
+        dados.contrato_social = await arquivoParaBase64(contratoSocial);
+      } else {
+        dados.motoboy_clt = motoboyClt;
+      }
       dados.veiculo_foto = await arquivoParaBase64(veiculoFoto);
       dados.veiculo_documento = await arquivoParaBase64(veiculoDocumento);
       if (veiculoTipo === 'carretinha') dados.veiculo_documento_carretinha = await arquivoParaBase64(veiculoDocumentoCarretinha);
@@ -402,6 +413,43 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
           {!editando && (
             <>
               <div>
+                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Tipo de vínculo</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-start gap-2 cursor-pointer select-none border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2">
+                    <input type="radio" name="tipoVinculo" checked={tipoVinculo === 'prestador_servico'}
+                      onChange={() => setTipoVinculo('prestador_servico')}
+                      className="w-4 h-4 mt-0.5 accent-[#FF441F]" />
+                    <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                      Prestador de serviço
+                      <span className="block text-[11px] text-[#A1A1AA] font-normal">MEI/CNPJ obrigatório, anexa CNPJ e contrato social. Segue a comissão por corrida configurada.</span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer select-none border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2">
+                    <input type="radio" name="tipoVinculo" checked={tipoVinculo === 'proprio'}
+                      onChange={() => setTipoVinculo('proprio')}
+                      className="w-4 h-4 mt-0.5 accent-[#FF441F]" />
+                    <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                      Próprio
+                      <span className="block text-[11px] text-[#A1A1AA] font-normal">Funcionário do seu estabelecimento, sem CNPJ.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {tipoVinculo === 'proprio' && (
+                <label className="flex items-start gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={motoboyClt} onChange={(e) => setMotoboyClt(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded accent-[#FF441F]" />
+                  <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                    CLT (recebe salário mensal)
+                    <span className="block text-[11px] text-[#A1A1AA] font-normal">
+                      Marcado: não ganha comissão por corrida — o frete continua sendo cobrado do cliente, mas fica pro estabelecimento. Desmarcado: recebe comissão das vendas normalmente, igual hoje.
+                    </span>
+                  </span>
+                </label>
+              )}
+
+              <div>
                 <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Tipo de veículo</label>
                 <select value={veiculoTipo} onChange={(e) => setVeiculoTipo(e.target.value)} required
                   className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]">
@@ -409,13 +457,27 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
                   {VEICULO_TIPOS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNPJ (MEI)</label>
-                <input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} required
-                  placeholder="00.000.000/0000-00"
-                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
-                <p className="text-[11px] text-[#A1A1AA] mt-1">Entregador precisa ser MEI (MEI caminhoneiro se o veículo for caminhão).</p>
-              </div>
+              {tipoVinculo === 'prestador_servico' && (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNPJ (MEI)</label>
+                    <input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} required
+                      placeholder="00.000.000/0000-00"
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+                    <p className="text-[11px] text-[#A1A1AA] mt-1">Entregador precisa ser MEI (MEI caminhoneiro se o veículo for caminhão).</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Documento do CNPJ</label>
+                    <input type="file" accept="image/*,application/pdf" required onChange={(e) => setDocumentoCnpj(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Contrato social</label>
+                    <input type="file" accept="image/*,application/pdf" required onChange={(e) => setContratoSocial(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                </>
+              )}
               <div>
                 <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Foto do veículo</label>
                 <input type="file" accept="image/*" required onChange={(e) => setVeiculoFoto(e.target.files?.[0] ?? null)}
@@ -753,6 +815,11 @@ const RestauranteMotoboys = () => {
                         {mb.gerenciado_por_mim && (
                           <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
                             Cadastrado por você
+                          </span>
+                        )}
+                        {mb.tipo_vinculo === 'proprio' && (
+                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
+                            {mb.motoboy_clt ? 'Próprio · CLT' : 'Próprio'}
                           </span>
                         )}
                       </div>
