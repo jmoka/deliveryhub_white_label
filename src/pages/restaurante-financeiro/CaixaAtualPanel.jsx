@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
-import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa, atualizarStatusPedido, marcarItemProntoRestaurante, cancelarComandaSalao } from '../../services/restauranteService';
+import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa, fecharETransferir, atualizarStatusPedido, marcarItemProntoRestaurante, cancelarComandaSalao } from '../../services/restauranteService';
 import FecharCaixaModal from '../restaurante-dashboard/FecharCaixaModal';
 import { printReciboMovimentoCaixa } from '../../utils/printComanda';
 
@@ -85,7 +85,7 @@ const MovimentoModal = ({ tipo, onSalvar, onCancelar, salvando }) => {
   );
 };
 
-const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], restauranteNome }) => {
+const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], restauranteNome, onFechado }) => {
   const [modal, setModal] = useState(null); // 'sangria' | 'adicao' | 'fechar' | null
   const [salvando, setSalvando] = useState(false);
   const [fechando, setFechando] = useState(false);
@@ -172,7 +172,8 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
   const handleFechar = async (body) => {
     setFechando(true);
     try {
-      await fecharCaixa(body);
+      const res = await fecharCaixa(body);
+      onFechado?.(res?.fechamento ?? res);
       await onRefresh();
       setModal(null);
       setPendencias(null);
@@ -186,6 +187,21 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
         alert(e.message);
       }
     }
+    finally { setFechando(false); }
+  };
+
+  // Fecha o caixa atual e já abre um novo pro próximo operador, transferindo
+  // pedidos/comandas/mesas em aberto — usado quando tem pendência que não dá
+  // pra simplesmente deixar fiada no caixa fechado.
+  const handleFecharETransferir = async ({ nome_operador, valor_inicial }) => {
+    setFechando(true);
+    try {
+      const res = await fecharETransferir({ nome_operador, valor_inicial });
+      onFechado?.(res?.fechamento ?? res);
+      await onRefresh();
+      setModal(null);
+      setPendencias(null);
+    } catch (e) { alert(e.message); }
     finally { setFechando(false); }
   };
 
@@ -224,10 +240,12 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
       </div>
 
       {/* KPIs secundários */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <Kpi icon="Wallet"       label="Fundo Inicial (Troco)" value={fmt(caixa.valor_inicial)} color="gray" />
         <Kpi icon="ArrowUpRight" label="Adições"               value={fmt(r.total_entradas)}   color="green" sub={`${entradas.length} registros`} />
         <Kpi icon="ArrowDownLeft" label="Sangrias / Saídas"    value={fmt(r.total_saidas)}     color="red"   sub={`${saidas.length} registros`} />
+        <Kpi icon="Scale" label="Saldo (Adições − Sangrias)" value={fmt((r.total_entradas ?? 0) - (r.total_saidas ?? 0))}
+          color={(r.total_entradas ?? 0) - (r.total_saidas ?? 0) >= 0 ? 'green' : 'red'} sub="movimentos manuais" />
       </div>
 
       {/* Vendas por método — cash/pix aqui mostram o caixa de fato (valor recebido do
@@ -333,7 +351,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
           onExcluirComandas={handleExcluirComandas}
           excluindoComandas={excluindoComandas}
           onConfirmar={handleFechar}
-          onFecharETransferir={() => {}}
+          onFecharETransferir={handleFecharETransferir}
           onCancelar={() => { setPendencias(null); setModal(null); }}
           fechando={fechando}
         />
