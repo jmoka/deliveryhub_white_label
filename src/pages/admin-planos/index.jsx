@@ -109,15 +109,18 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
     setSalvando(true);
     setErro(null);
     try {
+      // Produtos/impressoras só fazem sentido pra planos com Delivery ou Salão —
+      // um plano 100% serviço não deve carregar limite nenhum desses dois.
+      const usaProdutosOuSalao = form.inclui_delivery || form.inclui_salao;
       const body = {
         nome: form.nome.trim(),
         valor: parseFloat(form.valor),
         periodicidade: form.periodicidade,
         tipo: form.tipo,
-        limite_produtos: form.limite_produtos.trim() ? parseInt(form.limite_produtos, 10) : null,
-        limite_impressoras: form.limite_impressoras.trim() ? parseInt(form.limite_impressoras, 10) : null,
+        limite_produtos: usaProdutosOuSalao && form.limite_produtos.trim() ? parseInt(form.limite_produtos, 10) : null,
+        limite_impressoras: usaProdutosOuSalao && form.limite_impressoras.trim() ? parseInt(form.limite_impressoras, 10) : null,
         limite_servicos: form.limite_servicos.trim() ? parseInt(form.limite_servicos, 10) : null,
-        piso_faturamento: form.piso_faturamento.trim() ? parseFloat(form.piso_faturamento) : null,
+        piso_faturamento: usaProdutosOuSalao && form.piso_faturamento.trim() ? parseFloat(form.piso_faturamento) : null,
         trial_dias: form.trial_dias.trim() ? parseInt(form.trial_dias, 10) : 0,
         inclui_delivery: form.inclui_delivery,
         inclui_salao: form.inclui_salao,
@@ -197,30 +200,6 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
 
           {!isLocal && (
             <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Limite de produtos</label>
-                  <input type="number" min="1" value={form.limite_produtos} onChange={(e) => set('limite_produtos', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Vazio = ilimitado" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Piso de faturamento (R$)</label>
-                  <input type="number" min="0" step="0.01" value={form.piso_faturamento} onChange={(e) => set('piso_faturamento', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Vazio = sempre cobra" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Limite de impressoras</label>
-                  <input type="number" min="1" value={form.limite_impressoras} onChange={(e) => set('limite_impressoras', e.target.value)}
-                    className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Vazio = ilimitado" />
-                </div>
-              </div>
-              <p className="text-xs text-gray-400 dark:text-zinc-500 -mt-2">
-                Piso de faturamento: só cobra a loja quando o faturamento do período atingir esse valor.
-              </p>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-2">Módulos incluídos</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
@@ -259,6 +238,34 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                   </div>
                 )}
               </div>
+
+              {(form.inclui_delivery || form.inclui_salao) && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Limite de produtos</label>
+                      <input type="number" min="1" value={form.limite_produtos} onChange={(e) => set('limite_produtos', e.target.value)}
+                        className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Vazio = ilimitado" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Piso de faturamento (R$)</label>
+                      <input type="number" min="0" step="0.01" value={form.piso_faturamento} onChange={(e) => set('piso_faturamento', e.target.value)}
+                        className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Vazio = sempre cobra" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Limite de impressoras</label>
+                      <input type="number" min="1" value={form.limite_impressoras} onChange={(e) => set('limite_impressoras', e.target.value)}
+                        className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Vazio = ilimitado" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500 -mt-2">
+                    Piso de faturamento: só cobra a loja quando o faturamento do período atingir esse valor.
+                  </p>
+                </>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Pacotes de destaque inclusos</label>
