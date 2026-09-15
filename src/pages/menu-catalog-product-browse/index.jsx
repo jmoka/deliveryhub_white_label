@@ -1172,7 +1172,7 @@ const MenuCatalogProductBrowse = () => {
                 <span className="hidden sm:inline text-xs">Painel do motoboy</span>
               </button>
             ) : (
-              isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
+              marca.permitir_cadastro_motoboy !== false && isAuthenticated() && !isAdmin() && !isRestaurantOwner() && (
                 <button onClick={() => navigate('/motoboy/cadastro')} {...headerBtnProps('seja-entregador')}
                   className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 text-xs rounded-lg transition-colors" title="Seja um entregador">
                   <Icon name="Bike" size={18} className="sm:hidden" />
@@ -1181,7 +1181,7 @@ const MenuCatalogProductBrowse = () => {
                 </button>
               )
             )}
-            {!isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
+            {marca.permitir_cadastro_estabelecimento !== false && !isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
               <button onClick={() => navigate('/restaurant-registration-setup')} {...headerBtnProps('seja-vendedor')}
                 className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 text-xs rounded-lg transition-colors" title="Seja um vendedor">
                 <Icon name="Store" size={18} className="sm:hidden" />

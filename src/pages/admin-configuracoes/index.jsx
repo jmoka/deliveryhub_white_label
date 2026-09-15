@@ -36,6 +36,12 @@ const AdminConfiguracoes = () => {
   const [sucessoComissao, setSucessoComissao] = useState(false);
   const [erroComissao, setErroComissao] = useState(null);
 
+  const [permitirCadastroMotoboy, setPermitirCadastroMotoboy] = useState(true);
+  const [permitirCadastroEstabelecimento, setPermitirCadastroEstabelecimento] = useState(true);
+  const [salvandoCadastros, setSalvandoCadastros] = useState(false);
+  const [sucessoCadastros, setSucessoCadastros] = useState(false);
+  const [erroCadastros, setErroCadastros] = useState(null);
+
   useEffect(() => {
     getPlataformaConfig()
       .then((d) => {
@@ -50,6 +56,8 @@ const AdminConfiguracoes = () => {
         setComissaoPadrao(String(d.comissao_padrao_pct ?? 5));
         setDiasTolerancia(String(d.plano_dias_tolerancia ?? 3));
         setLimiteRevisoesMotoboy(String(d.motoboy_limite_revisoes ?? 2));
+        setPermitirCadastroMotoboy(d.permitir_cadastro_motoboy ?? true);
+        setPermitirCadastroEstabelecimento(d.permitir_cadastro_estabelecimento ?? true);
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -99,6 +107,27 @@ const AdminConfiguracoes = () => {
       setErroComissao(err.message);
     } finally {
       setSalvandoComissao(false);
+    }
+  };
+
+  const handleSalvarCadastros = async (e) => {
+    e.preventDefault();
+    setSalvandoCadastros(true);
+    setErroCadastros(null);
+    setSucessoCadastros(false);
+    try {
+      const payload = {
+        permitir_cadastro_motoboy: permitirCadastroMotoboy,
+        permitir_cadastro_estabelecimento: permitirCadastroEstabelecimento,
+      };
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setSucessoCadastros(true);
+      setTimeout(() => setSucessoCadastros(false), 3000);
+    } catch (err) {
+      setErroCadastros(err.message);
+    } finally {
+      setSalvandoCadastros(false);
     }
   };
 
@@ -537,6 +566,57 @@ const AdminConfiguracoes = () => {
                   className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
                 >
                   {salvandoComissao ? 'Salvando...' : 'Salvar comissão e tolerância'}
+                </button>
+              </form>
+            </div>
+
+            {/* ── Cadastros públicos ───────────────────────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Cadastros públicos</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Controla se quem ainda não tem conta pode se cadastrar. Quem já é motoboy/estabelecimento não é afetado.
+              </p>
+
+              <form onSubmit={handleSalvarCadastros} className="space-y-4">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={permitirCadastroMotoboy}
+                    onChange={(e) => setPermitirCadastroMotoboy(e.target.checked)}
+                    className="w-4 h-4 rounded accent-orange-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-zinc-300">
+                    Permitir cadastro de novos motoboys externos
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={permitirCadastroEstabelecimento}
+                    onChange={(e) => setPermitirCadastroEstabelecimento(e.target.checked)}
+                    className="w-4 h-4 rounded accent-orange-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-zinc-300">
+                    Permitir cadastro de novos estabelecimentos
+                  </span>
+                </label>
+
+                {erroCadastros && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroCadastros}</div>
+                )}
+                {sucessoCadastros && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoCadastros}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoCadastros ? 'Salvando...' : 'Salvar cadastros públicos'}
                 </button>
               </form>
             </div>
