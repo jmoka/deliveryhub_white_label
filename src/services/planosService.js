@@ -29,9 +29,10 @@ async function apiFetch(path, options = {}) {
     throw new Error(`HTTP ${res.status} — backend indisponível`);
   }
 
-  if (!isJson) {
-    throw new Error('Resposta inválida do servidor. Verifique se o backend está rodando na porta 3002.');
-  }
+  // res.ok mas sem corpo JSON (204/200 vazio) não é erro — vários endpoints
+  // (ex: DELETE) não devolvem corpo nenhum. Erro real de infra (proxy fora do
+  // ar devolvendo HTML) já foi tratado acima, no branch !res.ok.
+  if (!isJson) return null;
 
   return res.json();
 }

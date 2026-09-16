@@ -28,7 +28,8 @@ async function apiFetch(path, options = {}) {
     throw error;
   }
 
-  if (!isJson) throw new Error('Resposta inválida. Verifique se o backend está rodando.');
+  // res.ok mas sem corpo JSON (204/200 vazio) não é erro.
+  if (!isJson) return null;
 
   return res.json();
 }

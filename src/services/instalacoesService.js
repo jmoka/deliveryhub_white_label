@@ -29,9 +29,9 @@ async function apiFetch(path, options = {}) {
     throw new Error(`HTTP ${res.status} — backend indisponível`);
   }
 
-  if (!isJson) {
-    throw new Error('Resposta inválida do servidor.');
-  }
+  // res.ok mas sem corpo JSON (204/200 vazio) não é erro — vários endpoints
+  // (ex: DELETE) não devolvem corpo nenhum.
+  if (!isJson) return null;
 
   return res.json();
 }
