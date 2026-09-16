@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import Icon from '../../components/AppIcon';
-import { adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa, fecharETransferir, atualizarStatusPedido, marcarItemProntoRestaurante, cancelarComandaSalao } from '../../services/restauranteService';
+import {
+  adicionarSaida, adicionarEntrada, estornarSaida, fecharCaixa, fecharETransferir,
+  atualizarStatusPedido, marcarItemProntoRestaurante, cancelarComandaSalao,
+  getSituacaoFechamentoCaixa, cancelarPedidoAdmin, encerrarTurnoGarcom,
+} from '../../services/restauranteService';
 import FecharCaixaModal from '../restaurante-dashboard/FecharCaixaModal';
 import { printReciboMovimentoCaixa } from '../../utils/printComanda';
 
@@ -85,14 +89,20 @@ const MovimentoModal = ({ tipo, onSalvar, onCancelar, salvando }) => {
   );
 };
 
-const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], restauranteNome, onFechado }) => {
+const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, restauranteNome, onFechado }) => {
   const [modal, setModal] = useState(null); // 'sangria' | 'adicao' | 'fechar' | null
   const [salvando, setSalvando] = useState(false);
   const [fechando, setFechando] = useState(false);
   const [estornando, setEstornando] = useState(null); // index da saída sendo estornada
-  const [pendencias, setPendencias] = useState(null); // { pedidos, comandas, mesas, pedidos_em_preparo, itens_em_preparo } vindo do 409 do backend
+  // { pedidos, pedidos_balcao, comandas, mesas, pedidos_em_preparo, itens_em_preparo,
+  //   garcons_turno_aberto } — carregado proativamente ao abrir "Fechar Caixa" (situacao-fechamento)
+  // e também usado como fallback se o POST de fechar cair num 409 (corrida: algo abriu entre os dois).
+  const [pendencias, setPendencias] = useState(null);
+  const [carregandoSituacao, setCarregandoSituacao] = useState(false);
   const [marcandoProntos, setMarcandoProntos] = useState(false);
   const [excluindoComandas, setExcluindoComandas] = useState(false);
+  const [cancelandoPedidoId, setCancelandoPedidoId] = useState(null);
+  const [encerrandoTurnoId, setEncerrandoTurnoId] = useState(null);
 
   if (!caixa?.aberto) return null;
 
@@ -178,16 +188,61 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
       setModal(null);
       setPendencias(null);
     } catch (e) {
-      if (e.data?.pedidos || e.data?.comandas || e.data?.mesas) {
-        setPendencias({
-          pedidos: e.data.pedidos ?? [], comandas: e.data.comandas ?? [], mesas: e.data.mesas ?? [],
-          pedidos_em_preparo: e.data.pedidos_em_preparo ?? [], itens_em_preparo: e.data.itens_em_preparo ?? [],
-        });
+      if (e.data?.pedidos || e.data?.comandas || e.data?.mesas || e.data?.pedidos_balcao || e.data?.garcons_turno_aberto) {
+        setPendencias(e.data);
       } else {
         alert(e.message);
       }
     }
     finally { setFechando(false); }
+  };
+
+  // Assim que o dono clica em "Fechar Caixa", já busca tudo que pode travar/chamar
+  // atenção (pedidos, comandas, mesas, garçons com turno aberto) — em vez de só
+  // descobrir isso reativamente quando a confirmação final cair num 409.
+  const handleAbrirFechar = async () => {
+    setModal('fechar');
+    setPendencias(null);
+    setCarregandoSituacao(true);
+    try {
+      const situacao = await getSituacaoFechamentoCaixa();
+      setPendencias(situacao);
+    } catch {
+      // Preview é só uma conveniência — se falhar, a confirmação final ainda
+      // protege via 409 (fecharCaixa recalcula tudo de novo na hora).
+    } finally {
+      setCarregandoSituacao(false);
+    }
+  };
+
+  const handleCancelarPedido = async (pedido) => {
+    const motivo = window.prompt('Motivo do cancelamento deste pedido:');
+    if (!motivo?.trim()) return;
+    setCancelandoPedidoId(pedido.id);
+    try {
+      await cancelarPedidoAdmin(pedido.id, motivo.trim());
+      setPendencias((prev) => prev && {
+        ...prev,
+        pedidos: (prev.pedidos ?? []).filter((p) => p.id !== pedido.id),
+        pedidos_balcao: (prev.pedidos_balcao ?? []).filter((p) => p.id !== pedido.id),
+        pedidos_em_preparo: (prev.pedidos_em_preparo ?? []).filter((p) => p.id !== pedido.id),
+      });
+      await onRefresh();
+    } catch (e) { alert(e.message); }
+    finally { setCancelandoPedidoId(null); }
+  };
+
+  const handleEncerrarTurno = async (turno) => {
+    if (!window.confirm(`Encerrar o turno de ${turno.garcons?.nome ?? 'garçom'}? Ele vai precisar dar login de novo pra abrir uma nova comanda.`)) return;
+    setEncerrandoTurnoId(turno.garcom_id);
+    try {
+      await encerrarTurnoGarcom(turno.garcom_id);
+      setPendencias((prev) => prev && {
+        ...prev,
+        garcons_turno_aberto: (prev.garcons_turno_aberto ?? []).filter((t) => t.garcom_id !== turno.garcom_id),
+      });
+    } catch (e) { alert(e.message); }
+    finally { setEncerrandoTurnoId(null); }
   };
 
   // Fecha o caixa atual e já abre um novo pro próximo operador, transferindo
@@ -225,8 +280,8 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
           <button onClick={() => setModal('adicao')} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 rounded-xl hover:bg-green-50 dark:hover:bg-green-950/40">
             <Icon name="ArrowUpRight" size={13} /> Adição
           </button>
-          <button onClick={() => { setPendencias(null); setModal('fechar'); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-xl hover:bg-red-600">
-            <Icon name="Lock" size={13} /> Fechar Caixa
+          <button onClick={handleAbrirFechar} disabled={carregandoSituacao} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-60">
+            <Icon name="Lock" size={13} /> {carregandoSituacao ? 'Verificando...' : 'Fechar Caixa'}
           </button>
         </div>
       </div>
@@ -341,15 +396,22 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, pedidosAbertos = [], r
           resumo={caixa.resumo}
           aberto_em={caixa.aberto_em}
           valorInicial={caixa.valor_inicial}
-          pedidosAbertos={pendencias?.pedidos ?? pedidosAbertos}
+          carregandoSituacao={carregandoSituacao}
+          pedidosAbertos={pendencias?.pedidos ?? []}
+          pedidosBalcao={pendencias?.pedidos_balcao ?? []}
           comandasAbertas={pendencias?.comandas ?? []}
           mesasAbertas={pendencias?.mesas ?? []}
           pedidosEmPreparo={pendencias?.pedidos_em_preparo ?? []}
           itensEmPreparo={pendencias?.itens_em_preparo ?? []}
+          garconsTurnoAberto={pendencias?.garcons_turno_aberto ?? []}
           onMarcarProntos={handleMarcarProntos}
           marcandoProntos={marcandoProntos}
           onExcluirComandas={handleExcluirComandas}
           excluindoComandas={excluindoComandas}
+          onCancelarPedido={handleCancelarPedido}
+          cancelandoPedidoId={cancelandoPedidoId}
+          onEncerrarTurno={handleEncerrarTurno}
+          encerrandoTurnoId={encerrandoTurnoId}
           onConfirmar={handleFechar}
           onFecharETransferir={handleFecharETransferir}
           onCancelar={() => { setPendencias(null); setModal(null); }}

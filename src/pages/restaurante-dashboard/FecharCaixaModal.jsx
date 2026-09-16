@@ -12,12 +12,62 @@ const pedidoStatusLabel = (tipoRestaurante) => {
   return { confirmed: termos.aguardandoPreparo, preparing: termos.emPreparo };
 };
 
+// Status completo de um pedido aberto (delivery ou retirada balcão) na tela de
+// pendências — diferente do pedidoStatusLabel acima, que só cobre os 2 status
+// relevantes pra tela de "ainda em preparo".
+const STATUS_PEDIDO_ABERTO = {
+  pending: 'Aguardando confirmação',
+  confirmed: 'Aguardando preparo',
+  preparing: 'Em preparo',
+  ready: 'Pronto',
+  motoboy_collecting: 'Motoboy a caminho (coleta)',
+  out_for_delivery: 'Saiu para entrega',
+};
+
+const fmtHoraRelativa = (d) => {
+  if (!d) return '';
+  const min = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60000));
+  if (min < 1) return 'agora há pouco';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60);
+  return `há ${h}h${min % 60 ? ` ${min % 60}min` : ''}`;
+};
+
 const Row = ({ label, value, bold, accent, muted }) => (
   <div className={`flex justify-between text-sm py-1.5 border-b border-[#F4F4F5] dark:border-[#3F3F46] last:border-0 ${bold ? 'font-bold' : ''}`}>
     <span className={muted ? 'text-[#A1A1AA]' : 'text-[#71717A] dark:text-[#A1A1AA]'}>{label}</span>
     <span className={accent ? 'text-[#FF441F] font-bold' : muted ? 'text-[#A1A1AA]' : 'text-[#18181B] dark:text-[#F4F4F5]'}>{value}</span>
   </div>
 );
+
+// Garçons com turno de trabalho ainda aberto — não bloqueia o fechamento (não é
+// pendência financeira), mas o dono precisa ver quem "ainda está trabalhando" e
+// poder encerrar na hora, em vez de descobrir isso só no relatório do dia seguinte.
+const GarconsTurnoAbertoBox = ({ garcons, onEncerrar, encerrandoId }) => {
+  if (!garcons?.length) return null;
+  return (
+    <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-3 mb-3">
+      <p className="text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-1.5">
+        👤 Garçons com turno aberto ({garcons.length})
+      </p>
+      <div className="space-y-1.5 max-h-32 overflow-y-auto">
+        {garcons.map((t) => (
+          <div key={t.id} className="flex items-center gap-2 flex-wrap text-xs bg-white/70 dark:bg-black/20 rounded-lg px-2.5 py-1.5">
+            <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-1 min-w-0 truncate">{t.garcons?.nome ?? 'Garçom'}</span>
+            <span className="text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">turno aberto {fmtHoraRelativa(t.aberto_em)}</span>
+            <button type="button" onClick={() => onEncerrar(t)} disabled={encerrandoId === t.garcom_id}
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 flex-shrink-0">
+              {encerrandoId === t.garcom_id ? 'Encerrando...' : 'Encerrar turno'}
+            </button>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-blue-700/80 dark:text-blue-400/80 mt-1.5">
+        Encerrar aqui não bloqueia nem afeta o login do garçom — só fecha a sessão de trabalho dele, igual ele faria em "Sair" no portal.
+      </p>
+    </div>
+  );
+};
 
 // ── Tela 0: pedidos/itens ainda em preparo/produção ───────────────────────────
 const ITEM_STATUS_LABEL = { enviado: 'Aguardando', preparando: 'Em preparo' };
@@ -220,7 +270,11 @@ const ComandaLinha = ({ comanda, selecionada, onToggle, expandida, onToggleExpan
   </div>
 );
 
-const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onTransferir, onFecharComPendencia, onExcluirComandas, excluindo, onCancelar, fechando }) => {
+const PedidosAbertosView = ({
+  pedidosAbertos, pedidosBalcao = [], comandasAbertas, mesasAbertas,
+  onTransferir, onFecharComPendencia, onExcluirComandas, excluindo, onCancelar, fechando,
+  onCancelarPedido, cancelandoPedidoId,
+}) => {
   const [novoOperador, setNovoOperador] = useState('');
   const [novoValor, setNovoValor] = useState('');
   const [modoTransf, setModoTransf] = useState(false);
@@ -228,7 +282,7 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
   const [expandidas, setExpandidas] = useState(new Set());
   const [detalhes, setDetalhes] = useState({});
   const [carregandoIds, setCarregandoIds] = useState(new Set());
-  const totalPendencias = pedidosAbertos.length + comandasAbertas.length + mesasAbertas.length;
+  const totalPendencias = pedidosAbertos.length + pedidosBalcao.length + comandasAbertas.length + mesasAbertas.length;
 
   const toggleComanda = (id) => setComandasSel((prev) => {
     const next = new Set(prev);
@@ -299,15 +353,43 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
       </div>
       {pedidosAbertos.length > 0 && (
         <div className="mb-3">
-          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Pedidos delivery</p>
-          <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-32 overflow-y-auto">
+          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Pedidos delivery em aberto ({pedidosAbertos.length})</p>
+          <div className="bg-orange-50 dark:bg-orange-950/40 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
             {pedidosAbertos.map((p) => (
-              <div key={p.id} className="flex items-center gap-2 text-xs py-1 border-b border-orange-100 dark:border-orange-900/40 last:border-0">
+              <div key={p.id} className="flex items-center gap-2 flex-wrap text-xs py-1 border-b border-orange-100 dark:border-orange-900/40 last:border-0">
                 <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">#{p.id}</span>
-                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 min-w-0 text-right truncate">{fmt(p.total)} · {p.status}</span>
+                <span className="text-[#71717A] dark:text-[#A1A1AA] flex-1 min-w-0 truncate">{fmt(p.total)} · {STATUS_PEDIDO_ABERTO[p.status] ?? p.status}</span>
+                {onCancelarPedido && (
+                  <button type="button" onClick={() => onCancelarPedido(p)} disabled={cancelandoPedidoId === p.id}
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50 flex-shrink-0">
+                    {cancelandoPedidoId === p.id ? 'Cancelando...' : 'Cancelar'}
+                  </button>
+                )}
               </div>
             ))}
           </div>
+        </div>
+      )}
+      {pedidosBalcao.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[10px] font-black text-[#A1A1AA] uppercase tracking-widest mb-1">Vendas de balcão — retirada ({pedidosBalcao.length})</p>
+          <div className="bg-amber-50 dark:bg-amber-950/40 rounded-xl p-3 max-h-40 overflow-y-auto space-y-1">
+            {pedidosBalcao.map((p) => (
+              <div key={p.id} className="flex items-center gap-2 flex-wrap text-xs py-1 border-b border-amber-100 dark:border-amber-900/40 last:border-0">
+                <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] flex-shrink-0">#{p.id}</span>
+                <span className={`flex-1 min-w-0 truncate ${p.status === 'ready' ? 'font-bold text-amber-700 dark:text-amber-400' : 'text-[#71717A] dark:text-[#A1A1AA]'}`}>
+                  {fmt(p.total)} · {p.status === 'ready' ? '📣 Pronto — chamar cliente' : (STATUS_PEDIDO_ABERTO[p.status] ?? p.status)}
+                </span>
+                {onCancelarPedido && (
+                  <button type="button" onClick={() => onCancelarPedido(p)} disabled={cancelandoPedidoId === p.id}
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50 flex-shrink-0">
+                    {cancelandoPedidoId === p.id ? 'Cancelando...' : 'Cancelar'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-[#A1A1AA] mt-1">Cliente ainda não retirou no balcão — cancele só se for pedido de teste/engano ou desistência confirmada.</p>
         </div>
       )}
       {comandasAbertas.length > 0 && (
@@ -378,7 +460,10 @@ const PedidosAbertosView = ({ pedidosAbertos, comandasAbertas, mesasAbertas, onT
 };
 
 // ── Tela 2: conferência de fechamento ────────────────────────────────────────
-const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFechar, onCancelar, fechando }) => {
+const DestinacaoView = ({
+  resumo, aberto_em, valorInicial, comPendencias, onFechar, onCancelar, fechando,
+  garconsTurnoAberto = [], onEncerrarTurno, encerrandoTurnoId,
+}) => {
   const r = resumo ?? {};
   const [dinheiroContado, setDinheiroContado] = useState('');
 
@@ -410,6 +495,8 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
         <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Fechar Caixa</h2>
         <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">Conferência de fechamento · {fmtDate(aberto_em)}</p>
       </div>
+
+      <GarconsTurnoAbertoBox garcons={garconsTurnoAberto} onEncerrar={onEncerrarTurno} encerrandoId={encerrandoTurnoId} />
 
       {/* Composição da espécie */}
       <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-xl px-4 py-3 mb-3">
@@ -518,26 +605,48 @@ const DestinacaoView = ({ resumo, aberto_em, valorInicial, comPendencias, onFech
   );
 };
 
+// ── Tela de carregamento inicial: buscando a situação de fechamento ──────────
+const CarregandoSituacaoView = ({ onCancelar }) => (
+  <>
+    <div className="text-center py-6">
+      <div className="w-8 h-8 mx-auto mb-3 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
+      <h2 className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5]">Verificando o caixa...</h2>
+      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
+        Checando pedidos, comandas, mesas e garçons antes de abrir o fechamento.
+      </p>
+    </div>
+    <button onClick={onCancelar} className="w-full py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+      Cancelar
+    </button>
+  </>
+);
+
 // ── Modal principal ───────────────────────────────────────────────────────────
 const FecharCaixaModal = ({
   resumo, aberto_em, valorInicial,
-  pedidosAbertos, comandasAbertas, mesasAbertas,
+  carregandoSituacao,
+  pedidosAbertos, pedidosBalcao = [], comandasAbertas, mesasAbertas,
   pedidosEmPreparo = [], itensEmPreparo = [], onMarcarProntos, marcandoProntos,
   onExcluirComandas, excluindoComandas,
+  onCancelarPedido, cancelandoPedidoId,
+  garconsTurnoAberto = [], onEncerrarTurno, encerrandoTurnoId,
   onConfirmar, onFecharETransferir, onCancelar,
   fechando,
 }) => {
   const [forcarFechamento, setForcarFechamento] = useState(false);
   const [preparoVisto, setPreparoVisto] = useState(false);
-  const temPendencias = (pedidosAbertos ?? []).length > 0 || (comandasAbertas ?? []).length > 0 || (mesasAbertas ?? []).length > 0;
+  const temPendencias = (pedidosAbertos ?? []).length > 0 || (pedidosBalcao ?? []).length > 0
+    || (comandasAbertas ?? []).length > 0 || (mesasAbertas ?? []).length > 0;
   const temPreparo = (pedidosEmPreparo ?? []).length > 0 || (itensEmPreparo ?? []).length > 0;
   const mostrarPreparo = temPreparo && !preparoVisto;
   const mostrarPendencias = !mostrarPreparo && temPendencias && !forcarFechamento;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
-        {mostrarPreparo
+      <div className="bg-white dark:bg-[#27272A] rounded-2xl p-6 w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
+        {carregandoSituacao
+          ? <CarregandoSituacaoView onCancelar={onCancelar} />
+          : mostrarPreparo
           ? <PreparoEmAndamentoView
               pedidosEmPreparo={pedidosEmPreparo ?? []}
               itensEmPreparo={itensEmPreparo ?? []}
@@ -549,18 +658,24 @@ const FecharCaixaModal = ({
           : mostrarPendencias
           ? <PedidosAbertosView
               pedidosAbertos={pedidosAbertos ?? []}
+              pedidosBalcao={pedidosBalcao ?? []}
               comandasAbertas={comandasAbertas ?? []}
               mesasAbertas={mesasAbertas ?? []}
               onTransferir={onFecharETransferir}
               onFecharComPendencia={() => setForcarFechamento(true)}
               onExcluirComandas={onExcluirComandas}
               excluindo={excluindoComandas}
+              onCancelarPedido={onCancelarPedido}
+              cancelandoPedidoId={cancelandoPedidoId}
               onCancelar={onCancelar}
               fechando={fechando}
             />
           : <DestinacaoView
               resumo={resumo} aberto_em={aberto_em} valorInicial={valorInicial}
               comPendencias={temPendencias}
+              garconsTurnoAberto={garconsTurnoAberto}
+              onEncerrarTurno={onEncerrarTurno}
+              encerrandoTurnoId={encerrandoTurnoId}
               onFechar={onConfirmar} onCancelar={onCancelar} fechando={fechando}
             />
         }

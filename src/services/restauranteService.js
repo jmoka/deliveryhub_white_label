@@ -217,6 +217,7 @@ export const estornarSaida = (index) =>
   apiFetch(`/caixa/saida/${index}`, { method: 'DELETE' });
 
 export const getCaixaHistorico = () => apiFetch('/caixa/historico');
+export const getSituacaoFechamentoCaixa = () => apiFetch('/caixa/situacao-fechamento');
 export const getCaixaDetalhe = (id) => apiFetch(`/caixa/${id}`);
 export const aprovarConferencia = (caixaId) =>
   apiFetch(`/caixa/${caixaId}/conferencia`, { method: 'POST' });
@@ -399,6 +400,8 @@ export const forcarLogoutGarcom = (id) =>
   apiFetch(`/garcons/${id}/forcar-logout`, { method: 'POST' });
 export const liberarBloqueioGarcom = (id) =>
   apiFetch(`/garcons/${id}/liberar-bloqueio`, { method: 'POST' });
+export const encerrarTurnoGarcom = (id) =>
+  apiFetch(`/garcons/${id}/encerrar-turno`, { method: 'POST' });
 
 // Módulo Salão — regras de comissão do garçom (do estabelecimento, valem pra todos)
 export const listarComissoesGarcom = () => apiFetch('/garcons/comissoes');
