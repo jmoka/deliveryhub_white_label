@@ -63,7 +63,7 @@ const GarconsTurnoAbertoBox = ({ garcons, onEncerrar, encerrandoId }) => {
         ))}
       </div>
       <p className="text-[10px] text-blue-700/80 dark:text-blue-400/80 mt-1.5">
-        Encerrar aqui não bloqueia nem afeta o login do garçom — só fecha a sessão de trabalho dele, igual ele faria em "Sair" no portal.
+        Encerrar aqui fecha o turno e desativa o garçom (ele fica bloqueado no portal até você reativar em "Garçons"). Ao fechar o caixa, todo garçom do estabelecimento é desativado automaticamente de qualquer jeito.
       </p>
     </div>
   );

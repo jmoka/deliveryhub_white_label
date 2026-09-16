@@ -233,7 +233,7 @@ const CaixaAtualPanel = ({ caixa, taxaPagbank, onRefresh, restauranteNome, onFec
   };
 
   const handleEncerrarTurno = async (turno) => {
-    if (!window.confirm(`Encerrar o turno de ${turno.garcons?.nome ?? 'garçom'}? Ele vai precisar dar login de novo pra abrir uma nova comanda.`)) return;
+    if (!window.confirm(`Encerrar o turno de ${turno.garcons?.nome ?? 'garçom'}? Ele fica desativado (bloqueado no portal) até você reativar em "Garçons".`)) return;
     setEncerrandoTurnoId(turno.garcom_id);
     try {
       await encerrarTurnoGarcom(turno.garcom_id);
