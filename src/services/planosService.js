@@ -62,3 +62,7 @@ export const getFaturas = (params = {}) => {
   return apiFetch(`/planos/faturas${qs ? `?${qs}` : ''}`);
 };
 export const marcarFaturaPaga = (id) => apiFetch(`/planos/faturas/${id}/marcar-paga`, { method: 'PATCH' });
+export const criarFaturaManual = (data) => apiFetch('/planos/faturas', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarFatura = (id, data) => apiFetch(`/planos/faturas/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const cancelarFatura = (id) => apiFetch(`/planos/faturas/${id}/cancelar`, { method: 'PATCH' });
+export const excluirFatura = (id) => apiFetch(`/planos/faturas/${id}`, { method: 'DELETE' });

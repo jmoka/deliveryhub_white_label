@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   getPlanos, criarPlano, atualizarPlano, removerPlano,
   getAssinaturas, atribuirAssinatura, cancelarAssinatura, gerarFaturaManual,
-  getFaturas, marcarFaturaPaga,
+  getFaturas, marcarFaturaPaga, criarFaturaManual, atualizarFatura, cancelarFatura, excluirFatura,
 } from '../../services/planosService';
 import {
   getInstalacoes, criarInstalacao, atualizarInstalacao,
@@ -757,6 +757,8 @@ const TabFaturas = () => {
   const [filtroStatus, setFiltroStatus] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [processando, setProcessando] = useState(null);
+  const [modalNova, setModalNova] = useState(false);
+  const [faturaEditando, setFaturaEditando] = useState(null);
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -786,11 +788,41 @@ const TabFaturas = () => {
     }
   };
 
+  const handleCancelarFatura = async (fatura) => {
+    if (!window.confirm(`Cancelar a fatura de ${nomeFatura(fatura)}? Ela some da cobrança/bloqueio, mas fica no histórico.`)) return;
+    setProcessando(fatura.id);
+    try {
+      await cancelarFatura(fatura.id);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setProcessando(null);
+    }
+  };
+
+  const handleExcluirFatura = async (fatura) => {
+    if (!window.confirm(`Excluir a fatura de ${nomeFatura(fatura)} (${fmt(fatura.valor)})? Isso apaga o registro pra sempre, sem volta.`)) return;
+    setProcessando(fatura.id);
+    try {
+      await excluirFatura(fatura.id);
+      carregar();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setProcessando(null);
+    }
+  };
+
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-gray-500 dark:text-zinc-400">{faturas.length} fatura(s)</p>
         <div className="flex gap-2">
+          <button onClick={() => setModalNova(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <Icon name="Plus" size={15} /> Nova fatura
+          </button>
           <select
             value={filtroTipo}
             onChange={(e) => setFiltroTipo(e.target.value)}
@@ -853,15 +885,36 @@ const TabFaturas = () => {
                   <td className="px-4 py-3"><Badge status={f.status} /></td>
                   <td className="px-4 py-3 text-gray-500 dark:text-zinc-400 text-xs">{fmtData(f.vencimento)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {(f.status === 'pendente' || f.status === 'vencida') && (
-                      <button
-                        onClick={() => handleMarcarPaga(f)}
-                        disabled={processando === f.id}
-                        className="px-2.5 py-1 text-xs font-semibold text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 rounded-lg disabled:opacity-40"
-                      >
-                        Marcar paga
-                      </button>
-                    )}
+                    <div className="flex items-center justify-end gap-1">
+                      {(f.status === 'pendente' || f.status === 'vencida') && (
+                        <>
+                          <button
+                            onClick={() => handleMarcarPaga(f)}
+                            disabled={processando === f.id}
+                            className="px-2.5 py-1 text-xs font-semibold text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/40 rounded-lg disabled:opacity-40"
+                          >
+                            Marcar paga
+                          </button>
+                          <button onClick={() => setFaturaEditando(f)} disabled={processando === f.id}
+                            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg disabled:opacity-40"
+                            title="Editar valor/vencimento">
+                            <Icon name="Pencil" size={14} />
+                          </button>
+                          <button onClick={() => handleCancelarFatura(f)} disabled={processando === f.id}
+                            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg disabled:opacity-40"
+                            title="Cancelar fatura">
+                            <Icon name="Ban" size={14} />
+                          </button>
+                        </>
+                      )}
+                      {f.status !== 'paga' && (
+                        <button onClick={() => handleExcluirFatura(f)} disabled={processando === f.id}
+                          className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg disabled:opacity-40"
+                          title="Excluir fatura (sem volta)">
+                          <Icon name="Trash2" size={14} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -869,7 +922,196 @@ const TabFaturas = () => {
           </table>
         </div>
       )}
+
+      {modalNova && (
+        <ModalNovaFatura onClose={() => setModalNova(false)} onCriada={carregar} />
+      )}
+      {faturaEditando && (
+        <ModalEditarFatura
+          fatura={faturaEditando}
+          onClose={() => setFaturaEditando(null)}
+          onSalva={carregar}
+        />
+      )}
     </>
+  );
+};
+
+// Fatura avulsa fora do ciclo automático — só permite escolher lojas que já
+// têm assinatura ativa (o backend exige uma assinatura existente pra vincular).
+const ModalNovaFatura = ({ onClose, onCriada }) => {
+  const [empresas, setEmpresas] = useState([]);
+  const [assinaturas, setAssinaturas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [form, setForm] = useState({ restaurant_id: '', valor: '', periodo_inicio: '', periodo_fim: '', vencimento: '' });
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  useEffect(() => {
+    Promise.all([getEmpresas(), getAssinaturas()])
+      .then(([e, a]) => {
+        setEmpresas(e.empresas ?? []);
+        setAssinaturas(a.assinaturas ?? []);
+      })
+      .catch((err) => setErro(err.message))
+      .finally(() => setCarregando(false));
+  }, []);
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const lojasComPlano = empresas.filter((emp) =>
+    assinaturas.some((a) => a.restaurant_id === emp.id && a.status !== 'cancelada')
+  );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.restaurant_id || !form.valor || !form.periodo_inicio || !form.periodo_fim || !form.vencimento) return;
+    setSalvando(true);
+    setErro(null);
+    try {
+      await criarFaturaManual({
+        restaurant_id: parseInt(form.restaurant_id, 10),
+        valor: parseFloat(form.valor),
+        periodo_inicio: form.periodo_inicio,
+        periodo_fim: form.periodo_fim,
+        vencimento: form.vencimento,
+      });
+      onCriada();
+      onClose();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Nova fatura avulsa</h3>
+          <button type="button" onClick={onClose}
+            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
+        {carregando ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Loja *</label>
+              <select required value={form.restaurant_id} onChange={(e) => set('restaurant_id', e.target.value)}
+                className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Selecione...</option>
+                {lojasComPlano.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+              {lojasComPlano.length === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Nenhuma loja com assinatura ativa encontrada.</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Valor (R$) *</label>
+              <input required type="number" min="0" step="0.01" value={form.valor} onChange={(e) => set('valor', e.target.value)}
+                className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Período início *</label>
+                <input required type="date" value={form.periodo_inicio} onChange={(e) => set('periodo_inicio', e.target.value)}
+                  className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Período fim *</label>
+                <input required type="date" value={form.periodo_fim} onChange={(e) => set('periodo_fim', e.target.value)}
+                  className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Vencimento *</label>
+              <input required type="date" value={form.vencimento} onChange={(e) => set('vencimento', e.target.value)}
+                className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
+
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={onClose}
+                className="flex-1 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+                Cancelar
+              </button>
+              <button type="submit" disabled={salvando || lojasComPlano.length === 0}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+                {salvando ? 'Criando...' : 'Criar fatura'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ModalEditarFatura = ({ fatura, onClose, onSalva }) => {
+  const [valor, setValor] = useState(String(fatura.valor ?? ''));
+  const [vencimento, setVencimento] = useState(fatura.vencimento ? fatura.vencimento.slice(0, 10) : '');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSalvando(true);
+    setErro(null);
+    try {
+      await atualizarFatura(fatura.id, { valor: parseFloat(valor), vencimento });
+      onSalva();
+      onClose();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Editar fatura</h3>
+          <button type="button" onClick={onClose}
+            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Valor (R$)</label>
+            <input required type="number" min="0" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Vencimento</label>
+            <input required type="date" value={vencimento} onChange={(e) => setVencimento(e.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 

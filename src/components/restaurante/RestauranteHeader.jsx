@@ -19,8 +19,11 @@ import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
 // duplicado (e divergente) que cada página tinha antes — ver plano
 // "Layout compartilhado + favoritos na topbar".
 // Bolinha de status do plano na barra superior — verde (em dia), laranja
-// (vencendo em breve ou vencida mas dentro da tolerância), vermelha (bloqueado).
+// (vencendo em breve), amarela (vencida mas dentro da tolerância), azul
+// (bloqueado — tolerância estourada).
 const DIAS_ALERTA_VENCIMENTO = 5;
+
+const fmtDataCurta = (v) => v ? new Date(v).toLocaleDateString('pt-BR') : '—';
 
 // Ícones dos favoritos começam grandes/bem visíveis e só encolhem conforme a
 // quantidade aumenta, pra continuar cabendo numa linha só na topbar.
@@ -41,11 +44,11 @@ const PlanoStatusDot = ({ planoStatus, onClick }) => {
   let cor = 'bg-green-500';
   let texto = 'Plano em dia';
   if (planoStatus.bloqueado) {
-    cor = 'bg-red-500';
-    texto = `Painel bloqueado — fatura vencida há ${planoStatus.dias_atraso} dia(s)`;
+    cor = 'bg-blue-500';
+    texto = `Painel bloqueado — fatura vencida em ${fmtDataCurta(planoStatus.fatura_pendente_vencimento)} (há ${planoStatus.dias_atraso} dia(s))`;
   } else if (planoStatus.dias_atraso > 0) {
-    cor = 'bg-orange-500';
-    texto = `Fatura vencida há ${planoStatus.dias_atraso} dia(s) — regularize`;
+    cor = 'bg-yellow-500';
+    texto = `Assinatura vencida — vencimento em ${fmtDataCurta(planoStatus.fatura_pendente_vencimento)}. Regularize antes do bloqueio.`;
   } else if (diasAteVencer != null && diasAteVencer <= DIAS_ALERTA_VENCIMENTO) {
     cor = 'bg-orange-500';
     texto = `Próxima cobrança em ${diasAteVencer} dia(s)`;
@@ -158,6 +161,16 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
           </button>
         </div>
       </header>
+
+      {planoStatus?.dias_atraso > 0 && !planoStatus?.bloqueado && (
+        <button
+          onClick={() => navigate('/restaurante/plano')}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-yellow-900 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-950/40 border-b border-yellow-200 dark:border-yellow-900 hover:bg-yellow-200/70 dark:hover:bg-yellow-950/60"
+        >
+          <Icon name="AlertTriangle" size={14} className="flex-shrink-0" />
+          Assinatura vencida — vencimento em {fmtDataCurta(planoStatus.fatura_pendente_vencimento)}. Regularize para evitar o bloqueio do painel.
+        </button>
+      )}
 
       <AnimatePresence>
         {menuAberto && (

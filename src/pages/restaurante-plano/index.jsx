@@ -262,13 +262,23 @@ const RestaurantePlano = () => {
           </div>
         ) : (
           <div className="space-y-5">
-            {dados.bloqueado && (
-              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl p-4 flex items-start gap-3">
-                <Icon name="AlertTriangle" size={20} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            {dados.bloqueado ? (
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-4 flex items-start gap-3">
+                <Icon name="AlertTriangle" size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-red-800 dark:text-red-300">Painel bloqueado por atraso</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-                    Fatura vencida há {dados.dias_atraso} dia(s). Pague abaixo pra liberar o acesso completo ao painel.
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Painel bloqueado por atraso</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                    Fatura vencida em {fmtData(dados.fatura_pendente_vencimento)} (há {dados.dias_atraso} dia(s)). Pague abaixo pra liberar o acesso completo ao painel.
+                  </p>
+                </div>
+              </div>
+            ) : dados.dias_atraso > 0 && (
+              <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-900 rounded-xl p-4 flex items-start gap-3">
+                <Icon name="AlertTriangle" size={20} className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">Assinatura vencida</p>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-0.5">
+                    Vencimento em {fmtData(dados.fatura_pendente_vencimento)}. Pague abaixo pra evitar o bloqueio do painel.
                   </p>
                 </div>
               </div>
