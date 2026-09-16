@@ -262,7 +262,17 @@ const RestaurantePlano = () => {
           </div>
         ) : (
           <div className="space-y-5">
-            {dados.bloqueado ? (
+            {dados.admin_bloqueado ? (
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl p-4 flex items-start gap-3">
+                <Icon name="ShieldAlert" size={20} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800 dark:text-red-300">Empresa bloqueada pelo administrador</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                    O acesso ao painel foi suspenso pelo administrador da plataforma. Entre em contato com o suporte pra regularizar.
+                  </p>
+                </div>
+              </div>
+            ) : dados.bloqueado ? (
               <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl p-4 flex items-start gap-3">
                 <Icon name="AlertTriangle" size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div>

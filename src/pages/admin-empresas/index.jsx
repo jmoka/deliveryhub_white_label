@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig, getUsuarios } from '../../services/adminService';
-import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura } from '../../services/planosService';
+import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura, getFaturas, atualizarFatura } from '../../services/planosService';
 import {
   getPacotesDisponiveisBoostAdmin, getBoostsDaEmpresa, getItensBoostDaEmpresa,
   criarBoostParaEmpresa, encerrarBoostAdmin, removerBoostNaoPagoAdmin,
 } from '../../services/marketplaceBoostAdminService';
 import { useLocalMode, LocalModeBanner, LicencaBloqueadaBanner } from '../../contexts/LocalModeContext';
 import AdminHeader from '../../components/admin/AdminHeader';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Pencil, X } from 'lucide-react';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -641,7 +641,102 @@ const PlanoBadge = ({ empresa, assinaturas }) => {
   );
 };
 
-const EmpresaCard = ({ empresa: e, assinaturas, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover }) => (
+// Fatura pendente/vencida mais antiga de uma empresa — é ela quem decide o
+// bloqueio automático (mesmo critério do backend em PlanosService.sincronizarPeriodo:
+// pega a mais antiga entre pendente/vencida, ordenada por vencimento).
+const faturaPendenteDe = (empresaId, faturas) =>
+  faturas
+    .filter((f) => f.restaurant_id === empresaId && (f.status === 'pendente' || f.status === 'vencida'))
+    .sort((a, b) => new Date(a.vencimento) - new Date(b.vencimento))[0] ?? null;
+
+const somarDias = (dataIso, dias) => {
+  const d = new Date(dataIso);
+  d.setDate(d.getDate() + dias);
+  return d;
+};
+
+const VencimentoBadge = ({ empresa, faturas, toleranciaDias, onEditar }) => {
+  const fatura = faturaPendenteDe(empresa.id, faturas);
+  if (!fatura) return <span className="text-xs text-gray-400 dark:text-zinc-500">Sem fatura pendente</span>;
+
+  const vencida = fatura.status === 'vencida';
+  const dataBloqueio = toleranciaDias > 0 ? somarDias(fatura.vencimento, toleranciaDias) : null;
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap ${
+        vencida ? 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400'
+        : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
+      }`}>
+        Vencimento {new Date(fatura.vencimento).toLocaleDateString('pt-BR')}
+      </span>
+      {dataBloqueio && (
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400 whitespace-nowrap">
+          Bloqueia em {dataBloqueio.toLocaleDateString('pt-BR')}
+        </span>
+      )}
+      <button onClick={() => onEditar(fatura)} title="Editar data de vencimento"
+        className="p-0.5 text-gray-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 rounded">
+        <Pencil size={12} />
+      </button>
+    </div>
+  );
+};
+
+const ModalEditarVencimento = ({ empresa, fatura, onClose, onSalvo }) => {
+  const [vencimento, setVencimento] = useState(fatura.vencimento ? fatura.vencimento.slice(0, 10) : '');
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
+    setSalvando(true);
+    setErro(null);
+    try {
+      await atualizarFatura(fatura.id, { vencimento });
+      onSalvo();
+      onClose();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm p-6" onClick={(ev) => ev.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Editar vencimento — {empresa.name}</h3>
+          <button type="button" onClick={onClose}
+            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Data de vencimento da fatura pendente</label>
+            <input required type="date" value={vencimento} onChange={(ev) => setVencimento(ev.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover, onEditarVencimento }) => (
   <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
@@ -678,6 +773,9 @@ const EmpresaCard = ({ empresa: e, assinaturas, comissaoPadrao, isLocalMode, onV
     </div>
 
     <DominioBadge empresa={e} />
+
+    <VencimentoBadge empresa={e} faturas={faturas} toleranciaDias={toleranciaDias}
+      onEditar={(fatura) => onEditarVencimento(e, fatura)} />
 
     <p className="text-xs text-gray-400 dark:text-zinc-500">
       Cadastro em {new Date(e.created_at).toLocaleDateString('pt-BR')}
@@ -723,11 +821,14 @@ const AdminEmpresas = () => {
   const [modalPlano, setModalPlano] = useState(null); // null | empresa_obj
   const [modalDestaque, setModalDestaque] = useState(null); // null | empresa_obj
   const [comissaoPadrao, setComissaoPadrao] = useState(5);
+  const [toleranciaDias, setToleranciaDias] = useState(3);
   const [assinaturas, setAssinaturas] = useState([]);
+  const [faturas, setFaturas] = useState([]);
   const [planos, setPlanos] = useState([]);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'lista'
   const [busca, setBusca] = useState(''); // nome ou endereço
   const [filtroPlano, setFiltroPlano] = useState(''); // '' | 'sem_plano' | plano_id
+  const [modalVencimento, setModalVencimento] = useState(null); // null | { empresa, fatura }
 
   const carregar = async () => {
     setLoading(true);
@@ -750,10 +851,18 @@ const AdminEmpresas = () => {
     getAssinaturas().then((d) => setAssinaturas(d.assinaturas ?? [])).catch(() => {});
   };
 
+  const carregarFaturas = () => {
+    getFaturas().then((d) => setFaturas(d.faturas ?? [])).catch(() => {});
+  };
+
   useEffect(() => {
     carregar();
-    getPlataformaConfig().then((d) => setComissaoPadrao(d.comissao_padrao_pct ?? 5)).catch(() => {});
+    getPlataformaConfig().then((d) => {
+      setComissaoPadrao(d.comissao_padrao_pct ?? 5);
+      setToleranciaDias(d.plano_dias_tolerancia ?? 3);
+    }).catch(() => {});
     carregarAssinaturas();
+    carregarFaturas();
     getPlanos().then((d) => setPlanos(d.planos ?? [])).catch(() => {});
   }, []);
 
@@ -981,6 +1090,8 @@ const AdminEmpresas = () => {
                 key={e.id}
                 empresa={e}
                 assinaturas={assinaturas}
+                faturas={faturas}
+                toleranciaDias={toleranciaDias}
                 comissaoPadrao={comissaoPadrao}
                 isLocalMode={isLocalMode}
                 onVer={() => navigate(`/admin/empresas/${e.id}`)}
@@ -989,6 +1100,7 @@ const AdminEmpresas = () => {
                 onDestaque={() => setModalDestaque(e)}
                 onBloquear={() => handleBloquear(e)}
                 onRemover={() => handleRemover(e)}
+                onEditarVencimento={(empresa, fatura) => setModalVencimento({ empresa, fatura })}
               />
             ))}
           </div>
@@ -1137,6 +1249,15 @@ const AdminEmpresas = () => {
         <DestaqueModal
           empresa={modalDestaque}
           onClose={() => setModalDestaque(null)}
+        />
+      )}
+
+      {modalVencimento && (
+        <ModalEditarVencimento
+          empresa={modalVencimento.empresa}
+          fatura={modalVencimento.fatura}
+          onClose={() => setModalVencimento(null)}
+          onSalvo={carregarFaturas}
         />
       )}
     </div>
