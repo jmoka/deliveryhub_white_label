@@ -332,11 +332,11 @@ const RestauranteCombos = () => {
                               ×
                             </button>
                           </div>
-                          <div className="flex items-center gap-2 pl-0.5">
+                          <div className="flex flex-wrap items-center gap-2 pl-0.5">
                             <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] flex-shrink-0">
                               Preço real: {fmt(prod?.price)} un.
                             </span>
-                            <span className="text-[#71717A] dark:text-[#A1A1AA]">·</span>
+                            <span className="text-[#71717A] dark:text-[#A1A1AA] hidden sm:inline">·</span>
                             <label className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 flex-shrink-0">
                               Cobrar no combo:
                               <input
