@@ -469,24 +469,24 @@ const RestauranteCozinha = () => {
   return (
     <div className="min-h-screen bg-[#111111]">
       <header className="bg-[#1A1A1A] border-b border-[#2A2A2A] px-5 py-3">
-        <div className="flex items-center gap-4 mb-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3">
           {modoToken ? (
             <button onClick={() => { clearCozinhaToken(); window.location.reload(); }}
-              className="p-2 text-[#71717A] hover:text-red-400 rounded-lg hover:bg-[#2A2A2A]" title="Sair">
+              className="p-2 text-[#71717A] hover:text-red-400 rounded-lg hover:bg-[#2A2A2A] flex-shrink-0" title="Sair">
               <Icon name="LogOut" size={18} />
             </button>
           ) : (
-            <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A]">
+            <button onClick={() => navigate('/restaurante')} className="p-2 text-[#71717A] hover:text-white rounded-lg hover:bg-[#2A2A2A] flex-shrink-0">
               <Icon name="ArrowLeft" size={18} />
             </button>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 bg-[#FF441F] rounded-lg flex items-center justify-center flex-shrink-0">
               <Icon name={termos.icone} size={16} className="text-white" />
             </div>
-            <div>
-              <p className="text-white font-black text-base leading-none">{termos.painelPreparo}</p>
-              <p className="text-[#71717A] text-xs">{restauranteNome}</p>
+            <div className="min-w-0">
+              <p className="text-white font-black text-base leading-none truncate">{termos.painelPreparo}</p>
+              <p className="text-[#71717A] text-xs truncate">{restauranteNome}</p>
             </div>
           </div>
 
@@ -494,19 +494,19 @@ const RestauranteCozinha = () => {
               quase idênticas, fácil confundir qual painel está configurado com qual impressora. */}
           {impressorasCozinha && (
             impressorasCozinha.length > 0 ? (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-900/30 border border-green-700 text-green-400">
-                <Icon name="Printer" size={12} />
-                {impressorasCozinha.map((i) => i.nome).join(', ')}
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-900/30 border border-green-700 text-green-400 max-w-full truncate" title={impressorasCozinha.map((i) => i.nome).join(', ')}>
+                <Icon name="Printer" size={12} className="flex-shrink-0" />
+                <span className="truncate">{impressorasCozinha.map((i) => i.nome).join(', ')}</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-900/30 border border-red-700 text-red-400">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-900/30 border border-red-700 text-red-400 flex-shrink-0">
                 <Icon name="AlertTriangle" size={12} />
                 Sem impressora conectada
               </span>
             )
           )}
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 flex-shrink-0">
             <div className="flex items-center gap-2 text-xs text-[#71717A]">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               {lastUpdate?.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) ?? '—'}
