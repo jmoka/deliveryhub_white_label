@@ -16,6 +16,11 @@ const AdminConfiguracoes = () => {
     pagbank_sandbox: true,
     pagbank_split_habilitado: true,
   });
+
+  const [formFaturamento, setFormFaturamento] = useState({ faturamento_modo: 'pagbank', faturamento_chave_pix: '' });
+  const [salvandoFaturamento, setSalvandoFaturamento] = useState(false);
+  const [sucessoFaturamento, setSucessoFaturamento] = useState(false);
+  const [erroFaturamento, setErroFaturamento] = useState(null);
   const [redeInfo, setRedeInfo] = useState(null);
 
   const [formStripe, setFormStripe] = useState({ stripe_secret_key: '', stripe_webhook_secret: '', stripe_connect_webhook_secret: '' });
@@ -53,6 +58,10 @@ const AdminConfiguracoes = () => {
           pagbank_sandbox: d.pagbank_sandbox ?? true,
           pagbank_split_habilitado: d.pagbank_split_habilitado ?? true,
         }));
+        setFormFaturamento({
+          faturamento_modo: d.faturamento_modo ?? 'pagbank',
+          faturamento_chave_pix: d.faturamento_chave_pix ?? '',
+        });
         setModoIndividual(d.modo_individual ?? false);
         setModoIndividualRestauranteId(d.modo_individual_restaurant_id ?? '');
         setComissaoPadrao(String(d.comissao_padrao_pct ?? 5));
@@ -152,6 +161,27 @@ const AdminConfiguracoes = () => {
       setErroStripe(err.message);
     } finally {
       setSalvandoStripe(false);
+    }
+  };
+
+  const handleSalvarFaturamento = async (e) => {
+    e.preventDefault();
+    setSalvandoFaturamento(true);
+    setErroFaturamento(null);
+    setSucessoFaturamento(false);
+    try {
+      const payload = {
+        faturamento_modo: formFaturamento.faturamento_modo,
+        faturamento_chave_pix: formFaturamento.faturamento_chave_pix.trim(),
+      };
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setSucessoFaturamento(true);
+      setTimeout(() => setSucessoFaturamento(false), 3000);
+    } catch (err) {
+      setErroFaturamento(err.message);
+    } finally {
+      setSalvandoFaturamento(false);
     }
   };
 
@@ -359,6 +389,75 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+
+            {/* ── Recebimento de fatura (plano/pacote) ─────────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Recebimento de fatura (plano/pacote)</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Como a plataforma recebe o pagamento de assinatura/pacote dos restaurantes. Não afeta como o restaurante recebe do cliente final — só a fatura que ele paga pra você.
+              </p>
+
+              <form onSubmit={handleSalvarFaturamento} className="space-y-4">
+                <div className="space-y-2">
+                  <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${
+                    formFaturamento.faturamento_modo === 'pagbank' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-zinc-700'
+                  }`}>
+                    <input type="radio" name="faturamento_modo" checked={formFaturamento.faturamento_modo === 'pagbank'}
+                      onChange={() => setFormFaturamento((f) => ({ ...f, faturamento_modo: 'pagbank' }))}
+                      className="mt-0.5 accent-orange-500" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">
+                      <span className="font-medium block">PagBank</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500">Pix + Cartão via PagBank (config acima).</span>
+                    </span>
+                  </label>
+                  <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${
+                    formFaturamento.faturamento_modo === 'manual' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-zinc-700'
+                  }`}>
+                    <input type="radio" name="faturamento_modo" checked={formFaturamento.faturamento_modo === 'manual'}
+                      onChange={() => setFormFaturamento((f) => ({ ...f, faturamento_modo: 'manual' }))}
+                      className="mt-0.5 accent-orange-500" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">
+                      <span className="font-medium block">Recebimento Manual</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500">Só Pix (chave abaixo) — sem PagBank. Você confirma o recebimento à mão em Admin → Planos.</span>
+                    </span>
+                  </label>
+                </div>
+
+                {formFaturamento.faturamento_modo === 'manual' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Chave Pix</label>
+                    <input
+                      type="text"
+                      value={formFaturamento.faturamento_chave_pix}
+                      onChange={(e) => setFormFaturamento((f) => ({ ...f, faturamento_chave_pix: e.target.value }))}
+                      placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                      className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                      Mostrada pro restaurante gerar o QR Code na hora de pagar a fatura.
+                    </p>
+                  </div>
+                )}
+
+                {erroFaturamento && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroFaturamento}</div>
+                )}
+                {sucessoFaturamento && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoFaturamento || (formFaturamento.faturamento_modo === 'manual' && !formFaturamento.faturamento_chave_pix.trim())}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoFaturamento ? 'Salvando...' : 'Salvar recebimento de fatura'}
+                </button>
+              </form>
+            </div>
+
             {/* ── Stripe Connect ───────────────────────────────────── */}
             <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <div className={`rounded-xl border p-3 mb-5 flex items-center gap-3 ${

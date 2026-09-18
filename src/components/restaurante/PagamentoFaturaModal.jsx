@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { getFaturaDetalhe, pagarFatura, getPagBankChavePublica } from '../../services/restauranteService';
+import { getFaturaDetalhe, pagarFatura, getPagBankChavePublica, getConfigPagamentoFatura } from '../../services/restauranteService';
 import { usePagBankSdk } from '../../hooks/usePagBankSdk';
+import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 import Icon from '../AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -26,8 +27,17 @@ const PagamentoFaturaModal = ({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
   const [pago, setPago] = useState(false);
+  const [configFaturamento, setConfigFaturamento] = useState(null);
 
-  const sdkPronto = usePagBankSdk(metodo !== 'pix');
+  useEffect(() => {
+    getConfigPagamentoFatura().then(setConfigFaturamento).catch(() => {});
+  }, []);
+
+  // Recebimento manual = só Pix, sem nenhuma ligação real com o PagBank —
+  // mesmo princípio já aplicado no checkout do cliente final.
+  const modoManual = configFaturamento?.modo === 'manual';
+
+  const sdkPronto = usePagBankSdk(!modoManual && metodo !== 'pix');
 
   useEffect(() => {
     if (!resultado || pago || metodo !== 'pix') return;
@@ -50,8 +60,22 @@ const PagamentoFaturaModal = ({
     setEnviando(true);
     setErro(null);
     try {
+      // Valida a fatura no backend (status pendente etc.) antes de montar o Pix —
+      // em modo manual o backend não abre ordem nenhuma no PagBank, só confirma
+      // que dá pra pagar; o código Pix é montado aqui com a chave da plataforma.
       const r = await pagarFn(fatura.id, { ...form, metodo: 'pix' });
-      setResultado(r);
+      if (modoManual) {
+        const payload = gerarPixPayload({
+          chave: configFaturamento.chave_pix,
+          nome: configFaturamento.nome_recebedor,
+          cidade: null,
+          valor: fatura.valor,
+          txid: `fat${fatura.id}`,
+        });
+        setResultado({ pix_code: payload, pix_qr_url: qrCodeUrl(payload) });
+      } else {
+        setResultado(r);
+      }
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -154,8 +178,8 @@ const PagamentoFaturaModal = ({
             )}
             <div className="flex gap-1.5 mb-4 mt-2">
               <TabButton valor="pix" label="Pix" />
-              <TabButton valor="credit_card" label="Crédito" />
-              <TabButton valor="debit_card" label="Débito" />
+              {!modoManual && <TabButton valor="credit_card" label="Crédito" />}
+              {!modoManual && <TabButton valor="debit_card" label="Débito" />}
             </div>
 
             <form onSubmit={metodo === 'pix' ? handleSubmitPix : handleSubmitCartao} className="space-y-3">
