@@ -1134,6 +1134,9 @@ const ShoppingCartCheckout = () => {
       pagamentoManual: !!grupo.pagamento_manual,
       chavePix: grupo.chave_pix ?? null,
       restauranteNome: grupo.nome ?? null,
+      permiteRetiradaBalcao: !!grupo.permite_retirada_balcao,
+      stripeDisponivel: !!grupo.stripe_disponivel,
+      pagbankCartaoDisponivel: !!grupo.pagbank_cartao_disponivel,
     }));
     cartClear();
     return <SingleCartCheckout />;
