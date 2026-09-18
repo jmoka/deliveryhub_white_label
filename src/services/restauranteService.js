@@ -197,6 +197,9 @@ export const getStripeStatus = () => apiFetch('/stripe/status');
 export const gerarLinkOnboardingStripe = () =>
   apiFetch('/stripe/onboarding-link', { method: 'POST' });
 
+export const desconectarStripe = () =>
+  apiFetch('/stripe/desconectar', { method: 'POST' });
+
 export const getCaixa = () => apiFetch('/caixa');
 
 export const abrirCaixa = ({ nome_operador, valor_inicial }) =>

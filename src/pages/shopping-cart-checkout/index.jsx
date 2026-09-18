@@ -11,6 +11,7 @@ import { getPerfil } from '../../services/perfilService';
 import { cartCount, cartByRestaurant, cartClear } from '../../utils/multiCart';
 import MultiCartCheckout from './MultiCartCheckout';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
+import { usePagBankSdk } from '../../hooks/usePagBankSdk';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -153,6 +154,12 @@ const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, r
           <h1 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">PIX gerado!</h1>
           <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Escaneie o QR code ou copie o código</p>
           <p className="text-2xl font-bold text-[#FF441F] mt-1">{fmt(total)}</p>
+          {!manual && (
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-2 flex items-center justify-center gap-1.5">
+              <Icon name="ShieldCheck" size={13} className="flex-shrink-0" />
+              Pagamento processado com segurança pelo PagBank
+            </p>
+          )}
         </div>
         {pixData.pix_qr_url && (
           <img src={pixData.pix_qr_url} alt="QR Code PIX"
@@ -380,7 +387,15 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total 
 };
 
 /* ── Step 2: Pagamento ───────────────────────────────────────────── */
-const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, excedente, total, onNext, onBack, pagamentoManual = false, chavePix = null, stripeDisponivel = false }) => (
+const StepPagamento = ({
+  paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara, setTrocoPara, subtotal, frete, excedente, total, onNext, onBack,
+  pagamentoManual = false, chavePix = null, stripeDisponivel = false, pagbankCartaoDisponivel = false, cartaoPagBank, setCartaoPagBank,
+}) => {
+  const isCartaoSelecionado = paymentMethod === 'credit_card' || paymentMethod === 'debit_card';
+  const usaPagBankCartao = isCartaoSelecionado && !pagamentoManual && !stripeDisponivel && pagbankCartaoDisponivel;
+  const sdkPronto = usePagBankSdk(usaPagBankCartao);
+
+  return (
   <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
     {/* Resumo do valor — sempre visível */}
     <div className="bg-[#18181B] dark:bg-[#3F3F46] rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -413,7 +428,7 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
           const isCartao = op.key === 'credit_card' || op.key === 'debit_card';
           const opcaoIndisponivel =
             (pagamentoManual && op.key === 'pix' && !chavePix) ||
-            (!pagamentoManual && isCartao && !stripeDisponivel);
+            (!pagamentoManual && isCartao && !stripeDisponivel && !pagbankCartaoDisponivel);
           return (
             <button key={op.key} onClick={() => !opcaoIndisponivel && setPaymentMethod(op.key)}
               disabled={opcaoIndisponivel}
@@ -436,7 +451,7 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
                   {pagamentoManual && op.key === 'pix' && !chavePix
                     ? 'Indisponível — restaurante não configurou chave PIX'
-                    : !pagamentoManual && isCartao && !stripeDisponivel
+                    : !pagamentoManual && isCartao && !stripeDisponivel && !pagbankCartaoDisponivel
                       ? 'Indisponível — restaurante não conectou pagamento online'
                       : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
                 </p>
@@ -451,9 +466,9 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
         })}
       </div>
 
-      {/* CPF para PIX */}
+      {/* CPF para PIX ou cartão via PagBank */}
       <AnimatePresence>
-        {paymentMethod === 'pix' && !pagamentoManual && (
+        {((paymentMethod === 'pix' && !pagamentoManual) || usaPagBankCartao) && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -473,7 +488,91 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
                 maxLength={14}
                 className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
               />
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Necessário para gerar o código PIX</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
+                {paymentMethod === 'pix' ? 'Necessário para gerar o código PIX' : 'Necessário para processar o pagamento'}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cartão via PagBank — alternativa quando a loja não conectou Stripe */}
+      <AnimatePresence>
+        {usaPagBankCartao && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 pt-4 border-t border-[#E4E4E7] dark:border-[#3F3F46] space-y-3">
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1.5">
+                <Icon name="ShieldCheck" size={13} className="flex-shrink-0" />
+                Pagamento processado com segurança pelo PagBank
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-[#27272A] dark:text-[#F4F4F5] mb-1.5">
+                  Número do cartão <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={19}
+                  value={cartaoPagBank.numero}
+                  onChange={(e) => setCartaoPagBank((c) => ({ ...c, numero: e.target.value }))}
+                  placeholder="0000 0000 0000 0000"
+                  className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1 min-w-0">
+                  <label className="block text-sm font-medium text-[#27272A] dark:text-[#F4F4F5] mb-1.5">
+                    Validade <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    value={cartaoPagBank.validade}
+                    onChange={(e) => {
+                      const digitos = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      const formatado = digitos.length > 2 ? `${digitos.slice(0, 2)}/${digitos.slice(2)}` : digitos;
+                      setCartaoPagBank((c) => ({ ...c, validade: formatado }));
+                    }}
+                    placeholder="MM/AA"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <label className="block text-sm font-medium text-[#27272A] dark:text-[#F4F4F5] mb-1.5">
+                    CVV <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
+                    value={cartaoPagBank.cvv}
+                    onChange={(e) => setCartaoPagBank((c) => ({ ...c, cvv: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="000"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
+                  />
+                </div>
+              </div>
+              {paymentMethod === 'credit_card' && (
+                <div>
+                  <label className="block text-sm font-medium text-[#27272A] dark:text-[#F4F4F5] mb-1.5">Parcelas</label>
+                  <select
+                    value={cartaoPagBank.parcelas}
+                    onChange={(e) => setCartaoPagBank((c) => ({ ...c, parcelas: e.target.value }))}
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>{n}x {n === 1 ? 'à vista' : `de ${fmt(total / n)}`}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {!sdkPronto && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Carregando PagBank...</p>}
             </div>
           </motion.div>
         )}
@@ -523,7 +622,8 @@ const StepPagamento = ({ paymentMethod, setPaymentMethod, cpf, setCpf, trocoPara
       </button>
     </div>
   </motion.div>
-);
+  );
+};
 
 /* ── Step 3: Confirmar ───────────────────────────────────────────── */
 const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, excedente, total, perfil, retirada, loading, erro, onConfirmar, onBack }) => {
@@ -644,13 +744,14 @@ const SingleCartCheckout = () => {
     return {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, stripeDisponivel = false } = restored;
+  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, stripeDisponivel = false, pagbankCartaoDisponivel = false } = restored;
 
   const [itens, setItens] = useState(carrinho);
   const [perfil, setPerfil] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpf, setCpf] = useState('');
   const [trocoPara, setTrocoPara] = useState('');
+  const [cartaoPagBank, setCartaoPagBank] = useState({ numero: '', validade: '', cvv: '', parcelas: 1 });
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(null);
   const [pixData, setPixData] = useState(null);
@@ -695,6 +796,9 @@ const SingleCartCheckout = () => {
 
   const irParaStep = (n) => { setErro(null); setEtapa(n); };
 
+  const usaPagBankCartao = (paymentMethod === 'credit_card' || paymentMethod === 'debit_card')
+    && !pagamentoManual && !stripeDisponivel && pagbankCartaoDisponivel;
+
   const validarPagamento = () => {
     if (!pagamentoManual && paymentMethod === 'pix' && cpf.replace(/\D/g, '').length !== 11) {
       setErro('CPF inválido. Informe os 11 dígitos para gerar o PIX.');
@@ -703,6 +807,26 @@ const SingleCartCheckout = () => {
     if (pagamentoManual && paymentMethod === 'pix' && !chavePix) {
       setErro('PIX indisponível — o restaurante não configurou uma chave PIX. Escolha outra forma de pagamento.');
       return false;
+    }
+    if (usaPagBankCartao) {
+      if (cpf.replace(/\D/g, '').length !== 11) {
+        setErro('CPF inválido. Informe os 11 dígitos para pagar com cartão.');
+        return false;
+      }
+      if (cartaoPagBank.numero.replace(/\s/g, '').length < 13) {
+        setErro('Número do cartão inválido.');
+        return false;
+      }
+      const digitosValidade = cartaoPagBank.validade.replace(/\D/g, '');
+      const mesValidade = Number(digitosValidade.slice(0, 2));
+      if (digitosValidade.length !== 4 || mesValidade < 1 || mesValidade > 12) {
+        setErro('Validade do cartão inválida — use o formato MM/AA.');
+        return false;
+      }
+      if (cartaoPagBank.cvv.length < 3) {
+        setErro('CVV do cartão inválido.');
+        return false;
+      }
     }
     return true;
   };
@@ -779,6 +903,54 @@ const SingleCartCheckout = () => {
         const stripeResp = await resStripe.json();
         if (!resStripe.ok) throw new Error(stripeResp?.message ?? `HTTP ${resStripe.status}`);
         setStripeClientSecret(stripeResp.client_secret);
+        return;
+      }
+
+      if (usaPagBankCartao) {
+        if (!window.PagSeguro) throw new Error('PagBank ainda carregando, tente de novo em instantes.');
+
+        const digitosValidade = cartaoPagBank.validade.replace(/\D/g, '');
+        const mes = digitosValidade.slice(0, 2);
+        const anoCompleto = `20${digitosValidade.slice(2, 4)}`;
+
+        const resChave = await fetch(apiPath(`/api/pagamentos/pagbank/chave-publica?restaurant_id=${restauranteId}`), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const chaveResp = await resChave.json();
+        if (!resChave.ok) throw new Error(chaveResp?.message ?? 'Falha ao obter chave pública do PagBank');
+
+        const user = (await supabase.auth.getUser())?.data?.user;
+        const nomeTitular = user?.user_metadata?.name ?? user?.email ?? 'Cliente';
+
+        const card = window.PagSeguro.encryptCard({
+          publicKey: chaveResp.public_key,
+          holder: nomeTitular,
+          number: cartaoPagBank.numero.replace(/\s/g, ''),
+          expMonth: mes,
+          expYear: anoCompleto,
+          securityCode: cartaoPagBank.cvv,
+        });
+        if (card.hasErrors) {
+          throw new Error(card.errors?.[0]?.message ?? 'Dados do cartão inválidos');
+        }
+
+        const resCartao = await fetch(apiPath('/api/pagamentos/cartao'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            order_id: newOrderId,
+            customer: { name: nomeTitular, email: user?.email ?? '', tax_id: cpf.replace(/\D/g, '') },
+            card_encrypted: card.encryptedCard,
+            parcelas: paymentMethod === 'credit_card' ? Number(cartaoPagBank.parcelas) : 1,
+            tipo: paymentMethod === 'credit_card' ? 'CREDIT_CARD' : 'DEBIT_CARD',
+          }),
+        });
+        const cartaoResp = await resCartao.json();
+        if (!resCartao.ok) throw new Error(cartaoResp?.message ?? `HTTP ${resCartao.status}`);
+        if (cartaoResp.status !== 'paid') {
+          throw new Error('Pagamento não aprovado. Verifique os dados do cartão ou tente outra forma de pagamento.');
+        }
+        navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
         return;
       }
 
@@ -899,6 +1071,9 @@ const SingleCartCheckout = () => {
               pagamentoManual={pagamentoManual}
               chavePix={chavePix}
               stripeDisponivel={stripeDisponivel}
+              pagbankCartaoDisponivel={pagbankCartaoDisponivel}
+              cartaoPagBank={cartaoPagBank}
+              setCartaoPagBank={setCartaoPagBank}
               trocoPara={trocoPara}
               setTrocoPara={setTrocoPara}
               subtotal={subtotal}

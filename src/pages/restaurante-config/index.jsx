@@ -7,7 +7,7 @@ import {
   gerarTokenGdoor, getStatusGdoor, salvarCnpjEsperadoGdoor,
   getCatalogoGdoor, bloquearSyncGdoor, importarDeGdoor, exportarParaGdoor, getStatusExportacaoGdoor,
   getCatalogoClientesGdoor, bloquearSyncClienteGdoor, importarClientesDeGdoor, exportarClientesParaGdoor, getStatusExportacaoClientesGdoor,
-  getStripeStatus, gerarLinkOnboardingStripe,
+  getStripeStatus, gerarLinkOnboardingStripe, desconectarStripe,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -1158,6 +1158,7 @@ const StripeConectarCard = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [conectando, setConectando] = useState(false);
+  const [desconectando, setDesconectando] = useState(false);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
@@ -1188,6 +1189,20 @@ const StripeConectarCard = () => {
     }
   };
 
+  const desconectar = async () => {
+    if (!window.confirm('Desconectar o Stripe? O checkout do cliente para de oferecer Stripe imediatamente — se o PagBank estiver configurado, o cartão passa a usar o PagBank.')) return;
+    setDesconectando(true);
+    setErro(null);
+    try {
+      const novoStatus = await desconectarStripe();
+      setStatus(novoStatus);
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setDesconectando(false);
+    }
+  };
+
   const s = STRIPE_STATUS_ROTULO[status?.status] ?? STRIPE_STATUS_ROTULO.nao_conectado;
 
   return (
@@ -1200,10 +1215,18 @@ const StripeConectarCard = () => {
           </p>
         </div>
         {!loading && (
-          <button type="button" onClick={conectar} disabled={conectando}
-            className="px-4 py-2 bg-[#635BFF] hover:bg-[#4b45c9] text-white rounded-lg text-sm font-bold disabled:opacity-50 flex-shrink-0">
-            {conectando ? 'Abrindo...' : status?.conectado ? 'Gerenciar no Stripe' : 'Conectar com Stripe'}
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button type="button" onClick={conectar} disabled={conectando}
+              className="px-4 py-2 bg-[#635BFF] hover:bg-[#4b45c9] text-white rounded-lg text-sm font-bold disabled:opacity-50">
+              {conectando ? 'Abrindo...' : status?.conectado ? 'Gerenciar no Stripe' : 'Conectar com Stripe'}
+            </button>
+            {status?.conectado && (
+              <button type="button" onClick={desconectar} disabled={desconectando}
+                className="px-4 py-2 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg text-sm font-bold disabled:opacity-50">
+                {desconectando ? 'Desconectando...' : 'Desconectar'}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

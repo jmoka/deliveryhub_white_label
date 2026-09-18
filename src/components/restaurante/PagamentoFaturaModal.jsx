@@ -1,32 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getFaturaDetalhe, pagarFatura, getPagBankChavePublica } from '../../services/restauranteService';
+import { usePagBankSdk } from '../../hooks/usePagBankSdk';
 import Icon from '../AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-
-const PAGBANK_SDK_URL = 'https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js';
-
-// Carrega o PagBank.js uma única vez (compartilhado entre aberturas do modal)
-const usePagBankSdk = (ativo) => {
-  const [pronto, setPronto] = useState(!!window.PagSeguro);
-
-  useEffect(() => {
-    if (!ativo || window.PagSeguro) { if (window.PagSeguro) setPronto(true); return; }
-    let script = document.querySelector(`script[src="${PAGBANK_SDK_URL}"]`);
-    if (!script) {
-      script = document.createElement('script');
-      script.src = PAGBANK_SDK_URL;
-      script.async = true;
-      document.body.appendChild(script);
-    }
-    const onLoad = () => setPronto(!!window.PagSeguro);
-    script.addEventListener('load', onLoad);
-    if (window.PagSeguro) setPronto(true);
-    return () => script.removeEventListener('load', onLoad);
-  }, [ativo]);
-
-  return pronto;
-};
 
 const CARTAO_INICIAL = { numero: '', validade: '', cvv: '', parcelas: 1 };
 
