@@ -287,8 +287,12 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
   const [email, setEmail] = useState(motoboy?.email ?? '');
   const [password, setPassword] = useState('');
   const [veiculoTipo, setVeiculoTipo] = useState('');
-  const [tipoVinculo, setTipoVinculo] = useState('prestador_servico'); // 'prestador_servico' | 'proprio'
+  const [tipoVinculo, setTipoVinculo] = useState('prestador_servico'); // 'prestador_servico' | 'proprio' | 'estabelecimento'
   const [motoboyClt, setMotoboyClt] = useState(false);
+  const [transporteClt, setTransporteClt] = useState('proprio'); // 'proprio' | 'empresa' — só quando proprio + CLT
+  // Estabelecimento (dono faz a entrega) e CLT com veículo da empresa dispensam
+  // os documentos do veículo/CNH/comprovante — o restante do cadastro exige.
+  const exigeDocumentos = tipoVinculo !== 'estabelecimento' && !(tipoVinculo === 'proprio' && motoboyClt && transporteClt === 'empresa');
   const [cnpj, setCnpj] = useState('');
   const [documentoCnpj, setDocumentoCnpj] = useState(null);
   const [contratoSocial, setContratoSocial] = useState(null);
@@ -315,15 +319,18 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
         dados.cnpj = cnpj.replace(/\D/g, '');
         dados.documento_cnpj = await arquivoParaBase64(documentoCnpj);
         dados.contrato_social = await arquivoParaBase64(contratoSocial);
-      } else {
+      } else if (tipoVinculo === 'proprio') {
         dados.motoboy_clt = motoboyClt;
+        if (motoboyClt) dados.transporte_clt = transporteClt;
       }
-      dados.veiculo_foto = await arquivoParaBase64(veiculoFoto);
-      dados.veiculo_documento = await arquivoParaBase64(veiculoDocumento);
-      if (veiculoTipo === 'carretinha') dados.veiculo_documento_carretinha = await arquivoParaBase64(veiculoDocumentoCarretinha);
-      dados.documento_frente = await arquivoParaBase64(documentoFrente);
-      dados.comprovante_endereco = await arquivoParaBase64(comprovanteEndereco);
-      if (documentoVerso) dados.documento_verso = await arquivoParaBase64(documentoVerso);
+      if (exigeDocumentos) {
+        dados.veiculo_foto = await arquivoParaBase64(veiculoFoto);
+        dados.veiculo_documento = await arquivoParaBase64(veiculoDocumento);
+        if (veiculoTipo === 'carretinha') dados.veiculo_documento_carretinha = await arquivoParaBase64(veiculoDocumentoCarretinha);
+        dados.documento_frente = await arquivoParaBase64(documentoFrente);
+        dados.comprovante_endereco = await arquivoParaBase64(comprovanteEndereco);
+        if (documentoVerso) dados.documento_verso = await arquivoParaBase64(documentoVerso);
+      }
     }
     onSalvar(dados);
   };
@@ -433,20 +440,57 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
                       <span className="block text-[11px] text-[#A1A1AA] font-normal">Funcionário do seu estabelecimento, sem CNPJ.</span>
                     </span>
                   </label>
+                  <label className="flex items-start gap-2 cursor-pointer select-none border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2">
+                    <input type="radio" name="tipoVinculo" checked={tipoVinculo === 'estabelecimento'}
+                      onChange={() => setTipoVinculo('estabelecimento')}
+                      className="w-4 h-4 mt-0.5 accent-[#FF441F]" />
+                    <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                      Estabelecimento
+                      <span className="block text-[11px] text-[#A1A1AA] font-normal">Entrega feita pelo próprio dono do estabelecimento. Dispensa o cadastro de documentos.</span>
+                    </span>
+                  </label>
                 </div>
               </div>
 
               {tipoVinculo === 'proprio' && (
-                <label className="flex items-start gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={motoboyClt} onChange={(e) => setMotoboyClt(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 rounded accent-[#FF441F]" />
-                  <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
-                    CLT (recebe salário mensal)
-                    <span className="block text-[11px] text-[#A1A1AA] font-normal">
-                      Marcado: não ganha comissão por corrida — o frete continua sendo cobrado do cliente, mas fica pro estabelecimento. Desmarcado: recebe comissão das vendas normalmente, igual hoje.
+                <>
+                  <label className="flex items-start gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={motoboyClt} onChange={(e) => setMotoboyClt(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 rounded accent-[#FF441F]" />
+                    <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                      CLT (recebe salário mensal)
+                      <span className="block text-[11px] text-[#A1A1AA] font-normal">
+                        Marcado: não ganha comissão por corrida — o frete continua sendo cobrado do cliente, mas fica pro estabelecimento. Desmarcado: recebe comissão das vendas normalmente, igual hoje.
+                      </span>
                     </span>
-                  </span>
-                </label>
+                  </label>
+
+                  {motoboyClt && (
+                    <div>
+                      <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Transporte</label>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-start gap-2 cursor-pointer select-none border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2">
+                          <input type="radio" name="transporteClt" checked={transporteClt === 'proprio'}
+                            onChange={() => setTransporteClt('proprio')}
+                            className="w-4 h-4 mt-0.5 accent-[#FF441F]" />
+                          <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                            Transporte próprio
+                            <span className="block text-[11px] text-[#A1A1AA] font-normal">Usa o próprio veículo. Documentos do veículo e CNH são obrigatórios.</span>
+                          </span>
+                        </label>
+                        <label className="flex items-start gap-2 cursor-pointer select-none border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg px-3 py-2">
+                          <input type="radio" name="transporteClt" checked={transporteClt === 'empresa'}
+                            onChange={() => setTransporteClt('empresa')}
+                            className="w-4 h-4 mt-0.5 accent-[#FF441F]" />
+                          <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">
+                            Transporte da empresa
+                            <span className="block text-[11px] text-[#A1A1AA] font-normal">Usa veículo do estabelecimento. Dispensa o cadastro de documentos.</span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               <div>
@@ -478,40 +522,44 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
                   </div>
                 </>
               )}
-              <div>
-                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Foto do veículo</label>
-                <input type="file" accept="image/*" required onChange={(e) => setVeiculoFoto(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">
-                  {veiculoTipo === 'carretinha' ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)'}
-                </label>
-                <input type="file" accept="image/*,application/pdf" required onChange={(e) => setVeiculoDocumento(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
-              </div>
-              {veiculoTipo === 'carretinha' && (
-                <div>
-                  <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Documento da carretinha (CRLV)</label>
-                  <input type="file" accept="image/*,application/pdf" required onChange={(e) => setVeiculoDocumentoCarretinha(e.target.files?.[0] ?? null)}
-                    className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
-                </div>
+              {exigeDocumentos && (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Foto do veículo</label>
+                    <input type="file" accept="image/*" required onChange={(e) => setVeiculoFoto(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">
+                      {veiculoTipo === 'carretinha' ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)'}
+                    </label>
+                    <input type="file" accept="image/*,application/pdf" required onChange={(e) => setVeiculoDocumento(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                  {veiculoTipo === 'carretinha' && (
+                    <div>
+                      <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Documento da carretinha (CRLV)</label>
+                      <input type="file" accept="image/*,application/pdf" required onChange={(e) => setVeiculoDocumentoCarretinha(e.target.files?.[0] ?? null)}
+                        className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                    </div>
+                  )}
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNH (frente)</label>
+                    <input type="file" accept="image/*,application/pdf" required onChange={(e) => setDocumentoFrente(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNH (verso, opcional)</label>
+                    <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentoVerso(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Comprovante de endereço</label>
+                    <input type="file" accept="image/*,application/pdf" required onChange={(e) => setComprovanteEndereco(e.target.files?.[0] ?? null)}
+                      className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
+                  </div>
+                </>
               )}
-              <div>
-                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNH (frente)</label>
-                <input type="file" accept="image/*,application/pdf" required onChange={(e) => setDocumentoFrente(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">CNH (verso, opcional)</label>
-                <input type="file" accept="image/*,application/pdf" onChange={(e) => setDocumentoVerso(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">Comprovante de endereço</label>
-                <input type="file" accept="image/*,application/pdf" required onChange={(e) => setComprovanteEndereco(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-[#71717A] dark:text-[#A1A1AA]" />
-              </div>
             </>
           )}
 
@@ -819,7 +867,14 @@ const RestauranteMotoboys = () => {
                         )}
                         {mb.tipo_vinculo === 'proprio' && (
                           <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
-                            {mb.motoboy_clt ? 'Próprio · CLT' : 'Próprio'}
+                            {mb.motoboy_clt
+                              ? `Próprio · CLT · Transporte ${mb.transporte_clt === 'empresa' ? 'da empresa' : 'próprio'}`
+                              : 'Próprio'}
+                          </span>
+                        )}
+                        {mb.tipo_vinculo === 'estabelecimento' && (
+                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
+                            Estabelecimento
                           </span>
                         )}
                       </div>
