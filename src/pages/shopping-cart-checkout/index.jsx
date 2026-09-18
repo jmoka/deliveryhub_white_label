@@ -886,10 +886,7 @@ const SingleCartCheckout = () => {
           }),
         });
         const pixResp = await resPix.json();
-        if (!resPix.ok) {
-          navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
-          return;
-        }
+        if (!resPix.ok) throw new Error(pixResp?.message ?? `Falha ao gerar o PIX (HTTP ${resPix.status}). Tente novamente ou escolha outra forma de pagamento.`);
         setPixData(pixResp);
         return;
       }
@@ -954,6 +951,12 @@ const SingleCartCheckout = () => {
         return;
       }
 
+      // Só chega aqui pra 'cash' (pagamento na entrega, não precisa de gateway).
+      // Qualquer outra forma que não bateu em nenhum branch acima é falha de
+      // configuração — nunca finge sucesso sem ter cobrado nada.
+      if (paymentMethod !== 'cash') {
+        throw new Error('Forma de pagamento indisponível para esse pedido. Escolha outra opção ou fale com o restaurante.');
+      }
       navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
     } catch (err) {
       setErro(err.message);
