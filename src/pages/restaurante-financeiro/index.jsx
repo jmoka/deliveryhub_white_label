@@ -274,9 +274,9 @@ const RestauranteFinanceiro = () => {
                       </button>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-                      <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Esperado</p><p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(d.especie_calculada)}</p></div>
-                      <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Contou</p><p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(d.dinheiro_contado)}</p></div>
-                      <div className="bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Diferença</p><p className={`font-bold ${difCor}`}>{dif > 0 ? '+' : ''}{fmt(dif)}</p></div>
+                      <div className="min-w-0 bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Esperado</p><p className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate" title={fmt(d.especie_calculada)}>{fmt(d.especie_calculada)}</p></div>
+                      <div className="min-w-0 bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Contou</p><p className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate" title={fmt(d.dinheiro_contado)}>{fmt(d.dinheiro_contado)}</p></div>
+                      <div className="min-w-0 bg-[#FAFAFA] dark:bg-[#18181B] rounded-lg p-2"><p className="text-[#71717A] dark:text-[#A1A1AA]">Diferença</p><p className={`font-bold truncate ${difCor}`} title={`${dif > 0 ? '+' : ''}${fmt(dif)}`}>{dif > 0 ? '+' : ''}{fmt(dif)}</p></div>
                     </div>
                   </div>
                 );

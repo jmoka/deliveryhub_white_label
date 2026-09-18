@@ -98,7 +98,7 @@ const HistoricoCaixasPanel = ({ historico = [] }) => {
           <div className="min-w-0">
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] font-medium">Saldo Líquido Real</p>
             <p className={`text-lg font-black truncate ${kpis.perdas > 0 ? 'text-red-600 dark:text-red-400' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>{fmt(kpis.saldo)}</p>
-            {kpis.perdas > 0 && <p className="text-[10px] text-red-500 dark:text-red-400 font-semibold"><Icon name="TrendingDown" size={10} className="inline" /> perdas: {fmt(kpis.perdas)}</p>}
+            {kpis.perdas > 0 && <p className="text-[10px] text-red-500 dark:text-red-400 font-semibold truncate" title={`perdas: ${fmt(kpis.perdas)}`}><Icon name="TrendingDown" size={10} className="inline" /> perdas: {fmt(kpis.perdas)}</p>}
           </div>
         </div>
       </div>
@@ -169,16 +169,16 @@ const HistoricoCaixasPanel = ({ historico = [] }) => {
                       <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${STATUS_BADGE[c.status] ?? 'bg-gray-100 dark:bg-gray-950/40 text-gray-700 dark:text-gray-400'}`}>{STATUS_LABEL[c.status] ?? c.status}</span>
                       {d?.conferencia_aprovada === true  && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">✓ Aprovado</span>}
                       {d?.conferencia_aprovada === false && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">⏳ Conf. Pendente</span>}
-                      {temPerda && <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"><Icon name="TrendingDown" size={10} className="inline mr-0.5" />{fmt(d.diferenca)} perda</span>}
+                      {temPerda && <span className="max-w-full truncate text-xs px-2 py-0.5 rounded-full font-semibold bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800" title={`${fmt(d.diferenca)} perda`}><Icon name="TrendingDown" size={10} className="inline mr-0.5" />{fmt(d.diferenca)} perda</span>}
                       <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{c.nome_operador}</p>
                       <p className="text-xs text-[#A1A1AA]">#{c.id}</p>
                     </div>
                     <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5"><Icon name="Calendar" size={11} className="inline mr-1" />{fmtDt(c.aberto_em)}{c.fechado_em ? <> → {fmtDt(c.fechado_em)}</> : ''}</p>
                   </div>
-                  <div className="text-right flex-shrink-0 mr-2">
-                    <p className={`text-sm font-black ${temPerda ? 'text-red-600 dark:text-red-400' : 'text-[#18181B] dark:text-[#F4F4F5]'}`}>{fmt((r.saldo ?? 0) + (d?.diferenca ?? 0))}</p>
-                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">vendas: {fmt(r.total_vendas)}</p>
-                    {temPerda && <p className="text-[10px] text-red-400">sistema: {fmt(r.saldo)}</p>}
+                  <div className="text-right flex-shrink-0 max-w-[45%] mr-2">
+                    <p className={`text-sm font-black truncate ${temPerda ? 'text-red-600 dark:text-red-400' : 'text-[#18181B] dark:text-[#F4F4F5]'}`} title={fmt((r.saldo ?? 0) + (d?.diferenca ?? 0))}>{fmt((r.saldo ?? 0) + (d?.diferenca ?? 0))}</p>
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate" title={`vendas: ${fmt(r.total_vendas)}`}>vendas: {fmt(r.total_vendas)}</p>
+                    {temPerda && <p className="text-[10px] text-red-400 truncate" title={`sistema: ${fmt(r.saldo)}`}>sistema: {fmt(r.saldo)}</p>}
                   </div>
                   <Icon name={isOpen ? 'ChevronUp' : 'ChevronDown'} size={16} className="text-[#A1A1AA] flex-shrink-0" />
                 </button>
