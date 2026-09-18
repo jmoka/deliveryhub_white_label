@@ -766,6 +766,84 @@ const RestauranteMotoboys = () => {
     }
   };
 
+  const motoboysCadastrados = motoboys.filter((mb) => mb.gerenciado_por_mim);
+
+  const renderMotoboyCard = (mb) => (
+    <div key={mb.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
+          {mb.foto_perfil_url && !isPdfUrl(mb.foto_perfil_url)
+            ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
+            : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{mb.name}</p>
+          {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{mb.phone}</p>}
+          <div className="flex flex-wrap gap-1 mt-1">
+            {mb.bloqueado && (
+              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+                Bloqueado
+              </span>
+            )}
+            {mb.gerenciado_por_mim && (
+              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
+                Cadastrado por você
+              </span>
+            )}
+            {mb.tipo_vinculo === 'proprio' && (
+              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
+                Próprio
+              </span>
+            )}
+            {mb.tipo_vinculo === 'estabelecimento' && (
+              <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
+                Estabelecimento
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 sm:ml-auto sm:flex-shrink-0">
+        {mb.gerenciado_por_mim && (
+          <button
+            onClick={() => { setErroForm(null); setFormModal(mb); }}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]"
+          >
+            Editar
+          </button>
+        )}
+        <button
+          onClick={() => handleBloquear(mb)}
+          disabled={bloqueando === mb.id}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 ${
+            mb.bloqueado
+              ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40'
+              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40'
+          }`}
+        >
+          {bloqueando === mb.id ? '...' : mb.bloqueado ? 'Desbloquear' : 'Bloquear'}
+        </button>
+        {mb.gerenciado_por_mim ? (
+          <button
+            onClick={() => handleExcluir(mb)}
+            disabled={excluindo === mb.id}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50"
+          >
+            {excluindo === mb.id ? '...' : 'Excluir'}
+          </button>
+        ) : (
+          <button
+            onClick={() => handleRemover(mb)}
+            disabled={removendo === mb.id}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50"
+          >
+            {removendo === mb.id ? '...' : 'Remover'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5] dark:bg-[#18181B]">
       <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
@@ -786,20 +864,21 @@ const RestauranteMotoboys = () => {
         )}
 
         {/* Abas */}
-        <div className="flex gap-1 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-1">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-1">
           {[
             { id: 'pendentes', label: 'Pendentes', count: solicitacoes.length },
             { id: 'aceitas', label: 'Aceitas', count: motoboys.length },
             { id: 'recusadas', label: 'Recusadas', count: recusadas.length },
             { id: 'repasses', label: 'Repasses', count: repasses.filter((r) => r.status === 'pendente').length },
+            { id: 'cadastrados', label: 'Por você', count: motoboysCadastrados.length },
           ].map((t) => (
             <button key={t.id} onClick={() => setAba(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-colors ${
+              className={`min-w-0 flex items-center justify-center gap-1 py-2 px-1 text-sm font-bold rounded-lg transition-colors ${
                 aba === t.id ? 'bg-[#FF441F] text-white shadow-sm' : 'text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]'
               }`}>
-              {t.label}
+              <span className="truncate">{t.label}</span>
               {t.count > 0 && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                <span className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                   aba === t.id ? 'bg-white/20 text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'
                 }`}>
                   {t.count}
@@ -843,83 +922,24 @@ const RestauranteMotoboys = () => {
                 <p className="p-5 text-sm text-[#71717A] dark:text-[#A1A1AA] text-center">
                   Nenhum {termoCap.toLowerCase()} afiliado ainda. Cadastre o seu próprio acima, ou aguarde um entregador se cadastrar pelo app e solicitar atender aqui.
                 </p>
-              ) : motoboys.map((mb) => (
-                <div key={mb.id} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-[#FF441F]/10 flex-shrink-0">
-                      {mb.foto_perfil_url && !isPdfUrl(mb.foto_perfil_url)
-                        ? <img src={mb.foto_perfil_url} alt={mb.name} className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center"><Icon name="Bike" size={16} className="text-[#FF441F]" /></div>}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{mb.name}</p>
-                      {mb.phone && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">{mb.phone}</p>}
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {mb.bloqueado && (
-                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
-                            Bloqueado
-                          </span>
-                        )}
-                        {mb.gerenciado_por_mim && (
-                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400">
-                            Cadastrado por você
-                          </span>
-                        )}
-                        {mb.tipo_vinculo === 'proprio' && (
-                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
-                            {mb.motoboy_clt
-                              ? `Próprio · CLT · Transporte ${mb.transporte_clt === 'empresa' ? 'da empresa' : 'próprio'}`
-                              : 'Próprio'}
-                          </span>
-                        )}
-                        {mb.tipo_vinculo === 'estabelecimento' && (
-                          <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400">
-                            Estabelecimento
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 sm:ml-auto sm:flex-shrink-0">
-                    {mb.gerenciado_por_mim && (
-                      <button
-                        onClick={() => { setErroForm(null); setFormModal(mb); }}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#3F3F46]"
-                      >
-                        Editar
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleBloquear(mb)}
-                      disabled={bloqueando === mb.id}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50 ${
-                        mb.bloqueado
-                          ? 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/40'
-                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/40'
-                      }`}
-                    >
-                      {bloqueando === mb.id ? '...' : mb.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                    </button>
-                    {mb.gerenciado_por_mim ? (
-                      <button
-                        onClick={() => handleExcluir(mb)}
-                        disabled={excluindo === mb.id}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50"
-                      >
-                        {excluindo === mb.id ? '...' : 'Excluir'}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleRemover(mb)}
-                        disabled={removendo === mb.id}
-                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/40 disabled:opacity-50"
-                      >
-                        {removendo === mb.id ? '...' : 'Remover'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+              ) : motoboys.map(renderMotoboyCard)}
+            </div>
+          </div>
+        )}
+
+        {aba === 'cadastrados' && (
+          <div className="space-y-3">
+            <button onClick={() => { setErroForm(null); setFormModal('novo'); }}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 border-2 border-dashed border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:border-[#FF441F] hover:text-[#FF441F] transition-colors">
+              <Icon name="Plus" size={16} /> Adicionar {termoCap.toLowerCase()}
+            </button>
+
+            <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] divide-y divide-[#F4F4F5] dark:divide-[#3F3F46]">
+              {motoboysCadastrados.length === 0 ? (
+                <p className="p-5 text-sm text-[#71717A] dark:text-[#A1A1AA] text-center">
+                  Nenhum {termoCap.toLowerCase()} cadastrado por você ainda.
+                </p>
+              ) : motoboysCadastrados.map(renderMotoboyCard)}
             </div>
           </div>
         )}
