@@ -14,6 +14,7 @@ const AdminConfiguracoes = () => {
     pagbank_platform_token: '',
     pagbank_platform_account_id: '',
     pagbank_sandbox: true,
+    pagbank_split_habilitado: true,
   });
   const [redeInfo, setRedeInfo] = useState(null);
 
@@ -50,6 +51,7 @@ const AdminConfiguracoes = () => {
           ...f,
           pagbank_platform_account_id: d.pagbank_platform_account_id ?? '',
           pagbank_sandbox: d.pagbank_sandbox ?? true,
+          pagbank_split_habilitado: d.pagbank_split_habilitado ?? true,
         }));
         setModoIndividual(d.modo_individual ?? false);
         setModoIndividualRestauranteId(d.modo_individual_restaurant_id ?? '');
@@ -162,6 +164,7 @@ const AdminConfiguracoes = () => {
       const payload = {
         pagbank_platform_account_id: form.pagbank_platform_account_id.trim(),
         pagbank_sandbox: form.pagbank_sandbox,
+        pagbank_split_habilitado: form.pagbank_split_habilitado,
       };
       if (form.pagbank_platform_token.trim()) {
         payload.pagbank_platform_token = form.pagbank_platform_token.trim();
@@ -300,6 +303,31 @@ const AdminConfiguracoes = () => {
                       {form.pagbank_sandbox
                         ? 'Pagamentos não são reais — para testes'
                         : 'Atenção: pagamentos reais serão processados'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Usar split toggle — kill-switch sem apagar config */}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, pagbank_split_habilitado: !f.pagbank_split_habilitado }))}
+                    className={`relative w-10 h-6 rounded-full transition-colors ${
+                      form.pagbank_split_habilitado ? 'bg-green-500' : 'bg-gray-300 dark:bg-zinc-600'
+                    }`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      form.pagbank_split_habilitado ? 'left-5' : 'left-1'
+                    }`} />
+                  </button>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                      {form.pagbank_split_habilitado ? 'Usar split' : 'Não usar split'}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-zinc-500">
+                      {form.pagbank_split_habilitado
+                        ? 'Pagamento divide automático entre loja e plataforma (precisa a PagBank liberar split pra conta)'
+                        : 'Desligado — cada loja recebe 100% no próprio token PagBank, sem dividir. Token/contas continuam salvos, nada é apagado.'}
                     </p>
                   </div>
                 </div>
