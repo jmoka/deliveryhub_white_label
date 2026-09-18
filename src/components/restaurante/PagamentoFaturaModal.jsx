@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { getFaturaDetalhe, pagarFatura, getPagBankChavePublica, getConfigPagamentoFatura } from '../../services/restauranteService';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  getFaturaDetalhe, pagarFatura, getPagBankChavePublica, getConfigPagamentoFatura,
+  uploadComprovanteFatura, pularComprovanteFatura,
+} from '../../services/restauranteService';
 import { usePagBankSdk } from '../../hooks/usePagBankSdk';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
+import { comprimirImagem } from '../../utils/imageCompress';
 import Icon from '../AppIcon';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -27,7 +31,14 @@ const PagamentoFaturaModal = ({
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
   const [pago, setPago] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const [configFaturamento, setConfigFaturamento] = useState(null);
+  const [comprovantePreview, setComprovantePreview] = useState(null);
+  const [enviandoComprovante, setEnviandoComprovante] = useState(false);
+  const [comprovanteEnviado, setComprovanteEnviado] = useState(false);
+  const [erroUpload, setErroUpload] = useState(null);
+  const [showAvisoComprovante, setShowAvisoComprovante] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     getConfigPagamentoFatura().then(setConfigFaturamento).catch(() => {});
@@ -131,7 +142,47 @@ const PagamentoFaturaModal = ({
     }
   };
 
-  const copiar = () => navigator.clipboard?.writeText(resultado.pix_code);
+  const copiar = () => {
+    navigator.clipboard?.writeText(resultado.pix_code).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    });
+  };
+
+  // Mesmo cutucão do checkout do cliente final: não trava quem prefere avisar
+  // e mostrar o pagamento depois, só confere que a intenção foi explícita.
+  const handleFechar = () => {
+    if (modoManual && !comprovantePreview) { setShowAvisoComprovante(true); return; }
+    onClose();
+  };
+
+  const handlePularComprovante = async () => {
+    setShowAvisoComprovante(false);
+    try {
+      await pularComprovanteFatura(fatura.id);
+    } catch {
+      // não trava o dono por causa disso — é só um aviso pro admin
+    }
+    onClose();
+  };
+
+  const handleFotoChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const base64 = await comprimirImagem(file);
+    setComprovantePreview(base64);
+    setErroUpload(null);
+    setEnviandoComprovante(true);
+    try {
+      await uploadComprovanteFatura(fatura.id, base64);
+      setComprovanteEnviado(true);
+    } catch (err) {
+      setErroUpload(err.message);
+    } finally {
+      setEnviandoComprovante(false);
+    }
+  };
 
   const TabButton = ({ valor, label }) => (
     <button
@@ -148,7 +199,8 @@ const PagamentoFaturaModal = ({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleFechar}>
       <div className="bg-white dark:bg-[#27272A] rounded-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
         {pago ? (
           <div className="text-center py-4">
@@ -156,17 +208,64 @@ const PagamentoFaturaModal = ({
             <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5]">Pagamento confirmado!</p>
           </div>
         ) : resultado ? (
-          <div className="text-center">
-            <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] mb-3">Pague via Pix</h3>
+          <div className="text-center space-y-4">
+            <div className="w-14 h-14 bg-green-100 dark:bg-green-950/40 rounded-full flex items-center justify-center mx-auto">
+              <Icon name="QrCode" size={28} className="text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-[#18181B] dark:text-[#F4F4F5]">Pix gerado!</h3>
+              <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Escaneie o QR code ou copie o código</p>
+              <p className="text-2xl font-bold text-[#FF441F] mt-1">{fmt(fatura.valor)}</p>
+              {!modoManual && (
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-2 flex items-center justify-center gap-1.5">
+                  <Icon name="ShieldCheck" size={13} className="flex-shrink-0" />
+                  Pagamento processado com segurança pelo PagBank
+                </p>
+              )}
+            </div>
             {resultado.pix_qr_url && (
-              <img src={resultado.pix_qr_url} alt="QR Code Pix" className="w-48 h-48 mx-auto rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46]" />
+              <img src={resultado.pix_qr_url} alt="QR Code Pix" className="w-48 h-48 mx-auto rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] object-contain" />
             )}
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-3 mb-2">Ou copie o código:</p>
-            <button onClick={copiar} className="w-full text-xs font-mono bg-[#F4F4F5] dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 break-all text-left">
-              {resultado.pix_code}
+
+            {modoManual && (
+              <div className="space-y-2">
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFotoChange} />
+                {comprovantePreview ? (
+                  <div className="relative">
+                    <img src={comprovantePreview} alt="Comprovante" className="w-full max-h-40 object-cover rounded-xl border-2 border-green-300 dark:border-green-700" />
+                    {enviandoComprovante && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">Enviando...</p>}
+                    {comprovanteEnviado && <p className="text-xs text-green-700 dark:text-green-400 mt-1 font-semibold">✓ Comprovante anexado</p>}
+                    {erroUpload && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{erroUpload}</p>}
+                  </div>
+                ) : (
+                  <button onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2.5 border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 font-bold text-sm rounded-xl flex items-center justify-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-950/40 transition-colors">
+                    <Icon name="Camera" size={16} /> Anexar comprovante do pagamento
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Código PIX (copia e cola)</p>
+              <div className="bg-[#F4F4F5] dark:bg-[#3F3F46] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl p-3 text-xs font-mono text-[#27272A] dark:text-[#F4F4F5] break-all text-left max-h-24 overflow-y-auto">
+                {resultado.pix_code}
+              </div>
+              <button onClick={copiar}
+                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                  copiado ? 'bg-green-500 text-white' : 'bg-[#FF441F] hover:bg-[#E63A19] text-white'
+                }`}>
+                {copiado ? '✓ Copiado!' : 'Copiar código'}
+              </button>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 rounded-xl p-3 text-xs text-blue-700 dark:text-blue-400 text-left">
+              {modoManual
+                ? 'Após o pagamento, avise pra confirmarmos o recebimento manualmente.'
+                : 'Após o pagamento, a fatura é confirmada automaticamente.'}
+            </div>
+            <button onClick={handleFechar} className="w-full py-3 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-2xl text-sm font-semibold text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+              {modoManual ? 'Enviar o comprovante' : 'Fechar'}
             </button>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-3">Aguardando confirmação do pagamento...</p>
-            <button onClick={onClose} className="mt-4 text-sm text-[#71717A] dark:text-[#A1A1AA] hover:underline">Fechar</button>
           </div>
         ) : (
           <>
@@ -239,6 +338,37 @@ const PagamentoFaturaModal = ({
         )}
       </div>
     </div>
+
+    {showAvisoComprovante && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+        <div className="w-full max-w-sm bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-amber-100 dark:bg-amber-950/40 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Icon name="AlertTriangle" size={18} className="text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="font-bold text-[#18181B] dark:text-[#F4F4F5]">Comprovante do pagamento não anexado</p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
+                Você pode anexar o comprovante agora, ou pular e avisar/confirmar o pagamento depois.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <button
+              onClick={() => { setShowAvisoComprovante(false); fileInputRef.current?.click(); }}
+              className="w-full py-2.5 bg-[#FF441F] text-white font-bold text-sm rounded-xl hover:bg-[#E63A19] flex items-center justify-center gap-2">
+              <Icon name="Camera" size={15} /> Anexar comprovante
+            </button>
+            <button
+              onClick={handlePularComprovante}
+              className="w-full py-2.5 border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] font-semibold text-sm rounded-xl hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+              Avisar/confirmar depois
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

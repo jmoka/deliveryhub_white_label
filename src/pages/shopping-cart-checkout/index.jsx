@@ -12,6 +12,7 @@ import { cartCount, cartByRestaurant, cartClear } from '../../utils/multiCart';
 import MultiCartCheckout from './MultiCartCheckout';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 import { usePagBankSdk } from '../../hooks/usePagBankSdk';
+import { comprimirImagem } from '../../utils/imageCompress';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -55,23 +56,6 @@ const ProgressBar = ({ etapa, total }) => (
 const LABELS_ETAPA = ['Endereço', 'Seus itens', 'Pagamento', 'Confirmar'];
 
 /* ── Tela PIX ─────────────────────────────────────────────────────  */
-const comprimirImagem = (file) =>
-  new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 1200;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.75));
-    };
-    img.src = url;
-  });
-
 const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, retirada = false }) => {
   const [copiado, setCopiado] = useState(false);
   const [comprovantePreview, setComprovantePreview] = useState(null);

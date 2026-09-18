@@ -545,6 +545,10 @@ export const renovarPlanoAgora = () => apiFetch('/plano/renovar', { method: 'POS
 export const getPlanosDisponiveis = () => apiFetch('/plano/disponiveis');
 export const getPagBankChavePublica = () => apiFetch('/plano/pagbank-chave-publica');
 export const getConfigPagamentoFatura = () => apiFetch('/plano/config-pagamento');
+export const uploadComprovanteFatura = (id, base64) =>
+  apiFetch(`/plano/faturas/${id}/comprovante`, { method: 'POST', body: JSON.stringify({ base64 }) });
+export const pularComprovanteFatura = (id) =>
+  apiFetch(`/plano/faturas/${id}/pular-comprovante`, { method: 'PATCH' });
 export const assinarPlano = (planoId) =>
   apiFetch('/plano/assinar', { method: 'POST', body: JSON.stringify({ plano_id: planoId }) });
 
