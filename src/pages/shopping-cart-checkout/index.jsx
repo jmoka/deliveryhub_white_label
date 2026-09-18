@@ -426,9 +426,11 @@ const StepPagamento = ({
       <div className="space-y-2">
         {PAYMENT_OPTIONS.map((op) => {
           const isCartao = op.key === 'credit_card' || op.key === 'debit_card';
+          // Modo manual = loja sem nenhuma ligação real com Stripe/PagBank, mesmo
+          // que tenha token salvo — cartão nunca é opção válida nesse caso.
           const opcaoIndisponivel =
             (pagamentoManual && op.key === 'pix' && !chavePix) ||
-            (!pagamentoManual && isCartao && !stripeDisponivel && !pagbankCartaoDisponivel);
+            (isCartao && (pagamentoManual || (!stripeDisponivel && !pagbankCartaoDisponivel)));
           return (
             <button key={op.key} onClick={() => !opcaoIndisponivel && setPaymentMethod(op.key)}
               disabled={opcaoIndisponivel}
@@ -451,7 +453,7 @@ const StepPagamento = ({
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
                   {pagamentoManual && op.key === 'pix' && !chavePix
                     ? 'Indisponível — restaurante não configurou chave PIX'
-                    : !pagamentoManual && isCartao && !stripeDisponivel && !pagbankCartaoDisponivel
+                    : isCartao && (pagamentoManual || (!stripeDisponivel && !pagbankCartaoDisponivel))
                       ? 'Indisponível — restaurante não conectou pagamento online'
                       : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
                 </p>
