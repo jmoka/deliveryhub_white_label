@@ -6,6 +6,7 @@ import {
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
   getGanhosResumo, getGanhosHistorico, getGanhosPorDia, solicitarRevisaoPlataforma,
   getSaldoPorEstabelecimento, criarSolicitacaoRepasse, getMinhasSolicitacoesRepasse,
+  gerarLinkTelegram, getStatusTelegram,
 } from '../../services/motoboyService';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +15,7 @@ import ColetaBarcode from './ColetaBarcode';
 import EntregaBarcode from './EntregaBarcode';
 import Icon from '../../components/AppIcon';
 import CredenciaisForm from '../../components/perfil/CredenciaisForm';
+import { TelegramLinkCard } from '../../components/telegram/TelegramLinkCard';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -738,6 +740,9 @@ const AbaPerfil = ({ me, onAtualizado }) => {
           {salvando ? 'Salvando...' : 'Salvar alterações'}
         </button>
       </form>
+
+      {/* Notificações */}
+      <TelegramLinkCard gerarLink={gerarLinkTelegram} getStatus={getStatusTelegram} />
 
       {/* Segurança */}
       <div>

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPerfil, updatePerfil, uploadFoto, listarEnderecos, criarEndereco, editarEndereco } from '../../services/perfilService';
+import { getPerfil, updatePerfil, uploadFoto, listarEnderecos, criarEndereco, editarEndereco, gerarLinkTelegram, getStatusTelegram } from '../../services/perfilService';
 import { buscarCep } from '../../utils/viaCep';
 import { reverseGeocode, geocodeEndereco } from '../../utils/reverseGeocode';
 import { useAuth } from '../../contexts/AuthContext';
 import Icon from '../../components/AppIcon';
 import CredenciaisForm from '../../components/perfil/CredenciaisForm';
 import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
+import { TelegramLinkCard } from '../../components/telegram/TelegramLinkCard';
 
 const formatCEP = (v) => {
   const n = (v ?? '').replace(/\D/g, '');
@@ -310,6 +311,14 @@ const CustomerProfile = () => {
             {salvando ? 'Salvando...' : 'Salvar perfil'}
           </button>
         </form>
+
+        <div className="mt-6">
+          <TelegramLinkCard
+            gerarLink={gerarLinkTelegram}
+            getStatus={getStatusTelegram}
+            className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3"
+          />
+        </div>
 
         <div className="mt-6">
           <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-3">

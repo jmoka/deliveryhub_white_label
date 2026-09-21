@@ -116,3 +116,7 @@ const ganhosQuery = ({ restaurantId, de, ate } = {}) => {
 
 export const getGanhosHistorico = (filtro) => motoboyFetch(`/ganhos/historico${ganhosQuery(filtro)}`);
 export const getGanhosPorDia = (filtro) => motoboyFetch(`/ganhos/por-dia${ganhosQuery(filtro)}`);
+
+// Notificações via Telegram (pedido pronto) — vínculo por deep-link, opt-in.
+export const gerarLinkTelegram = () => motoboyFetch('/telegram/link', { method: 'POST' });
+export const getStatusTelegram = () => motoboyFetch('/telegram/status');

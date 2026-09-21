@@ -52,6 +52,10 @@ export const verificarEndereco = (id) =>
 export const selecionarEndereco = (id, coords) =>
   apiFetch({ method: 'PATCH', body: JSON.stringify(coords ?? {}) }, `/enderecos/${id}/selecionar`);
 
+// Notificações via Telegram (pedido confirmado/entregue) — vínculo por deep-link, opt-in.
+export const gerarLinkTelegram = () => apiFetch({ method: 'POST' }, '/telegram/link');
+export const getStatusTelegram = () => apiFetch({}, '/telegram/status');
+
 export async function uploadFoto(file) {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
   const token = session?.access_token;
