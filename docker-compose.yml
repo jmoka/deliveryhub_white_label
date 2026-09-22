@@ -3,6 +3,10 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: deliveryhub-cloudflared
     restart: unless-stopped
-    command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    # "tunnel run" sem --token: cloudflared le o token sozinho da env TUNNEL_TOKEN
+    # dentro do container. Usar ${CLOUDFLARE_TUNNEL_TOKEN} aqui no command nao
+    # funciona - essa substituicao do Compose so enxerga .env (nome exato) ou o
+    # shell, nunca o env_file abaixo, que so injeta a variavel dentro do container.
+    command: tunnel run
     env_file:
       - .env.docker
