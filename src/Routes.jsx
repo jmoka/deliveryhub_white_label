@@ -71,6 +71,7 @@ import RestauranteImpulsionar from './pages/restaurante-impulsionar';
 import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
 import MesaAcompanhar from './pages/mesa-acompanhar';
+import FaturaPagamentoPublica from './pages/fatura-pagamento-publica';
 import AutoAtendimento from './pages/auto-atendimento';
 import HomeRouter from './pages/home-router';
 
@@ -165,6 +166,9 @@ const Routes = () => {
 
         {/* Acompanhamento público da mesa via QR — sem login */}
         <Route path="/mesa/acompanhar/:token" element={<MesaAcompanhar />} />
+
+        {/* Pagamento público de fatura — link gerado em /admin/planos (aba Faturas), sem login */}
+        <Route path="/fatura/pagar/:token" element={<FaturaPagamentoPublica />} />
 
         {/* Auto atendimento — cliente pede direto pela mesa via QR fixo, sem login */}
         <Route path="/auto-atendimento/:token" element={<AutoAtendimento />} />

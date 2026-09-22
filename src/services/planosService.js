@@ -67,3 +67,5 @@ export const criarFaturaManual = (data) => apiFetch('/planos/faturas', { method:
 export const atualizarFatura = (id, data) => apiFetch(`/planos/faturas/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const cancelarFatura = (id) => apiFetch(`/planos/faturas/${id}/cancelar`, { method: 'PATCH' });
 export const excluirFatura = (id) => apiFetch(`/planos/faturas/${id}`, { method: 'DELETE' });
+// Link público (sem login) pra mandar pro cliente pagar — ver PlanosPublicoController
+export const gerarLinkPagamentoFatura = (id) => apiFetch(`/planos/faturas/${id}/gerar-link`, { method: 'POST' });

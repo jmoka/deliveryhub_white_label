@@ -4,6 +4,7 @@ import {
   getPlanos, criarPlano, atualizarPlano, removerPlano,
   getAssinaturas, atribuirAssinatura, cancelarAssinatura, gerarFaturaManual,
   getFaturas, marcarFaturaPaga, criarFaturaManual, atualizarFatura, cancelarFatura, excluirFatura,
+  gerarLinkPagamentoFatura,
 } from '../../services/planosService';
 import {
   getInstalacoes, criarInstalacao, atualizarInstalacao,
@@ -759,6 +760,7 @@ const TabFaturas = () => {
   const [processando, setProcessando] = useState(null);
   const [modalNova, setModalNova] = useState(false);
   const [faturaEditando, setFaturaEditando] = useState(null);
+  const [faturaLink, setFaturaLink] = useState(null);
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -888,6 +890,18 @@ const TabFaturas = () => {
                     <div className="flex items-center justify-end gap-1">
                       {(f.status === 'pendente' || f.status === 'vencida') && (
                         <>
+                          <button onClick={() => setFaturaLink(f)} disabled={processando === f.id}
+                            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-[#FF441F] hover:bg-[#FF441F]/10 rounded-lg disabled:opacity-40"
+                            title="Gerar link Pix pra enviar ao cliente">
+                            <Icon name="Link" size={14} />
+                          </button>
+                          <button
+                            title="PagBank Checkout — disponível quando o PagBank for ativado"
+                            disabled
+                            className="p-1.5 text-gray-300 dark:text-zinc-600 rounded-lg cursor-not-allowed"
+                          >
+                            <Icon name="CreditCard" size={14} />
+                          </button>
                           <button
                             onClick={() => handleMarcarPaga(f)}
                             disabled={processando === f.id}
@@ -932,6 +946,9 @@ const TabFaturas = () => {
           onClose={() => setFaturaEditando(null)}
           onSalva={carregar}
         />
+      )}
+      {faturaLink && (
+        <ModalLinkFatura fatura={faturaLink} onClose={() => setFaturaLink(null)} nomeFatura={nomeFatura} />
       )}
     </>
   );
@@ -1110,6 +1127,73 @@ const ModalEditarFatura = ({ fatura, onClose, onSalva }) => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Link público (sem login) da fatura — admin gera e copia pra mandar pro
+// cliente pagar (WhatsApp etc). Reaproveita o token se já tiver sido gerado
+// antes (backend não gera um novo a cada clique).
+const ModalLinkFatura = ({ fatura, onClose, nomeFatura }) => {
+  const [link, setLink] = useState(null);
+  const [erro, setErro] = useState(null);
+  const [gerando, setGerando] = useState(true);
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => {
+    gerarLinkPagamentoFatura(fatura.id)
+      .then(({ token }) => setLink(`${window.location.origin}/fatura/pagar/${token}`))
+      .catch((e) => setErro(e.message))
+      .finally(() => setGerando(false));
+  }, [fatura.id]);
+
+  const copiar = () => {
+    navigator.clipboard?.writeText(link).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Link de pagamento Pix</h3>
+          <button type="button" onClick={onClose}
+            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
+
+        {gerando ? (
+          <div className="flex justify-center py-8">
+            <div className="w-7 h-7 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : erro ? (
+          <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>
+        ) : (
+          <>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-3">
+              Envie este link pra <strong className="text-gray-900 dark:text-zinc-100">{nomeFatura(fatura)}</strong> pagar
+              a fatura de {fmt(fatura.valor)} — a página mostra o QR Code e o código Pix (copia e cola), sem precisar login.
+            </p>
+            <button onClick={copiar}
+              className="w-full text-sm font-mono bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-4 py-3 break-all flex items-center justify-between gap-2 text-left">
+              {link}
+              <Icon name="Copy" size={15} className="flex-shrink-0 text-gray-400" />
+            </button>
+            <button onClick={copiar}
+              className={`w-full mt-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                copiado ? 'bg-green-500 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}>
+              {copiado ? '✓ Link copiado!' : 'Copiar link'}
+            </button>
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-3">
+              Assim que confirmar o pagamento (Pix caiu na conta), volte aqui e clique em "Marcar paga".
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
