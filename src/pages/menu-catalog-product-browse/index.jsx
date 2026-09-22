@@ -1020,6 +1020,20 @@ const MenuCatalogProductBrowse = () => {
     })();
   }, [statusLocalizacao, localizacao, raioKm, filtroEstado, filtroCidade, filtroBairro, filtroCep, temFiltroManual]);
 
+  // Produto/combo/serviço só aparece pra venda se o restaurante dono estiver
+  // ABERTO e dentro do raio de km selecionado. `restaurantes` já vem filtrado
+  // por distância pelo backend (/api/r com lat/lng/raio_km) — só falta excluir
+  // os fechados, que o backend mantém na lista (com badge) de propósito pra
+  // aparecer no card do restaurante. Diferente da página de UM restaurante
+  // (`/r/:slug`), onde o cardápio fica visível (opaco) mesmo fechado — aqui é
+  // o marketplace comparando vários, então some da lista mesmo.
+  const restaurantesDisponiveisIds = new Set(
+    restaurantes.filter((r) => r.aparencia?.aberto !== false).map((r) => r.id),
+  );
+  const produtosDisponiveis = produtos.filter((p) => restaurantesDisponiveisIds.has(p.restaurant_id));
+  const combosDisponiveis = combos.filter((c) => restaurantesDisponiveisIds.has(c.restaurant_id));
+  const servicosDisponiveis = servicosMarketplace.filter((s) => restaurantesDisponiveisIds.has(s.restaurant_id));
+
   // Chips sintéticos junto das categorias reais — não têm category_id, são
   // tratados à parte (ver mostrandoCombos/mostrandoServicos).
   const temServicos = restaurantes.some((r) => r.modulo_servicos);
@@ -1033,8 +1047,8 @@ const MenuCatalogProductBrowse = () => {
 
   // catAtiva === null: sem filtro de categoria (mostra tudo)
   const produtosPorCategoria = catAtiva === null || mostrandoCombos || mostrandoServicos
-    ? produtos
-    : produtos.filter((p) => p.category_id === catAtiva);
+    ? produtosDisponiveis
+    : produtosDisponiveis.filter((p) => p.category_id === catAtiva);
 
   const restaurantesComCategoria = catAtiva === null
     ? null
@@ -1056,18 +1070,18 @@ const MenuCatalogProductBrowse = () => {
     : produtosPorCategoria;
 
   const combosFiltrados = busca
-    ? combos.filter((c) =>
+    ? combosDisponiveis.filter((c) =>
         c.name.toLowerCase().includes(busca.toLowerCase()) ||
         c.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
       )
-    : combos;
+    : combosDisponiveis;
 
   const servicosFiltrados = busca
-    ? servicosMarketplace.filter((s) =>
+    ? servicosDisponiveis.filter((s) =>
         s.name.toLowerCase().includes(busca.toLowerCase()) ||
         s.restaurante?.name.toLowerCase().includes(busca.toLowerCase()),
       )
-    : servicosMarketplace;
+    : servicosDisponiveis;
 
   // Sem categoria de produto selecionada, "Compare preços" mostra produtos e
   // serviços misturados — só assim o chip "Serviços" funciona como um filtro
@@ -1084,18 +1098,20 @@ const MenuCatalogProductBrowse = () => {
       if (tag.is_auto) {
         // Auto: não filtra por tags[] do produto — seria calculado por order_items
         // No catálogo global usamos os primeiros produtos com destaque como fallback
-        prods = produtos.filter((p) => p.destaque);
+        prods = produtosDisponiveis.filter((p) => p.destaque);
       } else {
-        prods = produtos.filter((p) => Array.isArray(p.tags) && p.tags.includes(tag.slug));
+        prods = produtosDisponiveis.filter((p) => Array.isArray(p.tags) && p.tags.includes(tag.slug));
       }
 
       // Prepend patrocinados desse carrossel — carrossel do pacote comprado é
       // sempre o slug real da tag (validado no backend contra tags_catalogo),
       // então bate direto aqui, sem tabela de alias — funciona pra qualquer
       // tag, inclusive uma criada depois deste código (ver marketplace-boost).
+      // Busca em produtosDisponiveis (não produtos cru) pra um patrocinado de
+      // loja fechada/fora do raio sumir igual aos demais, não só o orgânico.
       const idsPatrocinados = patrocinados[tag.slug] ?? [];
       const patrocinadosProds = idsPatrocinados
-        .map((id) => produtos.find((p) => p.id === id))
+        .map((id) => produtosDisponiveis.find((p) => p.id === id))
         .filter(Boolean)
         .map((p) => ({ ...p, patrocinado: true }));
 
@@ -1110,8 +1126,8 @@ const MenuCatalogProductBrowse = () => {
 
   // Combos patrocinados sempre na frente do carrossel de combos.
   const combosComDestaque = [
-    ...combos.filter((c) => patrocinados.combos?.includes(c.id)).map((c) => ({ ...c, patrocinado: true })),
-    ...combos.filter((c) => !patrocinados.combos?.includes(c.id)),
+    ...combosDisponiveis.filter((c) => patrocinados.combos?.includes(c.id)).map((c) => ({ ...c, patrocinado: true })),
+    ...combosDisponiveis.filter((c) => !patrocinados.combos?.includes(c.id)),
   ];
 
   return (
@@ -1377,7 +1393,10 @@ const MenuCatalogProductBrowse = () => {
       )}
 
       {/* ── Carrosseis dinâmicos baseados nas tags_catalogo ──────── */}
-      {loadProd ? (
+      {/* loading (restaurantes) também entra aqui — carrosseis dependem de
+          produtosDisponiveis, que só fica correto depois que a lista de
+          restaurantes (filtro de km/aberto) chega. */}
+      {(loadProd || loading) ? (
         <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
             <div className="flex gap-3">{[...Array(6)].map((_, i) => <div key={i} className="flex-shrink-0 w-36 sm:w-40 h-44 bg-[#F4F4F5] rounded-2xl animate-pulse" />)}</div>
@@ -1563,7 +1582,11 @@ const MenuCatalogProductBrowse = () => {
               </div>
 
               {mostrandoServicos ? (
-                servicosFiltrados.length === 0 ? (
+                loading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+                  </div>
+                ) : servicosFiltrados.length === 0 ? (
                   <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
                     <p className="text-[var(--texto-secundario)] text-sm">Nenhum serviço encontrado</p>
                   </div>
@@ -1575,7 +1598,11 @@ const MenuCatalogProductBrowse = () => {
                   </div>
                 )
               ) : mostrandoCombos ? (
-                combosFiltrados.length === 0 ? (
+                loading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+                  </div>
+                ) : combosFiltrados.length === 0 ? (
                   <div className="text-center py-10 bg-white rounded-2xl border border-[#E4E4E7]">
                     <p className="text-[var(--texto-secundario)] text-sm">Nenhum combo encontrado</p>
                   </div>
@@ -1586,7 +1613,7 @@ const MenuCatalogProductBrowse = () => {
                     ))}
                   </div>
                 )
-              ) : loadProd ? (
+              ) : (loadProd || loading) ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
                 </div>
