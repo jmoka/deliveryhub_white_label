@@ -538,7 +538,7 @@ const RestauranteProdutos = () => {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/produtos" title="Produtos" />
+      <RestauranteHeader active="/restaurante/produtos" title="Produtos" ajudaCategoria="produtos-cardapio" />
 
       <main className={`p-6 mx-auto ${viewMode === 'tabela' ? 'max-w-[85%]' : 'max-w-4xl'}`}>
         {erro && <p className="text-red-600 dark:text-red-400 mb-4 text-sm">{erro}</p>}

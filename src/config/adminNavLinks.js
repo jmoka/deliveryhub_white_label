@@ -5,6 +5,7 @@ export const ADMIN_NAV_LINKS = [
   { label: 'Categorias', path: '/admin/categorias', icon: 'FolderTree' },
   { label: 'Tipos', path: '/admin/tipos-estabelecimento', icon: 'Building2' },
   { label: 'Tags', path: '/admin/tags', icon: 'Tags' },
+  { label: 'Academia', path: '/admin/academia', icon: 'GraduationCap' },
   { label: 'Comissões', path: '/admin/comissoes', icon: 'Percent' },
   { label: 'Motoboys', path: '/admin/motoboys', icon: 'Bike' },
   { label: 'Planos', path: '/admin/planos', icon: 'CreditCard' },

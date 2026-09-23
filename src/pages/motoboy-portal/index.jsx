@@ -1259,6 +1259,10 @@ const MotoboyPortal = () => {
               <Icon name="MapPin" size={12} />
               {gpsAtivo ? 'GPS ON' : 'GPS OFF'}
             </button>
+            <button onClick={() => navigate('/academia?perfil=motoboy&travado=1')} title="Academia — tutoriais"
+              className="p-2 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F]">
+              <Icon name="GraduationCap" size={18} />
+            </button>
             <button onClick={handleSair} className="p-2 text-[#71717A] dark:text-[#A1A1AA] hover:text-red-500 dark:hover:text-red-400">
               <Icon name="LogOut" size={16} />
             </button>

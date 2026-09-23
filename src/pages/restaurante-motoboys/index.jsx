@@ -852,7 +852,7 @@ const RestauranteMotoboys = () => {
 
   return (
     <div className="min-h-screen bg-[#F4F4F5] dark:bg-[#18181B]">
-      <RestauranteHeader active="/restaurante/motoboys" title={tipoRestaurante ? 'Motoboys' : 'Entregadores'} subtitle="Entregadores afiliados ao seu estabelecimento" onRefresh={reload} />
+      <RestauranteHeader active="/restaurante/motoboys" title={tipoRestaurante ? 'Motoboys' : 'Entregadores'} subtitle="Entregadores afiliados ao seu estabelecimento" onRefresh={reload} ajudaCategoria="delivery-motoboys" />
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         {msg && (

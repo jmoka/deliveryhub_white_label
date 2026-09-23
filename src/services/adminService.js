@@ -77,6 +77,35 @@ export const getPagamentosStripeAdmin = (params = {}) => {
   return apiFetch(`/pagamentos/admin/stripe${qs ? `?${qs}` : ''}`);
 };
 
+// Academia — gestão dos vídeos (título, descrição, url/upload, em quais painéis aparece)
+export const getVideosAcademiaAdmin = () => apiFetch('/admin/academia/videos');
+export const criarVideoAcademia = (data) =>
+  apiFetch('/admin/academia/videos', { method: 'POST', body: JSON.stringify(data) });
+export const atualizarVideoAcademia = (id, data) =>
+  apiFetch(`/admin/academia/videos/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerVideoAcademia = (id) =>
+  apiFetch(`/admin/academia/videos/${id}`, { method: 'DELETE' });
+
+export const uploadVideoAcademia = async (file) => {
+  const sessionResult = await supabase.auth.getSession().catch(() => ({ data: {} }));
+  const token = sessionResult?.data?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+  const form = new FormData();
+  form.append('file', file);
+
+  const res = await fetch(`${API}/admin/academia/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const json = contentType.includes('application/json') ? await res.json().catch(() => ({})) : {};
+  if (!res.ok) throw new Error(json?.message ?? `HTTP ${res.status}`);
+  return json; // { url: string }
+};
+
 // Empresas
 export const getEmpresas = () => apiFetch('/empresas');
 export const getEmpresa = (id) => apiFetch(`/empresas/${id}`);

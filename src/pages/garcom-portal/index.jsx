@@ -1928,6 +1928,10 @@ const GarcomHome = () => {
                 <Icon name="QrCode" size={14} /> QR Cardápio
               </button>
             )}
+            <button onClick={() => window.open('/academia?perfil=garcom&travado=1', '_blank')}
+              className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] px-2 py-1">
+              <Icon name="GraduationCap" size={14} /> Academia
+            </button>
             <button onClick={() => setMostrarEncerrarSessao(true)}
               className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-red-600 dark:hover:text-red-400 px-2 py-1">
               <Icon name="LogOut" size={14} /> Sair

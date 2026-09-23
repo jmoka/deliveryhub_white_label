@@ -14,6 +14,7 @@ import { useSolicitacoesServicoCount } from '../../hooks/useSolicitacoesServicoC
 import { usePontosPreparoLinks } from '../../hooks/usePontosPreparoLinks';
 import { useRestauranteFavoritos } from '../../hooks/useRestauranteFavoritos';
 import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
+import AjudaContextual from '../AjudaContextual';
 
 // Header compartilhado de toda a área /restaurante/*. Substitui o header
 // duplicado (e divergente) que cada página tinha antes — ver plano
@@ -62,7 +63,7 @@ const PlanoStatusDot = ({ planoStatus, onClick }) => {
   );
 };
 
-const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
+const RestauranteHeader = ({ active, title, subtitle, onRefresh, ajudaCategoria }) => {
   const navigate = useNavigate();
   const { signOut, planoStatus } = useAuth();
   const slugLoja = useMinhaLojaSlug();
@@ -103,7 +104,10 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh }) => {
             ? <img src={logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
             : <div className="w-8 h-8 rounded-lg bg-[#FF441F]/10 flex items-center justify-center flex-shrink-0"><Icon name="UtensilsCrossed" size={16} className="text-[#FF441F]" /></div>}
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{title}</h1>
+            <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5] truncate flex items-center gap-1.5">
+              {title}
+              {ajudaCategoria && <AjudaContextual categoria={ajudaCategoria} />}
+            </h1>
             {subtitle && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] truncate">{subtitle}</p>}
           </div>
         </div>

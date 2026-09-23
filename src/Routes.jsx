@@ -74,6 +74,8 @@ import MesaAcompanhar from './pages/mesa-acompanhar';
 import FaturaPagamentoPublica from './pages/fatura-pagamento-publica';
 import AutoAtendimento from './pages/auto-atendimento';
 import HomeRouter from './pages/home-router';
+import Academia from './pages/academia';
+import AdminAcademia from './pages/admin-academia';
 
 const Routes = () => {
   return (
@@ -90,6 +92,7 @@ const Routes = () => {
         <Route path="/customer-registration-login" element={<CustomerRegistrationLogin />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/order-tracking-status" element={<OrderTrackingStatus />} />
+        <Route path="/academia" element={<Academia />} />
 
         {/* Admin — requer role=admin */}
         <Route path="/admin/trocar-senha" element={<AdminGuard><AdminTrocarSenha /></AdminGuard>} />
@@ -107,6 +110,7 @@ const Routes = () => {
         <Route path="/admin/marketplace-boost" element={<AdminGuard><AdminMarketplaceBoost /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
         <Route path="/admin/aparencia" element={<AdminGuard><AdminAparencia /></AdminGuard>} />
+        <Route path="/admin/academia" element={<AdminGuard><AdminAcademia /></AdminGuard>} />
 
         {/* Cardápio público por slug — sem auth */}
         <Route path="/r/:slug" element={<RestauranteCatalogo />} />

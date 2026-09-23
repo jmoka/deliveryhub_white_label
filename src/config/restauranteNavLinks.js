@@ -58,6 +58,9 @@ const SERVICOS_LINKS = [
   { label: 'Serviços', path: '/restaurante/servicos', icon: 'Wrench' },
 ];
 
+// Sempre visível, independente de módulo ativo — é ajuda, não uma feature do plano.
+const ACADEMIA_LINK = { label: 'Academia', path: '/academia?perfil=estabelecimento', icon: 'GraduationCap' };
+
 // Pontos de preparo customizados (Churrasqueira, Drinks...) usam o mesmo requisito de
 // visibilidade da Cozinha — precisam de algum módulo ativo pra fazer sentido no menu.
 const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurante/pontos-preparo', icon: 'LayoutGrid' };
@@ -88,6 +91,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServic
     ...(temProdutos ? BASE_LINKS.slice(9, 10) : []), // Sessão — idem Produtos
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Mesas...
     ...(moduloServicos ? SERVICOS_LINKS : []), // Serviços (orçamento)
+    ACADEMIA_LINK,
   ], tipoRestaurante);
   // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só
   // controla quais links entram conforme os módulos ativos. Dashboard fica
