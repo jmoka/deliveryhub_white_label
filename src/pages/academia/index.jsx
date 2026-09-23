@@ -7,6 +7,11 @@ import { APP_NAME } from '../../constants/brand';
 import { ACADEMIA_PERFIS, ACADEMIA_CATEGORIAS, CATEGORIA_FALLBACK } from '../../config/academiaCatalogo';
 import { useAcademiaProgresso } from '../../hooks/useAcademiaProgresso';
 import { getCatalogoAcademia } from '../../services/academiaService';
+import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
+import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { usePontosPreparoLinks } from '../../hooks/usePontosPreparoLinks';
+import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
+import RestauranteSidebar from '../../components/restaurante/RestauranteSidebar';
 import VideoCard from './components/VideoCard';
 import VideoModal from './components/VideoModal';
 
@@ -16,10 +21,52 @@ const ROLE_PARA_PERFIL = {
   customer: 'cliente',
 };
 
+// Painel principal de cada perfil — pra onde "Voltar" leva (garçom não entra
+// aqui: acessa a Academia numa aba nova a partir do próprio portal, ver
+// handleVoltar abaixo).
+const PAINEL_PRINCIPAL = {
+  estabelecimento: '/restaurante',
+  motoboy: '/motoboy',
+  cliente: '/customer-account-order-history',
+};
+
 // Garçom não tem conta Supabase individual (login é por chave da mesa/turno,
 // ver garcom.guard.ts) — sem identidade estável de servidor, não há como
 // persistir "já assisti" com sentido, então esse perfil só navega o catálogo.
 const PERFIS_SEM_PROGRESSO = ['garcom'];
+
+// Só o estabelecimento tem uma estrutura de navegação (rotas + módulos) pronta
+// pra virar um menu lateral de verdade aqui — motoboy/garçom são SPA de tela
+// única e cliente é a vitrine, sem painel interno equivalente. Componente
+// separado pra só disparar os hooks de dados da empresa (useModulosEmpresa
+// etc, todos autenticados) quando o usuário logado é mesmo dono de
+// estabelecimento — nunca pra visitante anônimo navegando a vitrine pública.
+const MenuEstabelecimento = ({ onSair }) => {
+  const navigate = useNavigate();
+  const [sidebarAberto, setSidebarAberto] = useState(false);
+  const slugLoja = useMinhaLojaSlug();
+  const { moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, tipoRestaurante } = useModulosEmpresa();
+  const pontosPreparoLinks = usePontosPreparoLinks();
+  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparoLinks, tipoRestaurante);
+
+  return (
+    <>
+      <button onClick={() => setSidebarAberto(true)}
+        className="hidden md:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
+        <Icon name="Menu" size={16} /> Menu
+      </button>
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={links}
+        activePath={null}
+        slugLoja={slugLoja}
+        onSair={onSair}
+        onMeuPerfil={() => { navigate('/restaurante/meu-perfil'); setSidebarAberto(false); }}
+      />
+    </>
+  );
+};
 
 // Hub público de tutoriais em vídeo — não fica atrás de nenhum guard: também
 // funciona como vitrine pra quem ainda não é cliente/motoboy/estabelecimento
@@ -28,14 +75,27 @@ const PERFIS_SEM_PROGRESSO = ['garcom'];
 // perfil), esconde as abas e trava no perfil daquela pessoa.
 const Academia = () => {
   const navigate = useNavigate();
-  const { userProfile } = useAuth();
+  const { userProfile, signOut } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const perfilPadrao = ROLE_PARA_PERFIL[userProfile?.role] ?? 'estabelecimento';
+  const perfilLogado = ROLE_PARA_PERFIL[userProfile?.role];
+  const perfilPadrao = perfilLogado ?? 'estabelecimento';
   const travado = searchParams.get('travado') === '1';
   const perfilAtivo = searchParams.get('perfil') || perfilPadrao;
   const categoriaFoco = searchParams.get('categoria');
   const permiteProgresso = !PERFIS_SEM_PROGRESSO.includes(perfilAtivo);
+
+  // "Voltar" leva pro painel principal do perfil logado (não pro histórico do
+  // navegador) — garçom não tem painel roteável aqui (login é por chave de
+  // mesa/turno) e sempre chega numa aba nova a partir do próprio portal, então
+  // só fecha a aba.
+  const handleVoltar = () => {
+    if (travado && perfilAtivo === 'garcom') {
+      window.close();
+      return;
+    }
+    navigate(PAINEL_PRINCIPAL[perfilLogado || perfilAtivo] ?? '/');
+  };
 
   const [busca, setBusca] = useState('');
   const [videoAberto, setVideoAberto] = useState(null);
@@ -100,9 +160,14 @@ const Academia = () => {
               <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] leading-tight">Aprenda a usar o painel, passo a passo</p>
             </div>
           </button>
-          <button onClick={() => navigate(-1)} className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
-            <Icon name="ArrowLeft" size={16} /> Voltar
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {perfilLogado === 'estabelecimento' && (
+              <MenuEstabelecimento onSair={async () => { await signOut(); navigate('/customer-registration-login'); }} />
+            )}
+            <button onClick={handleVoltar} className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
+              <Icon name="ArrowLeft" size={16} /> Voltar
+            </button>
+          </div>
         </div>
 
         {/* Abas por perfil — escondidas em modo travado (entrada a partir do próprio painel logado) */}

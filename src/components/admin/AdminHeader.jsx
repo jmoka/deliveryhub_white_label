@@ -77,6 +77,10 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
 
         <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
           <ThemeToggle inline />
+          <button onClick={() => navigate('/admin/configuracoes')} title="Configurações"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300">
+            <Icon name="Settings" size={18} />
+          </button>
           <button onClick={() => setSidebarAberto(true)}
             className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
             <Icon name="Menu" size={18} /> Menu
@@ -105,6 +109,7 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
             currentPath={active}
             onNavigate={(path) => { navigate(path); setMenuAberto(false); }}
             onSair={handleSair}
+            onMeuPerfil={() => { navigate('/admin/meu-perfil'); setMenuAberto(false); }}
             motoboysPendentes={motoboysPendentes}
           />
         )}
@@ -117,6 +122,7 @@ const AdminHeader = ({ active, title, subtitle, beforeTitle }) => {
         activePath={active}
         motoboysPendentes={motoboysPendentes}
         onSair={handleSair}
+        onMeuPerfil={() => { navigate('/admin/meu-perfil'); setSidebarAberto(false); }}
         isFavorito={isFavorito}
         onToggleFavorito={toggleFavorito}
       />

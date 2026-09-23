@@ -7,7 +7,7 @@ import Icon from '../AppIcon';
 // RestauranteSidebar, substitui a barra horizontal de botões que ficava
 // poluída com muitos links. Mobile continua com o AdminMobileMenu já
 // existente, este componente nunca renderiza abaixo de lg.
-const AdminSidebar = ({ open, onClose, links, activePath, motoboysPendentes = 0, onSair, isFavorito, onToggleFavorito }) => {
+const AdminSidebar = ({ open, onClose, links, activePath, motoboysPendentes = 0, onSair, onMeuPerfil, isFavorito, onToggleFavorito }) => {
   const navigate = useNavigate();
   const ir = (path) => { navigate(path); onClose(); };
 
@@ -56,12 +56,24 @@ const AdminSidebar = ({ open, onClose, links, activePath, motoboysPendentes = 0,
                 </div>
               ))}
             </nav>
-            {onSair && (
-              <div className="px-3 py-3 border-t border-gray-200 dark:border-zinc-700">
-                <button onClick={onSair}
-                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-900">
-                  Sair
+            {(onMeuPerfil || onSair) && (
+              <div className="px-3 py-3 border-t border-gray-200 dark:border-zinc-700 flex flex-col gap-1.5">
+                <button onClick={() => ir('/admin/configuracoes')}
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-xl border border-gray-200 dark:border-zinc-700 flex items-center gap-2">
+                  <Icon name="Settings" size={14} /> Config
                 </button>
+                {onMeuPerfil && (
+                  <button onClick={onMeuPerfil}
+                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-xl border border-gray-200 dark:border-zinc-700 flex items-center gap-2">
+                    <Icon name="UserCircle" size={14} /> Meu Perfil
+                  </button>
+                )}
+                {onSair && (
+                  <button onClick={onSair}
+                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-900">
+                    Sair
+                  </button>
+                )}
               </div>
             )}
           </motion.div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const AdminMobileMenu = ({ links, currentPath, onNavigate, onSair, motoboysPendentes = 0 }) => (
+const AdminMobileMenu = ({ links, currentPath, onNavigate, onSair, onMeuPerfil, motoboysPendentes = 0 }) => (
   <motion.div
     initial={{ opacity: 0, y: -8 }}
     animate={{ opacity: 1, y: 0 }}
@@ -21,6 +21,16 @@ const AdminMobileMenu = ({ links, currentPath, onNavigate, onSair, motoboysPende
         )}
       </button>
     ))}
+    <button onClick={() => onNavigate('/admin/configuracoes')}
+      className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700">
+      Config
+    </button>
+    {onMeuPerfil && (
+      <button onClick={onMeuPerfil}
+        className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700">
+        Meu Perfil
+      </button>
+    )}
     <button onClick={onSair}
       className="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-900">
       Sair

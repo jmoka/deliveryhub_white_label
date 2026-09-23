@@ -2,6 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Icon from '../../../components/AppIcon';
 
+// <video><source></video> só toca arquivo direto (mp4 hospedado) — link do
+// YouTube (watch?v=, youtu.be, /embed/, /shorts/, /live/) precisa do iframe
+// do player deles, senão o navegador não reproduz nada.
+const idYoutube = (url) => {
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)youtube\.com$|(^|\.)youtu\.be$/.test(u.hostname)) return null;
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1) || null;
+    const caminho = u.pathname.match(/^\/(embed|shorts|live)\/([^/]+)/);
+    if (caminho) return caminho[2];
+    return u.searchParams.get('v');
+  } catch {
+    return null;
+  }
+};
+
 // Modal do player — fecha em Esc ou clique fora (controle e liberdade,
 // heurística 3 de Nielsen). Marca "assistido" automaticamente ao terminar o
 // vídeo e também oferece um botão manual, já que onEnded nem sempre dispara
@@ -19,6 +35,8 @@ const VideoModal = ({ video, assistido, permiteProgresso = true, onClose, onMarc
   }, [onClose]);
 
   if (!video) return null;
+
+  const videoId = idYoutube(video.url_video);
 
   return (
     <div
@@ -52,17 +70,28 @@ const VideoModal = ({ video, assistido, permiteProgresso = true, onClose, onMarc
           </button>
         </div>
 
-        <video
-          ref={videoRef}
-          key={video.id}
-          controls
-          autoPlay
-          className="w-full aspect-video bg-black"
-          onEnded={() => permiteProgresso && onMarcarAssistido(video.id)}
-        >
-          <source src={video.url_video} type="video/mp4" />
-          Seu navegador não suporta reprodução de vídeo.
-        </video>
+        {videoId ? (
+          <iframe
+            key={video.id}
+            className="w-full aspect-video bg-black"
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+            title={video.titulo}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            key={video.id}
+            controls
+            autoPlay
+            className="w-full aspect-video bg-black"
+            onEnded={() => permiteProgresso && onMarcarAssistido(video.id)}
+          >
+            <source src={video.url_video} type="video/mp4" />
+            Seu navegador não suporta reprodução de vídeo.
+          </video>
+        )}
 
         {permiteProgresso && (
           <div className="px-4 py-3 flex items-center justify-between">
