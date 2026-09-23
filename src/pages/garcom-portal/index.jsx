@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   login, logout, getGarcomToken, setGarcomToken, clearGarcomToken, getMe,
   getMesas, getProdutos, getCombos, getMinhasComandas, getComanda, getItensProntos, getFilaCozinha,
@@ -1734,14 +1734,22 @@ const ConsultaPrecoTab = () => {
   );
 };
 
+const ABAS_VALIDAS = ['mesas', 'comandas', 'cozinha', 'consulta', 'financeiro'];
+
 const GarcomHome = () => {
+  const { loginKey } = useParams();
+  const [searchParams] = useSearchParams();
   const [meuId, setMeuId] = useState(null);
   const [permissoes, setPermissoes] = useState({});
   const [salaoModo, setSalaoModo] = useState('ambos');
   const [bloqueado, setBloqueado] = useState(false);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
-  const [aba, setAba] = useState('mesas');
+  // ?aba= permite deep-link direto numa aba (ex: vindo do menu lateral da Academia).
+  const [aba, setAba] = useState(() => {
+    const abaUrl = searchParams.get('aba');
+    return ABAS_VALIDAS.includes(abaUrl) ? abaUrl : 'mesas';
+  });
   const [filaCozinha, setFilaCozinha] = useState({
     itens: [], tempoMedioEsperaSegundos: null, tempoMedioPreparoSegundos: null, tempoMedioGeralSegundos: null,
   });
@@ -1812,7 +1820,9 @@ const GarcomHome = () => {
   }, [tocarAlarmeConferencia]);
 
   useEffect(() => { carregar(); }, [carregar]);
-  useEffect(() => { if (salaoModo === 'comandas') setAba('comandas'); }, [salaoModo]);
+  // Só empurra pra "comandas" se a aba atual for "mesas" (que nem existe nesse modo) —
+  // não sobrescreve um deep-link válido pra outra aba (ex: financeiro, vindo da Academia).
+  useEffect(() => { if (salaoModo === 'comandas' && aba === 'mesas') setAba('comandas'); }, [salaoModo, aba]);
 
   // Sem push real — polling comparando quais itens "prontos" já vimos, igual à tela da
   // cozinha, e recarrega mesas/comandas junto (pega pedido de conferência do cliente).
@@ -1928,7 +1938,7 @@ const GarcomHome = () => {
                 <Icon name="QrCode" size={14} /> QR Cardápio
               </button>
             )}
-            <button onClick={() => window.open('/academia?perfil=garcom&travado=1', '_blank')}
+            <button onClick={() => window.open(`/academia?perfil=garcom&travado=1&loginKey=${encodeURIComponent(loginKey)}`, '_blank')}
               className="flex items-center gap-1 text-xs font-medium text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] px-2 py-1">
               <Icon name="GraduationCap" size={14} /> Academia
             </button>

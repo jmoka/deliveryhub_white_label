@@ -6,16 +6,20 @@ import { useAuth } from '../../contexts/AuthContext';
 
 // Carretinha é puxada por um carro — precisa do CRLV dos dois, por isso o
 // campo de documento do veículo muda de rótulo e ganha um campo extra só nesse caso.
+// Bicicleta não tem CRLV/registro — só a foto do veículo é pedida.
 const camposArquivo = (veiculoTipo) => {
   const ehCarretinha = veiculoTipo === 'carretinha';
+  const ehBicicleta = veiculoTipo === 'bicicleta';
   const campos = [
     { name: 'foto_perfil', label: 'Foto de perfil', obrigatorio: true, icon: 'User', accept: 'image/*' },
     { name: 'documento_frente', label: 'Documento com foto (CNH ou RG)', obrigatorio: true, icon: 'IdCard', accept: 'image/*,application/pdf' },
     { name: 'documento_verso', label: 'Verso do documento (opcional)', obrigatorio: false, icon: 'IdCard', accept: 'image/*,application/pdf' },
     { name: 'comprovante_endereco', label: 'Comprovante de endereço', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' },
     { name: 'veiculo_foto', label: 'Foto do veículo', obrigatorio: true, icon: 'Camera', accept: 'image/*' },
-    { name: 'veiculo_documento', label: ehCarretinha ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' },
   ];
+  if (!ehBicicleta) {
+    campos.push({ name: 'veiculo_documento', label: ehCarretinha ? 'Documento do carro (CRLV)' : 'Documento do veículo (CRLV)', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' });
+  }
   if (ehCarretinha) {
     campos.push({ name: 'veiculo_documento_carretinha', label: 'Documento da carretinha (CRLV)', obrigatorio: true, icon: 'FileText', accept: 'image/*,application/pdf' });
   }

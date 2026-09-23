@@ -3,17 +3,20 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 
-// Menu lateral só pra desktop/telas grandes (md+) — substitui a barra horizontal de
-// botões que ficava poluída com muitos links. Mobile continua com o próprio menu de cada
-// página (hamburger + lista já existente), este componente nunca renderiza abaixo de md.
-const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesPorPath = {}, slugLoja, onSair, onMeuPerfil, isFavorito, onToggleFavorito }) => {
+// Menu lateral só pra desktop/telas grandes (md+) por padrão — substitui a barra
+// horizontal de botões que ficava poluída com muitos links. Mobile continua com o
+// próprio menu de cada página (hamburger + lista já existente). `mobileTambem`
+// libera esse mesmo drawer abaixo de md também — usado por páginas que não têm
+// um menu mobile próprio (ex: /academia), já que o conteúdo aqui (overlay +
+// drawer) já é 100% `fixed`, então funciona em qualquer largura de tela.
+const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesPorPath = {}, slugLoja, onSair, onMeuPerfil, isFavorito, onToggleFavorito, mobileTambem = false }) => {
   const navigate = useNavigate();
   const ir = (path) => { navigate(path); onClose(); };
 
   return (
     <AnimatePresence>
       {open && (
-        <div className="hidden md:block">
+        <div className={mobileTambem ? '' : 'hidden md:block'}>
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 z-40"

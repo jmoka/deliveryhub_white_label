@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getMe, atualizarPerfil, getMeusPedidos, atualizarLocalizacao, confirmarEntrega, registrarOcorrencia,
   getPedidosDisponiveis, pegarPedido, getPedidosEmProducao, demonstrarInteresse, desistirInteresse,
@@ -979,14 +979,22 @@ const readDismissed = (userId) => {
   try { return JSON.parse(localStorage.getItem(dismissedKey(userId)) ?? '[]'); } catch { return []; }
 };
 
+const ABAS_VALIDAS = ['pedidos', 'estabelecimentos', 'financeiro', 'perfil'];
+
 const MotoboyPortal = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [erro, setErro] = useState(null);
   const [me, setMe] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [aba, setAba] = useState('pedidos');
+  // Portal não tem rotas internas (tudo numa página só) — ?aba= permite deep-link
+  // direto pra uma delas (ex: vindo do menu lateral da Academia).
+  const [aba, setAba] = useState(() => {
+    const abaUrl = searchParams.get('aba');
+    return ABAS_VALIDAS.includes(abaUrl) ? abaUrl : 'pedidos';
+  });
   const [afiliacoes, setAfiliacoes] = useState([]);
   const [disponiveis, setDisponiveis] = useState([]);
   const [emProducao, setEmProducao] = useState([]);

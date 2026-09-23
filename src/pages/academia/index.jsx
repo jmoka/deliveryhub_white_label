@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import { useAuth } from '../../contexts/AuthContext';
+import { ThemeToggle } from '../../contexts/ThemeContext';
 import { APP_NAME } from '../../constants/brand';
 import { ACADEMIA_PERFIS, ACADEMIA_CATEGORIAS, CATEGORIA_FALLBACK } from '../../config/academiaCatalogo';
 import { useAcademiaProgresso } from '../../hooks/useAcademiaProgresso';
 import { getCatalogoAcademia } from '../../services/academiaService';
+import { getMe as getMeGarcom, getGarcomToken } from '../../services/garcomService';
 import { useMinhaLojaSlug } from '../../hooks/useMinhaLojaSlug';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { usePontosPreparoLinks } from '../../hooks/usePontosPreparoLinks';
@@ -35,12 +37,89 @@ const PAINEL_PRINCIPAL = {
 // persistir "já assisti" com sentido, então esse perfil só navega o catálogo.
 const PERFIS_SEM_PROGRESSO = ['garcom'];
 
-// Só o estabelecimento tem uma estrutura de navegação (rotas + módulos) pronta
-// pra virar um menu lateral de verdade aqui — motoboy/garçom são SPA de tela
-// única e cliente é a vitrine, sem painel interno equivalente. Componente
-// separado pra só disparar os hooks de dados da empresa (useModulosEmpresa
-// etc, todos autenticados) quando o usuário logado é mesmo dono de
-// estabelecimento — nunca pra visitante anônimo navegando a vitrine pública.
+// Motoboy não tem rotas internas (motoboy-portal é uma página só, com abas em
+// useState) — os links abaixo usam ?aba= pra deep-linkar direto numa aba
+// (ver ABAS_VALIDAS em motoboy-portal/index.jsx).
+const MOTOBOY_LINKS = [
+  { label: 'Pedidos', path: '/motoboy?aba=pedidos' },
+  { label: 'Estabelecimentos', path: '/motoboy?aba=estabelecimentos' },
+  { label: 'Financeiro', path: '/motoboy?aba=financeiro' },
+  { label: 'Meu Perfil', path: '/motoboy?aba=perfil' },
+];
+
+const MenuMotoboy = ({ onSair }) => {
+  const [sidebarAberto, setSidebarAberto] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setSidebarAberto(true)}
+        className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
+        <Icon name="Menu" size={16} /> <span className="hidden sm:inline">Menu</span>
+      </button>
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={MOTOBOY_LINKS}
+        activePath={null}
+        onSair={onSair}
+        mobileTambem
+      />
+    </>
+  );
+};
+
+// Garçom não tem conta Supabase (sessão é token de turno salvo no localStorage,
+// mesma origem — ver getGarcomToken em garcomService.js), então dá pra buscar
+// getMe() aqui direto, sem precisar de guard de rota. Os links só mostram o que
+// esse garçom realmente acessa: "Mesas" some se o salão dele é só por comanda
+// (mesmo critério usado dentro do próprio portal, ver GarcomHome). Sem "Sair"
+// aqui de propósito — encerrar sessão lá envolve fechar o turno (dinheiro),
+// não é uma ação pra colocar num atalho.
+const GARCOM_ABAS = [
+  { aba: 'mesas', label: 'Mesas' },
+  { aba: 'comandas', label: 'Minhas Comandas' },
+  { aba: 'cozinha', label: 'Cozinha' },
+  { aba: 'consulta', label: 'Consulta' },
+  { aba: 'financeiro', label: 'Financeiro' },
+];
+
+const MenuGarcom = ({ loginKey }) => {
+  const [sidebarAberto, setSidebarAberto] = useState(false);
+  const [salaoModo, setSalaoModo] = useState(null);
+
+  useEffect(() => {
+    if (!getGarcomToken()) return;
+    getMeGarcom().then((m) => setSalaoModo(m.salaoModo ?? 'ambos')).catch(() => {});
+  }, []);
+
+  if (!loginKey || !getGarcomToken() || salaoModo == null) return null;
+
+  const links = GARCOM_ABAS
+    .filter((a) => a.aba !== 'mesas' || salaoModo !== 'comandas')
+    .map((a) => ({ label: a.label, path: `/garcom/${loginKey}?aba=${a.aba}` }));
+
+  return (
+    <>
+      <button onClick={() => setSidebarAberto(true)}
+        className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
+        <Icon name="Menu" size={16} /> <span className="hidden sm:inline">Menu</span>
+      </button>
+      <RestauranteSidebar
+        open={sidebarAberto}
+        onClose={() => setSidebarAberto(false)}
+        links={links}
+        activePath={null}
+        mobileTambem
+      />
+    </>
+  );
+};
+
+// Estabelecimento tem uma estrutura de navegação (rotas + módulos) pronta pra
+// virar um menu lateral de verdade aqui — componente separado pra só disparar
+// os hooks de dados da empresa (useModulosEmpresa etc, todos autenticados)
+// quando o usuário logado é mesmo dono de estabelecimento — nunca pra
+// visitante anônimo navegando a vitrine pública.
 const MenuEstabelecimento = ({ onSair }) => {
   const navigate = useNavigate();
   const [sidebarAberto, setSidebarAberto] = useState(false);
@@ -52,8 +131,8 @@ const MenuEstabelecimento = ({ onSair }) => {
   return (
     <>
       <button onClick={() => setSidebarAberto(true)}
-        className="hidden md:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
-        <Icon name="Menu" size={16} /> Menu
+        className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46]">
+        <Icon name="Menu" size={16} /> <span className="hidden sm:inline">Menu</span>
       </button>
       <RestauranteSidebar
         open={sidebarAberto}
@@ -63,6 +142,7 @@ const MenuEstabelecimento = ({ onSair }) => {
         slugLoja={slugLoja}
         onSair={onSair}
         onMeuPerfil={() => { navigate('/restaurante/meu-perfil'); setSidebarAberto(false); }}
+        mobileTambem
       />
     </>
   );
@@ -161,8 +241,18 @@ const Academia = () => {
             </div>
           </button>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {perfilLogado === 'estabelecimento' && (
+            <ThemeToggle inline />
+            {/* Menu sempre da aba que está sendo vista (perfilAtivo), não só de quem está
+                logado — senão o dono de estabelecimento vê o próprio menu junto com o do
+                garçom/motoboy ao navegar pra outra aba da Academia sem estar travado. */}
+            {perfilAtivo === 'estabelecimento' && perfilLogado === 'estabelecimento' && (
               <MenuEstabelecimento onSair={async () => { await signOut(); navigate('/customer-registration-login'); }} />
+            )}
+            {perfilAtivo === 'motoboy' && perfilLogado === 'motoboy' && (
+              <MenuMotoboy onSair={async () => { await signOut(); navigate('/customer-registration-login'); }} />
+            )}
+            {travado && perfilAtivo === 'garcom' && (
+              <MenuGarcom loginKey={searchParams.get('loginKey')} />
             )}
             <button onClick={handleVoltar} className="hidden sm:flex items-center gap-1.5 text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#18181B] dark:hover:text-[#F4F4F5]">
               <Icon name="ArrowLeft" size={16} /> Voltar
