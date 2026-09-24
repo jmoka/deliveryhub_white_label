@@ -730,7 +730,7 @@ const SingleCartCheckout = () => {
     return {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, stripeDisponivel = false, pagbankCartaoDisponivel = false } = restored;
+  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, somenteRetirada = false, stripeDisponivel = false, pagbankCartaoDisponivel = false } = restored;
 
   const [itens, setItens] = useState(carrinho);
   const [perfil, setPerfil] = useState(null);
@@ -747,7 +747,7 @@ const SingleCartCheckout = () => {
   const [etapa, setEtapa] = useState(0); // 0=endereço 1=itens 2=pagamento 3=confirmar
   const [excedente, setExcedente] = useState(null); // { distanciaKm, valorExcedente } | null
   const [calculandoDistancia, setCalculandoDistancia] = useState(false);
-  const [retirada, setRetirada] = useState(false); // true = retirar no balcão, sem frete
+  const [retirada, setRetirada] = useState(somenteRetirada); // true = retirar no balcão, sem frete
 
   useEffect(() => {
     getPerfil().then(setPerfil).catch(() => {});
@@ -1032,6 +1032,7 @@ const SingleCartCheckout = () => {
               perfil={perfil}
               restauranteId={restauranteId}
               permiteRetirada={permiteRetiradaBalcao}
+              somenteRetirada={somenteRetirada}
               retirada={retirada}
               setRetirada={setRetirada}
               onNext={async (updated) => { setPerfil(updated); if (!retirada) await buscarEstimativaExcedente(); irParaStep(1); }}
@@ -1124,6 +1125,7 @@ const ShoppingCartCheckout = () => {
       chavePix: grupo.chave_pix ?? null,
       restauranteNome: grupo.nome ?? null,
       permiteRetiradaBalcao: !!grupo.permite_retirada_balcao,
+      somenteRetirada: !!grupo.somente_retirada,
       stripeDisponivel: !!grupo.stripe_disponivel,
       pagbankCartaoDisponivel: !!grupo.pagbank_cartao_disponivel,
     }));

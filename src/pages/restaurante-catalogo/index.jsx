@@ -443,14 +443,15 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
     const chavePix = data?.restaurante?.chave_pix ?? null;
     const restauranteNome = data?.restaurante?.name ?? null;
     const permiteRetiradaBalcao = !!data?.restaurante?.permite_retirada_balcao;
+    const somenteRetirada = !!data?.restaurante?.somente_retirada;
     const stripeDisponivel = !!data?.restaurante?.stripe_disponivel;
     const pagbankCartaoDisponivel = !!data?.restaurante?.pagbank_cartao_disponivel;
     if (!isAuthenticated()) {
-      sessionStorage.setItem('pending_cart', JSON.stringify({ carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, stripeDisponivel, pagbankCartaoDisponivel }));
+      sessionStorage.setItem('pending_cart', JSON.stringify({ carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, somenteRetirada, stripeDisponivel, pagbankCartaoDisponivel }));
       navigate('/customer-registration-login', { state: { from: '/shopping-cart-checkout' } });
       return;
     }
-    navigate('/shopping-cart-checkout', { state: { carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, stripeDisponivel, pagbankCartaoDisponivel } });
+    navigate('/shopping-cart-checkout', { state: { carrinho, restauranteSlug: slug, restauranteId, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, somenteRetirada, stripeDisponivel, pagbankCartaoDisponivel } });
   };
 
   if (loading) return (
@@ -627,7 +628,15 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             <Icon name="Clock" size={14} className="text-[#FF7A00]" />
             <span className="text-sm text-[#27272A] dark:text-[#F4F4F5]">{ap.tempo_entrega ?? '25-40 min'}</span>
           </div>
-          {restaurante.frete_motoboy != null && (
+          {restaurante.somente_retirada ? (
+            <>
+              <div className="w-px h-4 bg-[#E4E4E7] dark:bg-[#3F3F46] flex-shrink-0" />
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Icon name="Store" size={14} className="text-[#FF441F]" />
+                <span className="text-sm text-[#27272A] dark:text-[#F4F4F5]">Somente retirada</span>
+              </div>
+            </>
+          ) : restaurante.frete_motoboy != null && (
             <>
               <div className="w-px h-4 bg-[#E4E4E7] dark:bg-[#3F3F46] flex-shrink-0" />
               <div className="flex items-center gap-1.5 flex-shrink-0">

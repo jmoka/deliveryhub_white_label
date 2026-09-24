@@ -1259,6 +1259,7 @@ const RestauranteConfig = () => {
     frete_motoboy: '',
     usa_motoboy: true,
     permite_retirada_balcao: false,
+    somente_retirada: false,
     motoboy_comissao_tipo: 'fixo',
     motoboy_comissao_valor_fixo: '',
     motoboy_comissao_percentual: '',
@@ -1294,6 +1295,7 @@ const RestauranteConfig = () => {
           frete_motoboy: d.frete_motoboy != null ? String(d.frete_motoboy) : '',
           usa_motoboy: d.usa_motoboy ?? true,
           permite_retirada_balcao: d.permite_retirada_balcao ?? false,
+          somente_retirada: d.somente_retirada ?? false,
           motoboy_comissao_tipo: d.motoboy_comissao_tipo ?? 'fixo',
           motoboy_comissao_valor_fixo: d.motoboy_comissao_valor_fixo != null ? String(d.motoboy_comissao_valor_fixo) : '',
           motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
@@ -1330,6 +1332,7 @@ const RestauranteConfig = () => {
         frete_motoboy: form.frete_motoboy !== '' ? parseFloat(form.frete_motoboy) : 0,
         usa_motoboy: form.usa_motoboy,
         permite_retirada_balcao: form.permite_retirada_balcao,
+        somente_retirada: form.somente_retirada,
         motoboy_comissao_tipo: form.motoboy_comissao_tipo,
         motoboy_comissao_valor_fixo: form.motoboy_comissao_valor_fixo !== '' ? parseFloat(form.motoboy_comissao_valor_fixo) : 0,
         motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
@@ -1584,9 +1587,30 @@ const RestauranteConfig = () => {
                       </span>
                     </span>
                     <input type="checkbox" checked={form.permite_retirada_balcao}
-                      onChange={(e) => setForm((f) => ({ ...f, permite_retirada_balcao: e.target.checked }))}
+                      onChange={(e) => setForm((f) => ({
+                        ...f,
+                        permite_retirada_balcao: e.target.checked,
+                        // Desligar retirada no balcão não faz sentido junto com "só retirada"
+                        somente_retirada: e.target.checked ? f.somente_retirada : false,
+                      }))}
                       className="w-5 h-5 accent-orange-500 flex-shrink-0" />
                   </label>
+
+                  {form.permite_retirada_balcao && (
+                    <label className="flex items-center justify-between gap-3 cursor-pointer mt-4 pl-4 border-l-2 border-orange-200 dark:border-orange-900">
+                      <span>
+                        <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">Sem entrega, somente retirada na loja</span>
+                        <span className="block text-xs text-gray-400 mt-0.5">
+                          {form.somente_retirada
+                            ? 'Ativado: no checkout, a aba de entrega some — o cliente só pode retirar o pedido no estabelecimento'
+                            : 'Desligado: cliente escolhe entre entrega e retirada no checkout'}
+                        </span>
+                      </span>
+                      <input type="checkbox" checked={form.somente_retirada}
+                        onChange={(e) => setForm((f) => ({ ...f, somente_retirada: e.target.checked }))}
+                        className="w-5 h-5 accent-orange-500 flex-shrink-0" />
+                    </label>
+                  )}
                 </div>
 
                 {/* Comissão do motoboy */}

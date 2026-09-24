@@ -29,6 +29,7 @@ export const cartAdd = (produto, restaurante) => {
       restaurante_pagamento_manual: !!restaurante.pagamento_manual,
       restaurante_chave_pix: restaurante.chave_pix ?? null,
       restaurante_permite_retirada_balcao: !!restaurante.permite_retirada_balcao,
+      restaurante_somente_retirada: !!restaurante.somente_retirada,
       restaurante_stripe_disponivel: !!restaurante.stripe_disponivel,
       restaurante_pagbank_cartao_disponivel: !!restaurante.pagbank_cartao_disponivel,
     });
@@ -77,6 +78,7 @@ export const cartByRestaurant = () => {
         pagamento_manual: !!item.restaurante_pagamento_manual,
         chave_pix: item.restaurante_chave_pix ?? null,
         permite_retirada_balcao: !!item.restaurante_permite_retirada_balcao,
+        somente_retirada: !!item.restaurante_somente_retirada,
         stripe_disponivel: !!item.restaurante_stripe_disponivel,
         pagbank_cartao_disponivel: !!item.restaurante_pagbank_cartao_disponivel,
         items: [],

@@ -50,7 +50,7 @@ const AvisoPino = () => (
   </div>
 );
 
-const StepEndereco = ({ perfil, restauranteId, permiteRetirada, retirada, setRetirada, onNext, onBack }) => {
+const StepEndereco = ({ perfil, restauranteId, permiteRetirada, somenteRetirada = false, retirada, setRetirada, onNext, onBack }) => {
   const [form, setForm] = useState({
     name: '', phone_e164: '', cpf_cnpj: '',
     logradouro: '', numero: '', complemento: '',
@@ -74,6 +74,12 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, retirada, setRet
   const [verificacao, setVerificacao] = useState(null); // { divergente, latSugerido, lngSugerido, distanciaKm } | null
   // (b) GPS — form de texto só aparece depois que a 1ª posição do pino chega.
   const [formGpsPronto, setFormGpsPronto] = useState(false);
+
+  // Sem entrega — força retirada mesmo que o estado inicial do checkout não
+  // tenha sido inicializado corretamente (defesa extra, não confia só no pai).
+  useEffect(() => {
+    if (somenteRetirada) setRetirada(true);
+  }, [somenteRetirada, setRetirada]);
 
   useEffect(() => {
     if (!perfil) return;
@@ -351,7 +357,11 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, retirada, setRet
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
-      {permiteRetirada && (
+      {somenteRetirada ? (
+        <div className="bg-[#FF441F] text-white rounded-2xl p-3 flex items-center justify-center gap-1.5 text-sm font-bold">
+          <Icon name="Store" size={15} /> Retirar no balcão
+        </div>
+      ) : permiteRetirada && (
         <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-1.5 grid grid-cols-2 gap-1.5">
           <button type="button" onClick={() => setRetirada(false)}
             className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
