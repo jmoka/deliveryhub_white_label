@@ -308,22 +308,44 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
             </>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Dias grátis (trial)</label>
+          <div className="bg-green-50 dark:bg-green-950/20 border border-green-100 dark:border-green-900 rounded-xl p-4">
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-green-800 dark:text-green-400 mb-1">
+              <Icon name="Gift" size={15} /> Dias grátis antes de cobrar
+            </label>
+            <p className="text-xs text-green-700 dark:text-green-400 mb-2.5">
+              Ex: "Plano Grátis por 30 dias" — o cliente entra no plano e não paga nada nesse período. Pra deixar o plano gratuito para sempre, basta usar valor R$ 0.
+            </p>
+            <div className="flex gap-1.5 mb-2.5 flex-wrap">
+              {[0, 7, 15, 30, 60].map((dias) => (
+                <button key={dias} type="button" onClick={() => set('trial_dias', String(dias))}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    form.trial_dias === String(dias)
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white dark:bg-zinc-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/40'
+                  }`}>
+                  {dias === 0 ? 'Sem trial' : `${dias} dias`}
+                </button>
+              ))}
               <input type="number" min="0" value={form.trial_dias} onChange={(e) => set('trial_dias', e.target.value)}
-                className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                placeholder="Outro"
+                className="w-20 border border-green-200 dark:border-green-800 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
-            {isEdicao && (
-              <div className="flex flex-col gap-2 pt-6">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={form.ativo} onChange={(e) => set('ativo', e.target.checked)}
-                    className="w-4 h-4 rounded accent-blue-600" />
-                  <span className="text-sm text-gray-700 dark:text-zinc-300">Ativo</span>
-                </label>
-              </div>
+            {parseInt(form.trial_dias || '0', 10) > 0 && (
+              <p className="text-xs text-green-800 dark:text-green-300 bg-green-100 dark:bg-green-950/40 rounded-lg px-3 py-2">
+                Depois de <strong>{form.trial_dias} dias</strong>, a cobrança de{' '}
+                <strong>{form.valor ? fmt(parseFloat(form.valor)) : 'R$ 0,00'} / {form.periodicidade}</strong>{' '}
+                começa automaticamente, sem precisar fazer nada.
+              </p>
             )}
           </div>
+
+          {isEdicao && (
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={form.ativo} onChange={(e) => set('ativo', e.target.checked)}
+                className="w-4 h-4 rounded accent-blue-600" />
+              <span className="text-sm text-gray-700 dark:text-zinc-300">Ativo</span>
+            </label>
+          )}
 
           <div>
             <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -539,6 +561,12 @@ const TabPlanos = () => {
                         Só novos cadastros
                       </span>
                     )}
+                    {plano.trial_dias > 0 && (
+                      <span className="text-xs font-medium bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1"
+                        title={`Não cobra nada nos primeiros ${plano.trial_dias} dias — depois começa a cobrar sozinho`}>
+                        <Icon name="Gift" size={11} /> {plano.trial_dias} dias grátis
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-zinc-400 mt-0.5">
                     {plano.limite_produtos != null ? `Até ${plano.limite_produtos} produtos` : 'Produtos ilimitados'}
@@ -552,7 +580,6 @@ const TabPlanos = () => {
                     )}
                     {' · '}
                     {plano.piso_faturamento != null ? `cobra a partir de ${fmt(plano.piso_faturamento)} faturados` : 'cobra sempre'}
-                    {plano.trial_dias > 0 && ` · ${plano.trial_dias} dias grátis`}
                   </p>
                 </div>
 
