@@ -1270,6 +1270,7 @@ const RestauranteConfig = () => {
     usa_motoboy: true,
     permite_retirada_balcao: false,
     somente_retirada: false,
+    permite_frete_embutido: false,
     motoboy_comissao_tipo: 'fixo',
     motoboy_comissao_valor_fixo: '',
     motoboy_comissao_percentual: '',
@@ -1312,6 +1313,7 @@ const RestauranteConfig = () => {
           usa_motoboy: d.usa_motoboy ?? true,
           permite_retirada_balcao: d.permite_retirada_balcao ?? false,
           somente_retirada: d.somente_retirada ?? false,
+          permite_frete_embutido: d.permite_frete_embutido ?? false,
           motoboy_comissao_tipo: d.motoboy_comissao_tipo ?? 'fixo',
           motoboy_comissao_valor_fixo: d.motoboy_comissao_valor_fixo != null ? String(d.motoboy_comissao_valor_fixo) : '',
           motoboy_comissao_percentual: d.motoboy_comissao_percentual != null ? String(d.motoboy_comissao_percentual) : '',
@@ -1349,6 +1351,7 @@ const RestauranteConfig = () => {
         usa_motoboy: form.usa_motoboy,
         permite_retirada_balcao: form.permite_retirada_balcao,
         somente_retirada: form.somente_retirada,
+        permite_frete_embutido: form.permite_frete_embutido,
         motoboy_comissao_tipo: form.motoboy_comissao_tipo,
         motoboy_comissao_valor_fixo: form.motoboy_comissao_valor_fixo !== '' ? parseFloat(form.motoboy_comissao_valor_fixo) : 0,
         motoboy_comissao_percentual: form.motoboy_comissao_percentual !== '' ? parseFloat(form.motoboy_comissao_percentual) : 0,
@@ -1659,6 +1662,23 @@ const RestauranteConfig = () => {
                         className="w-5 h-5 accent-orange-500 flex-shrink-0" />
                     </label>
                   )}
+                </div>
+
+                {/* Frete embutido no preço — produtos de peso (material de construção) */}
+                <div className="border-t pt-4 mt-2">
+                  <label className="flex items-center justify-between gap-3 cursor-pointer">
+                    <span>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">Vendo produtos de peso (frete embutido no preço)</span>
+                      <span className="block text-xs text-gray-400 mt-0.5">
+                        {form.permite_frete_embutido
+                          ? 'Ativado: ao cadastrar um produto, você pode informar quanto do preço é repassado pro frete (caminhão próprio) — o preço ao cliente e a comissão da plataforma não mudam, é só registro interno'
+                          : 'Desligado: cadastro de produto não mostra campo de frete embutido'}
+                      </span>
+                    </span>
+                    <input type="checkbox" checked={form.permite_frete_embutido}
+                      onChange={(e) => setForm((f) => ({ ...f, permite_frete_embutido: e.target.checked }))}
+                      className="w-5 h-5 accent-orange-500 flex-shrink-0" />
+                  </label>
                 </div>
 
                 {/* Comissão do motoboy */}

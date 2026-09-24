@@ -13,5 +13,7 @@ export function useModulosEmpresa() {
     moduloServicos: !!data?.empresa?.modulo_servicos,
     autoAtendimentoHabilitado: !!data?.empresa?.auto_atendimento_habilitado,
     tipoRestaurante: !!data?.empresa?.tipo_restaurante,
+    // Exceção: esse aqui o próprio dono liga em /restaurante/config, não é admin/plano.
+    permiteFreteEmbutido: !!data?.empresa?.permite_frete_embutido,
   };
 }

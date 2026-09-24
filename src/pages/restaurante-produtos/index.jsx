@@ -12,7 +12,7 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '', frete_embutido: false, frete_embutido_tipo: 'percentual', frete_embutido_valor: '' };
 
 const JSON_FORMATO_EXEMPLO = JSON.stringify([
   {
@@ -48,7 +48,7 @@ const RestauranteProdutos = () => {
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
   const [impressoras, setImpressoras] = useState([]);
-  const { moduloDelivery, moduloSalao, moduloGdoor, carregado } = useModulosEmpresa();
+  const { moduloDelivery, moduloSalao, moduloGdoor, carregado, permiteFreteEmbutido } = useModulosEmpresa();
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
@@ -141,6 +141,9 @@ const RestauranteProdutos = () => {
       quantidade_estoque: p.quantidade_estoque != null ? String(p.quantidade_estoque) : '0',
       preco_custo: p.preco_custo != null ? String(p.preco_custo) : '',
       quantidade_minima: p.quantidade_minima != null ? String(p.quantidade_minima) : '0',
+      frete_embutido: p.frete_embutido ?? false,
+      frete_embutido_tipo: p.frete_embutido_tipo ?? 'percentual',
+      frete_embutido_valor: p.frete_embutido_valor != null ? String(p.frete_embutido_valor) : '',
     });
     setShowModal(true);
   };
@@ -381,6 +384,11 @@ const RestauranteProdutos = () => {
       preco_custo: form.preco_custo !== '' ? parseFloat(form.preco_custo) : 0,
       quantidade_minima: form.quantidade_minima !== '' ? parseInt(form.quantidade_minima) : 0,
     };
+    if (permiteFreteEmbutido) {
+      payload.frete_embutido = form.frete_embutido;
+      payload.frete_embutido_tipo = form.frete_embutido ? form.frete_embutido_tipo : null;
+      payload.frete_embutido_valor = form.frete_embutido && form.frete_embutido_valor !== '' ? parseFloat(form.frete_embutido_valor) : null;
+    }
     try {
       if (editando) {
         const atualizado = await editarProduto(editando.id, payload);
@@ -1003,6 +1011,48 @@ const RestauranteProdutos = () => {
                   />
                 </div>
               </div>
+
+              {permiteFreteEmbutido && (
+                <div className="bg-gray-50 dark:bg-gray-950/40 border border-gray-200 dark:border-gray-800 rounded-lg p-3">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={form.frete_embutido}
+                      onChange={(e) => setForm((f) => ({ ...f, frete_embutido: e.target.checked }))}
+                      className="w-4 h-4 accent-orange-500" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-400">Este produto tem frete embutido no preço</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Não muda o preço nem a comissão — é só pra você registrar quanto desse valor é repassado pro frete (caminhão próprio).
+                  </p>
+                  {form.frete_embutido && (
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tipo</label>
+                        <select
+                          value={form.frete_embutido_tipo}
+                          onChange={(e) => setForm((f) => ({ ...f, frete_embutido_tipo: e.target.value }))}
+                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                        >
+                          <option value="percentual">% do preço</option>
+                          <option value="fixo">Valor fixo (R$)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          {form.frete_embutido_tipo === 'percentual' ? 'Percentual (%)' : 'Valor (R$)'}
+                        </label>
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={form.frete_embutido_valor}
+                          onChange={(e) => setForm((f) => ({ ...f, frete_embutido_valor: e.target.value }))}
+                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
+                          placeholder={form.frete_embutido_tipo === 'percentual' ? 'Ex: 35' : '0,00'}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Impressora / setor</label>
                 <select
