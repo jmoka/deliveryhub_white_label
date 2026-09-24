@@ -1248,6 +1248,16 @@ const RestauranteConfig = () => {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const [sucesso, setSucesso] = useState(false);
+  const [abaAtiva, setAbaAtiva] = useState('banco');
+
+  const ABAS = [
+    { id: 'banco', label: 'Banco', icon: 'Landmark' },
+    { id: 'endereco', label: 'Endereço', icon: 'MapPin' },
+    { id: 'impressora', label: 'Impressora', icon: 'Printer', somenteSe: moduloSalao },
+    { id: 'gdoor', label: 'GDOOR', icon: 'Boxes', somenteSe: moduloGdoor },
+    { id: 'entregadores', label: 'Entregadores', icon: 'Bike' },
+    { id: 'garcom', label: 'Garçom', icon: 'Utensils', somenteSe: moduloSalao },
+  ].filter((a) => a.somenteSe === undefined || a.somenteSe);
 
   const [form, setForm] = useState({
     pagbank_token: '',
@@ -1280,6 +1290,12 @@ const RestauranteConfig = () => {
   useEffect(() => {
     if (moduloSalao) listarImpressoras().then(setImpressoras).catch(() => {});
   }, [moduloSalao]);
+
+  // Módulo desligado enquanto a aba dependente dele estava aberta (ex: GDOOR
+  // desativado no /admin/empresas) — volta pra uma aba que sempre existe.
+  useEffect(() => {
+    if (!ABAS.some((a) => a.id === abaAtiva)) setAbaAtiva('banco');
+  }, [ABAS, abaAtiva]);
 
   useEffect(() => {
     getConfig()
@@ -1367,7 +1383,7 @@ const RestauranteConfig = () => {
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B]">
       <RestauranteHeader active="/restaurante/config" title="Configurações de Pagamento" subtitle="Integração PagBank" />
 
-      <main className="p-6 max-w-2xl mx-auto">
+      <main className="p-4 sm:p-6 max-w-3xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-[#FF441F] border-t-transparent rounded-full animate-spin" />
@@ -1375,6 +1391,23 @@ const RestauranteConfig = () => {
         ) : (
           <div className="space-y-5">
 
+            {/* Abas — scroll horizontal no mobile, nunca quebra/estoura a tela */}
+            <div className="flex gap-1 sm:gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-full sm:w-fit sm:mx-auto overflow-x-auto scrollbar-none">
+              {ABAS.map((a) => (
+                <button key={a.id} type="button" onClick={() => setAbaAtiva(a.id)}
+                  className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+                    abaAtiva === a.id
+                      ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm'
+                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'
+                  }`}>
+                  <Icon name={a.icon} size={14} />
+                  {a.label}
+                </button>
+              ))}
+            </div>
+
+            {abaAtiva === 'banco' && (
+            <>
             {/* Status */}
             <div className={`rounded-xl border p-4 flex items-center gap-3 ${
               config?.configurado ? 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800'
@@ -1413,18 +1446,22 @@ const RestauranteConfig = () => {
               </div>
             </div>
 
-            {/* Endereço estruturado — filtro geográfico da home pública */}
-            <EnderecoCard geocodeFalhou={config?.geocode_falhou} />
-
             {/* Guia passo a passo */}
             <Guia />
+            </>
+            )}
+
+            {/* Endereço estruturado — filtro geográfico da home pública */}
+            {abaAtiva === 'endereco' && (
+              <EnderecoCard geocodeFalhou={config?.geocode_falhou} />
+            )}
 
             {/* Agente de impressão local — baixar, descompactar, rodar e parear impressoras */}
-            {moduloSalao && <AgenteImpressaoPanel />}
+            {abaAtiva === 'impressora' && moduloSalao && <AgenteImpressaoPanel />}
 
             {/* Agente GDOOR local — sincroniza pedidos entregues como pré-venda fiscal.
                 Módulo comprável no pacote, igual Delivery/Salão — some da tela sem ele. */}
-            {moduloGdoor && (
+            {abaAtiva === 'gdoor' && moduloGdoor && (
               <>
                 <GdoorAgentePanel />
                 <GdoorMapeamentoPanel />
@@ -1432,11 +1469,18 @@ const RestauranteConfig = () => {
               </>
             )}
 
-            {/* Formulário — limpo */}
+            {/* Formulário — limpo. Endereço e GDOOR têm salvamento próprio (EnderecoCard,
+                painéis GDOOR), não usam este form/botão — some inteiro nessas abas pra não
+                deixar um card vazio com um "Salvar" que não faz nada ali. */}
+            {abaAtiva !== 'endereco' && abaAtiva !== 'gdoor' && (
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6">
-              <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-4">Suas credenciais</h2>
+              <h2 className="font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-4">
+                {ABAS.find((a) => a.id === abaAtiva)?.label}
+              </h2>
 
               <form onSubmit={handleSalvar} className="space-y-4">
+                {abaAtiva === 'banco' && (
+                <>
                 {/* Token */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
@@ -1472,7 +1516,7 @@ const RestauranteConfig = () => {
                   <p className="text-xs text-gray-400 mt-1">Necessário para o repasse automático (Split Payment)</p>
                 </div>
 
-                {/* Taxa PagBank */}
+                {/* Chave PIX */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Chave PIX (para pagamentos na entrega)
@@ -1486,7 +1530,11 @@ const RestauranteConfig = () => {
                   />
                   <p className="text-xs text-gray-400 mt-1">Usada para gerar QR Code PIX quando motoboy precisar cobrar na entrega</p>
                 </div>
+                </>
+                )}
 
+                {abaAtiva === 'entregadores' && (
+                <>
                 {/* Frete Motoboy */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
@@ -1691,9 +1739,12 @@ const RestauranteConfig = () => {
                   </p>
                 </div>
                 )}
+                </>
+                )}
 
-                {moduloSalao && (
-                  <div>
+                {abaAtiva === 'garcom' && moduloSalao && (
+                <>
+                <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Gorjeta sugerida (% sobre o subtotal da comanda)
                     </label>
@@ -1711,9 +1762,7 @@ const RestauranteConfig = () => {
                       O caixa vê esse valor sugerido ao fechar a conta (PDV do Salão) — ainda pode ajustar na hora.
                     </p>
                   </div>
-                )}
 
-                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Taxa do cartão (% sobre débito e crédito)
@@ -1733,9 +1782,8 @@ const RestauranteConfig = () => {
                       parcialmente) com débito ou crédito no PDV do Salão.
                     </p>
                   </div>
-                )}
 
-                {moduloSalao && <ComissoesConfig />}
+                  <ComissoesConfig />
 
                 {moduloSalao && (
                   <div>
@@ -1779,9 +1827,12 @@ const RestauranteConfig = () => {
                     )}
                   </div>
                 )}
+                </>
+                )}
 
-                {moduloSalao && (
-                  <div>
+                {abaAtiva === 'impressora' && moduloSalao && (
+                <>
+                <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Impressora do recibo
                     </label>
@@ -1799,9 +1850,7 @@ const RestauranteConfig = () => {
                       Recibo de venda (pagamento final e venda direta) sai direto nessa impressora se ela tiver o agente local pareado — senão cai no navegador.
                     </p>
                   </div>
-                )}
 
-                {moduloSalao && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                       Impressora de sangria/adição
@@ -1820,8 +1869,11 @@ const RestauranteConfig = () => {
                       Toda Sangria ou Adição registrada no caixa sai um recibo nessa impressora se ela tiver o agente local pareado — senão cai no navegador.
                     </p>
                   </div>
+                </>
                 )}
 
+                {abaAtiva === 'banco' && (
+                <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
                     Taxa PagBank (% sobre vendas digitais)
@@ -1859,6 +1911,8 @@ const RestauranteConfig = () => {
                     {form.pagbank_sandbox ? 'Sandbox (testes — sem cobranças reais)' : 'Produção (cobranças reais)'}
                   </span>
                 </div>
+                </>
+                )}
 
                 {erro && (
                   <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">{erro}</div>
@@ -1875,6 +1929,7 @@ const RestauranteConfig = () => {
                 </button>
               </form>
             </div>
+            )}
           </div>
         )}
       </main>
