@@ -165,6 +165,11 @@ const OrderTrackingStatus = () => {
           <Icon name="ArrowLeft" size={20} className="text-gray-600 dark:text-[#A1A1AA]" />
         </button>
         <h1 className="text-lg font-bold text-gray-900 dark:text-[#F4F4F5]">Pedido #{pedido.id}</h1>
+        {pagamentoPago && (
+          <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full flex-shrink-0">
+            <Icon name="CheckCircle2" size={13} /> Pago
+          </span>
+        )}
       </header>
 
       <main className="p-4 max-w-lg mx-auto space-y-4">

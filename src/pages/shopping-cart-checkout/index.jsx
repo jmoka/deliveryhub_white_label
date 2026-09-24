@@ -33,6 +33,20 @@ const formatCpf = (v) =>
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 
+// Validação real (dígito verificador), não só a quantidade de números — pega
+// erro de digitação que passaria batido só checando os 11 dígitos.
+const cpfValido = (v) => {
+  const digitos = v.replace(/\D/g, '');
+  if (digitos.length !== 11 || /^(\d)\1{10}$/.test(digitos)) return false;
+  const calcularDigito = (len) => {
+    let soma = 0;
+    for (let i = 0; i < len; i++) soma += parseInt(digitos[i], 10) * (len + 1 - i);
+    const resto = (soma * 10) % 11;
+    return resto === 10 ? 0 : resto;
+  };
+  return calcularDigito(9) === parseInt(digitos[9], 10) && calcularDigito(10) === parseInt(digitos[10], 10);
+};
+
 /* ── Progress ────────────────────────────────────────────────────── */
 const ProgressBar = ({ etapa, total }) => (
   <div className="flex items-center gap-2 px-4 py-3">
@@ -54,6 +68,37 @@ const ProgressBar = ({ etapa, total }) => (
 );
 
 const LABELS_ETAPA = ['Endereço', 'Seus itens', 'Pagamento', 'Confirmar'];
+
+/* ── Tela de confirmação — pagamento com cartão/Stripe já aprova na hora
+   (diferente do PIX, que espera o cliente pagar no app do banco), então
+   mostra essa confirmação por um instante antes de ir pro acompanhamento —
+   sem isso a transição de "clicou em pagar" pra "tela de pedido" era
+   instantânea demais, sem o cliente perceber que o pagamento passou. */
+const PagamentoConfirmadoScreen = ({ onContinuar }) => {
+  useEffect(() => {
+    const t = setTimeout(onContinuar, 1800);
+    return () => clearTimeout(t);
+  }, [onContinuar]);
+
+  return (
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B] flex flex-col items-center justify-center p-6 text-center">
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+        className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-950/40 flex items-center justify-center mb-5"
+      >
+        <Icon name="CheckCircle2" size={44} className="text-green-600 dark:text-green-400" />
+      </motion.div>
+      <h1 className="text-xl font-bold text-[#18181B] dark:text-[#F4F4F5] mb-1.5">Pagamento confirmado!</h1>
+      <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mb-6">Já avisamos o restaurante — abrindo o acompanhamento do seu pedido...</p>
+      <button onClick={onContinuar}
+        className="px-5 py-2.5 bg-[#FF441F] text-white text-sm font-semibold rounded-xl">
+        Acompanhar agora
+      </button>
+    </div>
+  );
+};
 
 /* ── Tela PIX ─────────────────────────────────────────────────────  */
 const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, retirada = false }) => {
@@ -474,9 +519,23 @@ const StepPagamento = ({
                 maxLength={14}
                 className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/30 focus:border-[#FF441F]"
               />
-              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
-                {paymentMethod === 'pix' ? 'Necessário para gerar o código PIX' : 'Necessário para processar o pagamento'}
-              </p>
+              {cpf.replace(/\D/g, '').length === 0 ? (
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
+                  {paymentMethod === 'pix' ? 'Necessário para gerar o código PIX' : 'Necessário para processar o pagamento'}
+                </p>
+              ) : cpf.replace(/\D/g, '').length < 11 ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                  <Icon name="AlertCircle" size={12} /> Faltam {11 - cpf.replace(/\D/g, '').length} dígito(s)
+                </p>
+              ) : cpfValido(cpf) ? (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                  <Icon name="CheckCircle2" size={12} /> CPF válido
+                </p>
+              ) : (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                  <Icon name="AlertCircle" size={12} /> CPF inválido — confira os números digitados
+                </p>
+              )}
             </div>
           </motion.div>
         )}
@@ -742,6 +801,7 @@ const SingleCartCheckout = () => {
   const [erro, setErro] = useState(null);
   const [pixData, setPixData] = useState(null);
   const [pixManual, setPixManual] = useState(false);
+  const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
   const [etapa, setEtapa] = useState(0); // 0=endereço 1=itens 2=pagamento 3=confirmar
@@ -933,7 +993,7 @@ const SingleCartCheckout = () => {
         if (cartaoResp.status !== 'paid') {
           throw new Error('Pagamento não aprovado. Verifique os dados do cartão ou tente outra forma de pagamento.');
         }
-        navigate('/order-tracking-status', { state: { orderId: newOrderId, restauranteSlug }, replace: true });
+        setPagamentoConfirmado(true);
         return;
       }
 
@@ -951,14 +1011,22 @@ const SingleCartCheckout = () => {
     }
   };
 
+  if (pagamentoConfirmado) {
+    return (
+      <PagamentoConfirmadoScreen
+        onContinuar={() =>
+          navigate('/order-tracking-status', { state: { orderId, restauranteSlug }, replace: true })
+        }
+      />
+    );
+  }
+
   if (stripeClientSecret) {
     return (
       <StripeCardScreen
         clientSecret={stripeClientSecret}
         total={total}
-        onSuccess={() =>
-          navigate('/order-tracking-status', { state: { orderId, restauranteSlug }, replace: true })
-        }
+        onSuccess={() => setPagamentoConfirmado(true)}
       />
     );
   }
