@@ -813,10 +813,13 @@ const SingleCartCheckout = () => {
     getPerfil().then(setPerfil).catch(() => {});
   }, []);
 
-  // Preview do excedente de km assim que o endereço é salvo — o backend recalcula
+  // Preview do frete/excedente assim que o endereço é salvo — o backend recalcula
   // tudo de novo (autoritativo) na hora de criar o pedido, isso aqui é só pra
-  // mostrar o valor pro cliente antes de confirmar. Aguardado (não fire-and-forget)
-  // pra já aparecer confirmado assim que o passo seguinte abrir.
+  // mostrar o valor pro cliente antes de confirmar. Manda os itens do carrinho
+  // porque produto com frete embutido substitui o frete_motoboy/excedente geral
+  // — sem isso o preview mostraria um total diferente do que vai ser cobrado de
+  // verdade. Aguardado (não fire-and-forget) pra já aparecer confirmado assim
+  // que o passo seguinte abrir.
   const buscarEstimativaExcedente = async () => {
     if (!restauranteId) return;
     setCalculandoDistancia(true);
@@ -824,8 +827,13 @@ const SingleCartCheckout = () => {
       const sessionResult = await supabase.auth.getSession();
       const token = sessionResult?.data?.session?.access_token;
       if (!token) return;
-      const res = await fetch(apiPath(`/api/pedidos/estimativa-frete?restaurant_id=${restauranteId}`), {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(apiPath('/api/pedidos/estimativa-frete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          restaurant_id: restauranteId,
+          itens: itens.map((i) => (i.tipo === 'combo' ? { combo_id: i.id, quantity: i.qtd } : { product_id: i.id, quantity: i.qtd })),
+        }),
       });
       if (!res.ok) return;
       const data = await res.json();
@@ -836,7 +844,10 @@ const SingleCartCheckout = () => {
     }
   };
 
-  const frete = retirada ? 0 : (parseFloat(freteMotoboy) || 0);
+  // excedente.frete já vem resolvido do backend (regra normal ou substituído por
+  // frete embutido, conforme o carrinho) — freteMotoboy só serve de valor inicial
+  // antes da estimativa carregar (ex: enquanto o endereço ainda não foi salvo).
+  const frete = retirada ? 0 : (excedente?.frete ?? parseFloat(freteMotoboy) ?? 0);
   const subtotal = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
   const total = subtotal + frete + (retirada ? 0 : (excedente?.valorExcedente ?? 0));
 
