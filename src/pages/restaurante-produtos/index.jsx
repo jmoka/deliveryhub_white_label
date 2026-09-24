@@ -1039,7 +1039,7 @@ const RestauranteProdutos = () => {
                       >
                         <option value="fixo">Valor fixo por venda</option>
                         <option value="percentual">Percentual do preço</option>
-                        <option value="km">Valor por km rodado</option>
+                        <option value="km">Valor por km excedente</option>
                       </select>
 
                       {form.frete_embutido_tipo === 'fixo' && (
@@ -1082,6 +1082,9 @@ const RestauranteProdutos = () => {
                               placeholder="0,00 (valor de segurança)"
                               className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm" />
                           </div>
+                          <p className="text-xs text-gray-400">
+                            Cobra só o excedente — usa o mesmo "KM incluso no frete" configurado na aba Entregadores como franquia grátis, e só multiplica pelo R$/km acima o que passar disso.
+                          </p>
                           <p className="text-xs text-gray-400">
                             O valor de segurança é usado quando não conseguimos calcular a distância (endereço do cliente ou da loja não localizado), e também na retirada no balcão.
                           </p>
