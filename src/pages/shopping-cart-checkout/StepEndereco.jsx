@@ -467,6 +467,21 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, somenteRetirada 
               Usar local sugerido pelo endereço {verificacao.distanciaKm != null && `(${verificacao.distanciaKm}km do pino salvo)`}
             </button>
           )}
+          {/* Sem isso, quem não arrasta o pino (posição já parece certa) nunca
+              dispara moverPino/onChange — pinAjustado fica null pra sempre e o
+              botão "Confirmar e usar este endereço" trava sem explicar por quê. */}
+          {!pinAjustado && (() => {
+            const latAtual = confirmandoSalvo.lat ?? verificacao?.latSugerido;
+            const lngAtual = confirmandoSalvo.lng ?? verificacao?.lngSugerido;
+            if (latAtual == null || lngAtual == null) return null;
+            return (
+              <button type="button"
+                onClick={() => moverPino(latAtual, lngAtual)}
+                className="w-full py-2.5 border-2 border-[#FF441F] text-[#FF441F] font-bold rounded-xl text-sm hover:bg-[#FF441F]/5 flex items-center justify-center gap-2">
+                <Icon name="MapPin" size={15} /> Confirmar o pino no mapa
+              </button>
+            );
+          })()}
         </div>
       )}
 
