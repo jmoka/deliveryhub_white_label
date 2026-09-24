@@ -12,7 +12,7 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '', frete_embutido: false, frete_embutido_tipo: 'percentual', frete_embutido_valor: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '', frete_embutido: false, frete_embutido_tipo: 'fixo', frete_embutido_valor_fixo: '', frete_embutido_percentual: '', frete_embutido_valor_km: '', frete_embutido_km_fallback: '' };
 
 const JSON_FORMATO_EXEMPLO = JSON.stringify([
   {
@@ -142,8 +142,11 @@ const RestauranteProdutos = () => {
       preco_custo: p.preco_custo != null ? String(p.preco_custo) : '',
       quantidade_minima: p.quantidade_minima != null ? String(p.quantidade_minima) : '0',
       frete_embutido: p.frete_embutido ?? false,
-      frete_embutido_tipo: p.frete_embutido_tipo ?? 'percentual',
-      frete_embutido_valor: p.frete_embutido_valor != null ? String(p.frete_embutido_valor) : '',
+      frete_embutido_tipo: p.frete_embutido_tipo ?? 'fixo',
+      frete_embutido_valor_fixo: p.frete_embutido_valor_fixo != null ? String(p.frete_embutido_valor_fixo) : '',
+      frete_embutido_percentual: p.frete_embutido_percentual != null ? String(p.frete_embutido_percentual) : '',
+      frete_embutido_valor_km: p.frete_embutido_valor_km != null ? String(p.frete_embutido_valor_km) : '',
+      frete_embutido_km_fallback: p.frete_embutido_km_fallback != null ? String(p.frete_embutido_km_fallback) : '',
     });
     setShowModal(true);
   };
@@ -387,7 +390,10 @@ const RestauranteProdutos = () => {
     if (permiteFreteEmbutido) {
       payload.frete_embutido = form.frete_embutido;
       payload.frete_embutido_tipo = form.frete_embutido ? form.frete_embutido_tipo : null;
-      payload.frete_embutido_valor = form.frete_embutido && form.frete_embutido_valor !== '' ? parseFloat(form.frete_embutido_valor) : null;
+      payload.frete_embutido_valor_fixo = form.frete_embutido && form.frete_embutido_valor_fixo !== '' ? parseFloat(form.frete_embutido_valor_fixo) : null;
+      payload.frete_embutido_percentual = form.frete_embutido && form.frete_embutido_percentual !== '' ? parseFloat(form.frete_embutido_percentual) : null;
+      payload.frete_embutido_valor_km = form.frete_embutido && form.frete_embutido_valor_km !== '' ? parseFloat(form.frete_embutido_valor_km) : null;
+      payload.frete_embutido_km_fallback = form.frete_embutido && form.frete_embutido_km_fallback !== '' ? parseFloat(form.frete_embutido_km_fallback) : null;
     }
     try {
       if (editando) {
@@ -1020,35 +1026,68 @@ const RestauranteProdutos = () => {
                       className="w-4 h-4 accent-orange-500" />
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-400">Este produto tem frete embutido no preço</span>
                   </label>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Não muda o preço nem a comissão — é só pra você registrar quanto desse valor é repassado pro frete (caminhão próprio).
+                  <p className="text-xs text-gray-400 mt-1 mb-2">
+                    Não muda o preço nem a comissão — é só pra você registrar quanto desse valor é repassado pro frete (caminhão próprio). Config individual deste produto, não usa nem mistura com a Comissão do Motoboy geral.
                   </p>
+
                   {form.frete_embutido && (
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Tipo</label>
-                        <select
-                          value={form.frete_embutido_tipo}
-                          onChange={(e) => setForm((f) => ({ ...f, frete_embutido_tipo: e.target.value }))}
-                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
-                        >
-                          <option value="percentual">% do preço</option>
-                          <option value="fixo">Valor fixo (R$)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          {form.frete_embutido_tipo === 'percentual' ? 'Percentual (%)' : 'Valor (R$)'}
-                        </label>
-                        <input
-                          type="number" min="0" step="0.01"
-                          value={form.frete_embutido_valor}
-                          onChange={(e) => setForm((f) => ({ ...f, frete_embutido_valor: e.target.value }))}
-                          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
-                          placeholder={form.frete_embutido_tipo === 'percentual' ? 'Ex: 35' : '0,00'}
-                        />
-                      </div>
-                    </div>
+                    <>
+                      <select
+                        value={form.frete_embutido_tipo}
+                        onChange={(e) => setForm((f) => ({ ...f, frete_embutido_tipo: e.target.value }))}
+                        className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm mb-2"
+                      >
+                        <option value="fixo">Valor fixo por venda</option>
+                        <option value="percentual">Percentual do preço</option>
+                        <option value="km">Valor por km rodado</option>
+                      </select>
+
+                      {form.frete_embutido_tipo === 'fixo' && (
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$</span>
+                          <input type="number" min="0" step="0.01"
+                            value={form.frete_embutido_valor_fixo}
+                            onChange={(e) => setForm((f) => ({ ...f, frete_embutido_valor_fixo: e.target.value }))}
+                            placeholder="0,00"
+                            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm" />
+                        </div>
+                      )}
+
+                      {form.frete_embutido_tipo === 'percentual' && (
+                        <div className="relative">
+                          <input type="number" min="0" max="100" step="0.01"
+                            value={form.frete_embutido_percentual}
+                            onChange={(e) => setForm((f) => ({ ...f, frete_embutido_percentual: e.target.value }))}
+                            placeholder="Ex: 35"
+                            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm pr-8" />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">%</span>
+                        </div>
+                      )}
+
+                      {form.frete_embutido_tipo === 'km' && (
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$/km</span>
+                            <input type="number" min="0" step="0.01"
+                              value={form.frete_embutido_valor_km}
+                              onChange={(e) => setForm((f) => ({ ...f, frete_embutido_valor_km: e.target.value }))}
+                              placeholder="0,00"
+                              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-16 pr-3 py-2 text-sm" />
+                          </div>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">R$</span>
+                            <input type="number" min="0" step="0.01"
+                              value={form.frete_embutido_km_fallback}
+                              onChange={(e) => setForm((f) => ({ ...f, frete_embutido_km_fallback: e.target.value }))}
+                              placeholder="0,00 (valor de segurança)"
+                              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg pl-9 pr-3 py-2 text-sm" />
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            O valor de segurança é usado quando não conseguimos calcular a distância (endereço do cliente ou da loja não localizado), e também na retirada no balcão.
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
