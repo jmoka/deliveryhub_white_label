@@ -48,6 +48,13 @@ const AdminConfiguracoes = () => {
   const [sucessoCadastros, setSucessoCadastros] = useState(false);
   const [erroCadastros, setErroCadastros] = useState(null);
 
+  const [abaAtiva, setAbaAtiva] = useState('pagamentos');
+  const ABAS = [
+    { id: 'pagamentos', label: 'Pagamentos', icon: 'CreditCard' },
+    { id: 'regras', label: 'Regras', icon: 'SlidersHorizontal' },
+    { id: 'rede', label: 'Rede Local', icon: 'Wifi' },
+  ];
+
   useEffect(() => {
     getPlataformaConfig()
       .then((d) => {
@@ -215,7 +222,7 @@ const AdminConfiguracoes = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       <AdminHeader active="/admin/configuracoes" title="Configurações da Plataforma" subtitle="Integração PagBank Marketplace (Split Payment)" />
 
-      <main className="p-6 max-w-2xl mx-auto">
+      <main className="p-4 sm:p-6 max-w-3xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
@@ -223,6 +230,23 @@ const AdminConfiguracoes = () => {
         ) : (
           <div className="space-y-6">
 
+            {/* Abas — scroll horizontal no mobile, centralizadas no desktop */}
+            <div className="flex gap-1 sm:gap-1.5 bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl w-full sm:w-fit sm:mx-auto overflow-x-auto scrollbar-none">
+              {ABAS.map((a) => (
+                <button key={a.id} type="button" onClick={() => setAbaAtiva(a.id)}
+                  className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+                    abaAtiva === a.id
+                      ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm'
+                      : 'text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
+                  }`}>
+                  <Icon name={a.icon} size={14} />
+                  {a.label}
+                </button>
+              ))}
+            </div>
+
+            {abaAtiva === 'pagamentos' && (
+            <>
             {/* Status */}
             <div className={`rounded-xl border p-4 flex items-start gap-3 ${
               config?.configurado ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900'
@@ -553,6 +577,11 @@ const AdminConfiguracoes = () => {
               </form>
             </div>
 
+            </>
+            )}
+
+            {abaAtiva === 'regras' && (
+            <>
             {/* ── Modo de instalação ──────────────────────────────── */}
             <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Modo de instalação</h2>
@@ -748,6 +777,11 @@ const AdminConfiguracoes = () => {
               </form>
             </div>
 
+            </>
+            )}
+
+            {abaAtiva === 'rede' && (
+            <>
             {/* ── Acesso via Rede Local (WiFi) ──────────────────── */}
             <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Acesso via Rede Local (WiFi)</h2>
@@ -790,6 +824,8 @@ const AdminConfiguracoes = () => {
                 </div>
               )}
             </div>
+            </>
+            )}
 
           </div>
         )}
