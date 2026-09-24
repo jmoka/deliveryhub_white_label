@@ -53,6 +53,8 @@ const BusinessInformationForm = ({
             placeholder="Selecione o tipo de estabelecimento"
             error={errors?.establishmentTypeId}
             required
+            searchable
+            clearable
             description="Restaurante, farmácia, material de construção..."
           />
           {tipoSelecionado && !isRestaurante && (
