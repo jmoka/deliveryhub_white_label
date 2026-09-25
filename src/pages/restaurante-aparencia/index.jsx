@@ -547,7 +547,7 @@ const RestauranteAparencia = () => {
             <textarea value={form.descricao}
               onChange={(e) => set('descricao', e.target.value)}
               rows={2} placeholder="Ex: Comida caseira feita com amor desde 2010..."
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] resize-none" />
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F] resize-none" />
           </Section>
 
           {/* ── Mensagem e salvar ──────────────────────────────────── */}
