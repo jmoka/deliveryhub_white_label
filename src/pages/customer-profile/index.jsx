@@ -324,7 +324,7 @@ const CustomerProfile = () => {
           <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] flex items-center gap-2 mb-3">
             <Icon name="Lock" size={14} className="text-[#FF441F]" /> Segurança
           </p>
-          <CredenciaisForm currentEmail={user?.email} />
+          <CredenciaisForm currentEmail={user?.email} mostrarSeguranca2FA />
         </div>
       </main>
     </div>

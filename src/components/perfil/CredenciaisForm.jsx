@@ -6,8 +6,8 @@ import Icon from '../AppIcon';
 
 // Troca de senha/email pelo próprio usuário logado — reaproveitado nos
 // painéis admin, restaurante e cliente (só o layout ao redor muda). O card
-// de 2FA (mostrarSeguranca2FA) só aparece pra admin e dono de restaurante —
-// quem passa a prop decide isso, aqui não tem checagem de role.
+// de 2FA (mostrarSeguranca2FA) é opt-in por tela — quem passa a prop decide
+// isso, aqui não tem checagem de role.
 const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
   const [novoEmail, setNovoEmail] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -96,6 +96,14 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
   const escolherMetodo = async (metodo) => {
     setErro2fa(null);
     setSucesso2fa(null);
+    // Sai de qualquer fluxo em andamento (QR do app autenticador pendente de
+    // confirmação, ou senha pedida pra desativar) ao trocar de aba — antes
+    // esses painéis ficavam "presos" na tela mesmo depois de clicar em outra
+    // opção, porque só o botão "Cancelar" de cada um os fechava.
+    setEnrollTotp(null);
+    setCodigoTotp('');
+    setPedirSenhaDesativar(false);
+    setSenhaDesativar('');
     if (metodo === metodo2fa || trocandoMetodo) return;
 
     if (metodo === 'none') {
