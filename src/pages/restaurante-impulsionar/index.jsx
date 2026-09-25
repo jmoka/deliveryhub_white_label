@@ -51,7 +51,7 @@ const SelecaoCarrossel = ({ carrossel, label, qtd, selecionados, onToggle }) => 
                 />
                 {item.name}
               </span>
-              <span className="text-xs text-[#71717A]">{fmt(item.preco_promo ?? item.price)}</span>
+              <span className="text-xs text-[#71717A]">{fmt(item.preco_promo > 0 ? item.preco_promo : item.price)}</span>
             </label>
           ))}
         </div>

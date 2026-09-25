@@ -391,7 +391,10 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total 
           <span className="text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1">
             <Icon name="Truck" size={13} /> Frete motoboy
           </span>
-          <span className="font-medium text-[#18181B] dark:text-[#F4F4F5]">{fmt(frete)}</span>
+          <span className="font-medium text-[#18181B] dark:text-[#F4F4F5]">
+            {excedente?.freteEmbutidoNoPedido && frete > 0 && <span className="line-through text-[#A1A1AA] mr-1 font-normal">{fmt(frete)}</span>}
+            <span className={excedente?.freteEmbutidoNoPedido ? 'text-green-600 dark:text-green-400' : ''}>{excedente?.freteEmbutidoNoPedido ? 'Grátis' : fmt(frete)}</span>
+          </span>
         </div>
         {excedente?.distanciaKm != null && (
           <div className="flex justify-between text-sm">
@@ -435,7 +438,9 @@ const StepPagamento = ({
       {frete > 0 && (
         <div className="flex flex-col items-center">
           <span className="text-[10px] text-[#A1A1AA] uppercase tracking-widest font-bold">Frete</span>
-          <span className="text-sm font-semibold text-white">{fmt(frete)}</span>
+          <span className={`text-sm font-semibold ${excedente?.freteEmbutidoNoPedido ? 'text-green-400' : 'text-white'}`}>
+            {excedente?.freteEmbutidoNoPedido ? 'Grátis' : fmt(frete)}
+          </span>
         </div>
       )}
       {excedente?.distanciaKm != null && (
@@ -718,8 +723,9 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, exced
             <span className="text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1">
               <Icon name={retirada ? 'Store' : 'Truck'} size={13} /> {retirada ? 'Retirada no balcão' : 'Frete motoboy'}
             </span>
-            <span className={`font-medium ${retirada ? 'text-green-600' : 'text-[#27272A] dark:text-[#F4F4F5]'}`}>
-              {retirada ? 'Grátis' : fmt(frete)}
+            <span className={`font-medium ${retirada || excedente?.freteEmbutidoNoPedido ? 'text-green-600' : 'text-[#27272A] dark:text-[#F4F4F5]'}`}>
+              {!retirada && excedente?.freteEmbutidoNoPedido && frete > 0 && <span className="line-through text-[#A1A1AA] mr-1 font-normal">{fmt(frete)}</span>}
+              {retirada || excedente?.freteEmbutidoNoPedido ? 'Grátis' : fmt(frete)}
             </span>
           </div>
           {excedente?.distanciaKm != null && (
@@ -848,8 +854,14 @@ const SingleCartCheckout = () => {
   // frete embutido, conforme o carrinho) — freteMotoboy só serve de valor inicial
   // antes da estimativa carregar (ex: enquanto o endereço ainda não foi salvo).
   const frete = retirada ? 0 : (excedente?.frete ?? parseFloat(freteMotoboy) ?? 0);
+  const valorExcedente = retirada ? 0 : (excedente?.valorExcedente ?? 0);
+  // Peso: só a BASE (frete motoboy, %/fixo) já está embutida no preço do produto —
+  // mostra riscada como "Grátis" e nunca soma no total. O excedente de km NÃO é
+  // grátis (cobre só a distância normal/média já embutida; km que passar disso é
+  // custo real extra) — sempre soma no total, igual a regra geral.
+  const freteEmbutidoGratis = !retirada && !!excedente?.freteEmbutidoNoPedido;
   const subtotal = itens.reduce((acc, i) => acc + i.price * i.qtd, 0);
-  const total = subtotal + frete + (retirada ? 0 : (excedente?.valorExcedente ?? 0));
+  const total = subtotal + (freteEmbutidoGratis ? 0 : frete) + valorExcedente;
 
   const irParaStep = (n) => { setErro(null); setEtapa(n); };
 

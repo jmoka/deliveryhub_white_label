@@ -972,6 +972,86 @@ const PedidoAtivoCard = ({ p, defaultExpandido, confirmando, onEntregar, onOcorr
   );
 };
 
+// Card de pedido disponível pra pegar — mostra o ganho estimado (frete repassado,
+// já com frete embutido por peso quando aplicável — ver calcularGanhoEstimado no
+// backend) e a distância sempre visíveis; a lista de produtos fica atrás de um
+// toggle (colapsada por padrão) pra não competir por espaço com o botão de ação.
+const PedidoDisponivelCard = ({ p, pegando, onPegar }) => {
+  const [mostrarItens, setMostrarItens] = useState(false);
+  const cli = p.cliente ?? {};
+  const addr = cli.address_json ?? {};
+  const endereco = [addr.logradouro, addr.numero, addr.bairro].filter(Boolean).join(', ');
+  const itens = p.itens ?? [];
+
+  return (
+    <div className="bg-white dark:bg-[#27272A] rounded-2xl border-2 border-[#FF441F] p-4 mb-3 space-y-3">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="font-black text-[#18181B] dark:text-[#F4F4F5] text-lg">Pedido #{p.id}</p>
+          {p.restaurant_name && (
+            <p className="text-xs font-bold text-[#FF441F] flex items-center gap-1">
+              <Icon name="Store" size={11} /> {p.restaurant_name}
+            </p>
+          )}
+          {cli.name && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{cli.name}</p>}
+          {endereco && (
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 mt-0.5">
+              <Icon name="MapPin" size={11} className="text-[#FF441F]" />
+              {endereco}
+            </p>
+          )}
+        </div>
+        <div className="text-right">
+          <p className="text-base font-black text-[#FF441F]">{fmt(p.total)}</p>
+          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{itens.length} iten(s)</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
+        <div className="flex items-center gap-1.5">
+          <Icon name="Wallet" size={14} className="text-green-600 dark:text-green-400" />
+          <span className="text-xs font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(p.ganho_estimado ?? 0)}</span>
+          <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">seu ganho</span>
+        </div>
+        {p.distancia_km != null && (
+          <div className="flex items-center gap-1.5">
+            <Icon name="MapPinned" size={14} className="text-[#71717A] dark:text-[#A1A1AA]" />
+            <span className="text-xs font-bold text-[#18181B] dark:text-[#F4F4F5]">{Number(p.distancia_km).toFixed(1)} km</span>
+          </div>
+        )}
+      </div>
+
+      {itens.length > 0 && (
+        <div>
+          <button
+            onClick={() => setMostrarItens((v) => !v)}
+            className="w-full flex items-center justify-between text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] py-1"
+          >
+            <span className="flex items-center gap-1"><Icon name="Package" size={12} /> Ver produtos</span>
+            <Icon name={mostrarItens ? 'ChevronUp' : 'ChevronDown'} size={14} />
+          </button>
+          {mostrarItens && (
+            <ul className="text-xs text-[#71717A] dark:text-[#A1A1AA] space-y-0.5 pl-1 pt-1">
+              {itens.map((i) => (
+                <li key={i.id}>{i.quantity}x {i.product_name ?? `Produto #${i.product_id}`}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <button
+        onClick={() => onPegar(p.id)}
+        disabled={pegando === p.id}
+        className="w-full py-3 bg-[#FF441F] hover:bg-[#E63A19] text-white font-black text-sm rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+      >
+        <Icon name="Bike" size={16} />
+        {pegando === p.id ? 'Pegando...' : 'Pegar este pedido'}
+      </button>
+    </div>
+  );
+};
+
 const GPS_ATIVO_KEY = 'motoboy_gps_ativo';
 const dismissedKey = (userId) => `motoboy_producao_dispensados_${userId}`;
 const readDismissed = (userId) => {
@@ -1416,44 +1496,9 @@ const MotoboyPortal = () => {
                     {disponiveis.length} pedido{disponiveis.length > 1 ? 's' : ''} disponível{disponiveis.length > 1 ? 'is' : ''} para entrega
                   </p>
                 </div>
-                {disponiveis.map((p) => {
-                  const cli = p.cliente ?? {};
-                  const addr = cli.address_json ?? {};
-                  const endereco = [addr.logradouro, addr.numero, addr.bairro].filter(Boolean).join(', ');
-                  return (
-                    <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-2xl border-2 border-[#FF441F] p-4 mb-3 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-black text-[#18181B] dark:text-[#F4F4F5] text-lg">Pedido #{p.id}</p>
-                          {p.restaurant_name && (
-                            <p className="text-xs font-bold text-[#FF441F] flex items-center gap-1">
-                              <Icon name="Store" size={11} /> {p.restaurant_name}
-                            </p>
-                          )}
-                          {cli.name && <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{cli.name}</p>}
-                          {endereco && (
-                            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1 mt-0.5">
-                              <Icon name="MapPin" size={11} className="text-[#FF441F]" />
-                              {endereco}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-base font-black text-[#FF441F]">{fmt(p.total)}</p>
-                          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{p.itens?.length ?? 0} iten(s)</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handlePegar(p.id)}
-                        disabled={pegando === p.id}
-                        className="w-full py-3 bg-[#FF441F] hover:bg-[#E63A19] text-white font-black text-sm rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Icon name="Bike" size={16} />
-                        {pegando === p.id ? 'Pegando...' : 'Pegar este pedido'}
-                      </button>
-                    </div>
-                  );
-                })}
+                {disponiveis.map((p) => (
+                  <PedidoDisponivelCard key={p.id} p={p} pegando={pegando} onPegar={handlePegar} />
+                ))}
               </div>
             )}
 

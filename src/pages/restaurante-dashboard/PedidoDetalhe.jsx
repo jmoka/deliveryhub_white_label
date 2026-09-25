@@ -535,12 +535,20 @@ const PedidoDetalhe = ({
             <div className="flex items-center gap-1.5">
               <Icon name={pedido.retirada_balcao ? 'Store' : 'Truck'} size={13} className="text-[#71717A] dark:text-[#A1A1AA]" />
               <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">{pedido.retirada_balcao ? 'Retirada no balcão' : 'Frete motoboy'}</span>
+              {pedido.frete_embutido_no_pedido && (
+                <span
+                  title="Já está embutido no preço do produto — cliente não pagou isso à parte, é só o repasse devido ao motoboy"
+                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 font-medium"
+                >
+                  embutido no produto
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {pedido.frete_cobrado > 0 ? (
                 <>
                   <span className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">{fmt(pedido.frete_cobrado)}</span>
-                  {!isCanceled && pedido.status !== 'delivered' && (
+                  {!isCanceled && pedido.status !== 'delivered' && !pedido.frete_embutido_no_pedido && (
                     <button
                       onClick={handleFreteGratis}
                       disabled={zerrandoFrete}

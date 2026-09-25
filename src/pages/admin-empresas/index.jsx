@@ -390,7 +390,7 @@ const SelecaoCarrosselAdmin = ({ empresaId, carrossel, label, qtd, selecionados,
                 />
                 {item.name}
               </span>
-              <span className="text-xs text-gray-500 dark:text-zinc-400">{fmt(item.preco_promo ?? item.price)}</span>
+              <span className="text-xs text-gray-500 dark:text-zinc-400">{fmt(item.preco_promo > 0 ? item.preco_promo : item.price)}</span>
             </label>
           ))}
         </div>

@@ -269,7 +269,10 @@ const OrderTrackingStatus = () => {
                       <span className="flex items-center gap-1">
                         <Icon name="Truck" size={13} /> Frete motoboy
                       </span>
-                      <span>{fmt(frete)}</span>
+                      <span>
+                        {pedido.frete_embutido_no_pedido && frete > 0 && <span className="line-through text-gray-400 dark:text-[#71717A] mr-1">{fmt(frete)}</span>}
+                        <span className={pedido.frete_embutido_no_pedido ? 'text-green-600 dark:text-green-400 font-medium' : ''}>{pedido.frete_embutido_no_pedido ? 'Grátis' : fmt(frete)}</span>
+                      </span>
                     </div>
                     {pedido.distancia_entrega_km != null && (
                       <div className="flex justify-between text-sm text-gray-500 dark:text-[#A1A1AA]">

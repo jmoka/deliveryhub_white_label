@@ -103,7 +103,7 @@ const blocoCategoria = (categoria, ocultarTitulo, mostrarNumeracao, numero) => `
       <div class="item">
         <div class="item-linha">
           <span class="item-nome">${esc(p.name)}</span>
-          <span class="item-preco">${fmt(p.preco_promo ?? p.price)}</span>
+          <span class="item-preco">${fmt(p.preco_promo > 0 ? p.preco_promo : p.price)}</span>
         </div>
         ${p.description ? `<div class="item-desc">${esc(p.description)}</div>` : ''}
       </div>

@@ -250,7 +250,7 @@ const RestCardList = ({ r, i }) => {
 
 /* ── Card produto (comparação) ───────────────────────────────────── */
 const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
-  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo > 0;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const restFechado = rest?.aparencia?.aberto === false;
@@ -338,7 +338,7 @@ const ProdutoCompCard = ({ produto, i, navigate, onAdd }) => {
 const ComboCompCard = ({ combo, i, navigate }) => {
   const rest = combo.restaurante;
   const restFechado = rest?.aparencia?.aberto === false;
-  const temPromo = combo.preco_promo != null;
+  const temPromo = combo.preco_promo > 0;
   const preco = temPromo ? combo.preco_promo : combo.price;
 
   return (
@@ -433,7 +433,7 @@ const ServicoCompCard = ({ servico, i, navigate }) => {
 const ComboCarrosselCard = ({ combo, i, navigate }) => {
   const rest = combo.restaurante;
   const fechado = rest?.aparencia?.aberto === false;
-  const temPromo = combo.preco_promo != null;
+  const temPromo = combo.preco_promo > 0;
   const preco = temPromo ? combo.preco_promo : combo.price;
 
   return (
@@ -547,7 +547,7 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
 
 /* ── Card produto carrossel ──────────────────────────────────────── */
 const ProdCarrosselCard = ({ produto, i, navigate, onAdd }) => {
-  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo > 0;
   const preco = temPromo ? produto.preco_promo : produto.price;
   const rest = produto.restaurante;
   const fechado = rest?.aparencia?.aberto === false;

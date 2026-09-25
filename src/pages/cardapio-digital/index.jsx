@@ -9,7 +9,7 @@ const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency:
 // Cardápio só-leitura pra QR code de mesa — mostra produto/preço/descrição com busca
 // e filtro por categoria, sem carrinho nem checkout (isso é o /r/:slug).
 const ProdutoLinha = ({ produto }) => {
-  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo > 0;
   const indisponivel = produto.disponivel === false;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
 

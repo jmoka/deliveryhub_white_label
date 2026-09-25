@@ -26,7 +26,7 @@ const SkeletonProduto = () => (
 
 /* ── Card produto ────────────────────────────────────────────────── */
 const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVitrine }) => {
-  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo > 0;
   const indisponivel = produto.disponivel === false || restauranteFechado;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
 
@@ -221,7 +221,7 @@ const SolicitarOrcamentoModal = ({ slug, servico, onFechar }) => {
 
 /* ── Carrossel de combos ativos (topo da loja) ────────────────────── */
 const ComboCarrosselCard = ({ combo, onAdicionar, restauranteFechado, somenteVitrine }) => {
-  const temPromo = combo.preco_promo != null;
+  const temPromo = combo.preco_promo > 0;
   const precoFinal = temPromo ? combo.preco_promo : combo.price;
 
   return (
@@ -505,7 +505,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
 
   const normalizar = (s) => (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-  const precoOrdenacao = (p) => (p.tags?.includes('promo') && p.preco_promo != null ? p.preco_promo : p.price ?? p.preco_min ?? 0);
+  const precoOrdenacao = (p) => (p.tags?.includes('promo') && p.preco_promo > 0 ? p.preco_promo : p.price ?? p.preco_min ?? 0);
 
   const bgStyle = ap.background_url
     ? { backgroundImage: `url(${ap.background_url})`, backgroundSize: 'cover', backgroundAttachment: 'fixed' }

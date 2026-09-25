@@ -8,7 +8,7 @@ export const cartGet = () => {
 
 export const cartAdd = (produto, restaurante) => {
   const cart = cartGet();
-  const temPromo = produto.tags?.includes('promo') && produto.preco_promo != null;
+  const temPromo = produto.tags?.includes('promo') && produto.preco_promo > 0;
   const preco = temPromo ? Number(produto.preco_promo) : Number(produto.price);
   const key = `${restaurante.id}:${produto.id}`;
   const idx = cart.findIndex((i) => i._key === key);

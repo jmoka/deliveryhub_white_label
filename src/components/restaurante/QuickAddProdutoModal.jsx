@@ -42,8 +42,8 @@ const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar, permitirNaoEnvia
               {produto.name}
             </p>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-              {produto.preco_promo != null && <span className="line-through text-[#A1A1AA] mr-1">{fmt(produto.price)}</span>}
-              <span className={produto.preco_promo != null ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>{fmt(produto.preco_promo ?? produto.price)}</span>
+              {produto.preco_promo > 0 && <span className="line-through text-[#A1A1AA] mr-1">{fmt(produto.price)}</span>}
+              <span className={produto.preco_promo > 0 ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>{fmt(produto.preco_promo > 0 ? produto.preco_promo : produto.price)}</span>
             </p>
             {produto.quantidade_estoque != null && (
               <p className="text-[11px] text-[#A1A1AA] mt-0.5">Em estoque: {produto.quantidade_estoque}</p>

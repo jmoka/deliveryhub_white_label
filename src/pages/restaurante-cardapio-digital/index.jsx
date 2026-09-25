@@ -538,7 +538,7 @@ const CardapioImpressoModal = ({ onClose }) => {
                               <input type="checkbox" checked={selecionados.has(p.id)} onChange={() => toggleProduto(p.id)} className="w-4 h-4 accent-[#FF441F]" />
                               {p.name}
                             </span>
-                            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtPreco(p.preco_promo ?? p.price)}</span>
+                            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmtPreco(p.preco_promo > 0 ? p.preco_promo : p.price)}</span>
                           </label>
                         ))}
                         {categoria.id != null && (
