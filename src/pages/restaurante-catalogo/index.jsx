@@ -377,6 +377,13 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   const [erro, setErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
   const [catAtiva, setCatAtiva] = useState('todos');
+  // Sem drag/swipe no mouse de desktop, a lista de categorias (overflow-x-auto
+  // sem scrollbar visível) fica sem jeito de rolar quando tem mais abas do que
+  // cabe na largura — mesmo padrão de setas do ComboCarrossel acima.
+  const categoriasScrollRef = useRef(null);
+  const rolarCategorias = (dir) => {
+    if (categoriasScrollRef.current) categoriasScrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  };
   const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [servicoOrcamento, setServicoOrcamento] = useState(null);
   const [busca, setBusca] = useState('');
@@ -711,17 +718,27 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       {/* ── Nav categorias sticky ───────────────────────────────────── */}
       <div className="sticky top-14 z-20 bg-white/95 dark:bg-[#27272A]/95 backdrop-blur-md border-b border-[#E4E4E7] dark:border-[#3F3F46]">
         <div className="max-w-screen-xl mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto py-3" style={{ scrollbarWidth: 'none' }}>
-            {tabs.map((tab) => (
-              <button key={tab.id} onClick={() => setCatAtiva(tab.id)}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
-                  catAtiva === tab.id
-                    ? 'bg-[#FF441F] text-white shadow-sm'
-                    : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#52525B]'
-                }`}>
-                {tab.label}
-              </button>
-            ))}
+          <div className="relative">
+            <button type="button" onClick={() => rolarCategorias(-1)} aria-label="Rolar categorias para a esquerda"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] -ml-3 hidden sm:flex">
+              <Icon name="ChevronLeft" size={14} className="text-[#27272A] dark:text-[#F4F4F5]" />
+            </button>
+            <div ref={categoriasScrollRef} className="flex gap-2 overflow-x-auto py-3" style={{ scrollbarWidth: 'none' }}>
+              {tabs.map((tab) => (
+                <button key={tab.id} onClick={() => setCatAtiva(tab.id)}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
+                    catAtiva === tab.id
+                      ? 'bg-[#FF441F] text-white shadow-sm'
+                      : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#E4E4E7] dark:hover:bg-[#52525B]'
+                  }`}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => rolarCategorias(1)} aria-label="Rolar categorias para a direita"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white dark:bg-[#27272A] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] -mr-3 hidden sm:flex">
+              <Icon name="ChevronRight" size={14} className="text-[#27272A] dark:text-[#F4F4F5]" />
+            </button>
           </div>
           <div className="flex gap-2 pb-3">
             <div className="relative flex-1 min-w-0">
