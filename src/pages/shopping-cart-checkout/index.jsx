@@ -460,11 +460,17 @@ const StepPagamento = ({
       <div className="space-y-2">
         {PAYMENT_OPTIONS.map((op) => {
           const isCartao = op.key === 'credit_card' || op.key === 'debit_card';
+          // Débito via PagBank exige autenticação 3DS (exigência da própria API,
+          // ver Orders API v4) que o checkout ainda não implementa — Stripe não
+          // tem essa exigência, então só desabilita quando o gateway ativo é o
+          // PagBank (ver HOMOLOGACAO/logs_homologacao_pagbank_20260926.txt).
+          const debitoPagBankSemSuporte = op.key === 'debit_card' && !pagamentoManual && !stripeDisponivel && pagbankCartaoDisponivel;
           // Modo manual = loja sem nenhuma ligação real com Stripe/PagBank, mesmo
           // que tenha token salvo — cartão nunca é opção válida nesse caso.
           const opcaoIndisponivel =
             (pagamentoManual && op.key === 'pix' && !chavePix) ||
-            (isCartao && (pagamentoManual || (!stripeDisponivel && !pagbankCartaoDisponivel)));
+            (isCartao && (pagamentoManual || (!stripeDisponivel && !pagbankCartaoDisponivel))) ||
+            debitoPagBankSemSuporte;
           return (
             <button key={op.key} onClick={() => !opcaoIndisponivel && setPaymentMethod(op.key)}
               disabled={opcaoIndisponivel}
@@ -489,7 +495,9 @@ const StepPagamento = ({
                     ? 'Indisponível — restaurante não configurou chave PIX'
                     : isCartao && (pagamentoManual || (!stripeDisponivel && !pagbankCartaoDisponivel))
                       ? 'Indisponível — restaurante não conectou pagamento online'
-                      : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
+                      : debitoPagBankSemSuporte
+                        ? 'Indisponível no momento — use crédito ou Pix'
+                        : pagamentoManual && op.key !== 'cash' ? 'Combinado na entrega' : op.desc}
                 </p>
               </div>
               <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${

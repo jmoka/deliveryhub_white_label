@@ -278,7 +278,9 @@ const PagamentoFaturaModal = ({
             <div className="flex gap-1.5 mb-4 mt-2">
               <TabButton valor="pix" label="Pix" />
               {!modoManual && <TabButton valor="credit_card" label="Crédito" />}
-              {!modoManual && <TabButton valor="debit_card" label="Débito" />}
+              {/* Débito desabilitado: PagBank exige autenticação 3DS pra débito
+                  (Orders API v4) e esse fluxo ainda não está implementado aqui —
+                  ver HOMOLOGACAO/logs_homologacao_pagbank_20260926.txt */}
             </div>
 
             <form onSubmit={metodo === 'pix' ? handleSubmitPix : handleSubmitCartao} className="space-y-3">
