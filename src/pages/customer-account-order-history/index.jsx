@@ -85,8 +85,8 @@ const CustomerAccountOrderHistory = () => {
       {/* Header */}
       <header className="bg-white dark:bg-[#18181B] border-b dark:border-[#3F3F46] px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-            <Icon name="Utensils" size={18} className="text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+            <img src="/assets/images/icon-192.png" alt={APP_NAME} className="w-full h-full object-contain" />
           </div>
           <span className="text-sm font-bold text-gray-900 dark:text-[#F4F4F5]">{APP_NAME}</span>
         </div>

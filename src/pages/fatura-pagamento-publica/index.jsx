@@ -65,8 +65,8 @@ const FaturaPagamentoPublica = () => {
     <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E4E4E7] p-6">
         <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 rounded-lg bg-[#FF441F] flex items-center justify-center flex-shrink-0">
-            <Icon name="Receipt" size={16} className="text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+            <img src="/assets/images/icon-192.png" alt={APP_NAME} className="w-full h-full object-contain" />
           </div>
           <span className="font-black text-[#18181B] text-sm">{APP_NAME}</span>
         </div>

@@ -145,8 +145,8 @@ const CustomerRegistrationLogin = () => {
           <Icon name="ArrowLeft" size={24} className="text-[#71717A] dark:text-[#A1A1AA]" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <Icon name="Utensils" size={18} className="text-white" />
+          <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+            <img src="/assets/images/icon-192.png" alt={APP_NAME} className="w-full h-full object-contain" />
           </div>
           <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">{APP_NAME}</span>
         </div>

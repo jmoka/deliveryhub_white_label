@@ -539,8 +539,8 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             <Icon name="ArrowLeft" size={18} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-[#FF441F] rounded-lg flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
-              <Icon name="Utensils" size={14} className="text-white" />
+            <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shadow-sm shadow-[#FF441F]/30">
+              <img src="/assets/images/icon-192.png" alt={APP_NAME} className="w-full h-full object-contain" />
             </div>
             <span className="font-black text-[#18181B] dark:text-[#F4F4F5] text-sm hidden sm:block">{APP_NAME}</span>
           </div>
