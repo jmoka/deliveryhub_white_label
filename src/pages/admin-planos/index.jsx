@@ -1528,7 +1528,7 @@ const TABS = [
   { id: 'planos', label: 'Planos' },
   { id: 'lojas', label: 'Lojas' },
   { id: 'faturas', label: 'Faturas' },
-  { id: 'instalacoes', label: 'Instalações Locais' },
+  { id: 'instalacoes', label: 'Instalações' },
 ];
 
 const AdminPlanos = () => {
@@ -1539,12 +1539,12 @@ const AdminPlanos = () => {
       <AdminHeader active="/admin/planos" title="Planos de Assinatura" subtitle="Mensalidades cobradas das lojas, além da comissão por venda" />
 
       <main className="p-6 max-w-5xl mx-auto">
-        <div className="flex border-b border-gray-200 dark:border-zinc-700 mb-6">
+        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-zinc-700 mb-6">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTabAtiva(t.id)}
-              className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-5 py-2.5 text-sm font-medium border-b-2 whitespace-nowrap flex-shrink-0 transition-colors ${
                 tabAtiva === t.id
                   ? 'border-blue-600 dark:border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100'
