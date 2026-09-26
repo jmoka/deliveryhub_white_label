@@ -186,3 +186,8 @@ export const liberarBloqueioLoginUsuario = (id) =>
 export const excluirUsuario = (id) => apiFetch(`/admin/usuarios/${id}`, { method: 'DELETE' });
 export const getAuditoriaUsuario = (usuarioId) =>
   apiFetch(`/admin/usuarios/auditoria?usuario_id=${usuarioId}`);
+
+// Páginas legais (Termos de Uso, Política de Privacidade) — texto editável
+export const getPaginasLegaisAdmin = () => apiFetch('/admin/paginas-legais');
+export const atualizarPaginaLegal = (slug, data) =>
+  apiFetch(`/admin/paginas-legais/${slug}`, { method: 'PATCH', body: JSON.stringify(data) });

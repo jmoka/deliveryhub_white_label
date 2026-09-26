@@ -76,6 +76,8 @@ import AutoAtendimento from './pages/auto-atendimento';
 import HomeRouter from './pages/home-router';
 import Academia from './pages/academia';
 import AdminAcademia from './pages/admin-academia';
+import PaginaLegal from './pages/pagina-legal';
+import AdminPaginasLegais from './pages/admin-paginas-legais';
 
 const Routes = () => {
   return (
@@ -93,6 +95,8 @@ const Routes = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/order-tracking-status" element={<OrderTrackingStatus />} />
         <Route path="/academia" element={<Academia />} />
+        <Route path="/termos-de-uso" element={<PaginaLegal slug="termos-de-uso" />} />
+        <Route path="/politica-privacidade" element={<PaginaLegal slug="politica-privacidade" />} />
 
         {/* Admin — requer role=admin */}
         <Route path="/admin/trocar-senha" element={<AdminGuard><AdminTrocarSenha /></AdminGuard>} />
@@ -110,6 +114,7 @@ const Routes = () => {
         <Route path="/admin/marketplace-boost" element={<AdminGuard><AdminMarketplaceBoost /></AdminGuard>} />
         <Route path="/admin/configuracoes" element={<AdminGuard><AdminConfiguracoes /></AdminGuard>} />
         <Route path="/admin/aparencia" element={<AdminGuard><AdminAparencia /></AdminGuard>} />
+        <Route path="/admin/paginas-legais" element={<AdminGuard><AdminPaginasLegais /></AdminGuard>} />
         <Route path="/admin/academia" element={<AdminGuard><AdminAcademia /></AdminGuard>} />
 
         {/* Cardápio público por slug — sem auth */}

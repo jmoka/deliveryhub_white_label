@@ -214,21 +214,25 @@ const RegisterForm = ({
 
         <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
           <span>Ao criar uma conta, você concorda com nossos</span>
-          <button
-            type="button"
+          <a
+            href="/termos-de-uso"
+            target="_blank"
+            rel="noopener noreferrer"
             className="underline hover:no-underline transition-all duration-200"
             style={{ color: primaryColor }}
           >
             Termos de Uso
-          </button>
+          </a>
           <span>e</span>
-          <button
-            type="button"
+          <a
+            href="/politica-privacidade"
+            target="_blank"
+            rel="noopener noreferrer"
             className="underline hover:no-underline transition-all duration-200"
             style={{ color: primaryColor }}
           >
             Política de Privacidade
-          </button>
+          </a>
         </div>
       </div>
       {errors?.submit && (

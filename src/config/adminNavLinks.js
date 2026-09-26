@@ -11,6 +11,7 @@ const RAW_LINKS = [
   { label: 'Planos', path: '/admin/planos', icon: 'CreditCard' },
   { label: 'Marketplace', path: '/admin/marketplace-boost', icon: 'Megaphone' },
   { label: 'Aparência', path: '/admin/aparencia', icon: 'Palette' },
+  { label: 'Páginas legais', path: '/admin/paginas-legais', icon: 'FileText' },
 ];
 
 // Menu lateral em ordem alfabética, Dashboard fixo no topo — Configurações e

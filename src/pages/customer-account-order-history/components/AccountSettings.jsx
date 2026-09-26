@@ -190,15 +190,15 @@ const AccountSettings = ({
           </div>
           <div className="flex justify-between">
             <span>Termos de Uso:</span>
-            <button className="font-medium hover:underline" style={{ color: primaryColor }}>
+            <a href="/termos-de-uso" target="_blank" rel="noopener noreferrer" className="font-medium hover:underline" style={{ color: primaryColor }}>
               Ver termos
-            </button>
+            </a>
           </div>
           <div className="flex justify-between">
             <span>Política de Privacidade:</span>
-            <button className="font-medium hover:underline" style={{ color: primaryColor }}>
+            <a href="/politica-privacidade" target="_blank" rel="noopener noreferrer" className="font-medium hover:underline" style={{ color: primaryColor }}>
               Ver política
-            </button>
+            </a>
           </div>
         </div>
       </div>
