@@ -837,7 +837,7 @@ const RestauranteProdutos = () => {
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
             {produtosFiltrados.map((p) => (
-              <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex gap-3">
+              <div key={p.id} className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex gap-3 min-w-0">
                 {p.image_url && (
                   <img src={p.image_url} alt={p.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                 )}
@@ -872,7 +872,7 @@ const RestauranteProdutos = () => {
                   <p className={`text-xs mt-0.5 ${(p.quantidade_estoque ?? 0) <= 0 ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-gray-400'}`}>
                     Estoque: {p.quantidade_estoque ?? 0}
                   </p>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-2 flex-wrap">
                     <button
                       onClick={() => abrirEditar(p)}
                       className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]"
