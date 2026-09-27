@@ -48,3 +48,17 @@ export const ativarEmail2FA = () => apiFetch('/auth-principal/2fa/enroll/email',
 
 export const desativar2FA = (password) =>
   apiFetch('/auth-principal/2fa/disable', { method: 'POST', body: JSON.stringify({ password }) });
+
+// E-mail de segurança — endereço alternativo verificado, usado como destino
+// do 2FA por e-mail e da recuperação de senha (ver authService.resetPassword)
+// quando o e-mail de login pode ser fake.
+export const getStatusEmailSeguranca = () => apiFetch('/auth-principal/2fa/email-seguranca');
+
+export const solicitarEmailSeguranca = (email) =>
+  apiFetch('/auth-principal/2fa/email-seguranca/solicitar', { method: 'POST', body: JSON.stringify({ email }) });
+
+export const confirmarEmailSeguranca = (codigo) =>
+  apiFetch('/auth-principal/2fa/email-seguranca/confirmar', { method: 'POST', body: JSON.stringify({ codigo }) });
+
+export const removerEmailSeguranca = () =>
+  apiFetch('/auth-principal/2fa/email-seguranca', { method: 'DELETE' });

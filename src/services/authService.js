@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { apiPath } from '../lib/apiUrl';
 
 // Authentication Service for Supabase integration
 export const authService = {
@@ -110,19 +111,42 @@ export const authService = {
     }
   },
 
-  // Reset password
+  // Reset password — via backend (auth-principal/recuperar-senha): usa o
+  // e-mail de segurança verificado quando a conta tem um configurado (não
+  // depende do e-mail de login, que pode ser fake); sem isso, cai no fluxo
+  // nativo do Supabase (mesmo comportamento de sempre, sem regressão).
   async resetPassword(email) {
     try {
-      const { data, error } = await supabase?.auth?.resetPasswordForEmail(email, {
-        redirectTo: `${window.location?.origin}/reset-password`,
-      })
-      
-      if (error) return { success: false, error: error?.message };
-      return { success: true }
+      const res = await fetch(apiPath('/api/auth-principal/recuperar-senha'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const isJson = (res.headers.get('content-type') ?? '').includes('application/json');
+      const body = isJson ? await res.json().catch(() => ({})) : {};
+      if (!res.ok) return { success: false, error: body?.message ?? `HTTP ${res.status}` };
+      return { success: true, modo: body.modo, resetId: body.reset_id };
     } catch (error) {
-      return { success: false, error: 'Password reset failed' }
+      return { success: false, error: 'Password reset failed' };
     }
-  }
+  },
+
+  // Segundo passo do fluxo por e-mail de segurança (modo === 'seguranca').
+  async confirmarRecuperacaoSenha(resetId, codigo, novaSenha) {
+    try {
+      const res = await fetch(apiPath('/api/auth-principal/recuperar-senha/confirmar'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset_id: resetId, codigo, nova_senha: novaSenha }),
+      });
+      const isJson = (res.headers.get('content-type') ?? '').includes('application/json');
+      const body = isJson ? await res.json().catch(() => ({})) : {};
+      if (!res.ok) return { success: false, error: body?.message ?? `HTTP ${res.status}` };
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Password reset failed' };
+    }
+  },
 }
 
 export default authService

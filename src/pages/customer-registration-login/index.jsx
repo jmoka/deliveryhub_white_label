@@ -131,6 +131,14 @@ const CustomerRegistrationLogin = () => {
     if (!result?.success) {
       throw new Error(result?.error || 'Erro ao enviar email de recuperação. Tente novamente.');
     }
+    return { modo: result.modo, resetId: result.resetId };
+  };
+
+  const handleConfirmarRecuperacaoComCodigo = async (resetId, codigo, novaSenha) => {
+    const result = await authService.confirmarRecuperacaoSenha(resetId, codigo, novaSenha);
+    if (!result?.success) {
+      throw new Error(result?.error || 'Não foi possível trocar a senha.');
+    }
   };
 
   return (
@@ -285,6 +293,7 @@ const CustomerRegistrationLogin = () => {
         isOpen={showForgotPassword}
         onClose={() => setShowForgotPassword(false)}
         onResetPassword={handleForgotPassword}
+        onConfirmarComCodigo={handleConfirmarRecuperacaoComCodigo}
         primaryColor="#2563EB"
       />
     </div>

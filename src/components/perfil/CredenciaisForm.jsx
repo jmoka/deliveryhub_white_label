@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { authService } from '../../services/authService';
-import { getStatus2FA, iniciarEnrollTotp, confirmarEnrollTotp, ativarEmail2FA, desativar2FA } from '../../services/twoFactorService';
+import {
+  getStatus2FA, iniciarEnrollTotp, confirmarEnrollTotp, ativarEmail2FA, desativar2FA,
+  getStatusEmailSeguranca, solicitarEmailSeguranca, confirmarEmailSeguranca, removerEmailSeguranca,
+} from '../../services/twoFactorService';
 import Icon from '../AppIcon';
 
 // Troca de senha/email pelo próprio usuário logado — reaproveitado nos
@@ -69,6 +72,83 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
       setErroSenha('Falha ao trocar senha. Tente novamente.');
     } finally {
       setSalvandoSenha(false);
+    }
+  };
+
+  // ── E-mail de segurança ── endereço alternativo, verificado por código,
+  // usado como destino do 2FA por email e da recuperação de senha (o email de
+  // login pode ser fake, ex: cliente que digita qualquer coisa no cadastro).
+  const [emailSeguranca, setEmailSeguranca] = useState(null); // { email_seguranca, verificado } | null
+  const [carregandoEmailSeg, setCarregandoEmailSeg] = useState(mostrarSeguranca2FA);
+  const [editandoEmailSeg, setEditandoEmailSeg] = useState(false);
+  const [novoEmailSeg, setNovoEmailSeg] = useState('');
+  const [codigoEmailSeg, setCodigoEmailSeg] = useState('');
+  const [aguardandoCodigoSeg, setAguardandoCodigoSeg] = useState(false);
+  const [enviandoEmailSeg, setEnviandoEmailSeg] = useState(false);
+  const [confirmandoEmailSeg, setConfirmandoEmailSeg] = useState(false);
+  const [removendoEmailSeg, setRemovendoEmailSeg] = useState(false);
+  const [erroEmailSeg, setErroEmailSeg] = useState(null);
+  const [sucessoEmailSeg, setSucessoEmailSeg] = useState(null);
+
+  useEffect(() => {
+    if (!mostrarSeguranca2FA) return;
+    getStatusEmailSeguranca()
+      .then(setEmailSeguranca)
+      .catch(() => setErroEmailSeg('Não foi possível carregar o e-mail de segurança.'))
+      .finally(() => setCarregandoEmailSeg(false));
+  }, [mostrarSeguranca2FA]);
+
+  const iniciarEdicaoEmailSeg = () => {
+    setEditandoEmailSeg(true);
+    setAguardandoCodigoSeg(false);
+    setNovoEmailSeg('');
+    setCodigoEmailSeg('');
+    setErroEmailSeg(null);
+    setSucessoEmailSeg(null);
+  };
+
+  const enviarCodigoEmailSeg = async (e) => {
+    e.preventDefault();
+    setErroEmailSeg(null);
+    if (!novoEmailSeg.trim()) return;
+    setEnviandoEmailSeg(true);
+    try {
+      await solicitarEmailSeguranca(novoEmailSeg.trim());
+      setAguardandoCodigoSeg(true);
+    } catch (e) {
+      setErroEmailSeg(e.message);
+    } finally {
+      setEnviandoEmailSeg(false);
+    }
+  };
+
+  const confirmarCodigoEmailSeg = async (e) => {
+    e.preventDefault();
+    setErroEmailSeg(null);
+    setConfirmandoEmailSeg(true);
+    try {
+      const r = await confirmarEmailSeguranca(codigoEmailSeg);
+      setEmailSeguranca({ email_seguranca: r.email_seguranca, verificado: true });
+      setSucessoEmailSeg('E-mail de segurança verificado.');
+      setEditandoEmailSeg(false);
+    } catch (e) {
+      setErroEmailSeg(e.message);
+    } finally {
+      setConfirmandoEmailSeg(false);
+    }
+  };
+
+  const removerEmailSeg = async () => {
+    setErroEmailSeg(null);
+    setRemovendoEmailSeg(true);
+    try {
+      await removerEmailSeguranca();
+      setEmailSeguranca({ email_seguranca: null, verificado: false });
+      setSucessoEmailSeg('E-mail de segurança removido.');
+    } catch (e) {
+      setErroEmailSeg(e.message);
+    } finally {
+      setRemovendoEmailSeg(false);
     }
   };
 
@@ -235,6 +315,112 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
           </button>
         </form>
       </div>
+
+      {mostrarSeguranca2FA && (
+        <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-6">
+          <h3 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">E-mail de segurança</h3>
+          <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">
+            Endereço alternativo, verificado por código — usado pra recuperar sua senha e pro 2FA por e-mail
+            se o e-mail de login não puder ser alcançado.
+          </p>
+
+          {carregandoEmailSeg ? (
+            <p className="text-sm text-gray-400 dark:text-zinc-500">Carregando...</p>
+          ) : (
+            <>
+              {erroEmailSeg && <p className="text-sm text-red-600 dark:text-red-400 mb-2">{erroEmailSeg}</p>}
+              {sucessoEmailSeg && !editandoEmailSeg && (
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5 mb-2">
+                  <Icon name="CheckCircle" size={16} /> {sucessoEmailSeg}
+                </p>
+              )}
+
+              {!editandoEmailSeg && (
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    {emailSeguranca?.email_seguranca ? (
+                      <p className="text-sm text-gray-700 dark:text-zinc-300 flex items-center gap-1.5">
+                        <span className="font-mono">{emailSeguranca.email_seguranca}</span>
+                        {emailSeguranca.verificado ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 font-medium">Verificado</span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 font-medium">Não verificado</span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-400 dark:text-zinc-500">Nenhum e-mail de segurança cadastrado.</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={iniciarEdicaoEmailSeg}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-900">
+                      {emailSeguranca?.email_seguranca ? 'Trocar' : 'Cadastrar'}
+                    </button>
+                    {emailSeguranca?.email_seguranca && (
+                      <button type="button" onClick={removerEmailSeg} disabled={removendoEmailSeg}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50">
+                        {removendoEmailSeg ? 'Removendo...' : 'Remover'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {editandoEmailSeg && !aguardandoCodigoSeg && (
+                <form onSubmit={enviarCodigoEmailSeg} className="p-4 border border-gray-200 dark:border-zinc-700 rounded-xl space-y-3">
+                  <input
+                    type="email"
+                    required
+                    autoFocus
+                    placeholder="seu-email-alternativo@exemplo.com"
+                    value={novoEmailSeg}
+                    onChange={(e) => setNovoEmailSeg(e.target.value)}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={enviandoEmailSeg}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                      {enviandoEmailSeg ? 'Enviando...' : 'Enviar código'}
+                    </button>
+                    <button type="button" onClick={() => setEditandoEmailSeg(false)}
+                      className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200">
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {editandoEmailSeg && aguardandoCodigoSeg && (
+                <form onSubmit={confirmarCodigoEmailSeg} className="p-4 border border-gray-200 dark:border-zinc-700 rounded-xl space-y-3">
+                  <p className="text-sm text-gray-600 dark:text-zinc-300">
+                    Enviamos um código de 6 dígitos pra <span className="font-mono">{novoEmailSeg}</span>.
+                  </p>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    autoFocus
+                    placeholder="000000"
+                    value={codigoEmailSeg}
+                    onChange={(e) => setCodigoEmailSeg(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-center tracking-widest font-mono bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={confirmandoEmailSeg || codigoEmailSeg.length !== 6}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                      {confirmandoEmailSeg ? 'Confirmando...' : 'Confirmar'}
+                    </button>
+                    <button type="button" onClick={() => setEditandoEmailSeg(false)}
+                      className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200">
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {mostrarSeguranca2FA && (
         <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-6">
