@@ -46,6 +46,12 @@ const DEFAULT_MARCA = {
   texto_secundario_color: '#71717A',
   texto_secundario_bg_color: '',
   texto_secundario_bg_opacity: 100,
+  // Nome do restaurante no carrossel "Restaurantes populares" (abaixo da
+  // logo redonda) — controle próprio, independente do texto_principal geral.
+  rest_populares_nome_color: '#18181B',
+  rest_populares_nome_size: 11,
+  rest_populares_nome_bg_color: '',
+  rest_populares_nome_bg_opacity: 100,
   hero_tagline: 'Delivery · Rápido · Confiável',
   hero_titulo: 'Seu delivery favorito',
   hero_subtitulo: 'Peça dos melhores restaurantes da sua cidade',
@@ -501,7 +507,7 @@ const ComboCarrossel = ({ combos, navigate }) => {
 };
 
 /* ── Carrossel restaurantes populares ────────────────────────────── */
-const RestCarrossel = ({ restaurantes, navigate }) => {
+const RestCarrossel = ({ restaurantes, navigate, marca }) => {
   const scrollRef = useRef(null);
   const scroll = (dir) => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 220, behavior: 'smooth' });
@@ -533,7 +539,18 @@ const RestCarrossel = ({ restaurantes, navigate }) => {
                     <Icon name="Store" size={28} className="text-[#FF441F]/40" />
                   </div>}
             </div>
-            <p className="text-[10px] sm:text-xs font-semibold text-[var(--texto-principal)] text-center line-clamp-2 leading-tight px-1">{r.name}</p>
+            <p
+              className="font-semibold text-center line-clamp-2 leading-tight px-1 rounded"
+              style={{
+                color: marca.rest_populares_nome_color,
+                fontSize: marca.rest_populares_nome_size,
+                backgroundColor: marca.rest_populares_nome_bg_color
+                  ? hexToRgba(marca.rest_populares_nome_bg_color, pct(marca.rest_populares_nome_bg_opacity))
+                  : undefined,
+              }}
+            >
+              {r.name}
+            </p>
           </motion.button>
         ))}
       </div>
@@ -1374,7 +1391,7 @@ const MenuCatalogProductBrowse = () => {
               <Icon name="Flame" size={15} className="text-[#FF441F]" />
               Populares
             </p>
-            <RestCarrossel restaurantes={restaurantes} navigate={navigate} />
+            <RestCarrossel restaurantes={restaurantes} navigate={navigate} marca={marca} />
           </div>
         </div>
       )}

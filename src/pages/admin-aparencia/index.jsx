@@ -115,12 +115,20 @@ const Card = ({ title, icon, children }) => (
   </div>
 );
 
+const ABAS = [
+  { id: 'cabecalho', label: 'Cabeçalho', icon: 'LayoutTemplate' },
+  { id: 'hero', label: 'Hero', icon: 'Image' },
+  { id: 'pagina', label: 'Página', icon: 'Palette' },
+  { id: 'rodape', label: 'Rodapé', icon: 'PanelBottom' },
+];
+
 const AdminAparencia = () => {
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   const [erro, setErro] = useState(null);
+  const [abaAtiva, setAbaAtiva] = useState('cabecalho');
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -166,6 +174,23 @@ const AdminAparencia = () => {
       <main className="p-6 max-w-2xl mx-auto">
         <form onSubmit={handleSalvar} className="space-y-6">
 
+          {/* Abas — scroll horizontal no mobile, centralizadas no desktop */}
+          <div className="flex gap-1 sm:gap-1.5 bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl w-full sm:w-fit sm:mx-auto overflow-x-auto scrollbar-none">
+            {ABAS.map((a) => (
+              <button key={a.id} type="button" onClick={() => setAbaAtiva(a.id)}
+                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+                  abaAtiva === a.id
+                    ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm'
+                    : 'text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
+                }`}>
+                <Icon name={a.icon} size={14} />
+                {a.label}
+              </button>
+            ))}
+          </div>
+
+          {abaAtiva === 'cabecalho' && (
+          <>
           {/* ── Cabeçalho ─────────────────────────────────────── */}
           <Card title="Cabeçalho" icon="LayoutTemplate">
             <TextField label="Nome da marca" value={form.nome_marca} onChange={(v) => set('nome_marca', v)} placeholder={APP_NAME} />
@@ -304,7 +329,11 @@ const AdminAparencia = () => {
               onOpacityChange={(v) => set('botoes_header_hover_bg_opacity', v)}
             />
           </Card>
+          </>
+          )}
 
+          {abaAtiva === 'hero' && (
+          <>
           {/* ── Hero ──────────────────────────────────────────── */}
           <Card title="Hero (banner principal)" icon="Image">
             <TextField label="Tagline" value={form.hero_tagline} onChange={(v) => set('hero_tagline', v)} placeholder="Delivery · Rápido · Confiável" />
@@ -407,7 +436,11 @@ const AdminAparencia = () => {
               onOpacityChange={(v) => set('stats_label_opacity', v)}
             />
           </Card>
+          </>
+          )}
 
+          {abaAtiva === 'pagina' && (
+          <>
           {/* ── Página ────────────────────────────────────────── */}
           <Card title="Página" icon="Palette">
             <div>
@@ -474,6 +507,34 @@ const AdminAparencia = () => {
             />
           </Card>
 
+          {/* ── Carrossel "Restaurantes populares" ───────────────── */}
+          <Card title="Nome no carrossel de restaurantes populares" icon="Store">
+            <p className="text-xs text-gray-400 dark:text-zinc-500 -mt-2">
+              Nome do restaurante exibido abaixo da logo redonda, na home do marketplace.
+            </p>
+            <ColorField
+              label="Cor da fonte"
+              value={form.rest_populares_nome_color}
+              onChange={(v) => set('rest_populares_nome_color', v)}
+            />
+            <NumberField
+              label="Tamanho da fonte (px)"
+              value={form.rest_populares_nome_size}
+              onChange={(v) => set('rest_populares_nome_size', v)}
+            />
+            <OptionalBgField
+              label="Incluir fundo atrás do nome"
+              value={form.rest_populares_nome_bg_color}
+              onChange={(v) => set('rest_populares_nome_bg_color', v)}
+              opacity={form.rest_populares_nome_bg_opacity}
+              onOpacityChange={(v) => set('rest_populares_nome_bg_opacity', v)}
+            />
+          </Card>
+          </>
+          )}
+
+          {abaAtiva === 'rodape' && (
+          <>
           {/* ── Rodapé ────────────────────────────────────────── */}
           <Card title="Rodapé" icon="PanelBottom">
             <ColorField label="Cor de fundo do rodapé" value={form.footer_bg_color} onChange={(v) => set('footer_bg_color', v)}
@@ -481,6 +542,8 @@ const AdminAparencia = () => {
             <ColorField label="Cor do texto (copyright)" value={form.footer_text_color} onChange={(v) => set('footer_text_color', v)} />
             <ColorField label="Cor dos links" value={form.footer_link_color} onChange={(v) => set('footer_link_color', v)} />
           </Card>
+          </>
+          )}
 
           {erro && (
             <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erro}</div>
