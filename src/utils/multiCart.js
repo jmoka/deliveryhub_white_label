@@ -66,6 +66,22 @@ export const cartCount = () => cartGet().reduce((s, i) => s + i.qty, 0);
 export const cartTotal = () => cartGet().reduce((s, i) => s + i.price * i.qty, 0);
 export const cartTotalFmt = () => fmt(cartTotal());
 
+// Snapshot do carrinho já "em checkout" (1 restaurante, metadados + itens) —
+// substitui o antigo sessionStorage 'pending_cart' (lido e apagado uma vez só,
+// perdendo tudo se a página de checkout fosse recarregada). Em localStorage,
+// reescrito a cada edição de item (remover/qtd/esvaziar), sobrevive a reload
+// e fechamento de aba; só é limpo quando o pedido é criado de verdade no
+// backend (ver ShoppingCartCheckout) ou quando o cliente esvazia o carrinho.
+const CHECKOUT_KEY = 'mcp_checkout_snapshot';
+
+export const checkoutSnapshotGet = () => {
+  try { return JSON.parse(localStorage.getItem(CHECKOUT_KEY) ?? 'null'); } catch { return null; }
+};
+
+export const checkoutSnapshotSet = (snapshot) => localStorage.setItem(CHECKOUT_KEY, JSON.stringify(snapshot));
+
+export const checkoutSnapshotClear = () => localStorage.removeItem(CHECKOUT_KEY);
+
 export const cartByRestaurant = () => {
   return cartGet().reduce((acc, item) => {
     const rid = item.restaurante_id;

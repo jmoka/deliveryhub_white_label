@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  updatePerfil, listarEnderecos, criarEndereco, verificarEndereco, selecionarEndereco,
+  updatePerfil, listarEnderecos, criarEndereco, verificarEndereco, selecionarEndereco, excluirEndereco,
 } from '../../services/perfilService';
 import { buscarCep } from '../../utils/viaCep';
 import { reverseGeocode } from '../../utils/reverseGeocode';
@@ -69,6 +69,7 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, somenteRetirada 
   const [origem, setOrigem] = useState(null); // null | 'gps' | 'outro'
   const [enderecos, setEnderecos] = useState([]);
   const [carregandoEnderecos, setCarregandoEnderecos] = useState(false);
+  const [excluindoId, setExcluindoId] = useState(null);
   const enderecosCarregadosRef = useRef(false);
   const [confirmandoSalvo, setConfirmandoSalvo] = useState(null); // endereço salvo em confirmação | null
   const [verificacao, setVerificacao] = useState(null); // { divergente, latSugerido, lngSugerido, distanciaKm } | null
@@ -112,6 +113,19 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, somenteRetirada 
       setEnderecos([]);
     } finally {
       setCarregandoEnderecos(false);
+    }
+  };
+
+  const excluir = async (item) => {
+    if (!window.confirm(`Excluir o endereço "${item.apelido || linhaEndereco(item.address_json) || 'salvo'}"?`)) return;
+    setExcluindoId(item.id);
+    try {
+      await excluirEndereco(item.id);
+      setEnderecos((prev) => prev.filter((e) => e.id !== item.id));
+    } catch {
+      // silencioso — se falhar, o endereço continua na lista pra tentar de novo
+    } finally {
+      setExcluindoId(null);
     }
   };
 
@@ -409,23 +423,30 @@ const StepEndereco = ({ perfil, restauranteId, permiteRetirada, somenteRetirada 
               {enderecos.map((item) => {
                 const alerta = item.semPino || item.textoDesatualizado;
                 return (
-                  <button key={item.id} type="button" onClick={() => escolherEnderecoSalvo(item)} disabled={salvando}
-                    className={`w-full text-left p-3 rounded-xl border transition-colors disabled:opacity-50 ${
+                  <div key={item.id} className={`relative rounded-xl border transition-colors ${
                       alerta ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20' : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]/40'
                     }`}>
-                    <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">
-                      {item.apelido || linhaEndereco(item.address_json) || 'Endereço salvo'}
-                    </p>
-                    {item.apelido && linhaEndereco(item.address_json) && (
-                      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{linhaEndereco(item.address_json)}</p>
-                    )}
-                    {alerta && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold mt-1 flex items-center gap-1">
-                        <Icon name="AlertTriangle" size={12} />
-                        {item.semPino ? 'Sem localização confirmada no mapa — vamos pedir pra confirmar' : 'Endereço foi editado — confirme a localização no mapa'}
+                    <button type="button" onClick={() => escolherEnderecoSalvo(item)} disabled={salvando || excluindoId === item.id}
+                      className="w-full text-left p-3 pr-11 disabled:opacity-50">
+                      <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">
+                        {item.apelido || linhaEndereco(item.address_json) || 'Endereço salvo'}
                       </p>
-                    )}
-                  </button>
+                      {item.apelido && linhaEndereco(item.address_json) && (
+                        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{linhaEndereco(item.address_json)}</p>
+                      )}
+                      {alerta && (
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold mt-1 flex items-center gap-1">
+                          <Icon name="AlertTriangle" size={12} />
+                          {item.semPino ? 'Sem localização confirmada no mapa — vamos pedir pra confirmar' : 'Endereço foi editado — confirme a localização no mapa'}
+                        </p>
+                      )}
+                    </button>
+                    <button type="button" onClick={() => excluir(item)} disabled={excluindoId === item.id}
+                      title="Excluir endereço"
+                      className="absolute top-2.5 right-2.5 p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50">
+                      <Icon name="Trash2" size={14} />
+                    </button>
+                  </div>
                 );
               })}
             </div>

@@ -8,7 +8,7 @@ import { apiPath } from '../../lib/apiUrl';
 import Icon from '../../components/AppIcon';
 import StepEndereco from './StepEndereco';
 import { getPerfil } from '../../services/perfilService';
-import { cartCount, cartByRestaurant, cartClear } from '../../utils/multiCart';
+import { cartCount, cartByRestaurant, cartClear, checkoutSnapshotGet, checkoutSnapshotSet, checkoutSnapshotClear } from '../../utils/multiCart';
 import MultiCartCheckout from './MultiCartCheckout';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
 import { usePagBankSdk } from '../../hooks/usePagBankSdk';
@@ -67,7 +67,7 @@ const ProgressBar = ({ etapa, total }) => (
   </div>
 );
 
-const LABELS_ETAPA = ['Endereço', 'Seus itens', 'Pagamento', 'Confirmar'];
+const LABELS_ETAPA = ['Seus itens', 'Endereço', 'Pagamento', 'Confirmar'];
 
 /* ── Tela de confirmação — pagamento com cartão/Stripe já aprova na hora
    (diferente do PIX, que espera o cliente pagar no app do banco), então
@@ -346,13 +346,29 @@ const StripeCardScreen = ({ clientSecret, total, onSuccess }) => (
 );
 
 /* ── Step 1: Itens ───────────────────────────────────────────────── */
-const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total }) => {
+const StepItens = ({ itens, setItens, onNext, onEsvaziar, subtotal, frete, excedente, total }) => {
   const remover = (id) => setItens((p) => p.filter((i) => i.id !== id));
   const altQtd = (id, delta) =>
     setItens((p) => p.map((i) => i.id === id ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Seu carrinho</h2>
+        {itens.length > 0 && (
+          <button onClick={onEsvaziar} className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-red-500 flex items-center gap-1">
+            <Icon name="Trash2" size={13} /> Esvaziar carrinho
+          </button>
+        )}
+      </div>
+      {itens.length === 0 && (
+        <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-8 text-center">
+          <Icon name="ShoppingCart" size={32} className="text-[#A1A1AA] mx-auto mb-2" />
+          <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Seu carrinho está vazio.</p>
+        </div>
+      )}
+
+      {itens.length > 0 && (
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
         {itens.map((item) => (
           <div key={item.id} className="flex items-center gap-3">
@@ -380,6 +396,7 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total 
           </div>
         ))}
       </div>
+      )}
 
       {/* Subtotal + frete + total */}
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] px-4 py-3 space-y-2">
@@ -410,8 +427,8 @@ const StepItens = ({ itens, setItens, onNext, subtotal, frete, excedente, total 
         </div>
       </div>
 
-      <button onClick={onNext}
-        className="w-full py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] transition-colors">
+      <button onClick={onNext} disabled={itens.length === 0}
+        className="w-full py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
         Continuar
       </button>
     </motion.div>
@@ -794,18 +811,34 @@ const SingleCartCheckout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Prioridade: state de navegação (veio agora do "Finalizar pedido" da loja)
+  // > snapshot persistido em localStorage (sobrevive a reload/fechar aba —
+  // ver checkoutSnapshotSet/Get em multiCart.js). Ao entrar via location.state,
+  // já grava o snapshot na hora — se não gravasse, um F5 logo em seguida
+  // perderia o carrinho inteiro (location.state some no reload do navegador).
   const [restored] = useState(() => {
-    if (location.state?.carrinho) return location.state;
-    try {
-      const s = sessionStorage.getItem('pending_cart');
-      if (s) { sessionStorage.removeItem('pending_cart'); return JSON.parse(s); }
-    } catch {}
-    return {};
+    if (location.state?.carrinho) {
+      checkoutSnapshotSet(location.state);
+      return location.state;
+    }
+    return checkoutSnapshotGet() ?? {};
   });
 
-  const { carrinho = [], restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, somenteRetirada = false, stripeDisponivel = false, pagbankCartaoDisponivel = false } = restored;
+  const { restauranteId, restauranteSlug, freteMotoboy = 0, pagamentoManual = false, chavePix = null, restauranteNome = null, permiteRetiradaBalcao = false, somenteRetirada = false, stripeDisponivel = false, pagbankCartaoDisponivel = false } = restored;
 
-  const [itens, setItens] = useState(carrinho);
+  const [itens, setItens] = useState(restored.carrinho ?? []);
+
+  // Reescreve o snapshot a cada mudança nos itens (remover, +/- qtd, esvaziar)
+  // — mesma lógica de "sempre persistir no próprio evento" já usada em outras
+  // telas do projeto (cardápio impresso), evita perder edição num reload.
+  useEffect(() => {
+    if (!restauranteId) return;
+    checkoutSnapshotSet({
+      carrinho: itens,
+      restauranteId, restauranteSlug, freteMotoboy, pagamentoManual, chavePix, restauranteNome,
+      permiteRetiradaBalcao, somenteRetirada, stripeDisponivel, pagbankCartaoDisponivel,
+    });
+  }, [itens, restauranteId, restauranteSlug, freteMotoboy, pagamentoManual, chavePix, restauranteNome, permiteRetiradaBalcao, somenteRetirada, stripeDisponivel, pagbankCartaoDisponivel]);
   const [perfil, setPerfil] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpf, setCpf] = useState('');
@@ -818,7 +851,7 @@ const SingleCartCheckout = () => {
   const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
   const [stripeClientSecret, setStripeClientSecret] = useState(null);
   const [orderId, setOrderId] = useState(null);
-  const [etapa, setEtapa] = useState(0); // 0=endereço 1=itens 2=pagamento 3=confirmar
+  const [etapa, setEtapa] = useState(0); // 0=itens 1=endereço 2=pagamento 3=confirmar
   const [excedente, setExcedente] = useState(null); // { distanciaKm, valorExcedente } | null
   const [calculandoDistancia, setCalculandoDistancia] = useState(false);
   const [retirada, setRetirada] = useState(somenteRetirada); // true = retirar no balcão, sem frete
@@ -938,6 +971,10 @@ const SingleCartCheckout = () => {
 
       const newOrderId = pedido.pedido?.id ?? pedido.id;
       setOrderId(newOrderId);
+      // Pedido já existe no backend — daqui pra frente é acompanhamento de
+      // pagamento/pedido, não mais "carrinho" (mesmo que o pagamento ainda não
+      // tenha sido confirmado, ex: aguardando Pix).
+      checkoutSnapshotClear();
 
       if (pagamentoManual && paymentMethod === 'pix' && chavePix) {
         // Modo manual: QR gerado localmente com a chave PIX cadastrada, sem chamar a
@@ -1126,19 +1163,6 @@ const SingleCartCheckout = () => {
       <main className="p-4 max-w-lg mx-auto">
         <AnimatePresence mode="wait">
           {etapa === 0 && (
-            <StepEndereco
-              key="endereco"
-              perfil={perfil}
-              restauranteId={restauranteId}
-              permiteRetirada={permiteRetiradaBalcao}
-              somenteRetirada={somenteRetirada}
-              retirada={retirada}
-              setRetirada={setRetirada}
-              onNext={async (updated) => { setPerfil(updated); if (!retirada) await buscarEstimativaExcedente(); irParaStep(1); }}
-              onBack={() => navigate(restauranteSlug ? `/r/${restauranteSlug}` : -1)}
-            />
-          )}
-          {etapa === 1 && (
             <StepItens
               key="itens"
               itens={itens}
@@ -1147,7 +1171,25 @@ const SingleCartCheckout = () => {
               frete={frete}
               excedente={excedente}
               total={total}
-              onNext={() => irParaStep(2)}
+              onNext={() => irParaStep(1)}
+              onEsvaziar={() => {
+                setItens([]);
+                checkoutSnapshotClear();
+                navigate('/menu-catalog-product-browse');
+              }}
+            />
+          )}
+          {etapa === 1 && (
+            <StepEndereco
+              key="endereco"
+              perfil={perfil}
+              restauranteId={restauranteId}
+              permiteRetirada={permiteRetiradaBalcao}
+              somenteRetirada={somenteRetirada}
+              retirada={retirada}
+              setRetirada={setRetirada}
+              onNext={async (updated) => { setPerfil(updated); if (!retirada) await buscarEstimativaExcedente(); irParaStep(2); }}
+              onBack={() => irParaStep(0)}
             />
           )}
           {etapa === 2 && (
@@ -1215,7 +1257,7 @@ const ShoppingCartCheckout = () => {
       image_url: i.image_url ?? null,
       qtd: i.qty,
     }));
-    sessionStorage.setItem('pending_cart', JSON.stringify({
+    checkoutSnapshotSet({
       carrinho,
       restauranteId: grupo.restaurante_id,
       restauranteSlug: grupo.slug ?? '',
@@ -1227,7 +1269,7 @@ const ShoppingCartCheckout = () => {
       somenteRetirada: !!grupo.somente_retirada,
       stripeDisponivel: !!grupo.stripe_disponivel,
       pagbankCartaoDisponivel: !!grupo.pagbank_cartao_disponivel,
-    }));
+    });
     cartClear();
     return <SingleCartCheckout />;
   }
