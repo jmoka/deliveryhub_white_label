@@ -516,20 +516,47 @@ const PedidoDetalhe = ({
       <Section>
         <SectionTitle icon="ShoppingBag" label={`Itens do pedido (${itens.length})`} />
         <div className="p-4 space-y-2">
-          {itens.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="w-6 h-6 bg-[#FF441F]/10 text-[#FF441F] font-black text-xs rounded-lg flex items-center justify-center flex-shrink-0">
-                  {item.quantity}
-                </span>
-                <p className="text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{item.product_name ?? `Produto #${item.product_id}`}</p>
+          {itens.map((item) => {
+            // unit_price já vem com os adicionais somados (preço realmente cobrado) — separa
+            // de volta a contribuição só do produto, pra cada adicional aparecer com seu próprio
+            // valor em vez de virar um total só que esconde promoção/composição do preço.
+            const somaAdicionais = item.adicionais?.reduce((acc, a) => acc + a.price, 0) ?? 0;
+            const precoBase = item.unit_price - somaAdicionais;
+            return (
+              <div key={item.id} className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <span className="w-6 h-6 bg-[#FF441F]/10 text-[#FF441F] font-black text-xs rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {item.quantity}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm text-[#18181B] dark:text-[#F4F4F5] truncate">{item.product_name ?? `Produto #${item.product_id}`}</p>
+                    {item.adicionais?.length > 0 && (
+                      <div className="mt-0.5 space-y-0.5">
+                        {item.adicionais.map((a) => (
+                          <div key={a.id} className="flex items-center justify-between gap-3 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                            <span>+ {a.name}</span>
+                            <span className="flex-shrink-0">{fmt(a.price * item.quantity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(precoBase * item.quantity)}</p>
+                  {item.quantity > 1 && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{fmt(precoBase)} cada</p>}
+                </div>
               </div>
-              <div className="flex-shrink-0 text-right">
-                <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(item.unit_price * item.quantity)}</p>
-                {item.quantity > 1 && <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.unit_price)} cada</p>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
+          {/* Subtotal — soma de todos os itens (produto + adicionais), antes do frete. Deixa
+              claro o que é custo de produto vs. o que é frete/excedente logo abaixo. */}
+          <div className="flex items-center justify-between pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-2">
+            <span className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Subtotal ({itens.length} {itens.length === 1 ? 'item' : 'itens'})</span>
+            <span className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">
+              {fmt(itens.reduce((acc, i) => acc + i.unit_price * i.quantity, 0))}
+            </span>
+          </div>
           {/* Frete motoboy */}
           <div className="flex items-center justify-between pt-2 border-t border-[#E4E4E7] dark:border-[#3F3F46] mt-2">
             <div className="flex items-center gap-1.5">

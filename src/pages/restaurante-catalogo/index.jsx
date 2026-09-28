@@ -56,6 +56,9 @@ const ProdutoCard = ({ produto, onAdicionar, onAbrirAdicionais, qtd, restaurante
             {produto.tags?.includes('mais_vendido') && (
               <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded font-bold flex-shrink-0">🔥 Top</span>
             )}
+            {temAdicionais && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-[#FF441F] text-white rounded font-bold flex-shrink-0 animate-pulse">+ Adicionais</span>
+            )}
           </div>
           {produto.description && (
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 line-clamp-2">{produto.description}</p>

@@ -239,12 +239,27 @@ const OrderTrackingStatus = () => {
               {pedido.itens.map((item) => {
                 const enviadoEm = item.enviado_em ? new Date(item.enviado_em).getTime() : null;
                 const emPreparo = enviadoEm && item.status !== 'pronto';
+                // unit_price já vem com os adicionais somados (preço realmente cobrado) —
+                // pra mostrar só a contribuição do produto em si na linha principal, precisa
+                // descontar de volta a soma dos adicionais (cada um listado com seu valor logo abaixo).
+                const somaAdicionais = item.adicionais?.reduce((acc, a) => acc + a.price, 0) ?? 0;
+                const precoBase = item.unit_price - somaAdicionais;
                 return (
                   <div key={item.id}>
                     <div className="flex justify-between text-sm text-gray-600 dark:text-[#A1A1AA]">
                       <span>{item.nome ?? item.product_name ?? `Produto #${item.product_id}`} × {item.quantity}</span>
-                      <span>{fmt(item.unit_price * item.quantity)}</span>
+                      <span>{fmt(precoBase * item.quantity)}</span>
                     </div>
+                    {item.adicionais?.length > 0 && (
+                      <div className="pl-3 space-y-0.5 mt-0.5">
+                        {item.adicionais.map((a) => (
+                          <div key={a.id} className="flex justify-between text-xs text-gray-500 dark:text-[#A1A1AA]">
+                            <span>+ {a.name}</span>
+                            <span>{fmt(a.price * item.quantity)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {emPreparo && (
                       <p className="text-xs text-orange-500 dark:text-orange-400 font-mono flex items-center gap-1 mt-0.5">
                         <Icon name="Clock" size={11} /> preparando há {formatDuracao(now - enviadoEm)}

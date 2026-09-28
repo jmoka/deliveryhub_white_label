@@ -59,7 +59,7 @@ export const printFichaMotoboy = (pedido, itens, cliente, restauranteNome) => {
 ${cliente?.phone_e164 ? `<div>${esc(cliente.phone_e164)}</div>` : ''}
 <div class="addr" style="margin-top:4px">${rua ? `<div>${esc(rua)}</div>` : ''}${compl ? `<div>${esc(compl)}</div>` : ''}${cidade ? `<div>${esc(cidade)}</div>` : ''}${ref ? `<div style="font-weight:bold">Ref: ${esc(ref)}</div>` : ''}</div>
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>${i.adicionais?.length ? `<div style="font-size:11px;padding-left:30px;margin-top:-2px">+ ${i.adicionais.map((a) => esc(a.name)).join(', ')}</div>` : ''}`).join('')}
 <hr/>
 <div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
 <div class="linha"><span>Frete</span><span>${fmt(pedido.frete_cobrado)}</span></div>
@@ -124,7 +124,7 @@ export const printFichaRetirada = (pedido, itens, cliente, restauranteNome) => {
 <div class="bold">${esc(cliente?.name ?? 'Cliente')}</div>
 ${cliente?.phone_e164 ? `<div>${esc(cliente.phone_e164)}</div>` : ''}
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `#${i.product_id}`)}</span></div>${i.adicionais?.length ? `<div style="font-size:11px;padding-left:30px;margin-top:-2px">+ ${i.adicionais.map((a) => esc(a.name)).join(', ')}</div>` : ''}`).join('')}
 <hr/>
 <div class="linha"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
 <div class="linha"><span>Retirada no balcão</span><span>Grátis</span></div>
@@ -302,6 +302,7 @@ body{font-family:'Courier New',monospace;font-size:14px;padding:12px;color:#000;
 hr{border:none;border-top:1px dashed #000;margin:8px 0}
 .item{display:flex;gap:8px;padding:3px 0;font-size:15px}
 .qty{font-weight:900;min-width:28px}
+.adicionais{font-size:13px;padding-left:36px;margin-top:-2px}
 .foot{font-size:11px;text-align:center;margin-top:6px}
 #barcode{display:block;margin:8px auto 4px;max-width:260px}
 .espaco-corte{height:${getEspacoCorte()}px}
@@ -314,7 +315,7 @@ hr{border:none;border-top:1px dashed #000;margin:8px 0}
 <div class="center" style="font-size:13px">${hora}</div>
 ${clienteNome ? `<div class="center" style="font-size:12px;margin-top:2px;font-weight:bold">${esc(clienteNome)}</div>` : ''}
 <hr/>
-${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `Produto #${i.product_id}`)}</span></div>`).join('')}
+${itens.map((i) => `<div class="item"><span class="qty">${i.quantity}x</span><span>${esc(i.product_name ?? `Produto #${i.product_id}`)}</span></div>${i.adicionais?.length ? `<div class="adicionais">+ ${i.adicionais.map((a) => esc(a.name)).join(', ')}</div>` : ''}`).join('')}
 <hr/>
 <div class="center" style="font-size:13px">Pgto: <b>${pgto}</b>${isCash ? ' &nbsp;⚠ COBRAR' : ''}</div>
 <hr/>
@@ -565,6 +566,7 @@ ${comanda?.cliente_mesa_telefone ? `<div class="center" style="font-size:18px">W
 ${itens.map((i, idx) => `
 <div class="item-nome">${esc(i.product_name)}</div>
 <div class="item-qtd">Qtd: ${i.quantity}</div>
+${i.adicionais?.length ? `<div class="item-obs">+ ${i.adicionais.map((a) => esc(a.name)).join(', ')}</div>` : ''}
 ${i.description ? `<div class="item-desc">Descrição: ${esc(i.description)}</div>` : ''}
 ${i.observacao ? `<div class="item-obs">Obs: ${esc(i.observacao)}</div>` : ''}
 ${idx < itens.length - 1 ? '<hr class="separador"/>' : ''}

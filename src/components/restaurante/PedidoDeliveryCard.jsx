@@ -87,7 +87,18 @@ const PedidoDeliveryCard = ({ pedido, itens, posicao, now, bucket, onIniciarPrep
               <span className="w-7 h-7 bg-[#FF441F] text-white font-black text-sm rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                 {item.quantity}
               </span>
-              <p className="text-sm font-semibold text-[#18181B] leading-tight">{item.product_name}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#18181B] leading-tight">{item.product_name}</p>
+                {item.adicionais?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {item.adicionais.map((a) => (
+                      <span key={a.id} className="text-[11px] font-bold text-[#FF441F] bg-[#FF441F]/10 border border-[#FF441F]/30 rounded-md px-1.5 py-0.5 leading-none">
+                        + {a.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

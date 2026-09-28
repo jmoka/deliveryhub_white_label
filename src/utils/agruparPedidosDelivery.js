@@ -38,7 +38,7 @@ export function montarFilaAgrupadaDelivery(itensDoBucket, ordenarPor = 'enviado_
       if (tsEnvio < grupo.tsEnvio) { grupo.tsEnvio = tsEnvio; grupo.pedido.created_at = item.enviado_em; }
       if (tsPronto > grupo.tsPronto) grupo.tsPronto = tsPronto;
     }
-    grupo.itens.push({ id: item.id, quantity: item.quantity, product_name: item.product_name });
+    grupo.itens.push({ id: item.id, quantity: item.quantity, product_name: item.product_name, adicionais: item.adicionais });
     grupo.itemIds.push(item.id);
   }
   const todas = [...entradas, ...grupos.values()];
