@@ -416,6 +416,15 @@ export const atualizarComissaoGarcom = (id, data) =>
 export const removerComissaoGarcom = (id) =>
   apiFetch(`/garcons/comissoes/${id}`, { method: 'DELETE' });
 
+// Adicionais — lista simples por restaurante, reaproveitada em vários produtos
+export const listarAdicionais = () => apiFetch('/adicionais');
+export const criarAdicional = (data) =>
+  apiFetch('/adicionais', { method: 'POST', body: JSON.stringify(data) });
+export const editarAdicional = (id, data) =>
+  apiFetch(`/adicionais/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const removerAdicional = (id) =>
+  apiFetch(`/adicionais/${id}`, { method: 'DELETE' });
+
 // Módulo Salão — impressoras por setor
 export const listarImpressoras = () => apiFetch('/impressoras');
 export const criarImpressora = (data) =>

@@ -4,6 +4,7 @@ import {
   getMeusProdutos, criarProduto, editarProduto, deletarProduto, toggleProduto,
   getMinhasCategorias, getCategoriasGlobais, criarCategoria, deletarCategoria, editarCategoria,
   getTagsPublicas, listarImpressoras, getAparencia, updateAparencia, importarProdutos,
+  listarAdicionais,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import ImageUpload from '../../components/ui/ImageUpload';
@@ -12,7 +13,7 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
-const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '', frete_embutido: false, frete_embutido_tipo: 'fixo', frete_embutido_valor_fixo: '', frete_embutido_percentual: '', frete_embutido_valor_km: '' };
+const EMPTY_FORM = { name: '', description: '', price: '', preco_promo: '', image_url: '', category_id: '', grupo_id: '', tags: [], destaque: false, impressora_id: '', quantidade_estoque: '', preco_custo: '', quantidade_minima: '', frete_embutido: false, frete_embutido_tipo: 'fixo', frete_embutido_valor_fixo: '', frete_embutido_percentual: '', frete_embutido_valor_km: '', adicionais_ids: [] };
 
 const JSON_FORMATO_EXEMPLO = JSON.stringify([
   {
@@ -48,6 +49,7 @@ const RestauranteProdutos = () => {
   const [categoriasGlobais, setCategoriasGlobais] = useState([]);
   const [tagsDisponiveis, setTagsDisponiveis] = useState([]); // tags não-auto do admin
   const [impressoras, setImpressoras] = useState([]);
+  const [adicionaisDisponiveis, setAdicionaisDisponiveis] = useState([]);
   const { moduloDelivery, moduloSalao, moduloGdoor, carregado, permiteFreteEmbutido } = useModulosEmpresa();
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
@@ -98,6 +100,7 @@ const RestauranteProdutos = () => {
   // Impressora do produto roteia pedido de delivery pro KDS certo (Cozinha/Bar/pontos
   // de preparo) — não é exclusivo de Salão, então busca sempre, independente do módulo.
   useEffect(() => { listarImpressoras().then(setImpressoras).catch(() => {}); }, []);
+  useEffect(() => { listarAdicionais().then((r) => setAdicionaisDisponiveis(r.adicionais ?? [])).catch(() => {}); }, []);
 
   // Prestador 100% serviço não tem produto — a aba só faz sentido com algum
   // desses três módulos ativos (mesmo critério do link na nav, ver
@@ -146,6 +149,7 @@ const RestauranteProdutos = () => {
       frete_embutido_valor_fixo: p.frete_embutido_valor_fixo != null ? String(p.frete_embutido_valor_fixo) : '',
       frete_embutido_percentual: p.frete_embutido_percentual != null ? String(p.frete_embutido_percentual) : '',
       frete_embutido_valor_km: p.frete_embutido_valor_km != null ? String(p.frete_embutido_valor_km) : '',
+      adicionais_ids: Array.isArray(p.adicionais_ids) ? p.adicionais_ids : [],
     });
     setShowModal(true);
   };
@@ -336,6 +340,13 @@ const RestauranteProdutos = () => {
     }));
   };
 
+  const toggleAdicional = (id) => {
+    setForm((f) => ({
+      ...f,
+      adicionais_ids: f.adicionais_ids.includes(id) ? f.adicionais_ids.filter((a) => a !== id) : [...f.adicionais_ids, id],
+    }));
+  };
+
   const handleToggle = async (produto) => {
     try {
       const atualizado = await toggleProduto(produto.id, !produto.is_active);
@@ -385,6 +396,7 @@ const RestauranteProdutos = () => {
       quantidade_estoque: form.quantidade_estoque !== '' ? parseInt(form.quantidade_estoque) : 0,
       preco_custo: form.preco_custo !== '' ? parseFloat(form.preco_custo) : 0,
       quantidade_minima: form.quantidade_minima !== '' ? parseInt(form.quantidade_minima) : 0,
+      adicionais_ids: form.adicionais_ids,
     };
     if (permiteFreteEmbutido) {
       payload.frete_embutido = form.frete_embutido;
@@ -1122,6 +1134,33 @@ const RestauranteProdutos = () => {
                         }`}
                       >
                         {t.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Adicionais — multi-seleção (carregados da API) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Adicionais (pode marcar vários)</label>
+                {adicionaisDisponiveis.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">
+                    Nenhum adicional cadastrado. Crie em <a href="/restaurante/adicionais" className="text-[#FF441F] hover:underline">Adicionais</a> no menu.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {adicionaisDisponiveis.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => toggleAdicional(a.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                          form.adicionais_ids.includes(a.id)
+                            ? 'bg-[#FF441F] text-white border-[#FF441F]'
+                            : 'bg-white dark:bg-[#27272A] text-[#71717A] dark:text-[#A1A1AA] border-[#E4E4E7] dark:border-[#3F3F46] hover:border-[#FF441F]'
+                        }`}
+                      >
+                        {a.name} {fmt(a.price)}
                       </button>
                     ))}
                   </div>

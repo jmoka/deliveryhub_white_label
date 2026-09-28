@@ -62,6 +62,7 @@ import GarcomPortal from './pages/garcom-portal';
 import RestauranteGarcons from './pages/restaurante-garcons';
 import RestauranteMesas from './pages/restaurante-mesas';
 import RestauranteImpressoras from './pages/restaurante-impressoras';
+import RestauranteAdicionais from './pages/restaurante-adicionais';
 import RestauranteSalao from './pages/restaurante-salao';
 import RestauranteVendaBalcao from './pages/restaurante-venda-balcao';
 import RestaurantePontosPreparo from './pages/restaurante-pontos-preparo';
@@ -160,6 +161,7 @@ const Routes = () => {
         <Route path="/restaurante/garcons" element={<RestauranteGuard><RestauranteGarcons /></RestauranteGuard>} />
         <Route path="/restaurante/mesas" element={<RestauranteGuard><RestauranteMesas /></RestauranteGuard>} />
         <Route path="/restaurante/impressoras" element={<RestauranteGuard><RestauranteImpressoras /></RestauranteGuard>} />
+        <Route path="/restaurante/adicionais" element={<RestauranteGuard><RestauranteAdicionais /></RestauranteGuard>} />
         <Route path="/restaurante/kds" element={<RestauranteKdsSetor />} />
 
         {/* Perfil do cliente */}

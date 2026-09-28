@@ -15,6 +15,7 @@ const BASE_LINKS = [
 const COMPARTILHADO_LINKS = [
   { label: 'Cozinha', path: '/restaurante/cozinha', icon: 'ChefHat' },
   { label: 'Combos', path: '/restaurante/combos', icon: 'Boxes' },
+  { label: 'Adicionais', path: '/restaurante/adicionais', icon: 'ListPlus' },
   { label: 'Pedidos', path: '/restaurante/pedidos', icon: 'ClipboardList' },
 ];
 
@@ -83,7 +84,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServic
     ...(temAlgumModulo ? [IMPRESSORAS_LINK] : []), // Impressoras — Delivery e Salão usam
     ...(moduloSalao ? COPA_LINKS : []), // Produção, Bar
     ...(temProdutos ? BASE_LINKS.slice(2, 3) : []), // Produtos — só faz sentido com Delivery, Salão ou GDOOR
-    ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(1) : []), // Combos, Pedidos
+    ...(temAlgumModulo ? COMPARTILHADO_LINKS.slice(1) : []), // Combos, Adicionais, Pedidos
     ...(moduloDelivery ? deliveryLinks.slice(1) : []), // Entregas, Motoboys/Entregadores
     ...BASE_LINKS.slice(3, 7), // Clientes, Financeiro, Caixa, Designer
     ...(temProdutos ? BASE_LINKS.slice(7, 8) : []), // Cardápio Digital — idem Produtos

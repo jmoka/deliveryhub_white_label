@@ -346,10 +346,14 @@ const StripeCardScreen = ({ clientSecret, total, onSuccess }) => (
 );
 
 /* ── Step 1: Itens ───────────────────────────────────────────────── */
+// Duas linhas podem ter o mesmo produto com adicionais diferentes (preço/composição
+// distintos) — precisa da assinatura dos adicionais pra distinguir, não só o id.
+const linhaChave = (item) => `${item.id}-${item.adicionais?.map((a) => a.id).sort((a, b) => a - b).join(',') ?? ''}`;
+
 const StepItens = ({ itens, setItens, onNext, onEsvaziar, subtotal, frete, excedente, total }) => {
-  const remover = (id) => setItens((p) => p.filter((i) => i.id !== id));
-  const altQtd = (id, delta) =>
-    setItens((p) => p.map((i) => i.id === id ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
+  const remover = (chave) => setItens((p) => p.filter((i) => linhaChave(i) !== chave));
+  const altQtd = (chave, delta) =>
+    setItens((p) => p.map((i) => linhaChave(i) === chave ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
@@ -370,31 +374,39 @@ const StepItens = ({ itens, setItens, onNext, onEsvaziar, subtotal, frete, exced
 
       {itens.length > 0 && (
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
-        {itens.map((item) => (
-          <div key={item.id} className="flex items-center gap-3">
+        {itens.map((item) => {
+          const chave = linhaChave(item);
+          return (
+          <div key={chave} className="flex items-center gap-3">
             {item.image_url && (
               <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{item.name}</p>
+              {item.adicionais?.length > 0 && (
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">
+                  + {item.adicionais.map((a) => a.name).join(', ')}
+                </p>
+              )}
               <p className="text-xs text-[#FF441F] font-medium">{fmt(item.price)}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => altQtd(item.id, -1)}
+              <button onClick={() => altQtd(chave, -1)}
                 className="w-7 h-7 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center hover:bg-[#E4E4E7] dark:hover:bg-[#52525B] text-base">
                 −
               </button>
               <span className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] w-4 text-center">{item.qtd}</span>
-              <button onClick={() => altQtd(item.id, +1)}
+              <button onClick={() => altQtd(chave, +1)}
                 className="w-7 h-7 bg-[#FF441F] rounded-full font-bold text-white flex items-center justify-center hover:bg-[#E63A19] text-base">
                 +
               </button>
-              <button onClick={() => remover(item.id)} className="ml-1 p-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-red-500">
+              <button onClick={() => remover(chave)} className="ml-1 p-1 text-[#71717A] dark:text-[#A1A1AA] hover:text-red-500">
                 <Icon name="Trash2" size={14} />
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       )}
 
@@ -739,8 +751,13 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, exced
         <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-3">Resumo do pedido</p>
         <div className="space-y-2">
           {itens.map((i) => (
-            <div key={i.id} className="flex justify-between text-sm">
-              <span className="text-[#71717A] dark:text-[#A1A1AA]">{i.name} × {i.qtd}</span>
+            <div key={linhaChave(i)} className="flex justify-between text-sm">
+              <span className="text-[#71717A] dark:text-[#A1A1AA]">
+                {i.name} × {i.qtd}
+                {i.adicionais?.length > 0 && (
+                  <span className="block text-xs">+ {i.adicionais.map((a) => a.name).join(', ')}</span>
+                )}
+              </span>
               <span className="text-[#27272A] dark:text-[#F4F4F5] font-medium">{fmt(i.price * i.qtd)}</span>
             </div>
           ))}
@@ -879,7 +896,9 @@ const SingleCartCheckout = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           restaurant_id: restauranteId,
-          itens: itens.map((i) => (i.tipo === 'combo' ? { combo_id: i.id, quantity: i.qtd } : { product_id: i.id, quantity: i.qtd })),
+          itens: itens.map((i) => (i.tipo === 'combo'
+            ? { combo_id: i.id, quantity: i.qtd }
+            : { product_id: i.id, quantity: i.qtd, adicionais_ids: i.adicionais?.map((a) => a.id) })),
         }),
       });
       if (!res.ok) return;
@@ -962,7 +981,9 @@ const SingleCartCheckout = () => {
           restaurant_id: restauranteId,
           payment_method: paymentMethod,
           troco_para: paymentMethod === 'cash' && trocoParsed > 0 ? trocoParsed : undefined,
-          itens: itens.map((i) => (i.tipo === 'combo' ? { combo_id: i.id, quantity: i.qtd } : { product_id: i.id, quantity: i.qtd })),
+          itens: itens.map((i) => (i.tipo === 'combo'
+            ? { combo_id: i.id, quantity: i.qtd }
+            : { product_id: i.id, quantity: i.qtd, adicionais_ids: i.adicionais?.map((a) => a.id) })),
           retirada_balcao: retirada,
         }),
       });

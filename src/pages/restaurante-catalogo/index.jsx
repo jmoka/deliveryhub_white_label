@@ -11,6 +11,13 @@ import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
+// Combo e produto têm sequências de id independentes — pode colidir (combo #5 e
+// produto #5). Adicionais diferentes no mesmo produto viram linhas separadas no
+// carrinho (preço/composição diferentes), por isso a assinatura entra na chave.
+const assinaturaAdicionais = (adicionais) =>
+  adicionais?.length ? [...adicionais].map((a) => a.id).sort((a, b) => a - b).join(',') : '';
+const chaveCarrinho = (item) => `${item.tipo === 'combo' ? 'combo' : 'produto'}-${item.id}-${assinaturaAdicionais(item.adicionais)}`;
+
 /* ── Skeleton ────────────────────────────────────────────────────── */
 const SkeletonProduto = () => (
   <div className="flex gap-4 p-4 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] animate-pulse">
@@ -25,10 +32,11 @@ const SkeletonProduto = () => (
 );
 
 /* ── Card produto ────────────────────────────────────────────────── */
-const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVitrine }) => {
+const ProdutoCard = ({ produto, onAdicionar, onAbrirAdicionais, qtd, restauranteFechado, somenteVitrine }) => {
   const temPromo = produto.tags?.includes('promo') && produto.preco_promo > 0;
   const indisponivel = produto.disponivel === false || restauranteFechado;
   const precoFinal = temPromo ? produto.preco_promo : produto.price;
+  const temAdicionais = produto.adicionais?.length > 0;
 
   return (
     <motion.div
@@ -65,7 +73,12 @@ const ProdutoCard = ({ produto, onAdicionar, qtd, restauranteFechado, somenteVit
 
           {somenteVitrine ? null : !indisponivel ? (
             <div className="flex items-center gap-2 flex-shrink-0">
-              {qtd === 0 ? (
+              {temAdicionais ? (
+                <motion.button whileTap={{ scale: 0.92 }} onClick={() => onAbrirAdicionais(produto, precoFinal)}
+                  className="px-3.5 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] transition-colors">
+                  Adicionar
+                </motion.button>
+              ) : qtd === 0 ? (
                 <motion.button whileTap={{ scale: 0.92 }} onClick={() => onAdicionar(produto, precoFinal)}
                   className="px-3.5 py-1.5 bg-[#FF441F] text-white text-xs font-bold rounded-xl hover:bg-[#E63A19] transition-colors">
                   Adicionar
@@ -138,6 +151,81 @@ const ServicoCard = ({ servico, onSolicitar }) => (
     )}
   </div>
 );
+
+/* ── Modal escolher adicionais (produto com extras cadastrados) ────── */
+const AdicionaisModal = ({ produto, precoBase, onFechar, onConfirmar }) => {
+  const [selecionados, setSelecionados] = useState([]);
+  const [qtd, setQtd] = useState(1);
+
+  const toggle = (adicional) => {
+    setSelecionados((prev) =>
+      prev.some((a) => a.id === adicional.id) ? prev.filter((a) => a.id !== adicional.id) : [...prev, adicional],
+    );
+  };
+
+  const precoUnitario = precoBase + selecionados.reduce((acc, a) => acc + a.price, 0);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end lg:items-center justify-center bg-black/40" onClick={onFechar}>
+      <motion.div
+        initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full lg:max-w-md bg-white dark:bg-[#27272A] rounded-t-3xl lg:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col"
+      >
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
+          <div className="min-w-0">
+            <p className="font-bold text-[#18181B] dark:text-[#F4F4F5] text-base truncate">{produto.name}</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(precoBase)}</p>
+          </div>
+          <button onClick={onFechar} className="p-1.5 hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46] rounded-lg flex-shrink-0">
+            <Icon name="X" size={18} className="text-[#71717A] dark:text-[#A1A1AA]" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <p className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wide mb-2">Adicionais</p>
+          <div className="space-y-2">
+            {produto.adicionais.map((a) => {
+              const marcado = selecionados.some((s) => s.id === a.id);
+              return (
+                <label key={a.id}
+                  className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${
+                    marcado ? 'border-[#FF441F] bg-[#FF441F]/5' : 'border-[#E4E4E7] dark:border-[#3F3F46] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input type="checkbox" checked={marcado} onChange={() => toggle(a)}
+                      className="w-4 h-4 accent-[#FF441F]" />
+                    <span className="text-sm text-[#18181B] dark:text-[#F4F4F5]">{a.name}</span>
+                  </div>
+                  <span className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">+{fmt(a.price)}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between px-5 py-4 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
+          <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">Quantidade</p>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setQtd((q) => Math.max(1, q - 1))} disabled={qtd <= 1}
+              className="w-8 h-8 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full font-bold text-[#27272A] dark:text-[#F4F4F5] flex items-center justify-center disabled:opacity-40">−</button>
+            <span className="text-base font-bold text-[#18181B] dark:text-[#F4F4F5] w-5 text-center">{qtd}</span>
+            <button onClick={() => setQtd((q) => q + 1)}
+              className="w-8 h-8 bg-[#FF441F] rounded-full font-bold text-white flex items-center justify-center">+</button>
+          </div>
+        </div>
+
+        <div className="p-5 border-t border-[#E4E4E7] dark:border-[#3F3F46] flex-shrink-0">
+          <motion.button whileTap={{ scale: 0.98 }} onClick={() => onConfirmar(selecionados, qtd)}
+            className="w-full py-3.5 bg-[#FF441F] text-white font-bold rounded-2xl hover:bg-[#E63A19] transition-colors text-sm shadow-lg shadow-[#FF441F]/20">
+            Adicionar · {fmt(precoUnitario * qtd)}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 /* ── Modal solicitar orçamento (serviço) ──────────────────────────── */
 const SolicitarOrcamentoModal = ({ slug, servico, onFechar }) => {
@@ -295,13 +383,18 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         <AnimatePresence>
           {carrinho.map((item) => (
-            <motion.div key={item.id} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}
+            <motion.div key={chaveCarrinho(item)} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}
               className="flex items-center gap-3">
               {item.image_url && (
                 <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.name}</p>
+                {item.adicionais?.length > 0 && (
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">
+                    + {item.adicionais.map((a) => a.name).join(', ')}
+                  </p>
+                )}
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.price)}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -376,6 +469,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   const [loading, setLoading] = useState(!dadosPreCarregados);
   const [erro, setErro] = useState(null);
   const [carrinho, setCarrinho] = useState([]);
+  const [produtoAdicionaisModal, setProdutoAdicionaisModal] = useState(null); // { produto, precoBase } | null
   const [catAtiva, setCatAtiva] = useState('todos');
   // Sem drag/swipe no mouse de desktop, a lista de categorias (overflow-x-auto
   // sem scrollbar visível) fica sem jeito de rolar quando tem mais abas do que
@@ -419,10 +513,6 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   // quando a loja foi aberta pelo domínio customizado (sem slug na URL).
   const slug = slugParam ?? data?.restaurante?.slug;
 
-  // Combo e produto têm sequências de id independentes — pode colidir (combo #5 e
-  // produto #5), então a chave do carrinho precisa considerar o tipo junto do id.
-  const chaveCarrinho = (item) => `${item.tipo === 'combo' ? 'combo' : 'produto'}-${item.id}`;
-
   const altCarrinho = (produto, preco, delta = 1) => {
     setCarrinho((prev) => {
       const chave = chaveCarrinho(produto);
@@ -437,6 +527,25 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       if (delta < 0) return prev;
       return [...prev, { ...produto, price: preco, qtd: 1 }];
     });
+  };
+
+  const abrirAdicionais = (produto, precoBase) => setProdutoAdicionaisModal({ produto, precoBase });
+
+  const confirmarAdicionais = (selecionados, qtdEscolhida) => {
+    const { produto, precoBase } = produtoAdicionaisModal;
+    const precoUnitario = precoBase + selecionados.reduce((acc, a) => acc + a.price, 0);
+    const item = { ...produto, price: precoUnitario, adicionais: selecionados };
+    setCarrinho((prev) => {
+      const chave = chaveCarrinho(item);
+      const idx = prev.findIndex((i) => chaveCarrinho(i) === chave);
+      if (idx >= 0) {
+        const novo = [...prev];
+        novo[idx] = { ...novo[idx], qtd: novo[idx].qtd + qtdEscolhida };
+        return novo;
+      }
+      return [...prev, { ...item, qtd: qtdEscolhida }];
+    });
+    setProdutoAdicionaisModal(null);
   };
 
   const qtdNoCarrinho = (produto) => carrinho.find((i) => chaveCarrinho(i) === chaveCarrinho(produto))?.qtd ?? 0;
@@ -804,7 +913,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
                       {itensProdutos.map((p, i) => (
                         <motion.div key={`produto-${p.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: i * 0.04, duration: 0.2 }}>
-                          <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
+                          <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} onAbrirAdicionais={abrirAdicionais} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
                         </motion.div>
                       ))}
                     </div>
@@ -866,6 +975,18 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
       {servicoOrcamento && (
         <SolicitarOrcamentoModal slug={slug} servico={servicoOrcamento} onFechar={() => setServicoOrcamento(null)} />
       )}
+
+      {/* ── Modal escolher adicionais ─────────────────────────────────── */}
+      <AnimatePresence>
+        {produtoAdicionaisModal && (
+          <AdicionaisModal
+            produto={produtoAdicionaisModal.produto}
+            precoBase={produtoAdicionaisModal.precoBase}
+            onFechar={() => setProdutoAdicionaisModal(null)}
+            onConfirmar={confirmarAdicionais}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

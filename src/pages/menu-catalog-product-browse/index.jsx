@@ -918,7 +918,14 @@ const MenuCatalogProductBrowse = () => {
       .map((l) => l.neighborhood).filter(Boolean),
   )].sort();
 
+  // Produto com adicionais precisa do seletor da própria loja (escolher o que
+  // entra antes de calcular o preço) — o quick-add daqui não dá conta disso,
+  // então manda pra loja em vez de adicionar sem as opções.
   const handleAddToCart = (produto, restaurante) => {
+    if (produto.adicionais?.length > 0) {
+      navigate(`/r/${restaurante.slug}`);
+      return;
+    }
     cartAdd(produto, restaurante);
     setBadgeCount(cartCount());
     setBadgeTotal(cartTotal());
