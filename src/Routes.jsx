@@ -4,6 +4,11 @@ import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
 import { ThemeToggle } from "./contexts/ThemeContext";
 import NotFound from "pages/NotFound";
+import SiteHome from './pages/site/Home';
+import SiteQuemSomos from './pages/site/QuemSomos';
+import SiteEstabelecimentos from './pages/site/Estabelecimentos';
+import SiteUsuarios from './pages/site/Usuarios';
+import SiteEntregadores from './pages/site/Entregadores';
 import ShoppingCartCheckout from './pages/shopping-cart-checkout';
 import MenuCatalogProductBrowse from './pages/menu-catalog-product-browse';
 import CustomerAccountOrderHistory from './pages/customer-account-order-history';
@@ -88,6 +93,11 @@ const Routes = () => {
       <ScrollToTop />
       <RouterRoutes>
         <Route path="/" element={<HomeRouter />} />
+        <Route path="/site" element={<SiteHome />} />
+        <Route path="/site/quem-somos" element={<SiteQuemSomos />} />
+        <Route path="/site/estabelecimentos" element={<SiteEstabelecimentos />} />
+        <Route path="/site/usuarios" element={<SiteUsuarios />} />
+        <Route path="/site/entregadores" element={<SiteEntregadores />} />
         <Route path="/shopping-cart-checkout" element={<ShoppingCartCheckout />} />
         <Route path="/menu-catalog-product-browse" element={<MenuCatalogProductBrowse />} />
         <Route path="/customer-account-order-history" element={<CustomerAccountOrderHistory />} />

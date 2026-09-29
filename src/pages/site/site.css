@@ -1,0 +1,149 @@
+/* Design system isolado do /site institucional — deliberadamente separado da
+   paleta utilitária do painel (Tailwind puro, cards retos, Inter em tudo).
+   Aqui é vitrine/editorial: serifada de destaque, fundo quase-preto alternando
+   com creme, grão sutil, bordas com gradiente animado, blobs derivando devagar.
+   Só é importado pelo SiteLayout — nunca carrega peso extra no resto do app. */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&display=swap');
+
+@property --site-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.site-scope {
+  --site-ink: #14110D;
+  --site-ink-soft: #2A241C;
+  --site-cream: #FBF6EE;
+  --site-cream-dim: #F1E9DA;
+  --site-line: rgba(20, 17, 13, 0.1);
+  --site-line-onink: rgba(251, 246, 238, 0.14);
+  --site-brand: #FF441F;
+  --site-brand-2: #FF7A00;
+  --site-gold: #FFC24B;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--site-cream);
+  color: var(--site-ink);
+}
+
+.site-display {
+  font-family: 'Fraunces', 'Georgia', serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+}
+
+.site-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.site-gradient-text {
+  background: linear-gradient(100deg, var(--site-brand) 0%, var(--site-brand-2) 45%, var(--site-gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Grão sutil sobre seções escuras — quebra o "flat SaaS gradient" sem pesar
+   no bundle (SVG de ruído fractal embutido via data-uri, sem imagem externa). */
+.site-grain {
+  position: relative;
+  isolation: isolate;
+}
+.site-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Blob de gradiente que deriva devagar — usado como fundo decorativo atrás de
+   heros/CTAs, nunca captura clique (pointer-events off, z abaixo do conteúdo). */
+.site-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  pointer-events: none;
+  animation: site-blob-drift 16s ease-in-out infinite;
+  will-change: transform;
+}
+@keyframes site-blob-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(4%, -6%, 0) scale(1.08); }
+  66% { transform: translate3d(-4%, 5%, 0) scale(0.94); }
+}
+
+.site-float {
+  animation: site-float 6s ease-in-out infinite;
+}
+.site-float-delay {
+  animation: site-float 6s ease-in-out infinite;
+  animation-delay: -3s;
+}
+@keyframes site-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(1.5deg); }
+}
+
+/* Borda com gradiente girando — usada nos botões/cards de destaque. Fallback
+   silencioso em navegadores sem @property: fica uma borda estática, não quebra. */
+.site-glow-border {
+  position: relative;
+  isolation: isolate;
+}
+.site-glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--site-angle), var(--site-brand), var(--site-gold), var(--site-brand-2), var(--site-brand));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: site-border-spin 3.2s linear infinite;
+  z-index: 0;
+}
+@keyframes site-border-spin {
+  to { --site-angle: 360deg; }
+}
+
+/* Cartão com perspectiva 3D controlada via --rx/--ry (setados no mousemove do
+   componente TiltCard) — inclina de acordo com a posição do cursor. */
+.site-tilt {
+  transform: perspective(900px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg)) translateZ(0);
+  transition: transform 0.15s ease-out;
+  transform-style: preserve-3d;
+}
+.site-tilt-child {
+  transform: translateZ(28px);
+}
+
+.site-underline-grow {
+  position: relative;
+  display: inline-block;
+}
+.site-underline-grow::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -0.08em;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.site-underline-grow:hover::after {
+  transform: scaleX(1);
+}
+
+.site-noscroll {
+  overflow: hidden;
+}
