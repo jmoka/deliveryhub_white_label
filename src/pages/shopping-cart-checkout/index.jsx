@@ -352,8 +352,33 @@ const linhaChave = (item) => `${item.id}-${item.adicionais?.map((a) => a.id).sor
 
 const StepItens = ({ itens, setItens, onNext, onEsvaziar, subtotal, frete, excedente, total }) => {
   const remover = (chave) => setItens((p) => p.filter((i) => linhaChave(i) !== chave));
-  const altQtd = (chave, delta) =>
+
+  // Mesma regra do carrinho na loja: incrementar uma linha com adicionais pergunta
+  // antes se a nova unidade mantém os mesmos ou entra sem — nunca assume calado.
+  const altQtd = (chave, delta) => {
+    if (delta > 0) {
+      const alvo = itens.find((i) => linhaChave(i) === chave);
+      if (alvo?.adicionais?.length > 0) {
+        const manter = window.confirm(
+          `Adicionar mais 1 "${alvo.name}" com os mesmos adicionais (${alvo.adicionais.map((a) => a.name).join(', ')})?\n\nCancelar = adiciona sem adicionais.`,
+        );
+        if (!manter) {
+          const somaAdicionais = alvo.adicionais.reduce((acc, a) => acc + a.price, 0);
+          const semAdicionais = { ...alvo, adicionais: [], price: alvo.price - somaAdicionais };
+          setItens((p) => {
+            const chaveSem = linhaChave(semAdicionais);
+            const idxSem = p.findIndex((i) => linhaChave(i) === chaveSem);
+            if (idxSem >= 0) {
+              return p.map((i, idx) => (idx === idxSem ? { ...i, qtd: i.qtd + 1 } : i));
+            }
+            return [...p, { ...semAdicionais, qtd: 1 }];
+          });
+          return;
+        }
+      }
+    }
     setItens((p) => p.map((i) => linhaChave(i) === chave ? { ...i, qtd: i.qtd + delta } : i).filter((i) => i.qtd > 0));
+  };
 
   return (
     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} className="space-y-4">
@@ -376,6 +401,10 @@ const StepItens = ({ itens, setItens, onNext, onEsvaziar, subtotal, frete, exced
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3">
         {itens.map((item) => {
           const chave = linhaChave(item);
+          // price já vem com os adicionais somados — mostra a contribuição só do
+          // produto e cada adicional com o próprio valor, não um total opaco.
+          const somaAdicionais = item.adicionais?.reduce((acc, a) => acc + a.price, 0) ?? 0;
+          const precoBase = item.price - somaAdicionais;
           return (
           <div key={chave} className="flex items-center gap-3">
             {item.image_url && (
@@ -383,12 +412,17 @@ const StepItens = ({ itens, setItens, onNext, onEsvaziar, subtotal, frete, exced
             )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] truncate">{item.name}</p>
+              <p className="text-xs text-[#FF441F] font-medium">{fmt(precoBase)}</p>
               {item.adicionais?.length > 0 && (
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">
-                  + {item.adicionais.map((a) => a.name).join(', ')}
-                </p>
+                <div className="mt-0.5 space-y-0.5">
+                  {item.adicionais.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between gap-3 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                      <span>+ {a.name}</span>
+                      <span className="flex-shrink-0">{fmt(a.price)}</span>
+                    </div>
+                  ))}
+                </div>
               )}
-              <p className="text-xs text-[#FF441F] font-medium">{fmt(item.price)}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button onClick={() => altQtd(chave, -1)}
@@ -750,17 +784,32 @@ const StepConfirmar = ({ itens, paymentMethod, trocoPara, subtotal, frete, exced
       <div className="bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4">
         <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-3">Resumo do pedido</p>
         <div className="space-y-2">
-          {itens.map((i) => (
-            <div key={linhaChave(i)} className="flex justify-between text-sm">
-              <span className="text-[#71717A] dark:text-[#A1A1AA]">
-                {i.name} × {i.qtd}
+          {itens.map((i) => {
+            // price já vem com os adicionais somados — separa de volta a contribuição
+            // só do produto, pra cada adicional aparecer com o próprio valor em vez de
+            // um total só que esconde promoção/composição do preço (mesmo padrão do
+            // detalhe do pedido e do acompanhamento do cliente).
+            const somaAdicionais = i.adicionais?.reduce((acc, a) => acc + a.price, 0) ?? 0;
+            const precoBase = i.price - somaAdicionais;
+            return (
+              <div key={linhaChave(i)}>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">{i.name} × {i.qtd}</span>
+                  <span className="text-[#27272A] dark:text-[#F4F4F5] font-medium">{fmt(precoBase * i.qtd)}</span>
+                </div>
                 {i.adicionais?.length > 0 && (
-                  <span className="block text-xs">+ {i.adicionais.map((a) => a.name).join(', ')}</span>
+                  <div className="pl-3 space-y-0.5 mt-0.5">
+                    {i.adicionais.map((a) => (
+                      <div key={a.id} className="flex justify-between text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                        <span>+ {a.name}</span>
+                        <span>{fmt(a.price * i.qtd)}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </span>
-              <span className="text-[#27272A] dark:text-[#F4F4F5] font-medium">{fmt(i.price * i.qtd)}</span>
-            </div>
-          ))}
+              </div>
+            );
+          })}
           <div className="flex justify-between text-sm">
             <span className="text-[#71717A] dark:text-[#A1A1AA] flex items-center gap-1">
               <Icon name={retirada ? 'Store' : 'Truck'} size={13} /> {retirada ? 'Retirada no balcão' : 'Frete motoboy'}

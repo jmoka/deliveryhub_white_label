@@ -385,7 +385,12 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
         <AnimatePresence>
-          {carrinho.map((item) => (
+          {carrinho.map((item) => {
+            // price já vem com os adicionais somados — mostra a contribuição só do
+            // produto e cada adicional com o próprio valor, não um total opaco.
+            const somaAdicionais = item.adicionais?.reduce((acc, a) => acc + a.price, 0) ?? 0;
+            const precoBase = item.price - somaAdicionais;
+            return (
             <motion.div key={chaveCarrinho(item)} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}
               className="flex items-center gap-3">
               {item.image_url && (
@@ -393,12 +398,17 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] truncate">{item.name}</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(precoBase)}</p>
                 {item.adicionais?.length > 0 && (
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] truncate">
-                    + {item.adicionais.map((a) => a.name).join(', ')}
-                  </p>
+                  <div className="mt-0.5 space-y-0.5">
+                    {item.adicionais.map((a) => (
+                      <div key={a.id} className="flex items-center justify-between gap-3 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                        <span>+ {a.name}</span>
+                        <span className="flex-shrink-0">{fmt(a.price)}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">{fmt(item.price)}</p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button onClick={() => onAdicionar(item, item.price, -1)}
@@ -408,7 +418,8 @@ const CarrinhoConteudo = ({ carrinho, onAdicionar, onFechar, onCheckout }) => {
                   className="w-6 h-6 bg-[#FF441F] rounded-full text-sm font-bold text-white flex items-center justify-center">+</button>
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </AnimatePresence>
       </div>
 
@@ -517,6 +528,34 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   const slug = slugParam ?? data?.restaurante?.slug;
 
   const altCarrinho = (produto, preco, delta = 1) => {
+    // Incrementar uma linha que já tem adicionais escolhidos não pode assumir
+    // calado que a nova unidade quer exatamente a mesma coisa — pergunta antes.
+    // "Não" vira uma linha separada, do mesmo produto mas sem os adicionais.
+    if (delta > 0) {
+      const chaveAtual = chaveCarrinho(produto);
+      const existente = carrinho.find((i) => chaveCarrinho(i) === chaveAtual);
+      if (existente?.adicionais?.length > 0) {
+        const manter = window.confirm(
+          `Adicionar mais 1 "${existente.name}" com os mesmos adicionais (${existente.adicionais.map((a) => a.name).join(', ')})?\n\nCancelar = adiciona sem adicionais.`,
+        );
+        if (!manter) {
+          const somaAdicionais = existente.adicionais.reduce((acc, a) => acc + a.price, 0);
+          const semAdicionais = { ...existente, adicionais: [], price: existente.price - somaAdicionais };
+          setCarrinho((prev) => {
+            const chaveSem = chaveCarrinho(semAdicionais);
+            const idxSem = prev.findIndex((i) => chaveCarrinho(i) === chaveSem);
+            if (idxSem >= 0) {
+              const novo = [...prev];
+              novo[idxSem] = { ...novo[idxSem], qtd: novo[idxSem].qtd + 1 };
+              return novo;
+            }
+            return [...prev, { ...semAdicionais, qtd: 1 }];
+          });
+          return;
+        }
+      }
+    }
+
     setCarrinho((prev) => {
       const chave = chaveCarrinho(produto);
       const idx = prev.findIndex((i) => chaveCarrinho(i) === chave);
