@@ -26,7 +26,7 @@ const SiteFooter = () => (
           <p className="site-kicker text-[11px] text-white/40 mb-4">Comece agora</p>
           <ul className="space-y-2.5 text-sm text-white/70">
             <li><Link to="/site/estabelecimentos" className="hover:text-white transition-colors">Sua loja no PediuVai</Link></li>
-            <li><Link to="/site/usuarios" className="hover:text-white transition-colors">Peça no PediuVai</Link></li>
+            <li><a href="https://pediuvai.com.br/" className="hover:text-white transition-colors">Peça no PediuVai</a></li>
             <li><Link to="/site/entregadores" className="hover:text-white transition-colors">Seja entregador</Link></li>
           </ul>
         </div>

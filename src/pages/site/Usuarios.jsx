@@ -52,7 +52,7 @@ const Usuarios = () => (
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
           className="mt-9 flex justify-center"
         >
-          <GradientButton to="/customer-registration-login" glow icon="MapPin">Ver o que tem perto de mim</GradientButton>
+          <GradientButton href="https://pediuvai.com.br/" glow icon="MapPin">Ver o que tem perto de mim</GradientButton>
         </motion.div>
       </div>
     </section>
@@ -139,7 +139,7 @@ const Usuarios = () => (
             Seu bairro tem mais pra oferecer do que você imagina.
           </h2>
           <div className="relative mt-10">
-            <GradientButton to="/customer-registration-login" glow icon="MapPin">Ver o que tem perto de mim</GradientButton>
+            <GradientButton href="https://pediuvai.com.br/" glow icon="MapPin">Ver o que tem perto de mim</GradientButton>
           </div>
         </div>
       </RevealOnScroll>
