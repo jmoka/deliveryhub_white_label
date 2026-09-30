@@ -7,6 +7,7 @@ import TiltCard from './components/TiltCard';
 import GradientButton from './components/GradientButton';
 import Blob from './components/Blob';
 import Kicker from './components/Kicker';
+import ParallaxImage from './components/ParallaxImage';
 
 const BENEFICIOS = [
   { icon: 'Clock', title: 'Horário livre', desc: 'Fica online quando quiser, desliga quando precisar. Sem escala fixa, sem cobrança de meta.' },
@@ -25,7 +26,8 @@ const PASSOS = [
 const Entregadores = () => (
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
-    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-44 pb-28 overflow-hidden">
+    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-16 sm:pb-20 lg:pb-28 overflow-hidden">
+      <ParallaxImage />
       <Blob size={500} tone="gold" opacity={0.24} style={{ top: '-15%', left: '-8%' }} />
       <div className="relative max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
         <div>
@@ -77,7 +79,7 @@ const Entregadores = () => (
     </section>
 
     {/* ── Benefícios ────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll>
         <Kicker index="01" label="Por que entregar no PediuVai" />
         <h2 className="site-display text-4xl font-medium max-w-xl leading-tight">Menos km rodado, mais tempo pra fazer entrega de verdade.</h2>
@@ -102,7 +104,7 @@ const Entregadores = () => (
     </section>
 
     {/* ── Bairro vs. cidade inteira ─────────────────────────────────── */}
-    <section className="bg-[var(--site-cream-dim)] py-28">
+    <section className="bg-[var(--site-cream-dim)] py-16 sm:py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
         <RevealOnScroll>
           <TiltCard maxTilt={5} className="rounded-3xl order-2 md:order-1">
@@ -125,7 +127,7 @@ const Entregadores = () => (
     </section>
 
     {/* ── Como começar ──────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll className="text-center mb-14">
         <Kicker index="03" label="Como começar" />
         <h2 className="site-display text-4xl font-medium">Do cadastro à primeira entrega, rápido.</h2>
@@ -145,9 +147,10 @@ const Entregadores = () => (
     </section>
 
     {/* ── CTA final ─────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 pb-28">
+    <section className="max-w-6xl mx-auto px-6 pb-16 sm:pb-20 lg:pb-28">
       <RevealOnScroll>
         <div className="site-grain relative rounded-[2.5rem] bg-[var(--site-ink)] text-white px-8 sm:px-16 py-20 text-center overflow-hidden">
+          <ParallaxImage range={40} />
           <Blob size={480} tone="gold" opacity={0.3} style={{ top: '-20%', left: '25%' }} />
           <h2 className="site-display relative text-4xl sm:text-5xl font-medium leading-tight max-w-2xl mx-auto">
             Comece a rodar pelo seu <span className="italic site-gradient-text">próprio bairro</span>.

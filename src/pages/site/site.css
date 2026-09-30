@@ -1,10 +1,13 @@
 /* Design system isolado do /site institucional — deliberadamente separado da
    paleta utilitária do painel (Tailwind puro, cards retos, Inter em tudo).
-   Aqui é vitrine/editorial: serifada de destaque, fundo quase-preto alternando
-   com creme, grão sutil, bordas com gradiente animado, blobs derivando devagar.
+   2ª tentativa: alinhado de propósito com a identidade real da marca (ver
+   public/assets/images) — azul-marinho + laranja/amarelo, tipografia bold
+   e levemente inclinada (a energia do wordmark "PEDIUVAI"), risquinhos de
+   velocidade como motivo recorrente (o mesmo do mascote/ícone do app), sem
+   copiar o excesso de bisel 3D do PNG — versão vetorial, limpa, pra web.
    Só é importado pelo SiteLayout — nunca carrega peso extra no resto do app. */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500;1,9..144,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,500;0,700;0,800;0,900;1,600;1,700;1,800&display=swap');
 
 @property --site-angle {
   syntax: '<angle>';
@@ -13,11 +16,11 @@
 }
 
 .site-scope {
-  --site-ink: #14110D;
-  --site-ink-soft: #2A241C;
+  --site-ink: #0C1A33;
+  --site-ink-soft: #2C4066;
   --site-cream: #FBF6EE;
   --site-cream-dim: #F1E9DA;
-  --site-line: rgba(20, 17, 13, 0.1);
+  --site-line: rgba(12, 26, 51, 0.1);
   --site-line-onink: rgba(251, 246, 238, 0.14);
   --site-brand: #FF441F;
   --site-brand-2: #FF7A00;
@@ -28,9 +31,42 @@
 }
 
 .site-display {
-  font-family: 'Fraunces', 'Georgia', serif;
-  font-optical-sizing: auto;
-  letter-spacing: -0.01em;
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 800 !important;
+  letter-spacing: -0.015em;
+}
+.site-display.italic {
+  font-weight: 800;
+  transform: skewX(-6deg);
+  display: inline-block;
+}
+
+/* Risquinhos de velocidade — o motivo mais reconhecível da marca (ver o
+   mascote no ícone do app), recriado em vetor/CSS puro. Cada barra encolhe
+   da esquerda pra direita, degradê laranja→dourado→transparente. Usado atrás
+   de headline/CTA pra reforçar "rápido" sem precisar de mais nenhuma imagem. */
+.site-speedlines {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  pointer-events: none;
+}
+.site-speedlines span {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--site-brand), var(--site-gold), transparent);
+}
+.site-speedlines span:nth-child(1) { width: 46px; }
+.site-speedlines span:nth-child(2) { width: 30px; opacity: 0.75; }
+.site-speedlines span:nth-child(3) { width: 16px; opacity: 0.5; }
+.site-speedlines-anim span {
+  animation: site-speedlines-pulse 1.8s ease-in-out infinite;
+}
+.site-speedlines-anim span:nth-child(2) { animation-delay: 0.12s; }
+.site-speedlines-anim span:nth-child(3) { animation-delay: 0.24s; }
+@keyframes site-speedlines-pulse {
+  0%, 100% { transform: translateX(0); opacity: 1; }
+  50% { transform: translateX(-8px); opacity: 0.4; }
 }
 
 .site-kicker {

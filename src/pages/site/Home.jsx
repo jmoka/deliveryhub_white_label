@@ -7,8 +7,20 @@ import TiltCard from './components/TiltCard';
 import GradientButton from './components/GradientButton';
 import Blob from './components/Blob';
 import Kicker from './components/Kicker';
+import SpeedLines from './components/SpeedLines';
+import ParallaxImage from './components/ParallaxImage';
 
-const CATEGORIAS = ['Restaurantes', 'Farmácias', 'Mercados', 'Lojas', 'Serviços', 'Pet shops', 'Padarias', 'Açaí'];
+// Cores batem com os selos de categoria do app real (ver public/assets/images/og_image.png).
+const CATEGORIAS = [
+  { label: 'Restaurantes', cor: '#FF7A1A' },
+  { label: 'Mercados', cor: '#22B24C' },
+  { label: 'Farmácias', cor: '#E8384F' },
+  { label: 'Lojas', cor: '#8B3FE8' },
+  { label: 'Serviços', cor: '#2F7FE0' },
+  { label: 'Pet shops', cor: '#FF7A1A' },
+  { label: 'Padarias', cor: '#22B24C' },
+  { label: 'Açaí', cor: '#8B3FE8' },
+];
 
 const AUDIENCIAS = [
   {
@@ -62,43 +74,32 @@ const DIFERENCIAIS = [
   },
 ];
 
-/* ── Composição 3D flutuante do hero — cartões representando pedido/loja/
-   entrega, sem depender de screenshot real (produto muda, isso não quebra). */
+/* ── Composição do hero — o ícone real do app (ver public/assets/images) como
+   peça central, girando em 3D com o mouse, com os risquinhos de velocidade da
+   própria marca emanando dele. Um cartão de contexto ("a caminho") flutua do
+   lado, sem competir com o ícone pela atenção. */
 const HeroComposition = () => (
-  <div className="relative h-[420px] hidden lg:block">
-    <TiltCard maxTilt={6} className="absolute top-0 right-4 w-56 site-float rounded-3xl">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.06] backdrop-blur-xl p-5 shadow-2xl">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-9 h-9 rounded-xl bg-[linear-gradient(135deg,#FF441F,#FF7A00)] flex items-center justify-center">
-            <Icon name="UtensilsCrossed" size={16} className="text-white" />
-          </div>
-          <div>
-            <p className="text-white text-sm font-semibold leading-tight">Burguinho do Zé</p>
-            <p className="text-white/50 text-[11px]">2 min daqui</p>
-          </div>
-        </div>
-        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full w-2/3 rounded-full bg-[linear-gradient(90deg,#FF441F,#FFC24B)]" />
-        </div>
-        <p className="text-white/40 text-[10px] mt-2">Em preparo</p>
+  <div className="relative h-[420px] hidden lg:flex items-center justify-center">
+    <div className="absolute -left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 opacity-80">
+      <SpeedLines />
+      <SpeedLines />
+    </div>
+
+    <TiltCard maxTilt={10} glare={false} className="site-float rounded-[2.5rem]">
+      <div className="relative">
+        <div className="absolute -inset-10 rounded-full bg-[linear-gradient(135deg,#FF441F,#FF7A00,#FFC24B)] opacity-30 blur-3xl" />
+        <img
+          src="/assets/images/icon-512.png"
+          alt="PediuVai"
+          className="relative w-64 h-64 rounded-[2.5rem] shadow-2xl shadow-black/50"
+        />
       </div>
     </TiltCard>
 
-    <TiltCard maxTilt={6} className="absolute top-40 right-32 w-52 site-float-delay rounded-3xl">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.06] backdrop-blur-xl p-5 shadow-2xl">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-white text-sm font-semibold">Repasse do dia</p>
-          <Icon name="TrendingUp" size={14} className="text-[var(--site-gold)]" />
-        </div>
-        <p className="site-display text-2xl text-white font-semibold">R$ 342,90</p>
-        <p className="text-white/40 text-[11px] mt-1">18 pedidos entregues</p>
-      </div>
-    </TiltCard>
-
-    <TiltCard maxTilt={6} className="absolute top-[19rem] right-0 w-48 site-float rounded-3xl">
+    <TiltCard maxTilt={6} className="absolute bottom-2 -right-2 w-56 site-float-delay rounded-3xl">
       <div className="rounded-3xl border border-white/10 bg-white/[0.06] backdrop-blur-xl p-4 shadow-2xl flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-[linear-gradient(135deg,#FFC24B,#FF7A00)] flex items-center justify-center flex-shrink-0">
-          <Icon name="Bike" size={16} className="text-[var(--site-ink)]" />
+        <div className="w-10 h-10 rounded-full bg-[linear-gradient(135deg,#FFC24B,#FF7A00)] flex items-center justify-center flex-shrink-0">
+          <Icon name="Bike" size={17} className="text-[var(--site-ink)]" />
         </div>
         <div>
           <p className="text-white text-xs font-semibold">A caminho</p>
@@ -112,7 +113,8 @@ const HeroComposition = () => (
 const Home = () => (
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
-    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-44 pb-28 overflow-hidden">
+    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-16 sm:pb-20 lg:pb-28 overflow-hidden">
+      <ParallaxImage />
       <Blob size={520} tone="brand" opacity={0.28} style={{ top: '-10%', left: '-8%' }} />
       <Blob size={420} tone="gold" opacity={0.16} style={{ bottom: '-15%', right: '10%' }} />
       <div className="relative max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.15fr_0.85fr] gap-10 items-center">
@@ -131,8 +133,9 @@ const Home = () => (
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
-            className="site-display text-5xl sm:text-6xl lg:text-[4.3rem] font-medium leading-[1.02] tracking-tight"
+            className="site-display relative text-5xl sm:text-6xl lg:text-[4.3rem] leading-[1.02] tracking-tight"
           >
+            <SpeedLines className="absolute -left-14 top-3 hidden lg:flex scale-150 origin-left" />
             Pediu.
             <br />
             <span className="site-gradient-text italic">Vai.</span>
@@ -151,12 +154,30 @@ const Home = () => (
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
-            className="mt-9 flex flex-wrap items-center gap-4"
+            className="mt-9 flex items-center gap-2.5 sm:gap-4"
           >
-            <GradientButton to="/site/estabelecimentos" glow>Vender no PediuVai</GradientButton>
-            <GradientButton to="/site/usuarios" variant="outline" icon="MapPin" className="!text-white !border-white/20 hover:!border-white/50">
-              Ver o que tem perto
-            </GradientButton>
+            <div className="flex-1 sm:flex-none">
+              <GradientButton to="/site/estabelecimentos" glow className="w-full !px-3.5 sm:!px-6 justify-center">Vender no PediuVai</GradientButton>
+            </div>
+            <div className="flex-1 sm:flex-none">
+              <GradientButton to="/site/usuarios" variant="outline" icon="MapPin" className="w-full !px-3.5 sm:!px-6 justify-center !text-white !border-white/20 hover:!border-white/50">
+                Ver o que tem perto
+              </GradientButton>
+            </div>
+          </motion.div>
+
+          {/* Versão compacta do ícone pro mobile — a composição flutuante completa
+              só entra a partir de lg (precisa de espaço pra não ficar apertada). */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.35 }}
+            className="lg:hidden mt-12 flex justify-center"
+          >
+            <div className="relative">
+              <div className="absolute -inset-6 rounded-full bg-[linear-gradient(135deg,#FF441F,#FF7A00,#FFC24B)] opacity-30 blur-2xl" />
+              <img src="/assets/images/icon-192.png" alt="PediuVai" className="relative w-28 h-28 rounded-3xl shadow-2xl shadow-black/50 site-float" />
+            </div>
           </motion.div>
         </div>
 
@@ -168,15 +189,16 @@ const Home = () => (
     <div className="border-b border-[var(--site-line)] bg-[var(--site-cream-dim)] py-5 overflow-hidden">
       <div className="flex gap-10 w-max animate-carrossel-continuo" style={{ '--carrossel-duracao': '28s' }}>
         {[...CATEGORIAS, ...CATEGORIAS, ...CATEGORIAS].map((c, i) => (
-          <span key={i} className="site-display italic text-2xl text-[var(--site-ink-soft)]/40 flex items-center gap-10 flex-shrink-0">
-            {c} <span className="text-[var(--site-brand)]">·</span>
+          <span key={i} className="site-display italic text-2xl text-[var(--site-ink)]/50 flex items-center gap-3 flex-shrink-0">
+            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.cor }} />
+            {c.label}
           </span>
         ))}
       </div>
     </div>
 
     {/* ── Pra quem é ────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll>
         <Kicker index="01" label="Pra quem é o PediuVai" />
         <h2 className="site-display text-4xl sm:text-5xl font-medium max-w-2xl leading-[1.08]">
@@ -207,7 +229,7 @@ const Home = () => (
     </section>
 
     {/* ── Como funciona ─────────────────────────────────────────────── */}
-    <section className="bg-[var(--site-cream-dim)] py-28">
+    <section className="bg-[var(--site-cream-dim)] py-16 sm:py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-6">
         <RevealOnScroll className="text-center">
           <Kicker index="02" label="Como funciona" />
@@ -228,7 +250,7 @@ const Home = () => (
     </section>
 
     {/* ── Diferenciais (blocos alternados) ─────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28 space-y-24">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28 space-y-24">
       {DIFERENCIAIS.map((d, i) => (
         <RevealOnScroll key={d.title}>
           <div className={`grid md:grid-cols-2 gap-12 items-center ${i % 2 === 1 ? 'md:[&>*:first-child]:order-2' : ''}`}>
@@ -249,18 +271,23 @@ const Home = () => (
     </section>
 
     {/* ── CTA final ─────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 pb-28">
+    <section className="max-w-6xl mx-auto px-6 pb-16 sm:pb-20 lg:pb-28">
       <RevealOnScroll>
         <div className="site-grain relative rounded-[2.5rem] bg-[var(--site-ink)] text-white px-8 sm:px-16 py-20 text-center overflow-hidden">
+          <ParallaxImage range={40} />
           <Blob size={500} tone="brand" opacity={0.3} style={{ top: '-20%', left: '30%' }} />
           <h2 className="site-display relative text-4xl sm:text-5xl font-medium leading-tight max-w-2xl mx-auto">
             Seu bairro já tem tudo o que você precisa. <span className="italic site-gradient-text">Falta só pedir.</span>
           </h2>
-          <div className="relative flex flex-wrap items-center justify-center gap-4 mt-10">
-            <GradientButton to="/site/estabelecimentos" glow>Cadastrar meu estabelecimento</GradientButton>
-            <GradientButton to="/site/entregadores" variant="outline" icon="Bike" className="!text-white !border-white/20 hover:!border-white/50">
-              Quero ser entregador
-            </GradientButton>
+          <div className="relative flex items-center justify-center gap-2.5 sm:gap-4 mt-10">
+            <div className="flex-1 sm:flex-none">
+              <GradientButton to="/site/estabelecimentos" glow className="w-full !px-3.5 sm:!px-6 justify-center">Cadastrar meu estabelecimento</GradientButton>
+            </div>
+            <div className="flex-1 sm:flex-none">
+              <GradientButton to="/site/entregadores" variant="outline" icon="Bike" className="w-full !px-3.5 sm:!px-6 justify-center !text-white !border-white/20 hover:!border-white/50">
+                Quero ser entregador
+              </GradientButton>
+            </div>
           </div>
         </div>
       </RevealOnScroll>

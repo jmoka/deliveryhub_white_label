@@ -7,6 +7,7 @@ import TiltCard from './components/TiltCard';
 import GradientButton from './components/GradientButton';
 import Blob from './components/Blob';
 import Kicker from './components/Kicker';
+import ParallaxImage from './components/ParallaxImage';
 
 const BENEFICIOS = [
   { icon: 'MapPin', title: 'Tudo o que tem perto', desc: 'Restaurante, farmácia, mercado, loja — o comércio do seu bairro, num só lugar.' },
@@ -27,7 +28,8 @@ const CATEGORIAS = [
 const Usuarios = () => (
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
-    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-44 pb-28 overflow-hidden">
+    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-16 sm:pb-20 lg:pb-28 overflow-hidden">
+      <ParallaxImage />
       <Blob size={500} tone="gold" opacity={0.22} style={{ top: '-10%', right: '-8%' }} />
       <div className="relative max-w-4xl mx-auto px-6 text-center">
         <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
@@ -76,7 +78,7 @@ const Usuarios = () => (
     </section>
 
     {/* ── Benefícios ────────────────────────────────────────────────── */}
-    <section className="bg-[var(--site-cream-dim)] py-28">
+    <section className="bg-[var(--site-cream-dim)] py-16 sm:py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-6">
         <RevealOnScroll>
           <Kicker index="02" label="Por que pedir no PediuVai" />
@@ -103,7 +105,7 @@ const Usuarios = () => (
     </section>
 
     {/* ── Como pedir ────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll className="text-center mb-14">
         <Kicker index="03" label="Como funciona" />
         <h2 className="site-display text-4xl font-medium">Do pedido à porta de casa, em poucos passos.</h2>
@@ -128,9 +130,10 @@ const Usuarios = () => (
     </section>
 
     {/* ── CTA final ─────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 pb-28">
+    <section className="max-w-6xl mx-auto px-6 pb-16 sm:pb-20 lg:pb-28">
       <RevealOnScroll>
         <div className="site-grain relative rounded-[2.5rem] bg-[var(--site-ink)] text-white px-8 sm:px-16 py-20 text-center overflow-hidden">
+          <ParallaxImage range={40} />
           <Blob size={480} tone="gold" opacity={0.3} style={{ bottom: '-20%', right: '25%' }} />
           <h2 className="site-display relative text-4xl sm:text-5xl font-medium leading-tight max-w-2xl mx-auto">
             Seu bairro tem mais pra oferecer do que você imagina.

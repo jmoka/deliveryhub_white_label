@@ -7,6 +7,7 @@ import TiltCard from './components/TiltCard';
 import GradientButton from './components/GradientButton';
 import Blob from './components/Blob';
 import Kicker from './components/Kicker';
+import ParallaxImage from './components/ParallaxImage';
 
 const VANTAGENS = [
   { icon: 'Percent', title: 'Comissão que cabe no bolso', desc: 'Pensada pro pequeno e médio estabelecimento — vende mais sem ver a margem inteira ir embora em taxa.' },
@@ -29,7 +30,8 @@ const RECURSOS = [
 const Estabelecimentos = () => (
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
-    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-44 pb-28 overflow-hidden">
+    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-16 sm:pb-20 lg:pb-28 overflow-hidden">
+      <ParallaxImage />
       <Blob size={500} tone="brand" opacity={0.26} style={{ top: '-15%', left: '-10%' }} />
       <div className="relative max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
         <div>
@@ -82,7 +84,7 @@ const Estabelecimentos = () => (
     </section>
 
     {/* ── Vantagens ─────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll>
         <Kicker index="01" label="Por que vender no PediuVai" />
         <h2 className="site-display text-4xl font-medium max-w-xl leading-tight">Feito pra quem toca o negócio sozinho — ou quase.</h2>
@@ -105,7 +107,7 @@ const Estabelecimentos = () => (
     </section>
 
     {/* ── Recursos do painel ────────────────────────────────────────── */}
-    <section className="bg-[var(--site-cream-dim)] py-28">
+    <section className="bg-[var(--site-cream-dim)] py-16 sm:py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
         <RevealOnScroll>
           <Kicker index="02" label="Tudo incluso" />
@@ -133,7 +135,7 @@ const Estabelecimentos = () => (
     </section>
 
     {/* ── Como começar ──────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll className="text-center mb-14">
         <Kicker index="03" label="Como começar" />
         <h2 className="site-display text-4xl font-medium">Do cadastro ao primeiro pedido, sem enrolação.</h2>
@@ -156,9 +158,10 @@ const Estabelecimentos = () => (
     </section>
 
     {/* ── CTA final ─────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 pb-28">
+    <section className="max-w-6xl mx-auto px-6 pb-16 sm:pb-20 lg:pb-28">
       <RevealOnScroll>
         <div className="site-grain relative rounded-[2.5rem] bg-[var(--site-ink)] text-white px-8 sm:px-16 py-20 text-center overflow-hidden">
+          <ParallaxImage range={40} />
           <Blob size={480} tone="brand" opacity={0.3} style={{ top: '-20%', right: '20%' }} />
           <h2 className="site-display relative text-4xl sm:text-5xl font-medium leading-tight max-w-2xl mx-auto">
             Coloque sua loja no <span className="italic site-gradient-text">PediuVai</span> ainda hoje.

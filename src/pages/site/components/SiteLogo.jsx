@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// Wordmark tipográfico (Fraunces) em vez do mascote/ícone do app — o app-icon
-// (capacete, moto, "PEDIUVAI" 3D) é ótimo como ícone de app, mas destoa total
-// da direção editorial pedida pro /site ("nada de cara de SaaS, nada mecânico").
-// Se um dia a marca ganhar um logotipo próprio pro institucional, troca aqui.
+// Ícone real do app (ver public/assets/images) + wordmark em CSS — mantém o
+// reconhecimento visual da marca sem herdar o bisel 3D/plaquinha do PNG em
+// tamanho de header. Peso/inclinação do texto ecoam o wordmark real.
 const SiteLogo = ({ dark = false, className = '' }) => (
-  <Link to="/site" className={`site-display inline-flex items-baseline gap-0.5 text-2xl font-semibold leading-none ${className}`}>
-    <span className={dark ? 'text-white' : 'text-[var(--site-ink)]'}>Pediu</span>
-    <span className="site-gradient-text italic">Vai</span>
-    <span className="text-[var(--site-brand)]">.</span>
+  <Link to="/site" className={`inline-flex items-center gap-2 ${className}`}>
+    <img src="/assets/images/icon-192.png" alt="" className="w-8 h-8 rounded-xl flex-shrink-0" />
+    <span className="site-display inline-flex items-baseline gap-0.5 text-2xl leading-none">
+      <span className={dark ? 'text-white' : 'text-[var(--site-ink)]'}>Pediu</span>
+      <span className="site-gradient-text italic">Vai</span>
+    </span>
   </Link>
 );
 

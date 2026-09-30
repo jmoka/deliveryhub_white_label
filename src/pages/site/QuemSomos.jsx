@@ -7,6 +7,7 @@ import TiltCard from './components/TiltCard';
 import GradientButton from './components/GradientButton';
 import Blob from './components/Blob';
 import Kicker from './components/Kicker';
+import ParallaxImage from './components/ParallaxImage';
 
 const PRINCIPIOS = [
   {
@@ -34,7 +35,8 @@ const PRINCIPIOS = [
 const QuemSomos = () => (
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
-    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-44 pb-32 overflow-hidden">
+    <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-20 sm:pb-28 lg:pb-32 overflow-hidden">
+      <ParallaxImage />
       <Blob size={480} tone="gold" opacity={0.2} style={{ top: '-15%', right: '-5%' }} />
       <div className="relative max-w-4xl mx-auto px-6 text-center">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
@@ -60,7 +62,7 @@ const QuemSomos = () => (
     </section>
 
     {/* ── Manifesto / pull-quote ────────────────────────────────────── */}
-    <section className="max-w-4xl mx-auto px-6 py-28">
+    <section className="max-w-4xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll>
         <Kicker index="01" label="O que nos move" />
         <blockquote className="site-display text-3xl sm:text-4xl font-medium leading-[1.25] text-[var(--site-ink)]">
@@ -73,7 +75,7 @@ const QuemSomos = () => (
     </section>
 
     {/* ── Princípios ────────────────────────────────────────────────── */}
-    <section className="bg-[var(--site-cream-dim)] py-28">
+    <section className="bg-[var(--site-cream-dim)] py-16 sm:py-20 lg:py-28">
       <div className="max-w-6xl mx-auto px-6">
         <RevealOnScroll>
           <Kicker index="02" label="Como pensamos o negócio" />
@@ -99,7 +101,7 @@ const QuemSomos = () => (
     </section>
 
     {/* ── Três lados, um propósito ──────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 py-28">
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
       <RevealOnScroll className="text-center max-w-2xl mx-auto mb-16">
         <Kicker index="03" label="Um ecossistema, três lados" />
         <h2 className="site-display text-4xl font-medium leading-tight">
@@ -122,18 +124,23 @@ const QuemSomos = () => (
     </section>
 
     {/* ── CTA final ─────────────────────────────────────────────────── */}
-    <section className="max-w-6xl mx-auto px-6 pb-28">
+    <section className="max-w-6xl mx-auto px-6 pb-16 sm:pb-20 lg:pb-28">
       <RevealOnScroll>
         <div className="site-grain relative rounded-[2.5rem] bg-[var(--site-ink)] text-white px-8 sm:px-16 py-20 text-center overflow-hidden">
+          <ParallaxImage range={40} />
           <Blob size={480} tone="brand" opacity={0.3} style={{ bottom: '-25%', left: '25%' }} />
           <h2 className="site-display relative text-4xl sm:text-5xl font-medium leading-tight max-w-2xl mx-auto">
             Faça parte do bairro que já <span className="italic site-gradient-text">está no PediuVai</span>.
           </h2>
-          <div className="relative flex flex-wrap items-center justify-center gap-4 mt-10">
-            <GradientButton to="/site/estabelecimentos" glow>Sou um estabelecimento</GradientButton>
-            <GradientButton to="/site/usuarios" variant="outline" icon="ShoppingBag" className="!text-white !border-white/20 hover:!border-white/50">
-              Quero pedir
-            </GradientButton>
+          <div className="relative flex items-center justify-center gap-2.5 sm:gap-4 mt-10">
+            <div className="flex-1 sm:flex-none">
+              <GradientButton to="/site/estabelecimentos" glow className="w-full !px-3.5 sm:!px-6 justify-center">Sou um estabelecimento</GradientButton>
+            </div>
+            <div className="flex-1 sm:flex-none">
+              <GradientButton to="/site/usuarios" variant="outline" icon="ShoppingBag" className="w-full !px-3.5 sm:!px-6 justify-center !text-white !border-white/20 hover:!border-white/50">
+                Quero pedir
+              </GradientButton>
+            </div>
           </div>
         </div>
       </RevealOnScroll>
