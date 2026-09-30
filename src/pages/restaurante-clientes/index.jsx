@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getClientes, criarCliente, atualizarCliente, getDetalheCliente } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 
 const SORT_CAMPOS = [
   { id: 'nome', label: 'Nome' },
@@ -336,10 +337,12 @@ const RestauranteClientes = () => {
   const [sortCampo, setSortCampo] = useState('nome');
   const [sortAsc, setSortAsc] = useState(true);
 
+  const buscaDebounced = useDebouncedValue(busca, 400);
+
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const d = await getClientes({ busca: busca || undefined });
+      const d = await getClientes({ busca: buscaDebounced || undefined });
       setClientes(d.clientes ?? []);
       setTotal(d.total ?? 0);
     } catch (e) {
@@ -347,12 +350,9 @@ const RestauranteClientes = () => {
     } finally {
       setLoading(false);
     }
-  }, [busca]);
+  }, [buscaDebounced]);
 
-  useEffect(() => {
-    const t = setTimeout(carregar, busca ? 400 : 0);
-    return () => clearTimeout(t);
-  }, [carregar]);
+  useEffect(() => { carregar(); }, [carregar]);
 
   const escolherOrdenacao = (campo) => {
     if (campo === sortCampo) {

@@ -11,6 +11,7 @@ import Icon from '../../components/AppIcon';
 import { printReciboCliente } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
 import QuickAddProdutoModal from '../../components/restaurante/QuickAddProdutoModal';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -133,19 +134,17 @@ const RestauranteVendaBalcao = () => {
 
   // Ao digitar o telefone, procura cliente já cadastrado (delivery ou comanda/venda
   // anterior) — se achar, o operador só toca pra usar o nome, sem precisar perguntar.
+  useEffect(() => { setClienteEncontrado(null); }, [telefoneCliente]);
+  const telefoneClienteDebounced = useDebouncedValue(telefoneCliente, 400);
   useEffect(() => {
-    const digitos = telefoneCliente.replace(/\D/g, '');
-    setClienteEncontrado(null);
+    const digitos = telefoneClienteDebounced.replace(/\D/g, '');
     if (digitos.length < 8) return;
     setBuscandoCliente(true);
-    const t = setTimeout(() => {
-      buscarClientePorTelefoneSalao(telefoneCliente)
-        .then((d) => setClienteEncontrado(d?.cliente ?? null))
-        .catch(() => setClienteEncontrado(null))
-        .finally(() => setBuscandoCliente(false));
-    }, 400);
-    return () => clearTimeout(t);
-  }, [telefoneCliente]);
+    buscarClientePorTelefoneSalao(telefoneClienteDebounced)
+      .then((d) => setClienteEncontrado(d?.cliente ?? null))
+      .catch(() => setClienteEncontrado(null))
+      .finally(() => setBuscandoCliente(false));
+  }, [telefoneClienteDebounced]);
 
   const isCartao = (f) => f === 'credit_card' || f === 'debit_card';
 

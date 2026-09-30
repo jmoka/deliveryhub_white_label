@@ -16,6 +16,7 @@ import { getAcompanharUrls, getAutoAtendimentoUrls } from '../../utils/mesaAcomp
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import QuickAddProdutoModal from '../../components/restaurante/QuickAddProdutoModal';
 import PagamentoParcialModal from '../../components/salao/PagamentoParcialModal';
@@ -44,19 +45,17 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
   // anterior) — se achar, só toca pra usar o nome, sem precisar perguntar de novo.
   // Mesmo padrão já usado no app do garçom (garcom-portal), só nunca tinha sido
   // ligado aqui do lado do estabelecimento.
+  useEffect(() => { setClienteEncontrado(null); }, [telefone]);
+  const telefoneDebounced = useDebouncedValue(telefone, 400);
   useEffect(() => {
-    const digitos = telefone.replace(/\D/g, '');
-    setClienteEncontrado(null);
+    const digitos = telefoneDebounced.replace(/\D/g, '');
     if (digitos.length < 8) return;
     setBuscandoCliente(true);
-    const t = setTimeout(() => {
-      buscarClientePorTelefoneSalao(telefone)
-        .then((d) => setClienteEncontrado(d?.cliente ?? null))
-        .catch(() => setClienteEncontrado(null))
-        .finally(() => setBuscandoCliente(false));
-    }, 400);
-    return () => clearTimeout(t);
-  }, [telefone]);
+    buscarClientePorTelefoneSalao(telefoneDebounced)
+      .then((d) => setClienteEncontrado(d?.cliente ?? null))
+      .catch(() => setClienteEncontrado(null))
+      .finally(() => setBuscandoCliente(false));
+  }, [telefoneDebounced]);
 
   const submit = async (e) => {
     e.preventDefault();

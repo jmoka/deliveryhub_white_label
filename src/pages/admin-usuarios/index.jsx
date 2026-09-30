@@ -6,6 +6,7 @@ import {
 import AdminHeader from '../../components/admin/AdminHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDuracao } from '../../utils/formatDuracao';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { ChevronDown } from 'lucide-react';
 
 // Badge com contagem regressiva do bloqueio por tentativas de senha erradas no login
@@ -351,10 +352,14 @@ const AdminUsuarios = () => {
   const [processando, setProcessando] = useState(null);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'lista'
 
+  // Busca só dispara a API 400ms depois do usuário parar de digitar — antes
+  // disparava getUsuarios() a cada tecla.
+  const buscaDebounced = useDebouncedValue(busca, 400);
+
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getUsuarios({ busca: busca || undefined, role: role || undefined, page, limit: LIMIT });
+      const data = await getUsuarios({ busca: buscaDebounced || undefined, role: role || undefined, page, limit: LIMIT });
       setUsuarios(data.usuarios ?? []);
       setTotal(data.total ?? 0);
       setErro(null);
@@ -363,7 +368,7 @@ const AdminUsuarios = () => {
     } finally {
       setLoading(false);
     }
-  }, [busca, role, page]);
+  }, [buscaDebounced, role, page]);
 
   useEffect(() => { carregar(); }, [carregar]);
   useEffect(() => { getEmpresas().then((d) => setEmpresas(d.empresas ?? [])).catch(() => {}); }, []);

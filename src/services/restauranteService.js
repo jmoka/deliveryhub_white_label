@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { apiPath } from '../lib/apiUrl';
+import { cachedFetch, invalidateCache } from '../utils/requestCache';
 
 const API = apiPath('/api/restaurante');
 
@@ -43,7 +44,13 @@ export const finalizarCadastroRestaurante = (data) =>
 export const verificarDisponibilidadeCadastro = (data) =>
   apiFetch('/verificar-disponibilidade', { method: 'POST', body: JSON.stringify(data) });
 
-export const getMinhaEmpresa = () => apiFetch('/minha-empresa');
+// Cacheado (TTL 15s, mesmo do cache Redis do backend) — várias páginas do
+// painel chamam essa função direto (sem passar pelo hook useMinhaEmpresaData),
+// então o cache mora aqui pra proteger todo mundo sem precisar mexer em cada
+// tela. Sem invalidação de propósito: nenhuma tela relê isso logo depois de
+// salvar (usam estado local otimista), mesma folga que useMinhaEmpresaData já
+// tem hoje.
+export const getMinhaEmpresa = () => cachedFetch('minha-empresa', () => apiFetch('/minha-empresa'), 15000);
 
 export const getMeusPedidos = (params = {}) => {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v)).toString();
@@ -180,9 +187,15 @@ export const getCardapioImpressoConfig = () => apiFetch('/cardapio-impresso/conf
 export const updateCardapioImpressoConfig = (data) =>
   apiFetch('/cardapio-impresso/config', { method: 'PATCH', body: JSON.stringify(data) });
 
-export const getFavoritosMenu = () => apiFetch('/favoritos-menu');
+// Cacheado (TTL 15s) — useRestauranteFavoritos remonta a cada troca de rota
+// (vive no header) e refazia essa busca toda vez. Ao contrário de
+// getMinhaEmpresa, aqui INVALIDA no write (updateFavoritosMenu abaixo) — sem
+// isso, favoritar/desfavoritar e trocar de tela dentro do TTL mostraria o
+// estado antigo de volta.
+export const getFavoritosMenu = () => cachedFetch('favoritos-menu', () => apiFetch('/favoritos-menu'), 15000);
 export const updateFavoritosMenu = (data) =>
-  apiFetch('/favoritos-menu', { method: 'PATCH', body: JSON.stringify(data) });
+  apiFetch('/favoritos-menu', { method: 'PATCH', body: JSON.stringify(data) })
+    .then((res) => { invalidateCache('favoritos-menu'); return res; });
 
 export const getConfig = () => apiFetch('/config');
 

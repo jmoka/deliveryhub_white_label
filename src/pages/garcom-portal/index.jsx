@@ -15,6 +15,7 @@ import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import Icon from '../../components/AppIcon';
 import TempoMedioTile from '../../components/TempoMedioTile';
 import PagamentoParcialModal from '../../components/salao/PagamentoParcialModal';
@@ -132,19 +133,19 @@ const AbrirComandaModal = ({ mesa, onFechar, onAberta }) => {
 
   // Ao digitar o telefone, procura cliente já cadastrado (delivery ou comanda
   // anterior) — se achar, o garçom só toca pra usar o nome, sem precisar perguntar.
+  // Resultado anterior some assim que o telefone muda (feedback imediato); a
+  // chamada de rede em si espera 400ms de digitação parada.
+  useEffect(() => { setClienteEncontrado(null); }, [telefone]);
+  const telefoneDebounced = useDebouncedValue(telefone, 400);
   useEffect(() => {
-    const digitos = telefone.replace(/\D/g, '');
-    setClienteEncontrado(null);
+    const digitos = telefoneDebounced.replace(/\D/g, '');
     if (digitos.length < 8) return;
     setBuscandoCliente(true);
-    const t = setTimeout(() => {
-      buscarClientePorTelefone(telefone)
-        .then((d) => setClienteEncontrado(d?.cliente ?? null))
-        .catch(() => setClienteEncontrado(null))
-        .finally(() => setBuscandoCliente(false));
-    }, 400);
-    return () => clearTimeout(t);
-  }, [telefone]);
+    buscarClientePorTelefone(telefoneDebounced)
+      .then((d) => setClienteEncontrado(d?.cliente ?? null))
+      .catch(() => setClienteEncontrado(null))
+      .finally(() => setBuscandoCliente(false));
+  }, [telefoneDebounced]);
 
   const submit = async (e) => {
     e.preventDefault();
