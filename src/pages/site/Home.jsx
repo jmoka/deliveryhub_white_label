@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import SiteLayout from './components/SiteLayout';
 import RevealOnScroll from './components/RevealOnScroll';
@@ -109,6 +109,226 @@ const HeroComposition = () => (
     </TiltCard>
   </div>
 );
+
+/* ── Ilustrações dos cards de Diferenciais — cada uma mostra o conceito de
+   verdade em vez de um ícone genérico centralizado. Reaproveitam o mesmo
+   fundo escuro + Blob + grain já montado em cada card (ver render abaixo). */
+
+// Comissão justa: duas barras comparando % de comissão, crescem ao entrar na
+// tela — a diferença visual (quase cheia vs. quase vazia) fala por si.
+const ComissaoVisual = () => (
+  <div className="relative z-10 w-full max-w-[260px] space-y-7">
+    {[
+      { label: 'Outras plataformas', pct: 18, cor: 'bg-white/35' },
+      { label: 'PediuVai', pct: 5, cor: 'bg-[var(--site-gold)]' },
+    ].map((b, i) => (
+      <div key={b.label}>
+        <div className="flex justify-between text-sm text-white/70 mb-2">
+          <span>{b.label}</span>
+          <span className="font-semibold text-white">{b.pct}%</span>
+        </div>
+        <div className="h-3.5 rounded-full bg-white/10 overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full ${b.cor}`}
+            initial={{ width: 0 }}
+            whileInView={{ width: `${(b.pct / 20) * 100}%` }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ duration: 1, delay: 0.15 + i * 0.15, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// Tudo no bairro: o motoboi da logo roda em loop dentro do "raio do bairro"
+// (círculo tracejado), indo da loja até a casa — mesmo motivo visual já usado
+// na seção "Como funciona", só numa rota curta e circular.
+const BairroVisual = () => (
+  <div className="relative z-10 w-56 h-56 rounded-full border-2 border-dashed border-white/25 flex items-center justify-center">
+    <Icon name="Store" size={32} className="absolute left-2 top-1/2 -translate-y-1/2 text-white/80" />
+    <Icon name="Home" size={32} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80" />
+    <motion.img
+      src="/assets/images/icon-192.png"
+      alt=""
+      className="absolute w-14 h-14 top-1/2 -translate-y-1/2 -translate-x-1/2 drop-shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
+      animate={{ left: ['14%', '82%', '14%'] }}
+      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+    />
+  </div>
+);
+
+// Painel único: 4 cartõezinhos (cardápio/pedidos/caixa/financeiro) entram
+// escalonados ao rolar até aqui — dá a sensação de "tudo nesse painel".
+const PAINEL_CARDS = [
+  { icon: 'UtensilsCrossed', label: 'Cardápio' },
+  { icon: 'ClipboardList', label: 'Pedidos' },
+  { icon: 'Wallet', label: 'Caixa' },
+  { icon: 'BarChart3', label: 'Financeiro' },
+];
+const PainelVisual = () => (
+  <div className="relative z-10 grid grid-cols-2 gap-4 w-full max-w-[260px]">
+    {PAINEL_CARDS.map((c, i) => (
+      <motion.div
+        key={c.label}
+        className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 p-4 flex flex-col items-center gap-2"
+        initial={{ opacity: 0, y: 14, scale: 0.9 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.5, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <Icon name={c.icon} size={30} className="text-[var(--site-gold)]" />
+        <span className="text-xs text-white/70">{c.label}</span>
+      </motion.div>
+    ))}
+  </div>
+);
+
+const DIFERENCIAIS_VISUALS = [ComissaoVisual, BairroVisual, PainelVisual];
+
+/* ── Vídeos reais do painel (gravações de tela hospedadas à parte) — mostra o
+   produto de verdade funcionando, bem antes do CTA final, pra reforçar
+   confiança. Cada card faz uma sondagem leve (preload="metadata", não baixa
+   o vídeo inteiro) pra saber se o arquivo existe; se não existir/falhar,
+   mostra um card "Em breve" no lugar em vez de quebrar ou sumir. */
+const VIDEOS_BASE_URL = 'https://teusite.top/pediuvai/videos/';
+
+const VIDEOS = [
+  { arquivo: 'dasheboard.mp4', titulo: 'Painel do dono', desc: 'Pedidos, cardápio e caixa, tudo num só lugar.', icon: 'LayoutDashboard' },
+  { arquivo: 'abrindo_o_caixa.mp4', titulo: 'Abrindo o caixa', desc: 'Controle do caixa simples, direto da tela.', icon: 'Wallet' },
+  { arquivo: 'instalando_no_celular.mp4', titulo: 'Instala no celular', desc: 'Funciona como app, direto do navegador.', icon: 'Smartphone' },
+  { arquivo: 'menu_das_impressoras.mp4', titulo: 'Impressão automática', desc: 'Cozinha e bar recebem o pedido certo, na hora.', icon: 'Printer' },
+  { arquivo: 'menu_lateral_I.mp4', titulo: 'Tour pelo painel', desc: 'Navegue por tudo em poucos cliques.', icon: 'Menu' },
+  { arquivo: 'menu_lateral_perte_II.mp4', titulo: 'Mais do painel', desc: 'Continuação do tour pelo menu lateral.', icon: 'Menu' },
+];
+
+const VIDEO_GRADIENTES = [
+  'linear-gradient(135deg, #FF441F, #FF7A00)',
+  'linear-gradient(135deg, #FFC24B, #FF7A00)',
+  'linear-gradient(135deg, #2C4066, #0C1A33)',
+];
+
+const VideoCard = ({ video, index, onAbrir }) => {
+  const [status, setStatus] = useState('carregando'); // carregando | ok | erro
+  const url = `${VIDEOS_BASE_URL}${video.arquivo}`;
+  const pronto = status === 'ok';
+
+  return (
+    <RevealOnScroll delay={index * 0.08}>
+      <button
+        type="button"
+        onClick={() => pronto && onAbrir(video)}
+        className={`group relative w-full aspect-video rounded-2xl overflow-hidden text-left ${pronto ? 'cursor-pointer' : 'cursor-default'}`}
+      >
+        {/* Sondagem oculta — só metadata, não baixa os MBs do vídeo inteiro à toa. */}
+        <video
+          src={url}
+          preload="metadata"
+          className="hidden"
+          onLoadedMetadata={() => setStatus('ok')}
+          onError={() => setStatus('erro')}
+        />
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 transition-transform duration-500 group-hover:scale-105"
+          style={{ background: VIDEO_GRADIENTES[index % VIDEO_GRADIENTES.length] }}
+        >
+          <Icon name={video.icon} size={34} className="text-white/90" />
+          {pronto && (
+            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Icon name="Play" size={20} className="text-[var(--site-ink)] translate-x-0.5" />
+            </div>
+          )}
+          {status === 'erro' && (
+            <span className="text-[11px] font-semibold text-white/80 bg-black/30 px-3 py-1 rounded-full">Em breve</span>
+          )}
+        </div>
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+          <p className="text-white text-sm font-semibold">{video.titulo}</p>
+          <p className="text-white/60 text-xs">{video.desc}</p>
+        </div>
+      </button>
+    </RevealOnScroll>
+  );
+};
+
+const VideoModal = ({ video, onClose }) => (
+  <AnimatePresence>
+    {video && (
+      <motion.div
+        className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="relative max-w-full flex flex-col items-center"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={onClose} className="absolute -top-10 right-0 text-white/80 hover:text-white" aria-label="Fechar">
+            <Icon name="X" size={26} />
+          </button>
+          {/* max-h limita vídeo vertical (gravação de celular) pra não estourar a
+              tela — w-auto deixa a largura seguir a proporção real do vídeo. */}
+          <video
+            key={video.arquivo}
+            src={`${VIDEOS_BASE_URL}${video.arquivo}`}
+            controls
+            autoPlay
+            className="max-w-full max-h-[80vh] w-auto rounded-2xl shadow-2xl bg-black"
+          />
+          <p className="text-white text-center mt-3 text-sm">{video.titulo}</p>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+const VideoShowcase = () => {
+  const [videoAberto, setVideoAberto] = useState(null);
+
+  return (
+    <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28">
+      <RevealOnScroll className="text-center mb-14">
+        <Kicker index="06" label="Veja funcionando" />
+        <h2 className="site-display text-4xl font-medium">O painel de verdade, sem enrolação.</h2>
+      </RevealOnScroll>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {VIDEOS.map((v, i) => (
+          <VideoCard key={v.arquivo} video={v} index={i} onAbrir={setVideoAberto} />
+        ))}
+      </div>
+      <VideoModal video={videoAberto} onClose={() => setVideoAberto(null)} />
+    </section>
+  );
+};
+
+// Motoboi (mascote do app) "entregando" ao longo da mesma linha que liga os 4
+// passos (Escolha → Peça → Acompanhe → Receba) — só em telas grandes (lg+),
+// looping infinito da esquerda pra direita, reforçando visualmente "ele tá
+// indo entregar" enquanto o usuário lê os passos. Some o movimento (ícone
+// parado no meio da linha) se o usuário preferir menos animação.
+const MotoboyDeliveryPath = () => {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <div
+      className="hidden lg:block absolute top-7 left-[12%] right-[12%] h-0 pointer-events-none"
+      aria-hidden="true"
+    >
+      <motion.img
+        src="/assets/images/icon-192.png"
+        alt=""
+        className="absolute w-10 h-10 -translate-y-1/2 -translate-x-1/2 drop-shadow-[0_6px_14px_rgba(12,26,51,0.35)]"
+        animate={reduceMotion ? { left: '50%' } : { left: ['0%', '100%'] }}
+        transition={reduceMotion ? undefined : { duration: 7, repeat: Infinity, repeatType: 'loop', ease: 'linear' }}
+      />
+    </div>
+  );
+};
 
 const Home = () => (
   <SiteLayout>
@@ -236,6 +456,7 @@ const Home = () => (
         </RevealOnScroll>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-14 relative">
           <div className="hidden lg:block absolute top-7 left-[12%] right-[12%] h-px bg-[var(--site-line)]" />
+          <MotoboyDeliveryPath />
           {PASSOS.map((p, i) => (
             <RevealOnScroll key={p.title} delay={i * 0.1} className="relative text-center">
               <div className="relative z-10 w-14 h-14 mx-auto rounded-2xl bg-[var(--site-ink)] flex items-center justify-center mb-5">
@@ -251,24 +472,30 @@ const Home = () => (
 
     {/* ── Diferenciais (blocos alternados) ─────────────────────────── */}
     <section className="max-w-6xl mx-auto px-6 py-16 sm:py-20 lg:py-28 space-y-24">
-      {DIFERENCIAIS.map((d, i) => (
-        <RevealOnScroll key={d.title}>
-          <div className={`grid md:grid-cols-2 gap-12 items-center ${i % 2 === 1 ? 'md:[&>*:first-child]:order-2' : ''}`}>
-            <div>
-              <Kicker index={`0${i + 3}`} label={d.kicker} />
-              <h3 className="site-display text-3xl sm:text-4xl font-medium leading-tight mb-5">{d.title}</h3>
-              <p className="text-[var(--site-ink-soft)]/70 leading-relaxed max-w-md">{d.desc}</p>
-            </div>
-            <TiltCard maxTilt={5} className="rounded-3xl">
-              <div className="site-grain relative aspect-[4/3] rounded-3xl bg-[var(--site-ink)] flex items-center justify-center overflow-hidden">
-                <Blob size={300} tone={i === 0 ? 'brand' : i === 1 ? 'gold' : 'ink'} opacity={0.4} style={{ top: '20%', left: '20%' }} />
-                <Icon name={d.icon} size={64} className="relative text-white/90" strokeWidth={1.2} />
+      {DIFERENCIAIS.map((d, i) => {
+        const Visual = DIFERENCIAIS_VISUALS[i];
+        return (
+          <RevealOnScroll key={d.title}>
+            <div className={`grid md:grid-cols-2 gap-12 items-center ${i % 2 === 1 ? 'md:[&>*:first-child]:order-2' : ''}`}>
+              <div>
+                <Kicker index={`0${i + 3}`} label={d.kicker} />
+                <h3 className="site-display text-3xl sm:text-4xl font-medium leading-tight mb-5">{d.title}</h3>
+                <p className="text-[var(--site-ink-soft)]/70 leading-relaxed max-w-md">{d.desc}</p>
               </div>
-            </TiltCard>
-          </div>
-        </RevealOnScroll>
-      ))}
+              <TiltCard maxTilt={5} className="rounded-3xl">
+                <div className="site-grain relative aspect-[4/3] rounded-3xl bg-[var(--site-ink)] flex items-center justify-center overflow-hidden p-8">
+                  <Blob size={300} tone={i === 0 ? 'brand' : i === 1 ? 'gold' : 'ink'} opacity={0.4} style={{ top: '20%', left: '20%' }} />
+                  <Visual />
+                </div>
+              </TiltCard>
+            </div>
+          </RevealOnScroll>
+        );
+      })}
     </section>
+
+    {/* ── Vídeos (veja funcionando) ────────────────────────────────── */}
+    <VideoShowcase />
 
     {/* ── CTA final ─────────────────────────────────────────────────── */}
     <section className="max-w-6xl mx-auto px-6 pb-16 sm:pb-20 lg:pb-28">
