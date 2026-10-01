@@ -41,9 +41,14 @@ const SiteHeader = () => {
       <div
         className={`w-full max-w-6xl rounded-2xl border transition-all duration-500 ${
           scrolled
-            ? 'bg-[var(--site-ink)]/90 border-white/10 shadow-2xl shadow-black/30 backdrop-blur-xl'
-            : 'bg-[var(--site-ink)]/25 border-white/10 backdrop-blur-md'
+            ? 'border-white/10 shadow-2xl shadow-black/30 backdrop-blur-xl'
+            : 'border-white/10 backdrop-blur-md'
         }`}
+        // Tailwind não sabe aplicar opacidade em cima de uma var() opaca
+        // (bg-[var(--site-ink)]/90 não gera CSS nenhum — o fundo ficava
+        // totalmente transparente, só o blur, e o texto branco sumia sobre
+        // seção clara). rgba() direto aqui resolve de verdade.
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.35)' }}
       >
         <div className="flex items-center justify-between px-5 py-3">
           <SiteLogo dark />

@@ -17,6 +17,11 @@
 
 .site-scope {
   --site-ink: #0C1A33;
+  /* Canais RGB do --site-ink acima, pra usar com rgba() em opacidade dinâmica
+     via JS (Tailwind não sabe calcular opacidade em cima de uma var() opaca —
+     bg-[var(--site-ink)]/90 não gera CSS nenhum, viu-se o header inteiro sem
+     fundo por causa disso). Manter os dois valores em sincronia se a cor mudar. */
+  --site-ink-rgb: 12, 26, 51;
   --site-ink-soft: #2C4066;
   --site-cream: #FBF6EE;
   --site-cream-dim: #F1E9DA;
