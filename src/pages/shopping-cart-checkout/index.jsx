@@ -108,7 +108,58 @@ const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, r
   const [enviado, setEnviado] = useState(false);
   const [erroUpload, setErroUpload] = useState(null);
   const [showAvisoComprovante, setShowAvisoComprovante] = useState(false);
+  const [pagamentoDetectado, setPagamentoDetectado] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  // PIX via gateway (não manual) confirma sozinho, sem o cliente precisar voltar
+  // pra essa tela e clicar em "Acompanhar pedido" -- detecta a confirmação (realtime
+  // + poll de 5s como fallback, mesmo padrão de order-tracking-status) e já leva
+  // pro acompanhamento. PIX manual (motoboy/balcão) não tem webhook -- confirmação
+  // só acontece na entrega, segue dependendo do clique mesmo.
+  useEffect(() => {
+    if (manual || !pedidoId) return;
+    let ativo = true;
+
+    const verificarStatus = async () => {
+      try {
+        const sessionResult = await supabase.auth.getSession();
+        const token = sessionResult?.data?.session?.access_token;
+        if (!token) return;
+        const res = await fetch(apiPath(`/api/pedidos/${pedidoId}`), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (ativo && data.pedido?.status && data.pedido.status !== 'pending') {
+          setPagamentoDetectado(true);
+        }
+      } catch {
+        // silencioso -- próximo poll ou o botão "Acompanhar pedido" resolve
+      }
+    };
+
+    const channel = supabase
+      .channel(`pix-aguardando-${pedidoId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${pedidoId}`,
+      }, (payload) => {
+        if (ativo && payload.new?.status && payload.new.status !== 'pending') {
+          setPagamentoDetectado(true);
+        }
+      })
+      .subscribe();
+
+    const interval = setInterval(verificarStatus, 5000);
+
+    return () => {
+      ativo = false;
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
+  }, [manual, pedidoId]);
 
   // Cutucão pra anexar comprovante antes de sair da tela — mas nunca trava o
   // cliente aqui: quem prefere mostrar/pagar na hora (motoboy ou balcão) segue
@@ -168,6 +219,10 @@ const PixScreen = ({ pixData, total, onIrAcompanhar, manual = false, pedidoId, r
       setEnviando(false);
     }
   };
+
+  if (pagamentoDetectado) {
+    return <PagamentoConfirmadoScreen onContinuar={onIrAcompanhar} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#18181B] flex flex-col items-center justify-center p-6">
