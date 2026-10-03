@@ -94,40 +94,46 @@ const ComissoesPagBankTab = ({ empresas, empresaMap }) => {
             Nenhuma comissão encontrada para os filtros selecionados
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900">
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Empresa</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Pedido</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Venda</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Taxa</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Comissão</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comissoes.map((c) => (
-                <tr key={c.id} className="border-b dark:border-zinc-700 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">
-                    {empresaMap[c.empresa_id] ?? `Empresa #${c.empresa_id}`}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">#{c.pedido_id}</td>
-                  <td className="px-4 py-3 text-right text-gray-700 dark:text-zinc-300">{fmt(c.valor_venda)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-xs bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                      {c.comissao_pct}%
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold text-orange-700 dark:text-orange-400">
-                    {fmt(c.comissao_valor)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-400 dark:text-zinc-500 text-xs">
-                    {new Date(c.criado_em).toLocaleDateString('pt-BR')}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b dark:border-zinc-700 bg-gray-50 dark:bg-zinc-900">
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Empresa</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Pedido</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Venda</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Taxa</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Comissão</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400">Código da transação</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400">Data/Hora</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {comissoes.map((c) => (
+                  <tr key={c.id} className="border-b dark:border-zinc-700 last:border-0 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-zinc-100">
+                      {empresaMap[c.empresa_id] ?? `Empresa #${c.empresa_id}`}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-zinc-400">#{c.pedido_id}</td>
+                    <td className="px-4 py-3 text-right text-gray-700 dark:text-zinc-300">{fmt(c.valor_venda)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-xs bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                        {c.comissao_pct}%
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-orange-700 dark:text-orange-400">
+                      {fmt(c.comissao_valor)}
+                    </td>
+                    <td className="px-4 py-3 text-left text-gray-500 dark:text-zinc-400 font-mono text-xs">
+                      {c.codigo_transacao ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-400 dark:text-zinc-500 text-xs">
+                      {fmtDate(c.criado_em)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </>
