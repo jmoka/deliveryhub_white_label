@@ -137,6 +137,8 @@ const RestauranteSessao = () => {
                     <th className="px-4 py-2.5">Hora</th>
                     {moduloGdoor && <th className="px-4 py-2.5">GDOOR</th>}
                     <th className="px-4 py-2.5 text-right">Total</th>
+                    <th className="px-4 py-2.5 text-right">Plataforma</th>
+                    <th className="px-4 py-2.5 text-right">Líquido</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -192,6 +194,12 @@ const RestauranteSessao = () => {
                         </td>
                       )}
                       <td className="px-4 py-2.5 text-right font-bold text-[#18181B] dark:text-[#F4F4F5]">{fmt(p.total)}</td>
+                      <td className="px-4 py-2.5 text-right text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                        {p.financeiro_plataforma?.pagamento_confirmado ? fmt(p.financeiro_plataforma.comissao_valor) : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs font-semibold text-green-700 dark:text-green-400">
+                        {p.financeiro_plataforma?.pagamento_confirmado ? fmt(p.financeiro_plataforma.valor_liquido) : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
