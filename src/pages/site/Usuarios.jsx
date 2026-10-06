@@ -9,6 +9,72 @@ import Blob from './components/Blob';
 import Kicker from './components/Kicker';
 import ParallaxImage from './components/ParallaxImage';
 
+const TELEGRAM_BOT_URL = 'https://t.me/pediuvai_bot';
+
+const TELEGRAM_RECURSOS = [
+  { icon: 'Search', text: 'Pergunte por um prato e receba o link exato do estabelecimento — sem rolar cardápio nenhum.' },
+  { icon: 'MapPin', text: 'Compartilhe sua localização com um toque e veja quem está mais pertinho de você agora.' },
+  { icon: 'Zap', text: 'Resposta na hora, direto na conversa — sem precisar abrir o app.' },
+];
+
+// Mock de conversa real (pergunta → resposta com link → sugestão de localização),
+// mesma jornada que o assistente faz de verdade — reforça confiança mostrando o
+// produto funcionando em vez de descrever a feature com texto solto.
+const TelegramChatVisual = () => (
+  <div className="site-grain relative rounded-3xl bg-[var(--site-ink)] overflow-hidden p-6 sm:p-8">
+    <Blob size={320} tone="brand" opacity={0.35} style={{ top: '-12%', right: '-14%' }} />
+
+    <div className="relative z-10 flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+      <div className="w-10 h-10 rounded-full bg-[linear-gradient(135deg,#2AABEE,#229ED9)] flex items-center justify-center flex-shrink-0">
+        <Icon name="Send" size={16} className="text-white" />
+      </div>
+      <div>
+        <p className="text-white text-sm font-semibold">Assistente PediuVai</p>
+        <p className="text-white/40 text-[11px] flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> online agora
+        </p>
+      </div>
+    </div>
+
+    <div className="relative z-10 space-y-3">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.5 }}
+        className="ml-auto max-w-[82%] rounded-2xl rounded-tr-sm bg-[var(--site-brand)] text-white text-sm px-4 py-2.5"
+      >
+        tem prato de peixe por aí?
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="max-w-[88%] rounded-2xl rounded-tl-sm bg-white/10 text-white text-sm px-4 py-2.5 leading-relaxed"
+      >
+        Achei no <strong>Sereia do Mar</strong> 🐟 Filé de Dourada Frita — R$ 70
+        <span className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--site-gold)]">
+          <Icon name="Link" size={11} /> sereiadomar.teusite.top
+        </span>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.4, delay: 0.6 }}
+        className="flex justify-center pt-1"
+      >
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 text-[11px] text-white/70">
+          📍 Enviar localização
+        </span>
+      </motion.div>
+    </div>
+  </div>
+);
+
 const BENEFICIOS = [
   { icon: 'MapPin', title: 'Tudo o que tem perto', desc: 'Restaurante, farmácia, mercado, loja — o comércio do seu bairro, num só lugar.' },
   { icon: 'Radar', title: 'Acompanhe em tempo real', desc: 'Veja o pedido sendo preparado e o entregador a caminho, sem ficar no escuro.' },
@@ -126,6 +192,40 @@ const Usuarios = () => (
             <p className="text-sm text-[var(--site-ink-soft)]/65 max-w-[14rem] mx-auto">{s.desc}</p>
           </RevealOnScroll>
         ))}
+      </div>
+    </section>
+
+    {/* ── Telegram (consulta por IA) ───────────────────────────────── */}
+    <section className="bg-[var(--site-cream-dim)] py-16 sm:py-20 lg:py-28 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+        <RevealOnScroll>
+          <Kicker index="04" label="Pergunte antes de pedir" />
+          <h2 className="site-display text-3xl sm:text-4xl font-medium leading-tight mb-5">
+            Manda uma mensagem e a gente te diz <span className="italic site-gradient-text">o que tem perto</span>.
+          </h2>
+          <p className="text-[var(--site-ink-soft)]/70 leading-relaxed max-w-md mb-8">
+            Converse com o assistente do PediuVai no Telegram: pergunte por um prato, peça pra ver os estabelecimentos mais pertinho, ou só compartilhe sua localização com um toque.
+          </p>
+          <ul className="space-y-3 mb-9">
+            {TELEGRAM_RECURSOS.map((item) => (
+              <li key={item.text} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-white border border-[var(--site-line)] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Icon name={item.icon} size={14} className="text-[var(--site-brand)]" />
+                </div>
+                <span className="text-sm text-[var(--site-ink-soft)]/80 leading-relaxed">{item.text}</span>
+              </li>
+            ))}
+          </ul>
+          <GradientButton href={TELEGRAM_BOT_URL} target="_blank" glow icon="Send">
+            Falar com o assistente
+          </GradientButton>
+        </RevealOnScroll>
+
+        <RevealOnScroll delay={0.1}>
+          <TiltCard maxTilt={5} className="rounded-3xl">
+            <TelegramChatVisual />
+          </TiltCard>
+        </RevealOnScroll>
       </div>
     </section>
 

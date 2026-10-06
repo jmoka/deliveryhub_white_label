@@ -18,6 +18,7 @@ const GradientButton = ({
   children,
   to,
   href,
+  target,
   onClick,
   variant = 'solid',
   icon = 'ArrowRight',
@@ -47,7 +48,13 @@ const GradientButton = ({
   }
   if (href) {
     return (
-      <motion.a {...motionProps} href={href} className={classes}>
+      <motion.a
+        {...motionProps}
+        href={href}
+        target={target}
+        rel={target === '_blank' ? 'noopener noreferrer' : undefined}
+        className={classes}
+      >
         {content}
       </motion.a>
     );
