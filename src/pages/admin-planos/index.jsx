@@ -845,9 +845,9 @@ const TabFaturas = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <p className="text-sm text-gray-500 dark:text-zinc-400">{faturas.length} fatura(s)</p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button onClick={() => setModalNova(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             <Icon name="Plus" size={15} /> Nova fatura
