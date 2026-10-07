@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import SiteLayout from './components/SiteLayout';
 import RevealOnScroll from './components/RevealOnScroll';
@@ -27,7 +27,44 @@ const RECURSOS = [
   'Cadastro dos próprios entregadores ou uso da malha do bairro',
 ];
 
-const Estabelecimentos = () => (
+// Lightbox simples pra ampliar o print do painel — mesmo padrão do VideoModal
+// da Home (backdrop com blur, clique fora ou no X fecha, imagem real sem corte).
+const ImageModal = ({ aberta, onClose }) => (
+  <AnimatePresence>
+    {aberta && (
+      <motion.div
+        className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="relative max-w-full flex flex-col items-center"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={onClose} className="absolute -top-10 right-0 text-white/80 hover:text-white" aria-label="Fechar">
+            <Icon name="X" size={26} />
+          </button>
+          <img
+            src="/assets/images/painel.jpg"
+            alt="Painel do estabelecimento PediuVai"
+            className="max-w-full max-h-[85vh] w-auto rounded-2xl shadow-2xl"
+          />
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+const Estabelecimentos = () => {
+  const [imagemAberta, setImagemAberta] = useState(false);
+
+  return (
+  <>
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
     <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-16 sm:pb-20 lg:pb-28 overflow-hidden">
@@ -125,9 +162,14 @@ const Estabelecimentos = () => (
         </RevealOnScroll>
         <RevealOnScroll delay={0.1}>
           <TiltCard maxTilt={5} className="rounded-3xl">
-            <div className="site-grain relative aspect-square rounded-3xl bg-[var(--site-ink)] flex items-center justify-center overflow-hidden">
-              <Blob size={340} tone="gold" opacity={0.35} style={{ top: '15%', left: '15%' }} />
-              <Icon name="LayoutDashboard" size={80} className="relative text-white/90" strokeWidth={1.1} />
+            <div className="relative aspect-[1920/926]">
+              <Blob size={340} tone="gold" opacity={0.3} style={{ top: '10%', left: '10%' }} />
+              <img
+                src="/assets/images/painel.jpg"
+                alt="Painel do estabelecimento PediuVai"
+                onClick={() => setImagemAberta(true)}
+                className="site-float relative w-full h-full object-contain rounded-3xl border border-[var(--site-line)] shadow-2xl shadow-black/10 cursor-zoom-in"
+              />
             </div>
           </TiltCard>
         </RevealOnScroll>
@@ -173,6 +215,9 @@ const Estabelecimentos = () => (
       </RevealOnScroll>
     </section>
   </SiteLayout>
-);
+  <ImageModal aberta={imagemAberta} onClose={() => setImagemAberta(false)} />
+  </>
+  );
+};
 
 export default Estabelecimentos;
