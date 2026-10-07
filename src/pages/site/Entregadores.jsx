@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Icon from '../../components/AppIcon';
 import SiteLayout from './components/SiteLayout';
 import RevealOnScroll from './components/RevealOnScroll';
@@ -23,7 +23,49 @@ const PASSOS = [
   { icon: 'Bike', title: 'Entregue e ganhe', desc: 'Aceite corridas perto de você e receba por cada uma.' },
 ];
 
-const Entregadores = () => (
+// Fã de fotos reais do entregador usando o app — cada uma mantém a proporção
+// retrato original (sem corte, mesma lição do painel em Estabelecimentos.jsx),
+// só a posição/rotação do quadro externo é que monta o leque.
+const FOTOS_MOTOBOY = [
+  { src: '/assets/images/MOTOBOY1.jpg', x: '-32%', rotate: -8, z: 10, delay: '0s' },
+  { src: '/assets/images/MOTOBOY3.jpg', x: '32%', rotate: 8, z: 10, delay: '-2s' },
+  { src: '/assets/images/MOTOBOY2.jpg', x: '0%', rotate: 0, z: 20, delay: '-4s' },
+];
+
+// Lightbox pra ampliar qualquer uma das fotos — mesmo padrão do ImageModal
+// em Estabelecimentos.jsx, só generalizado por `src` em vez de um caminho fixo.
+const ImageModal = ({ src, onClose }) => (
+  <AnimatePresence>
+    {src && (
+      <motion.div
+        className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          className="relative max-w-full flex flex-col items-center"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button onClick={onClose} className="absolute -top-10 right-0 text-white/80 hover:text-white" aria-label="Fechar">
+            <Icon name="X" size={26} />
+          </button>
+          <img src={src} alt="Entregador usando o app PediuVai" className="max-w-full max-h-[85vh] w-auto rounded-2xl shadow-2xl" />
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+const Entregadores = () => {
+  const [imagemAberta, setImagemAberta] = useState(null);
+
+  return (
+  <>
   <SiteLayout>
     {/* ── Hero ──────────────────────────────────────────────────────── */}
     <section className="site-grain relative bg-[var(--site-ink)] text-white pt-28 sm:pt-36 lg:pt-44 pb-16 sm:pb-20 lg:pb-28 overflow-hidden">
@@ -108,9 +150,23 @@ const Entregadores = () => (
       <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
         <RevealOnScroll>
           <TiltCard maxTilt={5} className="rounded-3xl order-2 md:order-1">
-            <div className="site-grain relative aspect-square rounded-3xl bg-[var(--site-ink)] flex items-center justify-center overflow-hidden">
-              <Blob size={340} tone="gold" opacity={0.35} style={{ bottom: '10%', right: '10%' }} />
-              <Icon name="MapPinned" size={80} className="relative text-white/90" strokeWidth={1.1} />
+            <div className="relative aspect-square flex items-center justify-center">
+              <Blob size={340} tone="gold" opacity={0.3} style={{ bottom: '10%', right: '10%' }} />
+              {FOTOS_MOTOBOY.map((f) => (
+                <div
+                  key={f.src}
+                  className="absolute w-[46%]"
+                  style={{ transform: `translateX(${f.x}) rotate(${f.rotate}deg)`, zIndex: f.z }}
+                >
+                  <img
+                    src={f.src}
+                    alt="Entregador usando o app PediuVai"
+                    onClick={() => setImagemAberta(f.src)}
+                    className="site-float w-full aspect-[371/667] object-contain bg-white rounded-2xl border-[3px] border-white shadow-2xl shadow-black/30 cursor-zoom-in"
+                    style={{ animationDelay: f.delay }}
+                  />
+                </div>
+              ))}
             </div>
           </TiltCard>
         </RevealOnScroll>
@@ -162,6 +218,9 @@ const Entregadores = () => (
       </RevealOnScroll>
     </section>
   </SiteLayout>
-);
+  <ImageModal src={imagemAberta} onClose={() => setImagemAberta(null)} />
+  </>
+  );
+};
 
 export default Entregadores;
