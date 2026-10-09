@@ -6,7 +6,7 @@ import Icon from '../../components/AppIcon';
 import { cartAdd, cartCount, cartTotal, cartClear } from '../../utils/multiCart';
 import { imgUrl } from '../../lib/imgUrl';
 import { apiPath } from '../../lib/apiUrl';
-import { getPerfil } from '../../services/perfilService';
+import { getPerfil, getStatusTelegram, listarEnderecos } from '../../services/perfilService';
 import { supabase } from '../../lib/supabase';
 import { APP_NAME } from '../../constants/brand';
 
@@ -845,6 +845,10 @@ const MenuCatalogProductBrowse = () => {
   const [badgeCount, setBadgeCount]     = useState(() => cartCount());
   const [badgeTotal, setBadgeTotal]     = useState(() => cartTotal());
   const [perfilCliente, setPerfilCliente] = useState(null);
+  // Aviso permanente na barra superior — fica visível em toda visita enquanto o
+  // cliente não vincular o Telegram e/ou não confirmar o pino do endereço no
+  // mapa. Sem botão de fechar: some sozinho só quando a pendência for resolvida.
+  const [pendenciaCliente, setPendenciaCliente] = useState(null);
   const [marca, setMarca] = useState(DEFAULT_MARCA);
 
   useEffect(() => {
@@ -994,6 +998,22 @@ const MenuCatalogProductBrowse = () => {
   useEffect(() => {
     if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) { setPerfilCliente(null); return; }
     getPerfil().then(setPerfilCliente).catch(() => {});
+  }, [userProfile?.id, userProfile?.role]);
+
+  // Checa pendência de Telegram/endereço a cada visita — não existe forma de saber
+  // se um número "tem Telegram" sem o cliente abrir o bot e confirmar (deep-link
+  // opt-in, ver TelegramLinkCard), então o aviso fica até telegram_chat_id ser
+  // preenchido E o endereço ativo ter o pino confirmado no mapa.
+  useEffect(() => {
+    if (!isAuthenticated() || isAdmin() || isRestaurantOwner()) { setPendenciaCliente(null); return; }
+    Promise.all([getStatusTelegram().catch(() => null), listarEnderecos().catch(() => [])])
+      .then(([telegram, enderecos]) => {
+        const ativo = enderecos?.[0] ?? null;
+        setPendenciaCliente({
+          semTelegram: !telegram?.vinculado,
+          semEndereco: !ativo || ativo.semPino,
+        });
+      });
   }, [userProfile?.id, userProfile?.role]);
 
   // Se a precisão do GPS piorar (ou não vier mais tão boa) e o raio selecionado sumir
@@ -1277,6 +1297,28 @@ const MenuCatalogProductBrowse = () => {
           </div>
         </div>
       </header>
+
+      {/* ── Aviso permanente: Telegram não vinculado e/ou endereço sem pino ── */}
+      {pendenciaCliente && (pendenciaCliente.semTelegram || pendenciaCliente.semEndereco) && (
+        <div className="sticky top-16 z-40 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800">
+          <div className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2">
+            <Icon name="AlertTriangle" size={16} className="flex-shrink-0 text-amber-700 dark:text-amber-400" />
+            <span className="flex-1 text-xs sm:text-sm text-amber-800 dark:text-amber-300">
+              {pendenciaCliente.semTelegram && pendenciaCliente.semEndereco
+                ? 'Você ainda não conectou o Telegram e não confirmou o pino do seu endereço no mapa — isso é essencial pra receber avisos dos seus pedidos e garantir a entrega no lugar certo.'
+                : pendenciaCliente.semTelegram
+                ? 'Você ainda não conectou o Telegram — vincule pra receber a confirmação e o status dos seus pedidos.'
+                : 'Seu endereço ainda não tem o pino confirmado no mapa — ajuste pra garantir que o motoboy chegue no lugar certo.'}
+            </span>
+            <button
+              onClick={() => navigate('/customer-profile')}
+              className="flex-shrink-0 text-xs sm:text-sm font-bold text-amber-800 dark:text-amber-300 underline hover:no-underline whitespace-nowrap"
+            >
+              Atualizar agora
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Hero ────────────────────────────────────────────────── */}
       <Hero busca={busca} setBusca={setBusca} totalRest={restaurantes.length} mediaNota={mediaNota} marca={marca} />

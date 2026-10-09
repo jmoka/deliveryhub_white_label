@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
+import Icon from '../../../components/AppIcon';
 
 
 const RegisterForm = ({ 
@@ -151,7 +152,12 @@ const RegisterForm = ({
         required
       />
       <Input
-        label="WhatsApp"
+        label={
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name="Send" size={14} />
+            Telefone de contato
+          </span>
+        }
         type="tel"
         name="phone"
         value={formData?.phone}
@@ -159,7 +165,7 @@ const RegisterForm = ({
         placeholder="(11) 99999-9999"
         error={errors?.phone}
         required
-        description="Usaremos para confirmar seu cadastro"
+        description="Depois do cadastro você vai poder conectar esse número ao Telegram para receber notificações dos seus pedidos"
       />
       <div className="space-y-2">
         <Input
