@@ -940,7 +940,7 @@ const AdminEmpresas = () => {
       <LicencaBloqueadaBanner />
       <AdminHeader active="/admin/empresas" title="Painel Dev-Admin" subtitle="Gestão de Empresas" />
 
-      <main className="p-6 max-w-6xl mx-auto">
+      <main className="p-6 w-[90%] max-w-none mx-auto">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center flex-wrap gap-3">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-zinc-100">
