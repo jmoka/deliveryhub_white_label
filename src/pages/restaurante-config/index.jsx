@@ -8,6 +8,7 @@ import {
   getCatalogoGdoor, bloquearSyncGdoor, importarDeGdoor, exportarParaGdoor, getStatusExportacaoGdoor,
   getCatalogoClientesGdoor, bloquearSyncClienteGdoor, importarClientesDeGdoor, exportarClientesParaGdoor, getStatusExportacaoClientesGdoor,
   getStripeStatus, gerarLinkOnboardingStripe, desconectarStripe,
+  gerarLinkTelegramEstabelecimento, getStatusTelegramEstabelecimento,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -16,6 +17,7 @@ import Icon from '../../components/AppIcon';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
+import { TelegramLinkCard } from '../../components/telegram/TelegramLinkCard';
 import { apiPath } from '../../lib/apiUrl';
 
 // URL webhook gerada automaticamente — PagBank chama este endereço ao confirmar pagamento.
@@ -1456,7 +1458,14 @@ const RestauranteConfig = () => {
 
             {/* Endereço estruturado — filtro geográfico da home pública */}
             {abaAtiva === 'endereco' && (
-              <EnderecoCard geocodeFalhou={config?.geocode_falhou} />
+              <>
+                <EnderecoCard geocodeFalhou={config?.geocode_falhou} />
+                <TelegramLinkCard
+                  gerarLink={gerarLinkTelegramEstabelecimento}
+                  getStatus={getStatusTelegramEstabelecimento}
+                  className="bg-white dark:bg-[#27272A] rounded-xl border p-6 mt-4"
+                />
+              </>
             )}
 
             {/* Agente de impressão local — baixar, descompactar, rodar e parear impressoras */}

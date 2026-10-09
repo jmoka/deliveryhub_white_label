@@ -2,6 +2,15 @@ import React from 'react';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 
+const formatCNPJ = (value) => {
+  const numbers = value?.replace(/\D/g, '')?.slice(0, 14) ?? '';
+  return numbers
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2');
+};
+
 const BusinessInformationForm = ({
   formData,
   onInputChange,
@@ -9,6 +18,10 @@ const BusinessInformationForm = ({
   tiposEstabelecimento = [],
   className = ''
 }) => {
+  const handleCnpjChange = (e) => {
+    onInputChange({ target: { name: 'cnpj', value: formatCNPJ(e?.target?.value) } });
+  };
+
   const tipoOptions = tiposEstabelecimento.map((t) => ({ value: String(t.id), label: t.name }));
   const tipoSelecionado = tiposEstabelecimento.find((t) => String(t.id) === String(formData?.establishmentTypeId));
   const isRestaurante = !tipoSelecionado || tipoSelecionado.name === 'Restaurante';
@@ -98,10 +111,11 @@ const BusinessInformationForm = ({
           type="text"
           name="cnpj"
           value={formData?.cnpj || ''}
-          onChange={onInputChange}
+          onChange={handleCnpjChange}
           placeholder="00.000.000/0000-00"
           error={errors?.cnpj}
-          description="Opcional - para emissão de notas fiscais"
+          maxLength={18}
+          description="Opcional - se preencher, precisa ser um CNPJ válido (usado pra emissão de notas fiscais)"
         />
       </div>
       <div>

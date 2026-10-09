@@ -11,6 +11,7 @@ import { useMinhaLojaLogo } from '../../hooks/useMinhaLojaLogo';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { useSolicitacoesMotoboyCount } from '../../hooks/useSolicitacoesMotoboyCount';
 import { useSolicitacoesServicoCount } from '../../hooks/useSolicitacoesServicoCount';
+import { usePendenciaCadastroEstabelecimento } from '../../hooks/usePendenciaCadastroEstabelecimento';
 import { usePontosPreparoLinks } from '../../hooks/usePontosPreparoLinks';
 import { useRestauranteFavoritos } from '../../hooks/useRestauranteFavoritos';
 import { getRestauranteNavLinks } from '../../config/restauranteNavLinks';
@@ -71,6 +72,7 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh, ajudaCategoria 
   const { moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, tipoRestaurante } = useModulosEmpresa();
   const pendentesMotoboy = useSolicitacoesMotoboyCount();
   const pendentesServicos = useSolicitacoesServicoCount();
+  const pendenciaCadastro = usePendenciaCadastroEstabelecimento();
   const pendentesPorPath = {
     '/restaurante/motoboys': pendentesMotoboy,
     '/restaurante/servicos': pendentesServicos,
@@ -173,6 +175,22 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh, ajudaCategoria 
         >
           <Icon name="AlertTriangle" size={14} className="flex-shrink-0" />
           Assinatura vencida — vencimento em {fmtDataCurta(planoStatus.fatura_pendente_vencimento)}. Regularize para evitar o bloqueio do painel.
+        </button>
+      )}
+
+      {/* Aviso permanente — sem botão de fechar, some sozinho quando a pendência
+          for resolvida (vincular Telegram e/ou confirmar o pino do endereço). */}
+      {pendenciaCadastro && (pendenciaCadastro.semTelegram || pendenciaCadastro.semPino) && (
+        <button
+          onClick={() => navigate('/restaurante/config')}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900 hover:bg-amber-200/70 dark:hover:bg-amber-950/60"
+        >
+          <Icon name="AlertTriangle" size={14} className="flex-shrink-0" />
+          {pendenciaCadastro.semTelegram && pendenciaCadastro.semPino
+            ? 'Conecte o Telegram do estabelecimento e confirme o pino do endereço no mapa — clique pra resolver.'
+            : pendenciaCadastro.semTelegram
+            ? 'Conecte o Telegram do estabelecimento pra receber os avisos — clique pra resolver.'
+            : 'Confirme o pino do endereço no mapa pra garantir a entrega no lugar certo — clique pra resolver.'}
         </button>
       )}
 

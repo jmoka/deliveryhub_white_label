@@ -10,9 +10,11 @@ import PlanSelectionForm from './components/PlanSelectionForm';
 import ProgressSidebar from './components/ProgressSidebar';
 import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaModal';
 import AvisoTrialModal from './components/AvisoTrialModal';
-import { registrarRestauranteInicial, finalizarCadastroRestaurante, getTiposEstabelecimento, getPlanosDisponiveisCadastro, verificarDisponibilidadeCadastro } from '../../services/restauranteService';
+import { registrarRestauranteInicial, finalizarCadastroRestaurante, getTiposEstabelecimento, getPlanosDisponiveisCadastro, verificarDisponibilidadeCadastro, atualizarLocalizacaoManual, gerarLinkTelegramEstabelecimento, getStatusTelegramEstabelecimento } from '../../services/restauranteService';
 import { useAuth } from '../../contexts/AuthContext';
 import { APP_NAME } from '../../constants/brand';
+import { TelegramLinkCard } from '../../components/telegram/TelegramLinkCard';
+import { validarCnpj } from '../../utils/validarCnpj';
 
 const RestaurantRegistrationSetup = () => {
   const navigate = useNavigate();
@@ -28,6 +30,10 @@ const RestaurantRegistrationSetup = () => {
   const [faturaPendente, setFaturaPendente] = useState(null);
   const [avisoTrial, setAvisoTrial] = useState(null);
   const [checandoDisponibilidade, setCheckandoDisponibilidade] = useState(false);
+  // Preenchido só depois do cadastro finalizado — segura a navegação pro painel
+  // pra oferecer o vínculo do Telegram do estabelecimento antes (mesmo padrão
+  // do cadastro de cliente).
+  const [posCadastro, setPosCadastro] = useState(false);
   const [formData, setFormData] = useState({
     // Plano
     planoId: '',
@@ -53,7 +59,9 @@ const RestaurantRegistrationSetup = () => {
     neighborhood: '',
     city: '',
     state: '',
-    
+    lat: null,
+    lng: null,
+
     // Operating Hours
     operatingHours: {
       monday: { isOpen: true, openTime: '09:00', closeTime: '22:00' },
@@ -123,6 +131,13 @@ const RestaurantRegistrationSetup = () => {
     }
   };
 
+  // Pino arrastado no mapa (ContactDetailsForm) — some com o erro "pino" assim
+  // que o dono ajusta, mesmo padrão dos outros campos acima.
+  const handlePinChange = (lat, lng) => {
+    setFormData((prev) => ({ ...prev, lat, lng }));
+    if (errors?.pino) setErrors((prev) => ({ ...prev, pino: '' }));
+  };
+
   const validateCurrentStep = () => {
     const newErrors = {};
 
@@ -145,16 +160,24 @@ const RestaurantRegistrationSetup = () => {
         if (!formData?.deliveryTime || parseInt(formData?.deliveryTime) < 10) {
           newErrors.deliveryTime = 'Tempo de entrega deve ser pelo menos 10 minutos';
         }
+        if (formData?.cnpj?.trim() && !validarCnpj(formData.cnpj)) {
+          newErrors.cnpj = 'CNPJ inválido — confira os números digitados';
+        }
         break;
       }
 
-      case 'contact':
+      case 'contact': {
         if (!formData?.whatsapp?.trim()) {
-          newErrors.whatsapp = 'WhatsApp é obrigatório';
+          newErrors.whatsapp = 'Telefone de contato é obrigatório';
+        } else {
+          const digitosWhatsapp = formData.whatsapp.replace(/\D/g, '');
+          if (digitosWhatsapp.length !== 10 && digitosWhatsapp.length !== 11) {
+            newErrors.whatsapp = 'Telefone inválido — informe DDD + número completo';
+          }
         }
         if (!formData?.email?.trim()) {
           newErrors.email = 'Email é obrigatório';
-        } else if (!/\S+@\S+\.\S+/?.test(formData?.email)) {
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/?.test(formData?.email)) {
           newErrors.email = 'Email inválido';
         }
         if (!formData?.cep?.trim()) {
@@ -175,7 +198,14 @@ const RestaurantRegistrationSetup = () => {
         if (!formData?.state?.trim()) {
           newErrors.state = 'Estado é obrigatório';
         }
+        // Pino no mapa é obrigatório — endereço escrito sozinho não garante que o
+        // motoboy encontre o estabelecimento (mesma regra já aplicada no perfil
+        // do cliente, ver perfilService/customer-profile).
+        if (formData?.lat == null || formData?.lng == null) {
+          newErrors.pino = 'Ajuste o pino no mapa pra confirmar a localização exata do estabelecimento';
+        }
         break;
+      }
 
       case 'hours':
         const hasOpenDay = Object.values(formData?.operatingHours || {})?.some(day => day?.isOpen);
@@ -358,22 +388,37 @@ const RestaurantRegistrationSetup = () => {
         email: formData.email || undefined,
       });
 
+      // /finalizar não aceita lat/lng direto (só geocodifica em background a
+      // partir do endereço escrito) — o pino confirmado manualmente no passo
+      // "contact" é salvo à parte, mesmo endpoint que o EnderecoCard usa depois
+      // em /restaurante-config.
+      if (formData.lat != null && formData.lng != null) {
+        await atualizarLocalizacaoManual(formData.lat, formData.lng);
+      }
+
       localStorage.removeItem('restaurantSetupData');
       localStorage.removeItem('restaurantSetupStep');
       localStorage.removeItem('restaurantSetupCompleted');
 
-      // Aguarda o refresh antes de navegar — sem isso o role='restaurant_owner'
-      // recém-gravado no banco ainda não chegou no estado em memória quando o
-      // RestauranteGuard avalia a rota seguinte, e ele barra a navegação.
+      // Aguarda o refresh antes de liberar a etapa seguinte — sem isso o
+      // role='restaurant_owner' recém-gravado no banco ainda não chegou no
+      // estado em memória quando o RestauranteGuard avalia a rota do painel.
       await refreshUserProfile();
 
-      navigate('/restaurante');
+      // Não navega direto pro painel — mostra a etapa de vínculo do Telegram
+      // primeiro (ver handleContinuarPosCadastro), mesmo padrão já usado no
+      // cadastro de cliente (customer-registration-login).
+      setPosCadastro(true);
     } catch (error) {
       console.error('Erro ao finalizar cadastro:', error);
       setErrors({ submit: error?.message || 'Erro ao finalizar cadastro. Tente novamente.' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleContinuarPosCadastro = () => {
+    navigate('/restaurante');
   };
 
   const renderCurrentForm = () => {
@@ -408,6 +453,7 @@ const RestaurantRegistrationSetup = () => {
           <ContactDetailsForm
             formData={formData}
             onInputChange={handleInputChange}
+            onPinChange={handlePinChange}
             errors={errors}
           />
         );
@@ -501,6 +547,30 @@ const RestaurantRegistrationSetup = () => {
           </div>
         </div>
       </header>
+
+      {posCadastro ? (
+        <div className="max-w-md mx-auto px-4 py-12">
+          <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
+            <div className="text-center">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/40">
+                <Icon name="CheckCircle2" size={28} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground">Estabelecimento cadastrado! 🎉</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Último passo: conecte o Telegram do seu estabelecimento pra receber os pedidos por lá também.
+              </p>
+            </div>
+
+            <TelegramLinkCard gerarLink={gerarLinkTelegramEstabelecimento} getStatus={getStatusTelegramEstabelecimento} />
+
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleContinuarPosCadastro} fullWidth iconName="ArrowRight" iconPosition="right">
+                Ir para o painel
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Progress Sidebar - Desktop */}
@@ -615,6 +685,7 @@ const RestaurantRegistrationSetup = () => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

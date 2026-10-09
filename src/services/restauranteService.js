@@ -179,6 +179,11 @@ export const updateEmpresa = (data) =>
 export const atualizarLocalizacaoManual = (lat, lng) =>
   apiFetch('/minha-empresa/localizacao', { method: 'PATCH', body: JSON.stringify({ lat, lng }) });
 
+// Notificações via Telegram do estabelecimento — vínculo por deep-link, opt-in.
+export const gerarLinkTelegramEstabelecimento = () =>
+  apiFetch('/minha-empresa/telegram/link', { method: 'POST' });
+export const getStatusTelegramEstabelecimento = () => apiFetch('/minha-empresa/telegram/status');
+
 export const getAparencia = () => apiFetch('/aparencia');
 export const updateAparencia = (data) =>
   apiFetch('/aparencia', { method: 'PATCH', body: JSON.stringify(data) });
