@@ -1538,7 +1538,7 @@ const AdminPlanos = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
       <AdminHeader active="/admin/planos" title="Planos de Assinatura" subtitle="Mensalidades cobradas das lojas, além da comissão por venda" />
 
-      <main className="p-6 max-w-5xl mx-auto">
+      <main className="p-6 w-[90%] max-w-none mx-auto">
         <div className="flex overflow-x-auto border-b border-gray-200 dark:border-zinc-700 mb-6">
           {TABS.map((t) => (
             <button
