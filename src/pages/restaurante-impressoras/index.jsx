@@ -59,19 +59,20 @@ export const EspacoCortePanel = () => {
   );
 };
 
-// Espaço de corte por impressora física (agente local) — cada modelo/marca corta com uma
-// folga diferente, por isso fica salvo em impressoras.espaco_corte_linhas, não num valor
-// único global. O botão de teste do card (já existente, logo abaixo) já manda um job real
-// pra essa impressora aplicando esse valor — não precisa de botão de teste duplicado aqui.
+// Espaço de corte/início por impressora física (agente local) — cada modelo/marca varia
+// a folga, por isso fica salvo em impressoras.espaco_corte_linhas/espaco_inicio_linhas, não
+// num valor único global. O botão de teste do card (já existente, logo abaixo) já manda um
+// job real pra essa impressora aplicando os dois valores — não precisa de teste duplicado aqui.
 const EspacoCorteImpressora = ({ imp, onSalvo }) => {
-  const [valor, setValor] = useState(imp.espaco_corte_linhas ?? 6);
+  const [valorCorte, setValorCorte] = useState(imp.espaco_corte_linhas ?? 6);
+  const [valorInicio, setValorInicio] = useState(imp.espaco_inicio_linhas ?? 0);
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
 
   const salvar = async () => {
     setSalvando(true);
     try {
-      await atualizarImpressora(imp.id, { espaco_corte_linhas: valor });
+      await atualizarImpressora(imp.id, { espaco_corte_linhas: valorCorte, espaco_inicio_linhas: valorInicio });
       setSalvo(true);
       setTimeout(() => setSalvo(false), 2000);
       await onSalvo?.();
@@ -83,8 +84,13 @@ const EspacoCorteImpressora = ({ imp, onSalvo }) => {
   return (
     <div className="flex items-end gap-2 mt-3">
       <div className="flex-1">
+        <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Espaço início da impressão (linhas)</label>
+        <input type="number" min={0} max={30} value={valorInicio} onChange={(e) => setValorInicio(Number(e.target.value))}
+          className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
+      </div>
+      <div className="flex-1">
         <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Espaço de corte (linhas)</label>
-        <input type="number" min={0} max={30} value={valor} onChange={(e) => setValor(Number(e.target.value))}
+        <input type="number" min={0} max={30} value={valorCorte} onChange={(e) => setValorCorte(Number(e.target.value))}
           className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
       </div>
       <button onClick={salvar} disabled={salvando}
