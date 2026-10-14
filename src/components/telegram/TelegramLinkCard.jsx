@@ -48,13 +48,13 @@ export const TelegramLinkCard = ({ gerarLink, getStatus, className }) => {
         Receba os avisos do PediuVai direto no Telegram, sem precisar ficar checando a tela.
       </p>
       <button type="button" onClick={gerar} disabled={gerando}
-        className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
+        className="w-full h-12 bg-zinc-800 hover:bg-zinc-900 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-black text-sm font-bold rounded-xl disabled:opacity-50 transition-colors">
         {gerando ? 'Gerando...' : status?.vinculado ? 'Gerar novo link' : 'Vincular no Telegram'}
       </button>
       {link?.deep_link && (
         <div className="flex flex-wrap items-center gap-2 mt-3">
           <a href={link.deep_link} target="_blank" rel="noreferrer"
-            className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl text-center">
+            className="flex-1 px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-xl text-center">
             Abrir Telegram
           </a>
           <button type="button" onClick={copiar} className="text-xs font-bold text-[#FF441F]">{copiado ? 'Copiado!' : 'Copiar link'}</button>
