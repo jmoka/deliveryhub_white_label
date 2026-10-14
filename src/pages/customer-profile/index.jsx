@@ -252,6 +252,26 @@ const CustomerProfile = () => {
               <Icon name="MapPin" size={14} className="text-[#FF441F]" /> Endereço de entrega
             </p>
 
+            <div className="p-3 bg-[#FF441F]/10 border-2 border-[#FF441F] rounded-xl space-y-1.5">
+              <label htmlFor="campo-cep" className="text-xs font-bold text-[#FF441F] flex items-center gap-1.5">
+                <Icon name="MapPinned" size={14} /> Comece pelo CEP <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="campo-cep"
+                type="text"
+                inputMode="numeric"
+                value={form.cep}
+                onChange={(e) => handleCepChange(e.target.value)}
+                placeholder="00000-000"
+                className="w-full border-2 border-[#FF441F]/40 focus:border-[#FF441F] rounded-xl px-3 py-3 text-base font-semibold bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none"
+              />
+              {buscandoCep ? (
+                <p className="text-[11px] text-[#FF441F] font-medium">Buscando endereço...</p>
+              ) : (
+                <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">Preencha o CEP primeiro — os demais campos abaixo são completados automaticamente.</p>
+              )}
+            </div>
+
             <div className="p-3 bg-[#FF441F]/5 border border-[#FF441F]/20 rounded-xl text-xs text-[#27272A] dark:text-[#F4F4F5] flex items-start gap-2">
               <Icon name="MapPinned" size={15} className="text-[#FF441F] flex-shrink-0 mt-0.5" />
               <span>Fixe o pino no mapa — é isso que o motoboy usa pra chegar. Só o endereço escrito não garante a entrega no lugar certo.</span>
@@ -291,8 +311,6 @@ const CustomerProfile = () => {
                 <Campo label="UF" value={form.estado} onChange={set('estado')} placeholder="SP" />
               </div>
             </div>
-            <Campo label="CEP" value={form.cep} onChange={handleCepChange} placeholder="00000-000" />
-            {buscandoCep && <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] -mt-2">Buscando endereço...</p>}
             <Campo label="Ponto de referência" value={form.referencia} onChange={set('referencia')} placeholder="Próximo ao mercado..." />
           </div>
 
