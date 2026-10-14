@@ -108,8 +108,7 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange, autoGps = false }) => {
   // Busca por texto (Nominatim) — só um jeito rápido de pular perto do endereço; a
   // precisão de verdade continua sendo o dono arrastar o pino depois. limit=5 e
   // countrycodes=br pra não gastar a cota gratuita com resultado irrelevante.
-  const buscarEndereco = async (e) => {
-    e.preventDefault();
+  const buscarEndereco = async () => {
     if (!buscaTexto.trim()) return;
     setBuscandoEndereco(true);
     setBuscaResultados([]);
@@ -148,12 +147,16 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange, autoGps = false }) => {
         </button>
       </div>
 
-      <form onSubmit={buscarEndereco} className="relative mb-2">
+      {/* div, não <form> — essa tela já vive dentro do <form> de CustomerProfile
+          (salvar perfil); form aninhado é HTML inválido (o navegador reparenta
+          o DOM sozinho) e Enter aqui chegou a disparar o submit errado. */}
+      <div className="relative mb-2">
         <div className="flex gap-2">
           <input value={buscaTexto} onChange={(e) => setBuscaTexto(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); buscarEndereco(); } }}
             placeholder="Rua, número, bairro, cidade..."
             className="flex-1 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 outline-none focus:border-[#FF441F]" />
-          <button type="submit" disabled={buscandoEndereco || !buscaTexto.trim()}
+          <button type="button" onClick={buscarEndereco} disabled={buscandoEndereco || !buscaTexto.trim()}
             className="px-3 py-2 bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B] rounded-lg disabled:opacity-40 flex-shrink-0">
             <Icon name={buscandoEndereco ? 'Loader2' : 'Search'} size={16} className={buscandoEndereco ? 'animate-spin' : ''} />
           </button>
@@ -171,7 +174,7 @@ const MapaLocalizacaoPicker = ({ lat, lng, onChange, autoGps = false }) => {
             ))}
           </ul>
         )}
-      </form>
+      </div>
 
       <div className="relative rounded-xl overflow-hidden border border-[#E4E4E7] dark:border-[#3F3F46]" style={{ height: 320 }}>
         <div className="absolute z-[1000] top-2 right-2 bg-white dark:bg-[#27272A] rounded-lg shadow-lg overflow-hidden flex text-xs font-semibold">
