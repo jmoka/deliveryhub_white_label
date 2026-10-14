@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 import { completarCadastroMotoboy, arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -44,6 +45,7 @@ const MotoboyCadastro = () => {
   const navigate = useNavigate();
   const { signUp, refreshUserProfile } = useAuth();
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', veiculo_tipo: '', cnpj: '' });
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [arquivos, setArquivos] = useState({});
   const [previews, setPreviews] = useState({});
   const [erro, setErro] = useState(null);
@@ -130,9 +132,12 @@ const MotoboyCadastro = () => {
           <input required type="email" value={form.email} onChange={(e) => set('email', e.target.value)}
             placeholder="E-mail"
             className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
-          <input required type="password" minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)}
-            placeholder="Senha (mínimo 8 caracteres)"
-            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]" />
+          <div className="relative">
+            <input required type={mostrarPassword ? 'text' : 'password'} minLength={8} value={form.password} onChange={(e) => set('password', e.target.value)}
+              placeholder="Senha (mínimo 8 caracteres)"
+              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 pr-10 text-sm focus:outline-none focus:border-[#FF441F]" />
+            <PasswordToggleButton visible={mostrarPassword} onToggle={() => setMostrarPassword((v) => !v)} />
+          </div>
 
           <select required value={form.veiculo_tipo} onChange={(e) => set('veiculo_tipo', e.target.value)}
             className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#FF441F]">

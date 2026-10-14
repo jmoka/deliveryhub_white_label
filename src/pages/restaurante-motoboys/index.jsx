@@ -8,6 +8,7 @@ import {
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 
@@ -286,6 +287,7 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
   const [phone, setPhone] = useState(motoboy?.phone ?? '');
   const [email, setEmail] = useState(motoboy?.email ?? '');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [veiculoTipo, setVeiculoTipo] = useState('');
   const [tipoVinculo, setTipoVinculo] = useState('prestador_servico'); // 'prestador_servico' | 'proprio' | 'estabelecimento'
   const [motoboyClt, setMotoboyClt] = useState(false);
@@ -409,9 +411,12 @@ const MotoboyFormModal = ({ motoboy, onFechar, onSalvar, processando, erro, term
             <label className="text-xs font-semibold text-[#71717A] dark:text-[#A1A1AA] mb-1 block">
               {editando ? 'Nova senha (deixe em branco pra manter a atual)' : 'Senha de acesso'}
             </label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 8 caracteres" minLength={8} required={!editando}
-              className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF441F]" />
+            <div className="relative">
+              <input type={mostrarPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo 8 caracteres" minLength={8} required={!editando}
+                className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:border-[#FF441F]" />
+              <PasswordToggleButton visible={mostrarPassword} onToggle={() => setMostrarPassword((v) => !v)} />
+            </div>
             {!editando && (
               <p className="text-[11px] text-[#A1A1AA] mt-1">Compartilhe telefone/e-mail e essa senha com o {termoCap.toLowerCase()} — ou gere um link de acesso depois de salvar.</p>
             )}

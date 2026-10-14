@@ -17,6 +17,7 @@ import { formatDuracao } from '../../utils/formatDuracao';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import Icon from '../../components/AppIcon';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 import TempoMedioTile from '../../components/TempoMedioTile';
 import PagamentoParcialModal from '../../components/salao/PagamentoParcialModal';
 
@@ -43,6 +44,7 @@ const responsavelMesa = (comanda) =>
 
 const GarcomLogin = ({ loginKey, onLogin }) => {
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [erro, setErro] = useState(null);
   const [loading, setLoading] = useState(false);
   const [bloqueadoAte, setBloqueadoAte] = useState(null); // timestamp ms
@@ -94,16 +96,19 @@ const GarcomLogin = ({ loginKey, onLogin }) => {
           <p className="text-sm text-[#71717A] dark:text-[#A1A1AA] mt-1">Digite sua senha pra entrar</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Senha"
-            autoFocus
-            required
-            disabled={bloqueado}
-            className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
-          />
+          <div className="relative">
+            <input
+              type={mostrarPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Senha"
+              autoFocus
+              required
+              disabled={bloqueado}
+              className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-3 pr-10 text-sm focus:outline-none focus:border-[#FF441F] disabled:opacity-50"
+            />
+            <PasswordToggleButton visible={mostrarPassword} onToggle={() => setMostrarPassword((v) => !v)} />
+          </div>
           {bloqueado ? (
             <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl p-3 text-center">
               <p className="text-xs text-red-600 dark:text-red-400 font-medium">Muitas tentativas com senha errada.</p>

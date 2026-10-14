@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { Checkbox } from '../../../components/ui/Checkbox';
-import Icon from '../../../components/AppIcon';
 import { formatDuracao } from '../../../utils/formatDuracao';
 
 const LoginForm = ({
@@ -18,7 +17,6 @@ const LoginForm = ({
     rememberMe: false
   });
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
   const [bloqueadoAte, setBloqueadoAte] = useState(null); // timestamp ms
   const [now, setNow] = useState(Date.now());
 
@@ -97,30 +95,18 @@ const LoginForm = ({
         disabled={bloqueado}
         required
       />
-      <div className="relative">
-        <Input
-          label="Senha"
-          type={showPassword ? 'text' : 'password'}
-          name="password"
-          autoComplete="current-password"
-          value={formData?.password}
-          onChange={handleInputChange}
-          placeholder="Digite sua senha"
-          error={errors?.password}
-          disabled={bloqueado}
-          className="pr-10"
-          required
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword((prev) => !prev)}
-          className="absolute right-3 top-9 text-muted-foreground hover:text-foreground transition-colors"
-          tabIndex={-1}
-          aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-        >
-          <Icon name={showPassword ? 'EyeOff' : 'Eye'} size={18} />
-        </button>
-      </div>
+      <Input
+        label="Senha"
+        type="password"
+        name="password"
+        autoComplete="current-password"
+        value={formData?.password}
+        onChange={handleInputChange}
+        placeholder="Digite sua senha"
+        error={errors?.password}
+        disabled={bloqueado}
+        required
+      />
       <div className="flex items-center justify-between">
         <Checkbox
           label="Lembrar de mim"

@@ -14,6 +14,7 @@ import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
 import { reverseGeocode, geocodeEndereco } from '../../utils/reverseGeocode';
 import Icon from '../../components/AppIcon';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import MapaLocalizacaoPicker from '../../components/MapaLocalizacaoPicker';
@@ -1289,6 +1290,7 @@ const RestauranteConfig = () => {
     auto_atendimento_habilitado: false,
   });
   const [impressoras, setImpressoras] = useState([]);
+  const [mostrarTokenPagbank, setMostrarTokenPagbank] = useState(false);
 
   useEffect(() => {
     if (moduloSalao) listarImpressoras().then(setImpressoras).catch(() => {});
@@ -1501,13 +1503,16 @@ const RestauranteConfig = () => {
                       <span className="text-xs text-gray-400 ml-2">(deixe vazio para manter o atual)</span>
                     )}
                   </label>
-                  <input
-                    type="password"
-                    value={form.pagbank_token}
-                    onChange={(e) => setForm((f) => ({ ...f, pagbank_token: e.target.value }))}
-                    placeholder={config?.configurado ? config.pagbank_token_masked : 'Cole o token do PagBank'}
-                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarTokenPagbank ? 'text' : 'password'}
+                      value={form.pagbank_token}
+                      onChange={(e) => setForm((f) => ({ ...f, pagbank_token: e.target.value }))}
+                      placeholder={config?.configurado ? config.pagbank_token_masked : 'Cole o token do PagBank'}
+                      className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                    <PasswordToggleButton visible={mostrarTokenPagbank} onToggle={() => setMostrarTokenPagbank((v) => !v)} />
+                  </div>
                 </div>
 
                 {/* Account ID */}

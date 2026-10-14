@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { formatDuracao } from '../../utils/formatDuracao';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { ChevronDown } from 'lucide-react';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 
 // Badge com contagem regressiva do bloqueio por tentativas de senha erradas no login
 // principal — próprio componente pra ticar a cada segundo sem re-renderizar a tabela
@@ -106,6 +107,7 @@ const VincularModal = ({ usuario, empresas, onClose, onSave }) => {
 const CredenciaisModal = ({ usuario, onClose, onSave }) => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
 
@@ -154,14 +156,17 @@ const CredenciaisModal = ({ usuario, onClose, onSave }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Nova senha</label>
-            <input
-              type="password"
-              minLength={8}
-              placeholder="Deixe em branco pra não trocar"
-              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                type={mostrarSenha ? 'text' : 'password'}
+                minLength={8}
+                placeholder="Deixe em branco pra não trocar"
+                className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+              />
+              <PasswordToggleButton visible={mostrarSenha} onToggle={() => setMostrarSenha((v) => !v)} />
+            </div>
           </div>
 
           {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}

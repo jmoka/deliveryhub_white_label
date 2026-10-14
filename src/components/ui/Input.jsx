@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "../../utils/cn";
+import PasswordToggleButton from "./PasswordToggleButton";
 
 const Input = React.forwardRef(({
     className,
@@ -13,6 +14,12 @@ const Input = React.forwardRef(({
 }, ref) => {
     // Generate unique ID if not provided
     const inputId = id || `input-${Math.random()?.toString(36)?.substr(2, 9)}`;
+
+    // Olhinho embutido pra qualquer <Input type="password"> do app — ver
+    // PasswordToggleButton. Estado local porque a visibilidade é só de UI,
+    // não precisa subir pro componente pai.
+    const [showPassword, setShowPassword] = useState(false);
+    const isPassword = type === "password";
 
     // Base input classes
     const baseInputClasses = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -65,17 +72,23 @@ const Input = React.forwardRef(({
                 </label>
             )}
 
-            <input
-                type={type}
-                className={cn(
-                    baseInputClasses,
-                    error && "border-destructive focus-visible:ring-destructive",
-                    className
+            <div className="relative">
+                <input
+                    type={isPassword && showPassword ? "text" : type}
+                    className={cn(
+                        baseInputClasses,
+                        isPassword && "pr-10",
+                        error && "border-destructive focus-visible:ring-destructive",
+                        className
+                    )}
+                    ref={ref}
+                    id={inputId}
+                    {...props}
+                />
+                {isPassword && (
+                    <PasswordToggleButton visible={showPassword} onToggle={() => setShowPassword((prev) => !prev)} />
                 )}
-                ref={ref}
-                id={inputId}
-                {...props}
-            />
+            </div>
 
             {description && !error && (
                 <p className="text-sm text-muted-foreground">

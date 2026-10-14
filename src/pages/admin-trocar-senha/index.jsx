@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/authService';
 import Icon from '../../components/AppIcon';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 
 const AdminTrocarSenha = () => {
   const navigate = useNavigate();
   const { user, refreshUserProfile, signOut } = useAuth();
   const [senha, setSenha] = useState('');
   const [confirmar, setConfirmar] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const [sucesso, setSucesso] = useState(false);
@@ -77,25 +80,31 @@ const AdminTrocarSenha = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Nova senha</label>
-            <input
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              minLength={8}
-              required
-              className="w-full border dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
+            <div className="relative">
+              <input
+                type={mostrarSenha ? 'text' : 'password'}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                minLength={8}
+                required
+                className="w-full border dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+              <PasswordToggleButton visible={mostrarSenha} onToggle={() => setMostrarSenha((v) => !v)} />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Confirmar nova senha</label>
-            <input
-              type="password"
-              value={confirmar}
-              onChange={(e) => setConfirmar(e.target.value)}
-              minLength={8}
-              required
-              className="w-full border dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
+            <div className="relative">
+              <input
+                type={mostrarConfirmar ? 'text' : 'password'}
+                value={confirmar}
+                onChange={(e) => setConfirmar(e.target.value)}
+                minLength={8}
+                required
+                className="w-full border dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+              <PasswordToggleButton visible={mostrarConfirmar} onToggle={() => setMostrarConfirmar((v) => !v)} />
+            </div>
           </div>
 
           {erro && <p className="text-sm text-red-600 dark:text-red-400">{erro}</p>}

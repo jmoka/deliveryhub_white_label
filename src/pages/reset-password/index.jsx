@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/authService';
 import { supabase } from '../../lib/supabase';
 import Icon from '../../components/AppIcon';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 
 // Landing page do link de "esqueci minha senha" (supabase.auth.resetPasswordForEmail
 // redireciona pra cá). O SDK do Supabase já captura o token da URL sozinho e dispara
@@ -15,6 +16,8 @@ const ResetPassword = () => {
   const [prontoParaTrocar, setProntoParaTrocar] = useState(false);
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [erro, setErro] = useState(null);
   const [sucesso, setSucesso] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -107,27 +110,33 @@ const ResetPassword = () => {
                   <label className="block text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] mb-1">
                     Nova senha
                   </label>
-                  <input
-                    type="password"
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    minLength={8}
-                    required
-                    className="w-full px-3 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarSenha ? 'text' : 'password'}
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
+                      minLength={8}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                    <PasswordToggleButton visible={mostrarSenha} onToggle={() => setMostrarSenha((v) => !v)} />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#18181B] dark:text-[#F4F4F5] mb-1">
                     Confirmar nova senha
                   </label>
-                  <input
-                    type="password"
-                    value={confirmarSenha}
-                    onChange={(e) => setConfirmarSenha(e.target.value)}
-                    minLength={8}
-                    required
-                    className="w-full px-3 py-2 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarConfirmarSenha ? 'text' : 'password'}
+                      value={confirmarSenha}
+                      onChange={(e) => setConfirmarSenha(e.target.value)}
+                      minLength={8}
+                      required
+                      className="w-full px-3 py-2 pr-10 border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    />
+                    <PasswordToggleButton visible={mostrarConfirmarSenha} onToggle={() => setMostrarConfirmarSenha((v) => !v)} />
+                  </div>
                 </div>
                 <button
                   type="submit"

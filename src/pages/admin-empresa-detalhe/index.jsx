@@ -6,6 +6,7 @@ import {
   getComissoesPorEmpresa,
 } from '../../services/adminService';
 import AdminHeader from '../../components/admin/AdminHeader';
+import PasswordToggleButton from '../../components/ui/PasswordToggleButton';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
@@ -92,6 +93,7 @@ const TabPagBank = ({ empresaId }) => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ pagbank_token: '', pagbank_sandbox: true, pagbank_webhook_url: '' });
+  const [mostrarToken, setMostrarToken] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
   const [erro, setErro] = useState(null);
@@ -157,13 +159,16 @@ const TabPagBank = ({ empresaId }) => {
             Token PagBank
             {config?.configurado && <span className="text-xs text-gray-400 dark:text-zinc-500 ml-2">(deixe vazio para manter)</span>}
           </label>
-          <input
-            type="password"
-            value={form.pagbank_token}
-            onChange={(e) => setForm((f) => ({ ...f, pagbank_token: e.target.value }))}
-            placeholder={config?.configurado ? config.pagbank_token_masked : 'Token do restaurante'}
-            className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
-          />
+          <div className="relative">
+            <input
+              type={mostrarToken ? 'text' : 'password'}
+              value={form.pagbank_token}
+              onChange={(e) => setForm((f) => ({ ...f, pagbank_token: e.target.value }))}
+              placeholder={config?.configurado ? config.pagbank_token_masked : 'Token do restaurante'}
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100"
+            />
+            <PasswordToggleButton visible={mostrarToken} onToggle={() => setMostrarToken((v) => !v)} />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">URL Webhook</label>

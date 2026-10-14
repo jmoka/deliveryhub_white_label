@@ -6,6 +6,7 @@ import {
   getStatusEmailSeguranca, solicitarEmailSeguranca, confirmarEmailSeguranca, removerEmailSeguranca,
 } from '../../services/twoFactorService';
 import Icon from '../AppIcon';
+import PasswordToggleButton from '../ui/PasswordToggleButton';
 
 // Troca de senha/email pelo próprio usuário logado — reaproveitado nos
 // painéis admin, restaurante e cliente (só o layout ao redor muda). O card
@@ -15,6 +16,8 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
   const [novoEmail, setNovoEmail] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [salvandoEmail, setSalvandoEmail] = useState(false);
   const [salvandoSenha, setSalvandoSenha] = useState(false);
   const [erroEmail, setErroEmail] = useState(null);
@@ -162,6 +165,7 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
   const [confirmandoTotp, setConfirmandoTotp] = useState(false);
   const [pedirSenhaDesativar, setPedirSenhaDesativar] = useState(false);
   const [senhaDesativar, setSenhaDesativar] = useState('');
+  const [mostrarSenhaDesativar, setMostrarSenhaDesativar] = useState(false);
   const [desativando, setDesativando] = useState(false);
   const [trocandoMetodo, setTrocandoMetodo] = useState(false);
 
@@ -282,24 +286,30 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
         <h3 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Trocar senha</h3>
         <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">Mínimo de 8 caracteres.</p>
         <form onSubmit={handleTrocarSenha} className="space-y-3">
-          <input
-            type="password"
-            required
-            minLength={8}
-            placeholder="Nova senha"
-            value={novaSenha}
-            onChange={(e) => setNovaSenha(e.target.value)}
-            className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="password"
-            required
-            minLength={8}
-            placeholder="Confirmar nova senha"
-            value={confirmarSenha}
-            onChange={(e) => setConfirmarSenha(e.target.value)}
-            className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <input
+              type={mostrarNovaSenha ? 'text' : 'password'}
+              required
+              minLength={8}
+              placeholder="Nova senha"
+              value={novaSenha}
+              onChange={(e) => setNovaSenha(e.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <PasswordToggleButton visible={mostrarNovaSenha} onToggle={() => setMostrarNovaSenha((v) => !v)} />
+          </div>
+          <div className="relative">
+            <input
+              type={mostrarConfirmarSenha ? 'text' : 'password'}
+              required
+              minLength={8}
+              placeholder="Confirmar nova senha"
+              value={confirmarSenha}
+              onChange={(e) => setConfirmarSenha(e.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <PasswordToggleButton visible={mostrarConfirmarSenha} onToggle={() => setMostrarConfirmarSenha((v) => !v)} />
+          </div>
           {erroSenha && <p className="text-sm text-red-600 dark:text-red-400">{erroSenha}</p>}
           {sucessoSenha && (
             <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1.5">
@@ -486,14 +496,17 @@ const CredenciaisForm = ({ currentEmail, mostrarSeguranca2FA = false }) => {
               {pedirSenhaDesativar && (
                 <form onSubmit={confirmarDesativar} className="mt-3 p-4 border border-gray-200 dark:border-zinc-700 rounded-xl space-y-3">
                   <p className="text-sm text-gray-600 dark:text-zinc-300">Confirme sua senha atual pra desativar o 2FA.</p>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Senha atual"
-                    value={senhaDesativar}
-                    onChange={(e) => setSenhaDesativar(e.target.value)}
-                    className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarSenhaDesativar ? 'text' : 'password'}
+                      required
+                      placeholder="Senha atual"
+                      value={senhaDesativar}
+                      onChange={(e) => setSenhaDesativar(e.target.value)}
+                      className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 pr-10 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <PasswordToggleButton visible={mostrarSenhaDesativar} onToggle={() => setMostrarSenhaDesativar((v) => !v)} />
+                  </div>
                   <div className="flex gap-2">
                     <button type="submit" disabled={desativando}
                       className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
