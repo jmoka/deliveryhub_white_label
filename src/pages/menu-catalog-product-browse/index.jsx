@@ -1241,7 +1241,7 @@ const MenuCatalogProductBrowse = () => {
                 </button>
               )
             )}
-            {marca.permitir_cadastro_estabelecimento !== false && !isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
+            {marca.permitir_cadastro_estabelecimento !== false && isAuthenticated() && !isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
               <button onClick={() => navigate('/restaurant-registration-setup')} {...headerBtnProps('seja-vendedor')}
                 className="inline-flex items-center justify-center gap-1.5 h-10 px-2 sm:px-3 text-xs rounded-lg transition-colors" title="Seja um vendedor">
                 <Icon name="Store" size={18} className="sm:hidden" />
@@ -1721,22 +1721,24 @@ const MenuCatalogProductBrowse = () => {
 
       <footer className="border-t border-[#E4E4E7] mt-8 py-6 text-center space-y-2" style={{ backgroundColor: hexToRgba(marca.footer_bg_color, pct(marca.footer_bg_opacity)) }}>
         <div className="flex items-center justify-center gap-2 flex-wrap text-xs">
-          <button onClick={() => navigate('/restaurant-registration-setup')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
-            <Icon name="Store" size={12} /> Cadastrar estabelecimento
-          </button>
-          {(isMotoboy() || (isAuthenticated() && !isAdmin() && !isRestaurantOwner())) && (
+          {marca.permitir_cadastro_estabelecimento !== false && isAuthenticated() && !isMotoboy() && !isAdmin() && !isRestaurantOwner() && (
             <>
+              <button onClick={() => navigate('/restaurant-registration-setup')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
+                <Icon name="Store" size={12} /> Cadastrar estabelecimento
+              </button>
               <span className="text-[#E4E4E7]">·</span>
-              {isMotoboy() ? (
-                <button onClick={() => navigate('/motoboy')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
-                  <Icon name="Bike" size={12} /> Painel do motoboy
-                </button>
-              ) : (
-                <button onClick={() => navigate('/motoboy/cadastro')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
-                  <Icon name="Bike" size={12} /> Seja um entregador
-                </button>
-              )}
             </>
+          )}
+          {(isMotoboy() || (isAuthenticated() && !isAdmin() && !isRestaurantOwner())) && (
+            isMotoboy() ? (
+              <button onClick={() => navigate('/motoboy')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
+                <Icon name="Bike" size={12} /> Painel do motoboy
+              </button>
+            ) : (
+              <button onClick={() => navigate('/motoboy/cadastro')} className="font-semibold hover:underline flex items-center gap-1" style={{ color: marca.footer_link_color }}>
+                <Icon name="Bike" size={12} /> Seja um entregador
+              </button>
+            )
           )}
         </div>
         <p className="text-xs" style={{ color: marca.footer_text_color }}>© {new Date().getFullYear()} {marca.nome_marca} · Todos os direitos reservados</p>

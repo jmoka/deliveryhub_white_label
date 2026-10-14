@@ -9,7 +9,6 @@ import ForgotPasswordModal from './components/ForgotPasswordModal';
 import TwoFactorVerification from '../../components/TwoFactorVerification';
 import { authService } from '../../services/authService';
 import { APP_NAME } from '../../constants/brand';
-import { apiPath } from '../../lib/apiUrl';
 import { updatePerfil, gerarLinkTelegram, getStatusTelegram } from '../../services/perfilService';
 import { TelegramLinkCard } from '../../components/telegram/TelegramLinkCard';
 
@@ -27,26 +26,12 @@ const CustomerRegistrationLogin = () => {
   // memória (nunca persistidas) só pra permitir "reenviar código" sem pedir
   // a senha de novo.
   const [twoFactor, setTwoFactor] = useState(null);
-  // Kill-switch de cadastro público, configurado em /admin/configuracoes — true
-  // até a config carregar, pra não sumir com o CTA antes da hora.
-  const [permitirCadastroMotoboy, setPermitirCadastroMotoboy] = useState(true);
-  const [permitirCadastroEstabelecimento, setPermitirCadastroEstabelecimento] = useState(true);
   // Preenchido só depois de um cadastro bem-sucedido — segura a navegação pro
   // catálogo pra oferecer o vínculo do Telegram antes (deep-link opt-in, não dá
   // pra saber se o número tem Telegram sem o cliente abrir o bot e confirmar).
   const [posCadastro, setPosCadastro] = useState(false);
 
-  const { signIn, signUp, verifyTwoFactor, isAuthenticated, isAdmin, isRestaurantOwner, isMotoboy } = useAuth();
-
-  useEffect(() => {
-    fetch(apiPath('/api/r/branding'))
-      .then((r) => r.json())
-      .then((d) => {
-        setPermitirCadastroMotoboy(d.permitir_cadastro_motoboy ?? true);
-        setPermitirCadastroEstabelecimento(d.permitir_cadastro_estabelecimento ?? true);
-      })
-      .catch(() => {});
-  }, []);
+  const { signIn, signUp, verifyTwoFactor, isAuthenticated, isAdmin, isRestaurantOwner } = useAuth();
 
   // Motoboy também compra como qualquer usuário — cai na vitrine normal (com
   // o botão "Painel do motoboy" no topo), não direto no painel de entregas.
@@ -298,54 +283,6 @@ const CustomerRegistrationLogin = () => {
             )}
           </div>
 
-          {permitirCadastroEstabelecimento && (
-            <>
-              {/* Separador */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
-                <span className="text-xs text-[#A1A1AA]">Tem um estabelecimento?</span>
-                <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
-              </div>
-
-              {/* CTA Estabelecimento */}
-              <button
-                onClick={() => navigate('/restaurant-registration-setup')}
-                className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
-              >
-                <Icon name="Store" size={18} className="text-white" />
-                Cadastrar meu estabelecimento
-              </button>
-              <p className="text-center text-xs text-[#A1A1AA]">
-                Você precisará estar logado para completar o cadastro do estabelecimento.
-              </p>
-            </>
-          )}
-
-          {permitirCadastroMotoboy && !isMotoboy() && (
-            <>
-              {/* Separador */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
-                <span className="text-xs text-[#A1A1AA]">Quer entregar com a gente?</span>
-                <div className="flex-1 h-px bg-[#E4E4E7] dark:bg-[#3F3F46]" />
-              </div>
-
-              {/* CTA Entregador */}
-              <button
-                onClick={() => navigate('/motoboy/cadastro')}
-                className="w-full py-3 px-4 bg-[#FF441F] hover:bg-[#E63A19] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors"
-              >
-                <Icon name="Bike" size={18} className="text-white" />
-                Cadastrar como entregador
-              </button>
-              <button
-                onClick={() => setActiveTab(TAB_LOGIN)}
-                className="w-full text-center text-xs text-[#71717A] dark:text-[#A1A1AA] hover:underline"
-              >
-                Já é entregador? Entre por aqui em cima
-              </button>
-            </>
-          )}
           </>
           )}
         </div>
