@@ -43,7 +43,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', limite_servicos: '', piso_faturamento: '', trial_dias: '0', ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', limite_servicos: '', piso_faturamento: '', trial_dias: '0', trial_eterno: false, ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -58,6 +58,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           limite_servicos: plano.limite_servicos != null ? String(plano.limite_servicos) : '',
           piso_faturamento: plano.piso_faturamento != null ? String(plano.piso_faturamento) : '',
           trial_dias: String(plano.trial_dias ?? 0),
+          trial_eterno: plano.trial_eterno ?? false,
           ativo: plano.ativo,
           inclui_delivery: plano.inclui_delivery ?? true,
           inclui_salao: plano.inclui_salao ?? false,
@@ -123,6 +124,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         limite_servicos: form.limite_servicos.trim() ? parseInt(form.limite_servicos, 10) : null,
         piso_faturamento: usaProdutosOuSalao && form.piso_faturamento.trim() ? parseFloat(form.piso_faturamento) : null,
         trial_dias: form.trial_dias.trim() ? parseInt(form.trial_dias, 10) : 0,
+        trial_eterno: form.trial_eterno,
         inclui_delivery: form.inclui_delivery,
         inclui_salao: form.inclui_salao,
         inclui_gdoor: form.inclui_gdoor,
@@ -317,20 +319,35 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
             </p>
             <div className="flex gap-1.5 mb-2.5 flex-wrap">
               {[0, 7, 15, 30, 60].map((dias) => (
-                <button key={dias} type="button" onClick={() => set('trial_dias', String(dias))}
+                <button key={dias} type="button"
+                  onClick={() => { set('trial_eterno', false); set('trial_dias', String(dias)); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    form.trial_dias === String(dias)
+                    !form.trial_eterno && form.trial_dias === String(dias)
                       ? 'bg-green-600 text-white'
                       : 'bg-white dark:bg-zinc-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/40'
                   }`}>
                   {dias === 0 ? 'Sem trial' : `${dias} dias`}
                 </button>
               ))}
-              <input type="number" min="0" value={form.trial_dias} onChange={(e) => set('trial_dias', e.target.value)}
+              <input type="number" min="0" value={form.trial_dias} disabled={form.trial_eterno}
+                onChange={(e) => { set('trial_eterno', false); set('trial_dias', e.target.value); }}
                 placeholder="Outro"
-                className="w-20 border border-green-200 dark:border-green-800 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-green-500" />
+                className="w-20 border border-green-200 dark:border-green-800 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-40" />
+              <button type="button" onClick={() => set('trial_eterno', true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 ${
+                  form.trial_eterno
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white dark:bg-zinc-800 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/40'
+                }`}>
+                <Icon name="Infinity" size={12} /> Eterno
+              </button>
             </div>
-            {parseInt(form.trial_dias || '0', 10) > 0 && (
+            {form.trial_eterno ? (
+              <p className="text-xs text-green-800 dark:text-green-300 bg-green-100 dark:bg-green-950/40 rounded-lg px-3 py-2">
+                Quem assinar esse plano <strong>nunca é cobrado</strong> — sem data de expiração, até o admin trocar o plano
+                da loja ou desmarcar "Eterno" aqui (não afeta quem já assinou).
+              </p>
+            ) : parseInt(form.trial_dias || '0', 10) > 0 && (
               <p className="text-xs text-green-800 dark:text-green-300 bg-green-100 dark:bg-green-950/40 rounded-lg px-3 py-2">
                 Depois de <strong>{form.trial_dias} dias</strong>, a cobrança de{' '}
                 <strong>{form.valor ? fmt(parseFloat(form.valor)) : 'R$ 0,00'} / {form.periodicidade}</strong>{' '}
@@ -561,7 +578,12 @@ const TabPlanos = () => {
                         Só novos cadastros
                       </span>
                     )}
-                    {plano.trial_dias > 0 && (
+                    {plano.trial_eterno ? (
+                      <span className="text-xs font-medium bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1"
+                        title="Quem assinar nunca é cobrado, sem data de expiração">
+                        <Icon name="Infinity" size={11} /> Grátis eterno
+                      </span>
+                    ) : plano.trial_dias > 0 && (
                       <span className="text-xs font-medium bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1"
                         title={`Não cobra nada nos primeiros ${plano.trial_dias} dias — depois começa a cobrar sozinho`}>
                         <Icon name="Gift" size={11} /> {plano.trial_dias} dias grátis

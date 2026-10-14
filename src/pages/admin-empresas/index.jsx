@@ -634,7 +634,12 @@ const PlanoBadge = ({ empresa, assinaturas }) => {
       </span>
       {cortesiaAtiva && (
         <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-violet-100 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 whitespace-nowrap">
-          🎁 Grátis até {new Date(assinatura.cortesia_ate).toLocaleDateString('pt-BR')}
+          {/* Data sentinela bem no futuro (ver CORTESIA_ETERNA/trial_eterno no
+              backend) = "pra sempre" na prática — mostrar o ano 2099 cru só
+              confundiria, parece data digitada errado. */}
+          {new Date(assinatura.cortesia_ate).getUTCFullYear() >= 2099
+            ? '🎁 Grátis para sempre'
+            : `🎁 Grátis até ${new Date(assinatura.cortesia_ate).toLocaleDateString('pt-BR')}`}
         </span>
       )}
     </div>

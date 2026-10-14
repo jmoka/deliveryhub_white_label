@@ -303,8 +303,10 @@ const RestaurantePlano = () => {
               <div className="flex items-center justify-between mb-2 gap-2">
                 <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">
                   {fmt(dados.assinatura?.planos?.valor)} / {dados.assinatura?.planos?.periodicidade}
-                  {dados.assinatura?.trial_fim && dados.assinatura?.status === 'trial' && (
-                    <> · grátis até {fmtData(dados.assinatura.trial_fim)}</>
+                  {dados.assinatura?.status === 'trial' && (
+                    dados.assinatura?.trial_fim
+                      ? <> · grátis até {fmtData(dados.assinatura.trial_fim)}</>
+                      : <> · grátis (sem prazo)</>
                   )}
                 </p>
                 <button
