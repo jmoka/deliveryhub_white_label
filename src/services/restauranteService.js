@@ -146,8 +146,8 @@ export const getPlanosDisponiveisCadastro = () =>
 
 export const getMinhasCategorias = () => apiFetch('/categorias');
 
-export const criarCategoria = (name) =>
-  apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name }) });
+export const criarCategoria = (name, kind) =>
+  apiFetch('/categorias', { method: 'POST', body: JSON.stringify({ name, kind }) });
 
 export const deletarCategoria = (id) =>
   apiFetch(`/categorias/${id}`, { method: 'DELETE' });

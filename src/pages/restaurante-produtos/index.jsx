@@ -53,6 +53,10 @@ const RestauranteProdutos = () => {
   const { moduloDelivery, moduloSalao, moduloGdoor, carregado, permiteFreteEmbutido } = useModulosEmpresa();
   const [novaCategoria, setNovaCategoria] = useState('');
   const [criandoCateg, setCriandoCateg] = useState(false);
+  const [novaCategoriaModal, setNovaCategoriaModal] = useState('');
+  const [criandoCategModal, setCriandoCategModal] = useState(false);
+  // null | 'category_id' | 'grupo_id' — qual campo do form recebe a categoria própria criada
+  const [categoriaModalAlvo, setCategoriaModalAlvo] = useState(null);
   const [deletandoCateg, setDeletandoCateg] = useState(null);
   const [editandoCategId, setEditandoCategId] = useState(null);
   const [editCategNome, setEditCategNome] = useState('');
@@ -159,7 +163,7 @@ const RestauranteProdutos = () => {
     if (!novaCategoria.trim()) return;
     setCriandoCateg(true);
     try {
-      const nova = await criarCategoria(novaCategoria.trim());
+      const nova = await criarCategoria(novaCategoria.trim(), 'grupo');
       setCategorias((prev) => [...prev, nova].sort((a, b) => a.name.localeCompare(b.name)));
       setNovaCategoria('');
     } catch (err) {
@@ -168,6 +172,58 @@ const RestauranteProdutos = () => {
       setCriandoCateg(false);
     }
   };
+
+  const handleCriarCategoriaModal = async (e) => {
+    e.preventDefault();
+    if (!novaCategoriaModal.trim() || !categoriaModalAlvo) return;
+    setCriandoCategModal(true);
+    try {
+      const kind = categoriaModalAlvo === 'category_id' ? 'categoria' : 'grupo';
+      const nova = await criarCategoria(novaCategoriaModal.trim(), kind);
+      setCategorias((prev) => [...prev, nova].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm((f) => ({ ...f, [categoriaModalAlvo]: String(nova.id) }));
+      setNovaCategoriaModal('');
+      setCategoriaModalAlvo(null);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCriandoCategModal(false);
+    }
+  };
+
+  const renderCriarCategoriaBotao = (campo) => (
+    <button
+      type="button"
+      onClick={() => { setCategoriaModalAlvo((v) => (v === campo ? null : campo)); setNovaCategoriaModal(''); }}
+      title="Cadastrar categoria rápida"
+      className="text-[#FF441F] hover:bg-[#FF441F]/10 rounded p-0.5 -mr-1"
+    >
+      <Icon name="Plus" size={15} />
+    </button>
+  );
+
+  const renderCriarCategoriaLinha = (campo) => (
+    categoriaModalAlvo === campo && (
+      <div className="flex gap-1.5 mb-1.5">
+        <input
+          autoFocus
+          value={novaCategoriaModal}
+          onChange={(e) => setNovaCategoriaModal(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleCriarCategoriaModal(e); if (e.key === 'Escape') setCategoriaModalAlvo(null); }}
+          placeholder="Nome da nova categoria"
+          className="flex-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs"
+        />
+        <button
+          type="button"
+          onClick={handleCriarCategoriaModal}
+          disabled={criandoCategModal || !novaCategoriaModal.trim()}
+          className="px-2.5 py-1.5 bg-[#FF441F] text-white rounded-lg text-xs font-medium disabled:opacity-50"
+        >
+          {criandoCategModal ? '...' : 'Criar'}
+        </button>
+      </div>
+    )
+  );
 
   const handleDeletarCategoria = async (cat) => {
     if (!window.confirm(`Deletar categoria "${cat.name}"? Os produtos ligados perderão esta categoria.`)) return;
@@ -437,6 +493,11 @@ const RestauranteProdutos = () => {
   const catMap = Object.fromEntries(
     [...categorias, ...categoriasGlobais].map((c) => [c.id, c.name])
   );
+  // Categoria própria (campo "Categoria" do produto) e grupo próprio (campo
+  // "Grupo"/cardápio impresso) usam a mesma tabela, diferenciados por `kind` —
+  // linhas antigas sem kind são tratadas como grupo (única via de criação antes da separação).
+  const categoriasProprias = categorias.filter((c) => c.kind === 'categoria');
+  const gruposProprios = categorias.filter((c) => c.kind !== 'categoria');
   const impMap = Object.fromEntries(impressoras.map((i) => [i.id, i.nome]));
   const tagsMap = Object.fromEntries(tagsDisponiveis.map((t) => [t.slug, t]));
   // Identifica se alguma tag de promoção está ativa (slug contém 'promo')
@@ -490,9 +551,9 @@ const RestauranteProdutos = () => {
           onBlur={cancelarEdicaoCelula}
           className="w-full min-w-0 border border-[#FF441F] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded px-1 py-1 text-xs"
         >
-          {categorias.length > 0 && (
+          {categoriasProprias.length > 0 && (
             <optgroup label="Minhas categorias">
-              {categorias.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categoriasProprias.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </optgroup>
           )}
           {categoriasGlobais.length > 0 && (
@@ -576,7 +637,7 @@ const RestauranteProdutos = () => {
           >
             <div className="flex items-center gap-2">
               <span className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm">Meus Grupos (categorias próprias)</span>
-              <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#3F3F46] px-2 py-0.5 rounded-full">{categorias.length}</span>
+              <span className="text-xs text-[#71717A] dark:text-[#A1A1AA] bg-[#F4F4F5] dark:bg-[#3F3F46] px-2 py-0.5 rounded-full">{gruposProprios.length}</span>
             </div>
             <span className="text-[#71717A] dark:text-[#A1A1AA] text-xs">{showCategPanel ? '▲' : '▼'}</span>
           </button>
@@ -603,11 +664,11 @@ const RestauranteProdutos = () => {
                 </button>
               </form>
 
-              {categorias.length === 0 ? (
+              {gruposProprios.length === 0 ? (
                 <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhum grupo próprio ainda. Crie acima pra usar no cardápio impresso.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {categorias.map((c) => (
+                  {gruposProprios.map((c) => (
                     editandoCategId === c.id ? (
                       <div key={c.id} className="flex items-center gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-full pl-3 pr-1.5 py-1">
                         <input
@@ -718,9 +779,9 @@ const RestauranteProdutos = () => {
               className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
             >
               <option value="">Todas categorias</option>
-              {categorias.length > 0 && (
+              {categoriasProprias.length > 0 && (
                 <optgroup label="Minhas categorias">
-                  {categorias.map((c) => (
+                  {categoriasProprias.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </optgroup>
@@ -970,7 +1031,11 @@ const RestauranteProdutos = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Categoria *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Categoria *</label>
+                    {renderCriarCategoriaBotao('category_id')}
+                  </div>
+                  {renderCriarCategoriaLinha('category_id')}
                   <select
                     value={form.category_id}
                     onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
@@ -978,30 +1043,50 @@ const RestauranteProdutos = () => {
                     required
                   >
                     <option value="">Selecionar</option>
-                    {categoriasGlobais.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                    {/* Resguardo: produto antigo que usava categoria própria como
-                        categoria principal (antes da separação categoria/grupo) —
-                        mantém a opção visível pra não sumir/resetar ao editar. */}
-                    {form.category_id && !categoriasGlobais.some((c) => String(c.id) === form.category_id) && (
-                      categorias.filter((c) => String(c.id) === form.category_id).map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} (própria)</option>
-                      ))
+                    {categoriasProprias.length > 0 && (
+                      <optgroup label="Minhas categorias">
+                        {categoriasProprias.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {categoriasGlobais.length > 0 && (
+                      <optgroup label="Categorias da plataforma">
+                        {categoriasGlobais.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {/* Resguardo: categoria própria apagada ou vinda de um estado antigo
+                        (antes da separação categoria/grupo) — mantém a opção visível
+                        pra não sumir/resetar ao editar um produto já cadastrado. */}
+                    {form.category_id
+                      && !categoriasProprias.some((c) => String(c.id) === form.category_id)
+                      && !categoriasGlobais.some((c) => String(c.id) === form.category_id) && (
+                      <option value={form.category_id}>Categoria removida</option>
                     )}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Grupo</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-400">Grupo</label>
+                    {renderCriarCategoriaBotao('grupo_id')}
+                  </div>
+                  {renderCriarCategoriaLinha('grupo_id')}
                   <select
                     value={form.grupo_id}
                     onChange={(e) => setForm((f) => ({ ...f, grupo_id: e.target.value }))}
                     className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm"
                   >
                     <option value="">Nenhum grupo</option>
-                    {categorias.map((c) => (
+                    {gruposProprios.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
+                    {/* Resguardo: grupo apagado — mantém a opção visível pra não
+                        sumir/resetar ao editar um produto já cadastrado. */}
+                    {form.grupo_id && !gruposProprios.some((c) => String(c.id) === form.grupo_id) && (
+                      <option value={form.grupo_id}>Grupo removido</option>
+                    )}
                   </select>
                 </div>
               </div>
