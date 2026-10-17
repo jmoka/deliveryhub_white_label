@@ -4,11 +4,16 @@ import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaModal';
 import {
   getPacotesBoost, getMeusBoosts, criarBoost, getBoostDetalhe, pagarBoost, removerBoost,
-  getMeusProdutos, getMeusCombos,
+  getMeusProdutos, getMeusCombos, getMeusServicos,
 } from '../../services/restauranteService';
 import { APP_NAME } from '../../constants/brand';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+const faixaPrecoServico = (min, max) => {
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}`;
+  if (min != null) return `A partir de ${fmt(min)}`;
+  return 'Sob consulta';
+};
 
 // Seleção de produtos/combos que entram no pacote comprado — uma seção por
 // carrossel da composição do pacote (ex: 1 no Combos + 3 em Bebidas), cada
@@ -22,6 +27,8 @@ const SelecaoCarrossel = ({ carrossel, label, qtd, selecionados, onToggle }) => 
   useEffect(() => {
     const buscar = carrossel === 'combos'
       ? getMeusCombos().then((r) => r.combos ?? [])
+      : carrossel === 'servicos'
+      ? getMeusServicos().then((r) => r.servicos ?? [])
       : getMeusProdutos().then((r) => r.produtos ?? []);
     buscar.then((lista) => setItens(lista ?? [])).catch(() => {}).finally(() => setCarregando(false));
   }, [carrossel]);
@@ -51,7 +58,9 @@ const SelecaoCarrossel = ({ carrossel, label, qtd, selecionados, onToggle }) => 
                 />
                 {item.name}
               </span>
-              <span className="text-xs text-[#71717A]">{fmt(item.preco_promo > 0 ? item.preco_promo : item.price)}</span>
+              <span className="text-xs text-[#71717A]">
+                {carrossel === 'servicos' ? faixaPrecoServico(item.preco_min, item.preco_max) : fmt(item.preco_promo > 0 ? item.preco_promo : item.price)}
+              </span>
             </label>
           ))}
         </div>

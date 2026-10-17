@@ -121,6 +121,15 @@ const RestauranteServicos = () => {
     }
   };
 
+  const handleToggleDestaque = async (s) => {
+    try {
+      await editarServico(s.id, { destaque: !s.destaque });
+      carregarServicos();
+    } catch (e) {
+      setErro(e.message);
+    }
+  };
+
   const handleMarcarContatado = async (id) => {
     setMarcandoId(id);
     try {
@@ -171,7 +180,10 @@ const RestauranteServicos = () => {
                     {s.image_url && <img src={s.image_url} alt="" className="w-full h-32 object-cover" />}
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5]">{s.name}</h3>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] truncate">{s.name}</h3>
+                          {s.destaque && <span className="text-xs flex-shrink-0">⭐</span>}
+                        </div>
                         {!s.is_active && (
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 flex-shrink-0">Inativo</span>
                         )}
@@ -180,6 +192,10 @@ const RestauranteServicos = () => {
                       {s.description && <p className="text-sm text-[#52525B] dark:text-[#D4D4D8] mt-2 line-clamp-2">{s.description}</p>}
                       <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] mt-2">{faixaPreco(s.preco_min, s.preco_max)}</p>
                       <div className="flex gap-2 mt-3">
+                        <button onClick={() => handleToggleDestaque(s)} title="Destacar serviço"
+                          className="text-sm px-2 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+                          {s.destaque ? '⭐' : '☆'}
+                        </button>
                         <button onClick={() => abrirEditar(s)}
                           className="text-xs px-2.5 py-1 rounded-lg border border-[#E4E4E7] dark:border-[#3F3F46] text-[#27272A] dark:text-[#F4F4F5] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
                           Editar

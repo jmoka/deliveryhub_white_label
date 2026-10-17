@@ -506,6 +506,75 @@ const ComboCarrossel = ({ combos, navigate }) => {
   );
 };
 
+/* ── Card serviço pro carrossel de destaque pago (ver ServicoCompCard pro
+   card do grid de comparação — este é a versão compacta do carrossel) ──── */
+const ServicoCarrosselCard = ({ servico, i, navigate }) => {
+  const rest = servico.restaurante;
+  const fechado = rest?.aparencia?.aberto === false;
+
+  return (
+    <motion.button
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: (i % 10) * 0.05 }}
+      whileHover={{ y: fechado ? 0 : -2 }}
+      onClick={() => rest && !fechado && navigate(`/r/${rest.slug}`)}
+      className={`flex-shrink-0 w-36 sm:w-40 bg-white rounded-2xl border overflow-hidden text-left relative ${
+        fechado ? 'border-red-200 opacity-70' : 'border-[#E4E4E7] hover:shadow-md hover:border-[#FF441F]/30'
+      }`}
+    >
+      <div className="relative h-28 bg-[#F4F4F5]">
+        {servico.image_url
+          ? <img src={servico.image_url} alt={servico.name} className={`w-full h-full object-cover ${fechado ? 'grayscale' : ''}`} />
+          : <div className="w-full h-full flex items-center justify-center"><Icon name="Wrench" size={28} className="text-[#E4E4E7]" /></div>}
+        <span className="absolute top-2 left-2 flex items-center gap-1 text-[9px] font-bold bg-sky-500 text-white px-1.5 py-0.5 rounded-full shadow">
+          <Icon name="Wrench" size={9} /> SERVIÇO
+        </span>
+      </div>
+      <div className="p-2.5">
+        <p className="text-xs font-bold text-[var(--texto-principal)] line-clamp-2 leading-tight">{servico.name}</p>
+        <p className={`text-sm font-black mt-1.5 ${fechado ? 'text-[var(--texto-secundario)]' : 'text-sky-600'}`}>
+          {fechado ? '–' : faixaPrecoServico(servico.preco_min, servico.preco_max)}
+        </p>
+        {rest && <p className="text-[9px] text-[var(--texto-secundario)] truncate mt-1">{rest.name}</p>}
+        <p className="text-[8px] text-[var(--texto-secundario)] opacity-70 mt-0.5">Patrocinado</p>
+      </div>
+    </motion.button>
+  );
+};
+
+/* ── Carrossel de serviços em destaque pago — só aparece quem tem campanha
+   paga/inclusa no plano (sem exibição orgânica, ver marketplace-boost) ──── */
+const ServicoCarrossel = ({ servicos, navigate }) => {
+  const scrollRef = useRef(null);
+  const auto = servicos.length > 1;
+  const [pausado, setPausado] = useState(false);
+
+  const scroll = (dir) => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: dir * 200, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <button onClick={() => scroll(-1)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -ml-4 hidden sm:flex">
+        <Icon name="ChevronLeft" size={16} className="text-[var(--texto-principal)]" />
+      </button>
+      <div ref={scrollRef} className="overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}
+        onTouchStart={() => setPausado(true)} onTouchEnd={() => setPausado(false)} onTouchCancel={() => setPausado(false)}>
+        <div className={`flex gap-3 w-max ${auto ? 'animate-carrossel-continuo' : ''}`}
+          style={auto ? { '--carrossel-duracao': `${servicos.length * 5}s`, animationPlayState: pausado ? 'paused' : undefined } : undefined}>
+          {(auto ? [...servicos, ...servicos] : servicos).map((s, i) => <ServicoCarrosselCard key={auto ? `${s.id}-${i}` : s.id} servico={s} i={i} navigate={navigate} />)}
+        </div>
+      </div>
+      <button onClick={() => scroll(1)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white border border-[#E4E4E7] rounded-full shadow flex items-center justify-center hover:bg-[#F4F4F5] -mr-4 hidden sm:flex">
+        <Icon name="ChevronRight" size={16} className="text-[var(--texto-principal)]" />
+      </button>
+    </div>
+  );
+};
+
 /* ── Carrossel restaurantes populares ────────────────────────────── */
 const RestCarrossel = ({ restaurantes, navigate, marca }) => {
   const scrollRef = useRef(null);
@@ -1174,6 +1243,13 @@ const MenuCatalogProductBrowse = () => {
     ...combosDisponiveis.filter((c) => !patrocinados.combos?.includes(c.id)),
   ];
 
+  // Serviço não tem exibição orgânica na home — carrossel só existe quando
+  // tem campanha paga/inclusa no plano (ver marketplace-boost), por isso
+  // resolve direto a lista de ids patrocinados, sem "resto não patrocinado".
+  const servicosPatrocinados = (patrocinados.servicos ?? [])
+    .map((id) => servicosDisponiveis.find((s) => s.id === id))
+    .filter(Boolean);
+
   return (
     <div className="min-h-screen relative" style={{
       ...(marca.page_fundo_tipo === 'imagem' && marca.page_fundo_imagem_url
@@ -1454,6 +1530,20 @@ const MenuCatalogProductBrowse = () => {
               Combos em destaque
             </p>
             <ComboCarrossel combos={combosComDestaque} navigate={navigate} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Carrossel de serviços em destaque pago — sem exibição orgânica,
+           só existe quando tem campanha paga/inclusa no plano ──────────── */}
+      {servicosPatrocinados.length > 0 && (
+        <div style={{ backgroundColor: hexToRgba(marca.secoes_bg_color, pct(marca.secoes_bg_opacity)) }}>
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-8 py-5">
+            <p className="text-sm font-bold text-[var(--texto-principal)] bg-[var(--texto-principal-bg)] rounded-lg px-2 py-1 -ml-2 mb-4 flex items-center gap-2 w-fit">
+              <Icon name="Wrench" size={15} className="text-sky-500" />
+              Serviços em destaque
+            </p>
+            <ServicoCarrossel servicos={servicosPatrocinados} navigate={navigate} />
           </div>
         </div>
       )}

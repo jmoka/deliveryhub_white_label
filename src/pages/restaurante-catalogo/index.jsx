@@ -129,6 +129,9 @@ const ServicoCard = ({ servico, onSolicitar }) => (
       <div>
         <div className="flex items-start gap-2 flex-wrap">
           <p className="font-semibold text-[#18181B] dark:text-[#F4F4F5] text-sm leading-snug flex-1">{servico.name}</p>
+          {servico.destaque && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-yellow-400/20 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 rounded font-bold flex-shrink-0">⭐ Destaque</span>
+          )}
           {servico.categoria && (
             <span className="text-[10px] px-1.5 py-0.5 bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA] rounded font-bold flex-shrink-0">{servico.categoria}</span>
           )}
@@ -457,6 +460,57 @@ const CarrinhoMobile = ({ carrinho, onAdicionar, onFechar, onCheckout }) => (
   </>
 );
 
+/* ── Card compacto de serviço pro carrossel da coluna lateral ─────── */
+const ServicoCarrosselCard = ({ servico, onSolicitar }) => (
+  <button
+    onClick={() => onSolicitar(servico)}
+    className="flex-shrink-0 w-36 bg-[#F4F4F5] dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] overflow-hidden text-left hover:shadow-md hover:border-[#FF441F]/30 transition-all"
+  >
+    <div className="relative h-20 bg-[#E4E4E7] dark:bg-[#3F3F46]">
+      {servico.image_url
+        ? <img src={servico.image_url} alt={servico.name} className="w-full h-full object-cover" />
+        : <div className="w-full h-full flex items-center justify-center"><Icon name="Wrench" size={22} className="text-[#A1A1AA] dark:text-[#52525B]" /></div>}
+      {servico.destaque && (
+        <span className="absolute top-1.5 left-1.5 text-[9px] font-bold bg-yellow-400 text-[#18181B] px-1.5 py-0.5 rounded-full shadow">⭐</span>
+      )}
+    </div>
+    <div className="p-2.5">
+      <p className="text-xs font-bold text-[#18181B] dark:text-[#F4F4F5] line-clamp-2 leading-tight">{servico.name}</p>
+      <p className="text-[11px] font-bold text-[#FF441F] mt-1">{faixaPrecoServico(servico.preco_min, servico.preco_max)}</p>
+    </div>
+  </button>
+);
+
+/* ── Coluna de serviços (sempre visível quando o módulo está ativo,
+     lado a lado com os produtos — não depende de aba/busca). Carrossel em
+     fluxo contínuo (mesmo padrão do carrossel de imagens/combos da loja),
+     conteúdo duplicado pra emendar sem salto quando o loop reinicia. ───── */
+const ServicosColuna = ({ servicos, onSolicitar }) => (
+  <aside className="w-full lg:w-72 flex-shrink-0">
+    <div className="lg:sticky lg:top-28 bg-white dark:bg-[#27272A] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#E4E4E7] dark:border-[#3F3F46]">
+        <h3 className="font-bold text-[#18181B] dark:text-[#F4F4F5] text-sm flex items-center gap-1.5">
+          🛠️ Serviços
+        </h3>
+      </div>
+      {servicos.length === 0 ? (
+        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] p-4">Nenhum serviço encontrado</p>
+      ) : (
+        <div className="p-3 overflow-hidden">
+          <div
+            className="flex gap-3 w-max animate-carrossel-continuo"
+            style={{ '--carrossel-duracao': `${servicos.length * 5}s` }}
+          >
+            {[...servicos, ...servicos].map((s, i) => (
+              <ServicoCarrosselCard key={`${s.id}-${i}`} servico={s} onSolicitar={onSolicitar} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </aside>
+);
+
 /* ── Sidebar desktop ─────────────────────────────────────────────── */
 const CarrinhoDesktop = ({ carrinho, onAdicionar, onCheckout }) => (
   <aside className="hidden lg:block w-80 xl:w-96 flex-shrink-0">
@@ -496,6 +550,7 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   const [servicoOrcamento, setServicoOrcamento] = useState(null);
   const [busca, setBusca] = useState('');
   const [ordenacao, setOrdenacao] = useState('padrao'); // padrao | menor_preco | maior_preco
+  const [filtroDestaque, setFiltroDestaque] = useState(false);
 
   // Quando aberto via domínio customizado (dadosPreCarregados vindo do HomeRouter),
   // não existe :slug na URL — o fetch abaixo é pulado, os dados já chegam prontos.
@@ -638,28 +693,29 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
   // diferente de modulo_delivery que assume true na ausência do campo.
   const temServicos = restaurante.modulo_servicos === true;
 
+  // Serviço tem coluna própria sempre visível (ver ServicosColuna) — não entra
+  // mais nas abas/grade de produto, pra não duplicar o mesmo item nos dois lugares.
   const tabs = [
     { id: 'todos', label: 'Todos' },
     ...(destaques?.length ? [{ id: 'destaques', label: '⭐ Destaques' }] : []),
     ...(promos?.length ? [{ id: 'promos', label: '🔥 Promoções' }] : []),
     ...(combos?.length ? [{ id: 'combos', label: '🍱 Combos' }] : []),
     ...cardapio.map((c) => ({ id: c.id, label: c.name })),
-    ...(temServicos && servicos?.length ? [{ id: 'servicos', label: '🛠️ Serviços' }] : []),
   ];
 
-  const servicosComTipo = (servicos ?? []).map((s) => ({ ...s, tipo: 'servico' }));
-
   const produtosDaTab = () => {
-    // "Todos" também mostra os serviços junto do cardápio — é a aba que o
-    // cliente vê primeiro ao abrir a loja, não faz sentido esconder serviço
-    // atrás de uma aba separada que ele pode nem notar.
-    if (catAtiva === 'todos') return [...cardapio.flatMap((c) => c.produtos ?? []), ...(temServicos ? servicosComTipo : [])];
+    if (catAtiva === 'todos') return cardapio.flatMap((c) => c.produtos ?? []);
     if (catAtiva === 'destaques') return destaques ?? [];
     if (catAtiva === 'promos') return promos ?? [];
     if (catAtiva === 'combos') return combos ?? [];
-    if (catAtiva === 'servicos') return servicosComTipo;
     return cardapio.find((c) => c.id === catAtiva)?.produtos ?? [];
   };
+
+  // Filtro "Destacados" (ao lado do select de ordenação) cruza produto E
+  // serviço — os dois têm campo `destaque` próprio.
+  const servicosExibidos = (temServicos ? servicos ?? [] : []).filter((s) => !filtroDestaque || s.destaque);
+  const temFiltroAtivo = !!busca.trim() || ordenacao !== 'padrao' || filtroDestaque;
+  const limparFiltros = () => { setBusca(''); setOrdenacao('padrao'); setFiltroDestaque(false); };
 
   const normalizar = (s) => (s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -891,8 +947,8 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
               <Icon name="ChevronRight" size={14} className="text-[#27272A] dark:text-[#F4F4F5]" />
             </button>
           </div>
-          <div className="flex gap-2 pb-3">
-            <div className="relative flex-1 min-w-0">
+          <div className="flex flex-wrap gap-2 pb-3">
+            <div className="relative flex-1 min-w-[140px]">
               <Icon name="Search" size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] pointer-events-none" />
               <input
                 type="text"
@@ -919,15 +975,36 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
               <option value="menor_preco">Menor preço</option>
               <option value="maior_preco">Maior preço</option>
             </select>
+            <button
+              type="button"
+              onClick={() => setFiltroDestaque((v) => !v)}
+              aria-pressed={filtroDestaque}
+              className={`flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold rounded-xl px-3 py-2 transition-colors ${
+                filtroDestaque ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#18181B] dark:text-[#F4F4F5] hover:bg-[#E4E4E7] dark:hover:bg-[#52525B]'
+              }`}
+            >
+              <Icon name="Star" size={14} className={filtroDestaque ? 'fill-white' : ''} />
+              Destacados
+            </button>
+            {temFiltroAtivo && (
+              <button
+                type="button"
+                onClick={limparFiltros}
+                className="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:text-[#FF441F] rounded-xl px-3 py-2 transition-colors"
+              >
+                <Icon name="XCircle" size={14} />
+                Limpar filtro
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Layout 2 colunas desktop ────────────────────────────────── */}
-      <div className="max-w-screen-xl mx-auto px-4 py-6 flex gap-6 items-start pb-32 lg:pb-8">
+      {/* ── Layout colunas (produtos | serviços | carrinho no desktop) ─ */}
+      <div className="max-w-screen-xl mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6 items-start pb-32 lg:pb-8">
 
         {/* Produtos */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 w-full">
           {tabs.length === 0 ? (
             <div className="text-center py-16 text-[#71717A] dark:text-[#A1A1AA]">
               <Icon name="UtensilsCrossed" size={44} className="mx-auto mb-3 text-[#E4E4E7] dark:text-[#3F3F46]" />
@@ -935,51 +1012,38 @@ const RestauranteCatalogo = ({ dadosPreCarregados } = {}) => {
             </div>
           ) : (() => {
             const buscaNorm = normalizar(busca.trim());
-            const itens = produtosDaTab().filter((p) => !buscaNorm || normalizar(p.name).includes(buscaNorm));
-            let itensProdutos = itens.filter((p) => p.tipo !== 'servico');
-            const itensServicos = itens.filter((p) => p.tipo === 'servico');
+            let itensProdutos = produtosDaTab().filter((p) => !buscaNorm || normalizar(p.name).includes(buscaNorm));
+            if (filtroDestaque) itensProdutos = itensProdutos.filter((p) => p.destaque);
             if (ordenacao === 'menor_preco') itensProdutos = [...itensProdutos].sort((a, b) => precoOrdenacao(a) - precoOrdenacao(b));
             else if (ordenacao === 'maior_preco') itensProdutos = [...itensProdutos].sort((a, b) => precoOrdenacao(b) - precoOrdenacao(a));
 
-            if (itensProdutos.length === 0 && itensServicos.length === 0) return (
+            if (itensProdutos.length === 0) return (
               <div className="text-center py-10 text-[#71717A] dark:text-[#A1A1AA]">
-                <p className="text-sm">{buscaNorm ? 'Nenhum produto encontrado' : 'Nenhum produto nesta categoria'}</p>
+                <p className="text-sm">{buscaNorm ? 'Nenhum produto encontrado' : filtroDestaque ? 'Nenhum produto em destaque' : 'Nenhum produto nesta categoria'}</p>
               </div>
             );
 
             return (
               <AnimatePresence mode="wait">
                 <motion.div key={catAtiva} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-                  {itensProdutos.length > 0 && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                      {itensProdutos.map((p, i) => (
-                        <motion.div key={`produto-${p.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.04, duration: 0.2 }}>
-                          <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} onAbrirAdicionais={abrirAdicionais} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                  {itensServicos.length > 0 && (
-                    <>
-                      <h3 className={`font-bold text-[#18181B] dark:text-[#F4F4F5] text-sm ${itensProdutos.length > 0 ? 'mt-6' : ''} mb-3`}>
-                        🛠️ Serviços
-                      </h3>
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                        {itensServicos.map((p, i) => (
-                          <motion.div key={`servico-${p.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.04, duration: 0.2 }}>
-                            <ServicoCard servico={p} onSolicitar={setServicoOrcamento} />
-                          </motion.div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                    {itensProdutos.map((p, i) => (
+                      <motion.div key={`produto-${p.id}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04, duration: 0.2 }}>
+                        <ProdutoCard produto={p} qtd={qtdNoCarrinho(p)} onAdicionar={altCarrinho} onAbrirAdicionais={abrirAdicionais} restauranteFechado={ap.aberto === false} somenteVitrine={!temDelivery} />
+                      </motion.div>
+                    ))}
+                  </div>
                 </motion.div>
               </AnimatePresence>
             );
           })()}
         </main>
+
+        {/* Coluna de serviços — sempre visível (não depende de aba/busca) */}
+        {temServicos && (servicos?.length > 0) && (
+          <ServicosColuna servicos={servicosExibidos} onSolicitar={setServicoOrcamento} />
+        )}
 
         {/* Carrinho desktop (sidebar) */}
         {temDelivery && <CarrinhoDesktop carrinho={carrinho} onAdicionar={altCarrinho} onCheckout={irParaCheckout} />}
