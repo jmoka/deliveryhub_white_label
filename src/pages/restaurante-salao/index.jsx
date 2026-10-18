@@ -532,7 +532,8 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
 
   const transferir = () => {
     if (!garcomSelecionado) return;
-    acao(() => transferirGarcomComanda(comandaId, Number(garcomSelecionado)));
+    const novoGarcomId = garcomSelecionado === 'caixa' ? null : Number(garcomSelecionado);
+    acao(() => transferirGarcomComanda(comandaId, novoGarcomId));
   };
 
   const incluirItem = (item) => acao(() => adicionarItensComandaSalao(comandaId, [item]));
@@ -954,6 +955,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           <select value={garcomSelecionado} onChange={(e) => setGarcomSelecionado(e.target.value)}
             className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs">
             <option value="">Transferir pra outro garçom...</option>
+            {comanda.garcom_id && <option value="caixa">— Enviar pra Caixa (desvincular garçom)</option>}
             {garcons.filter((g) => g.id !== comanda.garcom_id).map((g) => (
               <option key={g.id} value={g.id}>{g.nome}</option>
             ))}
