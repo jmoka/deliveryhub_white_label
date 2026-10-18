@@ -106,6 +106,7 @@ export const AgenteImpressaoPanel = () => {
   const [token, setToken] = useState(null);
   const [gerando, setGerando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [copiadoUltimo, setCopiadoUltimo] = useState(false);
 
   const carregarStatus = useCallback(() => getStatusAgente().then(setStatus).catch(() => {}), []);
   useEffect(() => {
@@ -129,6 +130,13 @@ export const AgenteImpressaoPanel = () => {
     navigator.clipboard?.writeText(token);
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
+  };
+
+  const copiarUltimo = () => {
+    if (!status?.token) return;
+    navigator.clipboard?.writeText(status.token);
+    setCopiadoUltimo(true);
+    setTimeout(() => setCopiadoUltimo(false), 2000);
   };
 
   return (
@@ -158,10 +166,16 @@ export const AgenteImpressaoPanel = () => {
       <p className="text-xs text-[#A1A1AA] mb-3">
         <a href="https://github.com/jmoka/deliveryhub_white_label/tree/main/print-agent" target="_blank" rel="noreferrer" className="text-[#FF441F] font-semibold">Documentação completa</a>
       </p>
-      <button onClick={gerar} disabled={gerando}
-        className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
-        {gerando ? 'Gerando...' : 'Gerar token de pareamento'}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button onClick={gerar} disabled={gerando}
+          className="px-4 py-2 bg-zinc-800 text-white text-sm font-bold rounded-xl disabled:opacity-50">
+          {gerando ? 'Gerando...' : 'Gerar token de pareamento'}
+        </button>
+        <button onClick={copiarUltimo} disabled={!status?.token} title={status?.token ? 'Copia o token já pareado, sem gerar outro' : 'Nenhum token gerado ainda'}
+          className="px-4 py-2 border border-zinc-800 dark:border-zinc-500 text-zinc-800 dark:text-zinc-300 text-sm font-bold rounded-xl disabled:opacity-50">
+          {copiadoUltimo ? 'Copiado!' : 'Copiar último token'}
+        </button>
+      </div>
       {token && (
         <div className="flex items-center gap-2 mt-3 bg-[#F4F4F5] dark:bg-[#3F3F46] rounded-xl px-3 py-2">
           <span className="text-xs font-mono text-[#71717A] dark:text-[#A1A1AA] truncate flex-1">{token}</span>
