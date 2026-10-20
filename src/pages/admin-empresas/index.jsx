@@ -23,6 +23,7 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
     modulo_gdoor: empresa?.modulo_gdoor ?? false,
     modulo_favicon_personalizado: empresa?.modulo_favicon_personalizado ?? false,
     modulo_servicos: empresa?.modulo_servicos ?? false,
+    modulo_pagamento_manual: empresa?.modulo_pagamento_manual ?? false,
     limite_servicos: empresa?.limite_servicos ?? null,
   });
   const [salvando, setSalvando] = useState(false);
@@ -177,6 +178,14 @@ const Modal = ({ empresa, comissaoPadrao, onClose, onSave }) => {
                   onChange={(e) => setForm({ ...form, modulo_servicos: e.target.checked })}
                 />
                 Serviços (orçamento)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={form.modulo_pagamento_manual}
+                  onChange={(e) => setForm({ ...form, modulo_pagamento_manual: e.target.checked })}
+                />
+                Pagamento manual (toggle em restaurante-config)
               </label>
               {form.modulo_servicos && (
                 <div className="ml-6 max-w-xs">
@@ -596,7 +605,10 @@ const ModulosBadges = ({ empresa: e }) => (
     {e.modulo_servicos && (
       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">Serviços</span>
     )}
-    {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && !e.modulo_favicon_personalizado && !e.modulo_servicos && (
+    {e.modulo_pagamento_manual && (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-lime-100 dark:bg-lime-950/40 text-lime-700 dark:text-lime-400">Pagamento manual</span>
+    )}
+    {!e.modulo_delivery && !e.modulo_salao && !e.modulo_gdoor && !e.modulo_favicon_personalizado && !e.modulo_servicos && !e.modulo_pagamento_manual && (
       <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>
     )}
   </div>

@@ -1245,7 +1245,7 @@ const StripeConectarCard = () => {
 };
 
 const RestauranteConfig = () => {
-  const { moduloSalao, moduloGdoor } = useModulosEmpresa();
+  const { moduloSalao, moduloGdoor, moduloPagamentoManual } = useModulosEmpresa();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -1437,7 +1437,11 @@ const RestauranteConfig = () => {
             {/* Stripe — forma alternativa de receber, onboarding hospedado (sem tokens) */}
             <StripeConectarCard />
 
-            {/* Modo de pagamento — PagBank (API) ou manual (motoboy cobra na entrega) */}
+            {/* Modo de pagamento — PagBank (API) ou manual (motoboy cobra na
+                entrega). Só aparece se o plano/admin liberou o módulo
+                (restaurants.modulo_pagamento_manual); sem ele, o checkout
+                sempre cobra via PagBank. */}
+            {moduloPagamentoManual && (
             <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-start gap-3">
               <button type="button" onClick={() => setForm((f) => ({ ...f, pagamento_manual: !f.pagamento_manual }))}
                 className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${form.pagamento_manual ? 'bg-[#FF441F]' : 'bg-[#D4D4D8] dark:bg-[#3F3F46]'}`}>
@@ -1452,6 +1456,7 @@ const RestauranteConfig = () => {
                 </p>
               </div>
             </div>
+            )}
 
             {/* Guia passo a passo */}
             <Guia />

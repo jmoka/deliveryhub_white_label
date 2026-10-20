@@ -161,6 +161,7 @@ const PlanosDisponiveisModal = ({ planoAtualId, onClose, onEscolher }) => {
                     {p.inclui_delivery && <span className="text-xs font-medium bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full">Delivery</span>}
                     {p.inclui_salao && <span className="text-xs font-medium bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">Salão</span>}
                     {p.inclui_servicos && <span className="text-xs font-medium bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full">Serviços</span>}
+                    {p.inclui_pagamento_manual && <span className="text-xs font-medium bg-lime-50 dark:bg-lime-950/40 text-lime-700 dark:text-lime-400 px-2 py-0.5 rounded-full">Pagamento manual</span>}
                     {(p.inclui_delivery || p.inclui_salao) && (
                       <>
                         <span className="text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300 px-2 py-0.5 rounded-full">
