@@ -147,6 +147,25 @@ export const authService = {
       return { success: false, error: 'Password reset failed' };
     }
   },
+
+  // Confirmação do link de reset de 2FA enviado pelo admin (ver
+  // TwoFactorController/UsuariosController no backend) — rota pública, sem
+  // sessão, usada pela página confirmar-reset-2fa.
+  async confirmarResetDoisFatoresAdmin(token) {
+    try {
+      const res = await fetch(apiPath('/api/auth-principal/2fa/resetar/confirmar'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const isJson = (res.headers.get('content-type') ?? '').includes('application/json');
+      const body = isJson ? await res.json().catch(() => ({})) : {};
+      if (!res.ok) return { success: false, error: body?.message ?? `HTTP ${res.status}` };
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Falha ao confirmar o reset de 2FA' };
+    }
+  },
 }
 
 export default authService

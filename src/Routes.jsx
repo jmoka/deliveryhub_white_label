@@ -15,6 +15,7 @@ import CustomerAccountOrderHistory from './pages/customer-account-order-history'
 import RestaurantRegistrationSetup from './pages/restaurant-registration-setup';
 import CustomerRegistrationLogin from './pages/customer-registration-login';
 import ResetPassword from './pages/reset-password';
+import ConfirmarReset2FA from './pages/confirmar-reset-2fa';
 import OrderTrackingStatus from './pages/order-tracking-status';
 import AdminDashboard from './pages/admin-dashboard';
 import AdminEmpresas from './pages/admin-empresas';
@@ -104,6 +105,7 @@ const Routes = () => {
         <Route path="/restaurant-registration-setup" element={<RestaurantRegistrationSetup />} />
         <Route path="/customer-registration-login" element={<CustomerRegistrationLogin />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/2fa/resetar" element={<ConfirmarReset2FA />} />
         <Route path="/order-tracking-status" element={<OrderTrackingStatus />} />
         <Route path="/academia" element={<Academia />} />
         <Route path="/termos-de-uso" element={<PaginaLegal slug="termos-de-uso" />} />

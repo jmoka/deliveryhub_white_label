@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   getUsuarios, trocarCredenciaisUsuario, getEmpresas, atualizarEmpresa,
   editarUsuario, bloquearUsuario, excluirUsuario, liberarBloqueioLoginUsuario,
+  resetarDoisFatoresUsuario,
 } from '../../services/adminService';
 import AdminHeader from '../../components/admin/AdminHeader';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,6 +37,11 @@ const ROLE_LABELS = {
   restaurant_owner: 'Dono de restaurante',
   customer: 'Cliente',
   motoboy: 'Motoboy',
+};
+
+const TWO_FACTOR_LABELS = {
+  totp: '2FA: App',
+  email: '2FA: E-mail',
 };
 
 const ROLE_BADGE_CLASS = {
@@ -265,7 +271,7 @@ const EditarModal = ({ usuario, onClose, onSave }) => {
 
 // Card de usuário, reaproveitado nas duas visões (mesmo padrão do
 // EmpresaCard em admin-empresas) — mesmas ações da linha da tabela.
-const UsuarioCard = ({ usuario: u, currentUserId, processando, onVincular, onDesvincular, onCredenciais, onEditar, onLiberarLogin, onBloquear, onExcluir }) => (
+const UsuarioCard = ({ usuario: u, currentUserId, processando, onVincular, onDesvincular, onCredenciais, onEditar, onLiberarLogin, onBloquear, onExcluir, onResetarDoisFatores }) => (
   <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
     <div className="min-w-0">
       <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">
@@ -284,6 +290,11 @@ const UsuarioCard = ({ usuario: u, currentUserId, processando, onVincular, onDes
         </span>
       )}
       {u.bloqueado_login_ate && <BloqueioLoginBadge bloqueadoAte={u.bloqueado_login_ate} />}
+      {TWO_FACTOR_LABELS[u.two_factor_method] && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400">
+          {TWO_FACTOR_LABELS[u.two_factor_method]}
+        </span>
+      )}
     </div>
 
     {u.restaurante ? (
@@ -313,6 +324,12 @@ const UsuarioCard = ({ usuario: u, currentUserId, processando, onVincular, onDes
       <button onClick={onEditar} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700">
         Editar
       </button>
+      {u.two_factor_method && u.two_factor_method !== 'none' && (
+        <button onClick={onResetarDoisFatores} disabled={processando === u.id}
+          className="px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg border border-indigo-200 dark:border-indigo-900 disabled:opacity-50">
+          Resetar 2FA
+        </button>
+      )}
       {u.bloqueado_login_ate && (
         <button onClick={onLiberarLogin} disabled={processando === u.id}
           className="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg border border-red-200 dark:border-red-900 disabled:opacity-50">
@@ -407,6 +424,19 @@ const AdminUsuarios = () => {
     try {
       await liberarBloqueioLoginUsuario(usuario.id);
       carregar();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setProcessando(null);
+    }
+  };
+
+  const handleResetarDoisFatores = async (usuario) => {
+    if (!confirm(`Enviar link pra "${usuario.name || usuario.email}" desativar a verificação em duas etapas? O link vai pro email ${usuario.email} e expira em 30 minutos.`)) return;
+    setProcessando(usuario.id);
+    try {
+      await resetarDoisFatoresUsuario(usuario.id);
+      alert('Link enviado! O usuário pode confirmar pelo email para voltar a acessar a conta.');
     } catch (e) {
       alert(e.message);
     } finally {
@@ -519,6 +549,7 @@ const AdminUsuarios = () => {
                 onLiberarLogin={() => handleLiberarBloqueioLogin(u)}
                 onBloquear={() => handleBloquear(u)}
                 onExcluir={() => handleExcluir(u)}
+                onResetarDoisFatores={() => handleResetarDoisFatores(u)}
               />
             ))}
           </div>
@@ -554,6 +585,11 @@ const AdminUsuarios = () => {
                             </span>
                           )}
                           {u.bloqueado_login_ate && <BloqueioLoginBadge bloqueadoAte={u.bloqueado_login_ate} />}
+                          {TWO_FACTOR_LABELS[u.two_factor_method] && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400">
+                              {TWO_FACTOR_LABELS[u.two_factor_method]}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden md:table-cell">
@@ -588,6 +624,12 @@ const AdminUsuarios = () => {
                             className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
                             Editar
                           </button>
+                          {u.two_factor_method && u.two_factor_method !== 'none' && (
+                            <button onClick={() => handleResetarDoisFatores(u)} disabled={processando === u.id}
+                              className="px-3 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg disabled:opacity-50">
+                              Resetar 2FA
+                            </button>
+                          )}
                           {u.bloqueado_login_ate && (
                             <button onClick={() => handleLiberarBloqueioLogin(u)} disabled={processando === u.id}
                               className="px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg disabled:opacity-50">

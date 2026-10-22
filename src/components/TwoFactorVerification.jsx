@@ -130,6 +130,10 @@ const TwoFactorVerification = ({
           <span>Voltar ao login</span>
         </button>
       </div>
+
+      <p className="text-xs text-center text-muted-foreground">
+        Perdeu acesso ao código? Fale com o suporte pra desativar a verificação em duas etapas.
+      </p>
     </div>
   );
 };
