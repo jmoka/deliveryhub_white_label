@@ -1134,6 +1134,7 @@ const AdminEmpresas = () => {
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Módulos</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Domínio</th>
                     <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Plano</th>
+                    <th className="px-2 sm:px-4 py-3 text-left font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Vencimento</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400 hidden md:table-cell">Comissão</th>
                     <th className="px-2 sm:px-4 py-3 text-right font-medium text-gray-600 dark:text-zinc-400 hidden lg:table-cell">Cadastro</th>
                     <th className="px-2 sm:px-4 py-3 w-px whitespace-nowrap"></th>
@@ -1180,6 +1181,10 @@ const AdminEmpresas = () => {
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
                         <PlanoBadge empresa={e} assinaturas={assinaturas} />
+                      </td>
+                      <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
+                        <VencimentoBadge empresa={e} faturas={faturas} toleranciaDias={toleranciaDias}
+                          onEditar={(fatura) => setModalVencimento({ empresa: e, fatura })} />
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
