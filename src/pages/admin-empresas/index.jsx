@@ -866,15 +866,26 @@ const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissa
         <p className="font-semibold text-gray-900 dark:text-zinc-100 truncate">{e.name}</p>
         <p className="text-xs text-gray-400 dark:text-zinc-500">#{e.id}</p>
       </div>
-      {e.bloqueado ? (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400 flex-shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Bloqueado
-        </span>
-      ) : (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400 flex-shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
-        </span>
-      )}
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        {e.bloqueado ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Bloqueado
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Ativo
+          </span>
+        )}
+        {e.aberto ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Aberta
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-zinc-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" /> Fechada
+          </span>
+        )}
+      </div>
     </div>
 
     {e.address && <p className="text-sm text-gray-500 dark:text-zinc-400 truncate">{e.address}</p>}

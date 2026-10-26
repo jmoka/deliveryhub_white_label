@@ -7,6 +7,7 @@ const RAW_LINKS = [
   { label: 'Tags', path: '/admin/tags', icon: 'Tags' },
   { label: 'Academia', path: '/admin/academia', icon: 'GraduationCap' },
   { label: 'Comissões', path: '/admin/comissoes', icon: 'Percent' },
+  { label: 'Analytics', path: '/admin/analytics', icon: 'BarChart3' },
   { label: 'Motoboys', path: '/admin/motoboys', icon: 'Bike' },
   { label: 'Planos', path: '/admin/planos', icon: 'CreditCard' },
   { label: 'Marketplace', path: '/admin/marketplace-boost', icon: 'Megaphone' },

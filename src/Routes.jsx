@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes as RouterRoutes, Route, Navigate } from "react-router-dom";
 import ScrollToTop from "components/ScrollToTop";
 import ErrorBoundary from "components/ErrorBoundary";
+import VisitaTracker from "./components/VisitaTracker";
 import { ThemeToggle } from "./contexts/ThemeContext";
 import NotFound from "pages/NotFound";
 import SiteHome from './pages/site/Home';
@@ -20,6 +21,7 @@ import OrderTrackingStatus from './pages/order-tracking-status';
 import AdminDashboard from './pages/admin-dashboard';
 import AdminEmpresas from './pages/admin-empresas';
 import AdminComissoes from './pages/admin-comissoes';
+import AdminAnalytics from './pages/admin-analytics';
 import AdminGuard from './components/AdminGuard';
 import AdminTrocarSenha from './pages/admin-trocar-senha';
 import AdminConfiguracoes from './pages/admin-configuracoes';
@@ -92,6 +94,7 @@ const Routes = () => {
       <ErrorBoundary>
       <ThemeToggle />
       <ScrollToTop />
+      <VisitaTracker />
       <RouterRoutes>
         <Route path="/" element={<HomeRouter />} />
         <Route path="/site" element={<SiteHome />} />
@@ -119,6 +122,7 @@ const Routes = () => {
         <Route path="/admin/meu-perfil" element={<AdminGuard><AdminMeuPerfil /></AdminGuard>} />
         <Route path="/admin/empresas/:id" element={<AdminGuard><AdminEmpresaDetalhe /></AdminGuard>} />
         <Route path="/admin/comissoes" element={<AdminGuard><AdminComissoes /></AdminGuard>} />
+        <Route path="/admin/analytics" element={<AdminGuard><AdminAnalytics /></AdminGuard>} />
         <Route path="/admin/categorias" element={<AdminGuard><AdminCategorias /></AdminGuard>} />
         <Route path="/admin/tipos-estabelecimento" element={<AdminGuard><AdminTiposEstabelecimento /></AdminGuard>} />
         <Route path="/admin/tags" element={<AdminGuard><AdminTags /></AdminGuard>} />
