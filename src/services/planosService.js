@@ -56,6 +56,10 @@ export const atualizarCortesia = (restaurantId, cortesiaAte) =>
   apiFetch(`/planos/assinaturas/${restaurantId}/cortesia`, { method: 'PATCH', body: JSON.stringify({ cortesia_ate: cortesiaAte }) });
 export const gerarFaturaManual = (restaurantId) =>
   apiFetch(`/planos/assinaturas/${restaurantId}/gerar-fatura`, { method: 'POST' });
+// Desloca quando o período atual termina (vencimento projetado), usado quando
+// ainda não existe fatura gerada pro período — fatura já gerada edita-se via atualizarFatura.
+export const atualizarVigencia = (restaurantId, ultimoPeriodoFaturadoFim) =>
+  apiFetch(`/planos/assinaturas/${restaurantId}/vigencia`, { method: 'PATCH', body: JSON.stringify({ ultimo_periodo_faturado_fim: ultimoPeriodoFaturadoFim }) });
 
 // Admin — faturas globais
 export const getFaturas = (params = {}) => {

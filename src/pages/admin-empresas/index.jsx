@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig, getUsuarios } from '../../services/adminService';
-import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura, getFaturas, atualizarFatura } from '../../services/planosService';
+import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura, getFaturas, atualizarFatura, atualizarVigencia } from '../../services/planosService';
 import {
   getPacotesDisponiveisBoostAdmin, getBoostsDaEmpresa, getItensBoostDaEmpresa,
   criarBoostParaEmpresa, encerrarBoostAdmin, removerBoostNaoPagoAdmin,
@@ -672,9 +672,55 @@ const somarDias = (dataIso, dias) => {
   return d;
 };
 
-const VencimentoBadge = ({ empresa, faturas, toleranciaDias, onEditar }) => {
+const MESES_POR_PERIODICIDADE = { mensal: 1, trimestral: 3, anual: 12 };
+
+const somarMeses = (dataIso, meses) => {
+  const d = new Date(dataIso);
+  d.setMonth(d.getMonth() + meses);
+  return d;
+};
+
+const subtrairMeses = (dataIso, meses) => somarMeses(dataIso, -meses);
+
+// Período de vigência atual da assinatura, mesmo sem nenhuma fatura ainda
+// gerada (espelha o cálculo de inicioPeriodo/fimPeriodo do backend em
+// PlanosService.sincronizarPeriodo — só leitura, não gera nada aqui).
+const periodoAtualDe = (assinatura) => {
+  if (!assinatura) return null;
+  const meses = MESES_POR_PERIODICIDADE[assinatura.planos?.periodicidade] ?? 1;
+  const inicio = new Date(assinatura.ultimo_periodo_faturado_fim ?? assinatura.data_inicio);
+  const fim = somarMeses(inicio, meses);
+  return { inicio, fim };
+};
+
+const VencimentoBadge = ({ empresa, assinatura, faturas, toleranciaDias, onEditar, onEditarVigencia }) => {
+  const cortesiaAtiva = assinatura?.cortesia_ate && new Date(assinatura.cortesia_ate) > new Date();
+  if (!assinatura || assinatura.status === 'cancelada' || cortesiaAtiva) {
+    return <span className="text-xs text-gray-400 dark:text-zinc-500">—</span>;
+  }
+
   const fatura = faturaPendenteDe(empresa.id, faturas);
-  if (!fatura) return <span className="text-xs text-gray-400 dark:text-zinc-500">Sem fatura pendente</span>;
+  if (!fatura) {
+    // Nenhuma fatura gerada ainda pro período atual — mostra a data projetada
+    // (vence quando o período fechar) em vez de "Sem fatura pendente": todo
+    // plano não-grátis precisa mostrar vencimento/vigência, não só quem já tem
+    // cobrança pendente.
+    const periodo = periodoAtualDe(assinatura);
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400">
+          Vencimento {periodo.fim.toLocaleDateString('pt-BR')} (previsto)
+        </span>
+        <span className="text-[10px] text-gray-400 dark:text-zinc-500 whitespace-nowrap">
+          Vigência {periodo.inicio.toLocaleDateString('pt-BR')}–{periodo.fim.toLocaleDateString('pt-BR')}
+        </span>
+        <button onClick={() => onEditarVigencia(periodo)} title="Editar data de vencimento"
+          className="p-0.5 text-gray-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 rounded">
+          <Pencil size={12} />
+        </button>
+      </div>
+    );
+  }
 
   const vencida = fatura.status === 'vencida';
   const dataBloqueio = toleranciaDias > 0 ? somarDias(fatura.vencimento, toleranciaDias) : null;
@@ -753,7 +799,67 @@ const ModalEditarVencimento = ({ empresa, fatura, onClose, onSalvo }) => {
   );
 };
 
-const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover, onEditarVencimento }) => (
+// Edita o vencimento projetado (ainda sem fatura gerada) — desloca
+// assinaturas.ultimo_periodo_faturado_fim por baixo dos panos, já que o
+// backend guarda "fim do último período faturado", não a data de vencimento
+// em si. Fatura já existente edita-se pelo ModalEditarVencimento acima.
+const ModalEditarVigencia = ({ empresa, assinatura, periodo, onClose, onSalvo }) => {
+  const [vencimento, setVencimento] = useState(periodo.fim.toISOString().slice(0, 10));
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState(null);
+
+  const handleSubmit = async (ev) => {
+    ev.preventDefault();
+    setSalvando(true);
+    setErro(null);
+    try {
+      const meses = MESES_POR_PERIODICIDADE[assinatura.planos?.periodicidade] ?? 1;
+      const novoInicio = subtrairMeses(vencimento, meses);
+      await atualizarVigencia(empresa.id, novoInicio.toISOString());
+      onSalvo();
+      onClose();
+    } catch (e) {
+      setErro(e.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-zinc-800 rounded-2xl w-full max-w-sm p-6" onClick={(ev) => ev.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100">Editar vencimento — {empresa.name}</h3>
+          <button type="button" onClick={onClose}
+            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg">
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-zinc-300 mb-1">Data de vencimento (fim do período atual)</label>
+            <input required type="date" value={vencimento} onChange={(ev) => setVencimento(ev.target.value)}
+              className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">Ainda não há fatura gerada pra essa empresa — essa data projeta quando o período fecha e a fatura é criada (5 dias antes, automaticamente).</p>
+          </div>
+          {erro && <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-lg px-3 py-2">{erro}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-700/40">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando}
+              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+              {salvando ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover, onEditarVencimento, onEditarVigencia }) => (
   <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
@@ -791,8 +897,9 @@ const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissa
 
     <DominioBadge empresa={e} />
 
-    <VencimentoBadge empresa={e} faturas={faturas} toleranciaDias={toleranciaDias}
-      onEditar={(fatura) => onEditarVencimento(e, fatura)} />
+    <VencimentoBadge empresa={e} assinatura={assinaturas.find((a) => a.restaurant_id === e.id)} faturas={faturas} toleranciaDias={toleranciaDias}
+      onEditar={(fatura) => onEditarVencimento(e, fatura)}
+      onEditarVigencia={(periodo) => onEditarVigencia(e, assinaturas.find((a) => a.restaurant_id === e.id), periodo)} />
 
     <p className="text-xs text-gray-400 dark:text-zinc-500">
       Cadastro em {new Date(e.created_at).toLocaleDateString('pt-BR')}
@@ -846,6 +953,7 @@ const AdminEmpresas = () => {
   const [busca, setBusca] = useState(''); // nome ou endereço
   const [filtroPlano, setFiltroPlano] = useState(''); // '' | 'sem_plano' | plano_id
   const [modalVencimento, setModalVencimento] = useState(null); // null | { empresa, fatura }
+  const [modalVigencia, setModalVigencia] = useState(null); // null | { empresa, assinatura, periodo }
 
   const carregar = async () => {
     setLoading(true);
@@ -1118,6 +1226,7 @@ const AdminEmpresas = () => {
                 onBloquear={() => handleBloquear(e)}
                 onRemover={() => handleRemover(e)}
                 onEditarVencimento={(empresa, fatura) => setModalVencimento({ empresa, fatura })}
+                onEditarVigencia={(empresa, assinatura, periodo) => setModalVigencia({ empresa, assinatura, periodo })}
               />
             ))}
           </div>
@@ -1183,8 +1292,9 @@ const AdminEmpresas = () => {
                         <PlanoBadge empresa={e} assinaturas={assinaturas} />
                       </td>
                       <td className="px-2 sm:px-4 py-3 hidden lg:table-cell">
-                        <VencimentoBadge empresa={e} faturas={faturas} toleranciaDias={toleranciaDias}
-                          onEditar={(fatura) => setModalVencimento({ empresa: e, fatura })} />
+                        <VencimentoBadge empresa={e} assinatura={assinaturas.find((a) => a.restaurant_id === e.id)} faturas={faturas} toleranciaDias={toleranciaDias}
+                          onEditar={(fatura) => setModalVencimento({ empresa: e, fatura })}
+                          onEditarVigencia={(periodo) => setModalVigencia({ empresa: e, assinatura: assinaturas.find((a) => a.restaurant_id === e.id), periodo })} />
                       </td>
                       <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
@@ -1280,6 +1390,16 @@ const AdminEmpresas = () => {
           fatura={modalVencimento.fatura}
           onClose={() => setModalVencimento(null)}
           onSalvo={carregarFaturas}
+        />
+      )}
+
+      {modalVigencia && (
+        <ModalEditarVigencia
+          empresa={modalVigencia.empresa}
+          assinatura={modalVigencia.assinatura}
+          periodo={modalVigencia.periodo}
+          onClose={() => setModalVigencia(null)}
+          onSalvo={() => { carregarAssinaturas(); carregarFaturas(); }}
         />
       )}
     </div>

@@ -39,27 +39,52 @@ const tamanhoFavoritos = (qtd) => {
 const PlanoStatusDot = ({ planoStatus, onClick }) => {
   if (!planoStatus || !planoStatus.plano_nome) return null;
 
-  const diasAteVencer = planoStatus.proxima_cobranca
-    ? Math.ceil((new Date(planoStatus.proxima_cobranca) - new Date()) / 86400000)
+  // vencimento = fim do período (ver PlanosService.sincronizarPeriodo) — a
+  // fatura só existe se já foi gerada (5 dias antes do vencimento, via cron
+  // gerarFaturasAntecipadas, ou mais tarde no acesso/renovação manual).
+  // Enquanto não existe fatura ainda, proxima_cobranca já é essa mesma data
+  // projetada, então o aviso aparece igual, só que sem fatura_pendente_id.
+  const vencimento = planoStatus.fatura_pendente_vencimento ?? planoStatus.proxima_cobranca;
+  const diasAteVencer = vencimento
+    ? Math.ceil((new Date(vencimento) - new Date()) / 86400000)
     : null;
 
   let cor = 'bg-green-500';
   let texto = 'Plano em dia';
+  let avisoVisivel = null;
   if (planoStatus.bloqueado) {
     cor = 'bg-blue-500';
     texto = `Painel bloqueado — fatura vencida em ${fmtDataCurta(planoStatus.fatura_pendente_vencimento)} (há ${planoStatus.dias_atraso} dia(s))`;
+    avisoVisivel = 'Painel bloqueado — fatura vencida';
   } else if (planoStatus.dias_atraso > 0) {
     cor = 'bg-yellow-500';
     texto = `Assinatura vencida — vencimento em ${fmtDataCurta(planoStatus.fatura_pendente_vencimento)}. Regularize antes do bloqueio.`;
+    avisoVisivel = `Fatura vencida há ${planoStatus.dias_atraso} dia(s)`;
   } else if (diasAteVencer != null && diasAteVencer <= DIAS_ALERTA_VENCIMENTO) {
     cor = 'bg-orange-500';
-    texto = `Próxima cobrança em ${diasAteVencer} dia(s)`;
+    texto = `Vencimento em ${diasAteVencer} dia(s) (${fmtDataCurta(vencimento)})`;
+    avisoVisivel = diasAteVencer > 0
+      ? `Faltam ${diasAteVencer} dia(s) pro vencimento do plano`
+      : 'Plano vence hoje';
+  }
+
+  // Estados "em dia" ficam só com a bolinha (hover mostra o título); dentro da
+  // janela de alerta/vencida/bloqueado, o aviso some de texto visível na
+  // própria topbar — não só no title, que exige passar o mouse.
+  if (!avisoVisivel) {
+    return (
+      <button onClick={onClick} title={texto}
+        className="p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] flex-shrink-0">
+        <span className={`block w-2.5 h-2.5 rounded-full ${cor}`} />
+      </button>
+    );
   }
 
   return (
     <button onClick={onClick} title={texto}
-      className="p-2 rounded-lg hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] flex-shrink-0">
-      <span className={`block w-2.5 h-2.5 rounded-full ${cor} ${planoStatus.bloqueado ? 'animate-pulse' : ''}`} />
+      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-white flex-shrink-0 ${cor} ${planoStatus.bloqueado ? 'animate-pulse' : ''}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-white/80 flex-shrink-0" />
+      {avisoVisivel}
     </button>
   );
 };
