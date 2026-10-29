@@ -576,6 +576,9 @@ export const uploadComprovanteFatura = (id, base64) =>
   apiFetch(`/plano/faturas/${id}/comprovante`, { method: 'POST', body: JSON.stringify({ base64 }) });
 export const pularComprovanteFatura = (id) =>
   apiFetch(`/plano/faturas/${id}/pular-comprovante`, { method: 'PATCH' });
+// Resolve o link com login gerado pelo admin em /admin/planos — confirma que a
+// fatura é da loja logada antes de devolver qualquer dado (ver PlanosService.buscarFaturaLogadaPorToken).
+export const getFaturaLogadaPorToken = (token) => apiFetch(`/plano/fatura-logada/${token}`);
 export const assinarPlano = (planoId) =>
   apiFetch('/plano/assinar', { method: 'POST', body: JSON.stringify({ plano_id: planoId }) });
 

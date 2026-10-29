@@ -81,6 +81,7 @@ import CardapioDigital from './pages/cardapio-digital';
 import RestauranteKdsSetor from './pages/restaurante-kds-setor';
 import MesaAcompanhar from './pages/mesa-acompanhar';
 import FaturaPagamentoPublica from './pages/fatura-pagamento-publica';
+import FaturaPagamentoLogada from './pages/fatura-pagamento-logada';
 import AutoAtendimento from './pages/auto-atendimento';
 import HomeRouter from './pages/home-router';
 import Academia from './pages/academia';
@@ -196,6 +197,9 @@ const Routes = () => {
 
         {/* Pagamento público de fatura — link gerado em /admin/planos (aba Faturas), sem login */}
         <Route path="/fatura/pagar/:token" element={<FaturaPagamentoPublica />} />
+
+        {/* Segundo tipo de link — mesma fatura, mas exige login do dono (RestauranteGuard) */}
+        <Route path="/fatura/pagar-logado/:token" element={<RestauranteGuard><FaturaPagamentoLogada /></RestauranteGuard>} />
 
         {/* Auto atendimento — cliente pede direto pela mesa via QR fixo, sem login */}
         <Route path="/auto-atendimento/:token" element={<AutoAtendimento />} />

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getFaturaPublica } from '../../services/faturaPagamentoPublicaService';
+import {
+  getFaturaPublica, getPagBankChavePublicaPublica, pagarFaturaPublica,
+} from '../../services/faturaPagamentoPublicaService';
 import { gerarPixPayload, qrCodeUrl } from '../../utils/pixQrCode';
+import PagamentoFaturaModal from '../../components/restaurante/PagamentoFaturaModal';
 import Icon from '../../components/AppIcon';
 import { APP_NAME } from '../../constants/brand';
 
@@ -26,6 +29,7 @@ const FaturaPagamentoPublica = () => {
   const [fatura, setFatura] = useState(null);
   const [erro, setErro] = useState(null);
   const [copiado, setCopiado] = useState(false);
+  const [mostrarPagamento, setMostrarPagamento] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
@@ -62,6 +66,7 @@ const FaturaPagamentoPublica = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-[#F4F4F5] flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-white rounded-2xl border border-[#E4E4E7] p-6">
         <div className="flex items-center gap-2 mb-5">
@@ -121,6 +126,11 @@ const FaturaPagamentoPublica = () => {
                 </button>
                 <p className="text-xs text-[#71717A] text-center">Após o pagamento, a confirmação pode levar alguns minutos.</p>
               </div>
+            ) : fatura.modo === 'pagbank' ? (
+              <button onClick={() => setMostrarPagamento(true)}
+                className="w-full py-3 rounded-xl text-sm font-bold bg-[#FF441F] hover:bg-[#E63A19] text-white">
+                Pagar agora
+              </button>
             ) : (
               <div className="text-center py-4">
                 <Icon name="Clock" size={32} className="text-[#A1A1AA] mx-auto mb-2" />
@@ -131,6 +141,19 @@ const FaturaPagamentoPublica = () => {
         )}
       </div>
     </div>
+
+    {mostrarPagamento && (
+      <PagamentoFaturaModal
+        fatura={fatura}
+        configFaturamento={{ modo: fatura.modo }}
+        onClose={() => setMostrarPagamento(false)}
+        onPago={() => { setMostrarPagamento(false); carregar(); }}
+        pagarFn={(_id, body) => pagarFaturaPublica(token, body)}
+        buscarStatusFn={() => getFaturaPublica(token)}
+        chavePublicaFn={getPagBankChavePublicaPublica}
+      />
+    )}
+    </>
   );
 };
 

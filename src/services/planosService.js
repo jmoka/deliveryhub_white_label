@@ -73,3 +73,5 @@ export const cancelarFatura = (id) => apiFetch(`/planos/faturas/${id}/cancelar`,
 export const excluirFatura = (id) => apiFetch(`/planos/faturas/${id}`, { method: 'DELETE' });
 // Link público (sem login) pra mandar pro cliente pagar — ver PlanosPublicoController
 export const gerarLinkPagamentoFatura = (id) => apiFetch(`/planos/faturas/${id}/gerar-link`, { method: 'POST' });
+// Segundo tipo de link — exige login do dono do restaurante antes de mostrar o QR/Pix
+export const gerarLinkPagamentoFaturaLogado = (id) => apiFetch(`/planos/faturas/${id}/gerar-link-logado`, { method: 'POST' });

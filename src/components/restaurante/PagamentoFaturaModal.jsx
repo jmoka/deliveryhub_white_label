@@ -11,6 +11,7 @@ import Icon from '../AppIcon';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 const CARTAO_INICIAL = { numero: '', validade: '', cvv: '', parcelas: 1 };
+const ENDERECO_INICIAL = { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' };
 
 // Modal de pagamento de uma fatura (Pix ou cartão débito/crédito via PagBank.js).
 // Compartilhado entre a troca de plano (/restaurante/plano), o checkout inicial
@@ -21,10 +22,15 @@ const CARTAO_INICIAL = { numero: '', validade: '', cvv: '', parcelas: 1 };
 const PagamentoFaturaModal = ({
   fatura, onClose, onPago,
   pagarFn = pagarFatura, buscarStatusFn = getFaturaDetalhe, chavePublicaFn = getPagBankChavePublica,
+  // Página pública (sem login) já resolve o modo manual/pagbank junto com a
+  // fatura (token) e passa aqui pronto — evita o modal chamar a rota
+  // autenticada de config, que falharia sem sessão.
+  configFaturamento: configFaturamentoProp,
 }) => {
   const [metodo, setMetodo] = useState('pix'); // 'pix' | 'credit_card' | 'debit_card'
   const [form, setForm] = useState({ nome: '', email: '', cpf_cnpj: '' });
   const [cartao, setCartao] = useState(CARTAO_INICIAL);
+  const [endereco, setEndereco] = useState(ENDERECO_INICIAL);
   const [resultado, setResultado] = useState(
     fatura.pix_code ? { pix_code: fatura.pix_code, pix_qr_url: fatura.pix_qr_url } : null
   );
@@ -41,12 +47,13 @@ const PagamentoFaturaModal = ({
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    if (configFaturamentoProp) return;
     getConfigPagamentoFatura().then(setConfigFaturamento).catch(() => {});
-  }, []);
+  }, [configFaturamentoProp]);
 
   // Recebimento manual = só Pix, sem nenhuma ligação real com o PagBank —
   // mesmo princípio já aplicado no checkout do cliente final.
-  const modoManual = configFaturamento?.modo === 'manual';
+  const modoManual = (configFaturamentoProp ?? configFaturamento)?.modo === 'manual';
 
   const sdkPronto = usePagBankSdk(!modoManual && metodo !== 'pix');
 
@@ -130,6 +137,7 @@ const PagamentoFaturaModal = ({
         metodo,
         card_encrypted: card.encryptedCard,
         parcelas: metodo === 'credit_card' ? Number(cartao.parcelas) : 1,
+        endereco,
       });
       if (r?.pago) {
         setPago(true);
@@ -320,6 +328,36 @@ const PagamentoFaturaModal = ({
                       ))}
                     </select>
                   )}
+
+                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] pt-1">Endereço de cobrança (exigido pelo PagBank)</p>
+                  <div className="flex gap-2">
+                    <input required placeholder="CEP" inputMode="numeric" maxLength={9} value={endereco.cep}
+                      onChange={(e) => setEndereco((d) => ({ ...d, cep: e.target.value }))}
+                      className="w-28 flex-shrink-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                    <input required placeholder="Rua" value={endereco.rua}
+                      onChange={(e) => setEndereco((d) => ({ ...d, rua: e.target.value }))}
+                      className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                  </div>
+                  <div className="flex gap-2">
+                    <input required placeholder="Número" value={endereco.numero}
+                      onChange={(e) => setEndereco((d) => ({ ...d, numero: e.target.value }))}
+                      className="w-24 flex-shrink-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                    <input placeholder="Complemento (opcional)" value={endereco.complemento}
+                      onChange={(e) => setEndereco((d) => ({ ...d, complemento: e.target.value }))}
+                      className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                  </div>
+                  <input required placeholder="Bairro" value={endereco.bairro}
+                    onChange={(e) => setEndereco((d) => ({ ...d, bairro: e.target.value }))}
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                  <div className="flex gap-2">
+                    <input required placeholder="Cidade" value={endereco.cidade}
+                      onChange={(e) => setEndereco((d) => ({ ...d, cidade: e.target.value }))}
+                      className="flex-1 min-w-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                    <input required placeholder="UF" maxLength={2} value={endereco.uf}
+                      onChange={(e) => setEndereco((d) => ({ ...d, uf: e.target.value.toUpperCase() }))}
+                      className="w-16 flex-shrink-0 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF441F]/40" />
+                  </div>
+
                   {!sdkPronto && <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Carregando PagBank...</p>}
                 </>
               )}

@@ -19,8 +19,12 @@ const RestauranteGuard = ({ children }) => {
   }
   if (!isRestaurantOwner()) return <Navigate to="/" replace />;
 
-  // Assinatura vencida além da tolerância — só a própria tela do plano continua acessível
-  if (planoStatus?.bloqueado && location.pathname !== '/restaurante/plano') {
+  // Assinatura vencida além da tolerância — só a própria tela do plano (e o
+  // link de pagamento com login, que é justamente pra pagar e desbloquear)
+  // continuam acessíveis.
+  const rotaLivreDeBloqueio =
+    location.pathname === '/restaurante/plano' || location.pathname.startsWith('/fatura/pagar-logado/');
+  if (planoStatus?.bloqueado && !rotaLivreDeBloqueio) {
     return <Navigate to="/restaurante/plano" replace />;
   }
 
