@@ -54,7 +54,73 @@ const NovoGarcomForm = ({ onCriado }) => {
   );
 };
 
+// Editar nome/telefone e, opcionalmente, resetar a senha (campo vazio = mantém a
+// senha atual — backend só troca o hash se `senha` vier preenchida).
+const EditarGarcomModal = ({ garcom, onFechar, onSalvo }) => {
+  const [nome, setNome] = useState(garcom.nome ?? '');
+  const [telefone, setTelefone] = useState(garcom.telefone ?? '');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [erro, setErro] = useState(null);
+  const [salvando, setSalvando] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErro(null);
+    setSalvando(true);
+    try {
+      const body = { nome, telefone };
+      if (novaSenha) body.senha = novaSenha;
+      await atualizarGarcom(garcom.id, body);
+      onSalvo();
+      onFechar();
+    } catch (err) {
+      setErro(err.message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onFechar}>
+      <form onSubmit={submit} onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-[#27272A] rounded-2xl p-5 w-full max-w-sm space-y-3">
+        <p className="text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">Editar {garcom.nome}</p>
+
+        <div>
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nome</label>
+          <input value={nome} onChange={(e) => setNome(e.target.value)} required
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Telefone</label>
+          <input value={telefone} onChange={(e) => setTelefone(e.target.value)}
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Resetar senha (deixe em branco pra manter a atual)</label>
+          <input value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} minLength={8} placeholder="Nova senha..."
+            className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-xl px-3 py-2 text-sm" />
+        </div>
+
+        {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
+
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={onFechar}
+            className="flex-1 py-2 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
+            Cancelar
+          </button>
+          <button type="submit" disabled={salvando}
+            className="flex-1 py-2 text-sm font-bold bg-[#FF441F] text-white rounded-xl disabled:opacity-50">
+            {salvando ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
 const GarcomCard = ({ garcom, onMudou }) => {
+  const [editando, setEditando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [modo, setModo] = useState('online'); // 'online' | 'local'
   const [now, setNow] = useState(Date.now());
@@ -190,6 +256,9 @@ const GarcomCard = ({ garcom, onMudou }) => {
         <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 rounded-lg px-2 py-1.5 mt-3">{erroRemover}</p>
       )}
       <div className="flex gap-2 mt-3">
+        <button onClick={() => setEditando(true)} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
+          Editar
+        </button>
         <button onClick={toggleAtivo} className="flex-1 py-1.5 text-xs border border-[#E4E4E7] dark:border-[#3F3F46] rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#3F3F46]">
           {garcom.ativo ? 'Desativar' : 'Ativar'}
         </button>
@@ -197,6 +266,10 @@ const GarcomCard = ({ garcom, onMudou }) => {
           Remover
         </button>
       </div>
+
+      {editando && (
+        <EditarGarcomModal garcom={garcom} onFechar={() => setEditando(false)} onSalvo={onMudou} />
+      )}
     </div>
   );
 };
