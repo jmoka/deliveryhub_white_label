@@ -55,6 +55,8 @@ export const getMesas = () => garcomFetch('/mesas');
 export const getProdutos = () => garcomFetch('/produtos');
 export const getCombos = () => garcomFetch('/combos');
 export const getMinhasComandas = () => garcomFetch('/comandas');
+export const getComandasDeletadas = () => garcomFetch('/comandas-deletadas');
+export const reivindicarComanda = (comandaId) => garcomFetch(`/comandas/${comandaId}/reivindicar`, { method: 'POST' });
 export const getItensProntos = () => garcomFetch('/itens-prontos');
 export const getFilaCozinha = () => garcomFetch('/fila-cozinha');
 export const getComanda = (id) => garcomFetch(`/comandas/${id}`);

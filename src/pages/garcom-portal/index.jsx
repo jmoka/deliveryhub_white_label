@@ -7,6 +7,7 @@ import {
   registrarPagamento, editarPagamento, removerPagamento, editarClienteComanda,
   confirmarEntregaItem, naoEntregarItem, indoBuscarItem, marcarConferenciaVista, dividirComanda, editarObservacaoItem,
   getTurnoAtivo, getPreviewEncerramento, encerrarTurno, getTurnosHistorico,
+  getComandasDeletadas, reivindicarComanda,
 } from '../../services/garcomService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
@@ -1740,7 +1741,82 @@ const ConsultaPrecoTab = () => {
   );
 };
 
-const ABAS_VALIDAS = ['mesas', 'comandas', 'cozinha', 'consulta', 'financeiro'];
+// Aba "Deletadas": comandas abertas pelo garçom que o estabelecimento excluiu. Tentativa
+// única de reivindicar — depois de recusada (ou já reivindicada), só mostra o status final.
+// "Novos" = sem reivindicação ainda ou aguardando decisão do estabelecimento (garçom
+// ainda tem ação pendente ou está esperando). "Aprovados"/"Rejeitados" já foi decidido.
+const SUBABA_DELETADAS = {
+  novos: (c) => !c.reivindicacao || c.reivindicacao.status === 'pendente_reivindicacao',
+  aprovados: (c) => c.reivindicacao?.decisao_reivindicacao === 'aprovada',
+  rejeitados: (c) => c.reivindicacao?.decisao_reivindicacao === 'recusada',
+};
+
+const ComandasDeletadasTab = ({ lista, onAtualizar, onAbrirComanda }) => {
+  const [reivindicando, setReivindicando] = useState(null);
+  const [subaba, setSubaba] = useState('novos');
+
+  const handleReivindicar = async (id) => {
+    setReivindicando(id);
+    try {
+      await reivindicarComanda(id);
+      await onAtualizar();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setReivindicando(null);
+    }
+  };
+
+  const listaFiltrada = lista.filter(SUBABA_DELETADAS[subaba]);
+
+  return (
+    <div className="p-4">
+      <div className="flex gap-2 mb-3">
+        {[['novos', 'Novos'], ['aprovados', 'Aprovados'], ['rejeitados', 'Rejeitados']].map(([valor, label]) => (
+          <button key={valor} onClick={() => setSubaba(valor)}
+            className={`px-3 py-1 rounded-full text-xs font-medium ${subaba === valor ? 'bg-[#18181B] dark:bg-[#F4F4F5] text-white dark:text-[#18181B]' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+            {label} ({lista.filter(SUBABA_DELETADAS[valor]).length})
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {listaFiltrada.map((c) => {
+          const r = c.reivindicacao;
+          return (
+            <button key={c.id} onClick={() => onAbrirComanda(c.id)}
+              className="w-full text-left bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+              <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
+                #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
+              </p>
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+                Deletada pelo estabelecimento em {fmtDataHora(c.excluida_em)}
+              </p>
+              {!r ? (
+                <span
+                  onClick={(e) => { e.stopPropagation(); if (reivindicando !== c.id) handleReivindicar(c.id); }}
+                  role="button"
+                  className={`mt-2 block text-center w-full py-2 text-sm font-bold rounded-xl text-white bg-[#FF441F] ${reivindicando === c.id ? 'opacity-60' : ''}`}
+                >
+                  {reivindicando === c.id ? 'Enviando...' : 'Reivindicar'}
+                </span>
+              ) : r.status === 'pendente_reivindicacao' ? (
+                <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-2">Aguardando aprovação do estabelecimento</p>
+              ) : r.decisao_reivindicacao === 'recusada' ? (
+                <p className="text-[11px] font-bold text-red-600 dark:text-red-400 mt-2">Reivindicação recusada pelo estabelecimento</p>
+              ) : (
+                <p className="text-[11px] font-bold text-green-600 dark:text-green-400 mt-2">Reivindicação aprovada — comanda reaberta</p>
+              )}
+            </button>
+          );
+        })}
+        {listaFiltrada.length === 0 && <p className="text-sm text-[#A1A1AA] text-center py-6">Nenhuma comanda nessa categoria.</p>}
+      </div>
+    </div>
+  );
+};
+
+const ABAS_VALIDAS = ['mesas', 'comandas', 'cozinha', 'consulta', 'financeiro', 'deletadas'];
 
 const GarcomHome = () => {
   const { loginKey } = useParams();
@@ -1751,6 +1827,7 @@ const GarcomHome = () => {
   const [bloqueado, setBloqueado] = useState(false);
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
+  const [comandasDeletadas, setComandasDeletadas] = useState([]);
   // ?aba= permite deep-link direto numa aba (ex: vindo do menu lateral da Academia).
   const [aba, setAba] = useState(() => {
     const abaUrl = searchParams.get('aba');
@@ -1782,9 +1859,10 @@ const GarcomHome = () => {
 
   const carregar = useCallback(async () => {
     try {
-      const [m, c] = await Promise.all([getMesas(), getMinhasComandas()]);
+      const [m, c, dl] = await Promise.all([getMesas(), getMinhasComandas(), getComandasDeletadas()]);
       setMesas(m);
       setComandas(c);
+      setComandasDeletadas(dl);
 
       // Cliente pediu conferência via QR — avisa aqui uma vez, até o caixa atender
       // (o campo só é limpo quando o caixa imprime a conferência de verdade).
@@ -1977,6 +2055,16 @@ const GarcomHome = () => {
             className={`px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'financeiro' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
             Financeiro
           </button>
+          <button onClick={() => setAba('deletadas')}
+            className={`relative px-3 py-1.5 rounded-full text-xs font-medium ${aba === 'deletadas' ? 'bg-[#FF441F] text-white' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#71717A] dark:text-[#A1A1AA]'}`}>
+            Deletadas
+            {/* Só conta deletadas novas (sem reivindicação ainda) — recusada/aprovada já foi vista/decidida, não soma no alerta. */}
+            {comandasDeletadas.filter((c) => !c.reivindicacao).length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center">
+                {comandasDeletadas.filter((c) => !c.reivindicacao).length}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -2026,6 +2114,8 @@ const GarcomHome = () => {
         <ConsultaPrecoTab />
       ) : aba === 'financeiro' ? (
         <FinanceiroTab onEncerrarSessao={() => setMostrarEncerrarSessao(true)} />
+      ) : aba === 'deletadas' ? (
+        <ComandasDeletadasTab lista={comandasDeletadas} onAtualizar={carregar} onAbrirComanda={setComandaAtivaId} />
       ) : (
         <div className="p-4 space-y-2">
           {comandas.map((c) => (

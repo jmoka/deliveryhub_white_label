@@ -9,6 +9,7 @@ import {
   abrirComandaSalao, bloquearMesaSalao, desbloquearMesaSalao, imprimirConferenciaSalao, getConfig,
   reimprimirReciboSalao, dividirComandaSalao, editarClienteComandaSalao, confirmarEntregaItemSalao,
   getStatusGdoorPedido, enviarGdoorPedido, buscarClientePorTelefoneSalao,
+  getReivindicacoesPendentes, aprovarReivindicacaoComanda, recusarReivindicacaoComanda, getComandasDeletadasSalao,
 } from '../../services/restauranteService';
 import Icon from '../../components/AppIcon';
 import { printReciboCliente, printConferenciaComanda, printTicketSetor } from '../../utils/printComanda';
@@ -1380,6 +1381,9 @@ const RestauranteSalao = () => {
   const [mesas, setMesas] = useState([]);
   const [comandas, setComandas] = useState([]);
   const [comandasFechadas, setComandasFechadas] = useState([]);
+  const [reivindicacoes, setReivindicacoes] = useState([]);
+  const [comandasDeletadas, setComandasDeletadas] = useState([]);
+  const [deletadasAbertas, setDeletadasAbertas] = useState(false);
   const [busca, setBusca] = useState('');
   const [erroBusca, setErroBusca] = useState(false);
   const [filtroData, setFiltroData] = useState('');
@@ -1401,13 +1405,15 @@ const RestauranteSalao = () => {
   const idsConferenciaVistos = useRef(new Set());
 
   const carregar = useCallback(async () => {
-    const [g, m, c, cf] = await Promise.all([
-      getGarconsOnline(), getSalaoMesas(), getSalaoComandas(), getSalaoComandasFechadasHoje(),
+    const [g, m, c, cf, rv, dl] = await Promise.all([
+      getGarconsOnline(), getSalaoMesas(), getSalaoComandas(), getSalaoComandasFechadasHoje(), getReivindicacoesPendentes(), getComandasDeletadasSalao(),
     ]);
     setGarconsOnline(g);
     setMesas(m);
     setComandas(c);
     setComandasFechadas(cf);
+    setReivindicacoes(rv);
+    setComandasDeletadas(dl);
     setLoading(false);
 
     // Cliente solicitou conferência via QR (mesa-acompanhar) — avisa o caixa aqui,
@@ -1462,6 +1468,12 @@ const RestauranteSalao = () => {
     } catch (err) {
       setErro(err.message);
     }
+  };
+
+  const aprovarReivindicacao = (id) => acaoMesa(() => aprovarReivindicacaoComanda(id));
+  const recusarReivindicacao = (id) => {
+    if (!window.confirm('Recusar essa reivindicação? O garçom não poderá tentar de novo pra essa comanda.')) return;
+    acaoMesa(() => recusarReivindicacaoComanda(id));
   };
 
   useEffect(() => {
@@ -1597,6 +1609,38 @@ const RestauranteSalao = () => {
           </div>
         </div>
 
+        {reivindicacoes.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-300 dark:border-amber-800 p-4 mb-4">
+            <p className="text-xs font-bold text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-1.5">
+              <Icon name="BellRing" size={14} /> Reivindicações de comanda deletada ({reivindicacoes.length})
+            </p>
+            <div className="space-y-2">
+              {reivindicacoes.map((r) => (
+                <div key={r.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3 flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
+                      #{r.numero_comanda ?? r.id}{r.mesas ? ` — Mesa ${r.mesas.numero}` : ''} — {r.cliente_mesa_nome}
+                    </p>
+                    <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+                      Garçom {r.garcons?.nome ?? '—'} quer reabrir essa comanda deletada
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => recusarReivindicacao(r.id)}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400">
+                      Recusar
+                    </button>
+                    <button onClick={() => aprovarReivindicacao(r.id)}
+                      className="px-3 py-1.5 text-xs font-bold rounded-lg text-white bg-[#FF441F]">
+                      Aprovar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-sm text-[#71717A] dark:text-[#A1A1AA]">Carregando...</p>
         ) : (
@@ -1704,6 +1748,43 @@ const RestauranteSalao = () => {
                   Comandas fechadas hoje ({comandasFechadasFiltradas.length})
                 </button>
                 {fechadasAbertas && <ListaOuCards lista={comandasFechadasFiltradas} vazio="Nenhuma comanda fechada encontrada com esse filtro." />}
+              </>
+            )}
+
+            {comandasDeletadas.length > 0 && (
+              <>
+                <button onClick={() => setDeletadasAbertas((v) => !v)}
+                  className="flex items-center gap-1.5 text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2 mt-6">
+                  <Icon name={deletadasAbertas ? 'ChevronDown' : 'ChevronRight'} size={16} />
+                  Comandas deletadas ({comandasDeletadas.length})
+                </button>
+                {deletadasAbertas && (
+                  <div className="space-y-2">
+                    {comandasDeletadas.map((c) => {
+                      const r = c.reivindicacao;
+                      return (
+                        <button key={c.id} onClick={() => setComandaAtiva(c.id)}
+                          className="w-full text-left bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+                          <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
+                            #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
+                          </p>
+                          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+                            Garçom {c.garcons?.nome ?? '—'} · deletada em {new Date(c.excluida_em).toLocaleString('pt-BR')}
+                          </p>
+                          {r && (
+                            <p className="text-[11px] font-bold mt-1.5 text-amber-600 dark:text-amber-400">
+                              {r.status === 'pendente_reivindicacao'
+                                ? 'Reivindicação aguardando sua decisão'
+                                : r.decisao_reivindicacao === 'recusada'
+                                  ? 'Reivindicação recusada'
+                                  : 'Reivindicação aprovada — comanda reaberta'}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             )}
           </>

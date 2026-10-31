@@ -512,6 +512,12 @@ export const cancelarComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/cancelar`, { method: 'POST' });
 export const reabrirComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reabrir`, { method: 'POST' });
+export const getReivindicacoesPendentes = () => apiFetch('/salao/reivindicacoes');
+export const getComandasDeletadasSalao = () => apiFetch('/salao/comandas-deletadas');
+export const aprovarReivindicacaoComanda = (id) =>
+  apiFetch(`/salao/comandas/${id}/reivindicacao/aprovar`, { method: 'POST' });
+export const recusarReivindicacaoComanda = (id) =>
+  apiFetch(`/salao/comandas/${id}/reivindicacao/recusar`, { method: 'POST' });
 export const imprimirConferenciaSalao = (id, valores) =>
   apiFetch(`/salao/comandas/${id}/imprimir-conferencia`, { method: 'POST', body: JSON.stringify(valores ?? {}) });
 export const reimprimirReciboSalao = (id) =>
