@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { listarImpressoras, getKdsItensRestaurante, getKdsSemImpressora, reenviarItemKds, dispensarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao, cancelarPedidoAdmin } from '../../services/restauranteService';
+import { listarImpressoras, getKdsItensRestaurante, getKdsCanceladasRestaurante, getKdsSemImpressora, reenviarItemKds, dispensarItemKds, marcarItemProntoRestaurante, reimprimirItemRestaurante, iniciarPreparoItemRestaurante, voltarStatusItemRestaurante, cancelarItemRestaurante, moverItemRestaurante, confirmarEntregaGarcomRestaurante, getMinhaEmpresa, getSalaoComandaDetalhe, editarItemComandaSalao, cancelarPedidoAdmin } from '../../services/restauranteService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNotificacaoSonora } from '../../hooks/useNotificacaoSonora';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
 import PedidoDeliveryCard from '../../components/restaurante/PedidoDeliveryCard';
+import ItemCanceladoCard from '../../components/restaurante/ItemCanceladoCard';
 import { montarFilaAgrupadaDelivery } from '../../utils/agruparPedidosDelivery';
 import { useModulosEmpresa } from '../../hooks/useModulosEmpresa';
 import { getTermos } from '../../hooks/useTerminologiaEstabelecimento';
@@ -212,6 +213,8 @@ const RestauranteProducao = () => {
   const [comandaAbertaId, setComandaAbertaId] = useState(null);
   const now = useNowTick();
   const [filtroCanal, setFiltroCanal] = useState('todos'); // 'todos' | 'delivery' | 'salao'
+  const [aba, setAba] = useState('ativos'); // 'ativos' | 'canceladas'
+  const [canceladosPorImpressora, setCanceladosPorImpressora] = useState({});
   const [verTodosEntregues, setVerTodosEntregues] = useState({}); // { [impressoraId]: bool }
   const [busca, setBusca] = useState('');
   const [atualizandoPedido, setAtualizandoPedido] = useState(null);
@@ -263,6 +266,20 @@ const RestauranteProducao = () => {
     const interval = setInterval(() => carregar(impressoras), 15000);
     return () => clearInterval(interval);
   }, [impressoras, carregar]);
+
+  const carregarCancelados = useCallback(async (lista) => {
+    try {
+      const resultados = await Promise.all(lista.map((imp) => getKdsCanceladasRestaurante(imp.id).then((r) => [imp.id, r.itens ?? []])));
+      setCanceladosPorImpressora(Object.fromEntries(resultados));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!impressoras?.length) return;
+    carregarCancelados(impressoras);
+    const interval = setInterval(() => carregarCancelados(impressoras), 15000);
+    return () => clearInterval(interval);
+  }, [impressoras, carregarCancelados]);
 
   const marcarPronto = async (itemId) => {
     await marcarItemProntoRestaurante(itemId);
@@ -388,6 +405,7 @@ const RestauranteProducao = () => {
   const todosItens = Object.values(itensPorImpressora).flat();
   const totalDelivery = todosItens.filter((i) => i.tipo === 'delivery').length;
   const totalSalao = todosItens.filter((i) => i.tipo === 'salao').length;
+  const totalCancelados = Object.values(canceladosPorImpressora).flat().length;
   const buscaNormalizada = busca.trim().toLowerCase();
   // Leitor de código de barras digita os dígitos zero-padded (ver barcodeValue em
   // printComanda.js) e manda Enter — bate exato no numero_comanda, não por substring
@@ -494,12 +512,29 @@ const RestauranteProducao = () => {
             </button>
           ))}
         </div>
+
+        {/* Aba Produção (ativos) / Canceladas */}
+        <div className="flex items-center gap-2 mt-3">
+          <button onClick={() => setAba('ativos')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${aba === 'ativos' ? 'bg-white text-black' : 'bg-[#111111] text-[#71717A] border border-[#2A2A2A] hover:text-white'}`}>
+            Produção
+          </button>
+          <button onClick={() => setAba('canceladas')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${aba === 'canceladas' ? 'bg-white text-black' : 'bg-[#111111] text-[#71717A] border border-[#2A2A2A] hover:text-white'}`}>
+            Canceladas
+            {totalCancelados > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${aba === 'canceladas' ? 'bg-black/10' : 'bg-[#2A2A2A]'}`}>{totalCancelados}</span>
+            )}
+          </button>
+        </div>
       </header>
 
       {erro && (
         <div className="mx-5 mt-4 bg-red-900/50 border border-red-700 rounded-xl px-4 py-3 text-sm text-red-400">{erro}</div>
       )}
 
+      {aba === 'ativos' && (
+      <>
       {/* Itens enviados que nunca chegaram em setor nenhum — produto sem impressora
           configurada no cadastro. Some sozinho da lista assim que reenviado. */}
       {itensSemSetor.length > 0 && (
@@ -639,6 +674,42 @@ const RestauranteProducao = () => {
               <Icon name="UtensilsCrossed" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
               <p className="text-[#71717A] text-lg font-semibold">Tudo tranquilo</p>
               <p className="text-[#3A3A3A] text-sm mt-1">Nenhum item pendente em nenhum setor agora</p>
+            </div>
+          )}
+        </main>
+      )}
+      </>
+      )}
+
+      {aba === 'canceladas' && (
+        <main className="p-5 max-w-6xl mx-auto space-y-8">
+          {(impressoras ?? []).map((imp) => {
+            const itens = canceladosPorImpressora[imp.id] ?? [];
+            return (
+              <div key={imp.id}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                  <h2 className="text-white font-bold text-sm uppercase tracking-wider">{imp.setor}</h2>
+                  {itens.length > 0 && (
+                    <span className="bg-red-600 text-white text-xs font-black px-2 py-0.5 rounded-full">{itens.length}</span>
+                  )}
+                </div>
+                {itens.length === 0 ? (
+                  <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-6 text-center mb-2">
+                    <p className="text-[#71717A] text-sm">Nenhum item cancelado hoje em {imp.setor}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {itens.map((item) => <ItemCanceladoCard key={item.id} item={item} />)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {totalCancelados === 0 && (
+            <div className="text-center py-16">
+              <Icon name="XCircle" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
+              <p className="text-[#71717A] text-lg font-semibold">Nenhum item cancelado hoje</p>
             </div>
           )}
         </main>

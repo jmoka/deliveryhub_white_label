@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   getCozinhaToken, setCozinhaToken, clearCozinhaToken, resgatarToken,
-  getKdsItens, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
+  getKdsItens, getKdsItensCancelados, marcarItemPronto, reimprimirItem, iniciarPreparoItem, voltarStatusItem,
 } from '../../services/cozinhaPortalService';
 import { printTicketSetor } from '../../utils/printComanda';
 import { useNowTick } from '../../hooks/useNowTick';
 import Icon from '../../components/AppIcon';
 import SalaoItemCard from '../../components/restaurante/SalaoItemCard';
+import ItemCanceladoCard from '../../components/restaurante/ItemCanceladoCard';
 
 const KdsLogin = ({ onLogin }) => {
   const [token, setToken] = useState('');
@@ -82,8 +83,10 @@ const RestauranteKdsSetor = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [itens, setItens] = useState([]);
+  const [itensCancelados, setItensCancelados] = useState([]);
   const [erro, setErro] = useState(null);
   const [verTodosProntos, setVerTodosProntos] = useState(false);
+  const [aba, setAba] = useState('ativos'); // 'ativos' | 'canceladas'
   const now = useNowTick();
 
   const carregar = useCallback(async () => {
@@ -98,12 +101,21 @@ const RestauranteKdsSetor = () => {
     }
   }, [impressoraId]);
 
+  const carregarCancelados = useCallback(async () => {
+    if (!impressoraId) return;
+    try {
+      const { itens } = await getKdsItensCancelados(impressoraId);
+      setItensCancelados(itens);
+    } catch {}
+  }, [impressoraId]);
+
   useEffect(() => {
     if (!authed) return;
     carregar();
-    const interval = setInterval(carregar, 15000);
+    carregarCancelados();
+    const interval = setInterval(() => { carregar(); carregarCancelados(); }, 15000);
     return () => clearInterval(interval);
-  }, [authed, carregar]);
+  }, [authed, carregar, carregarCancelados]);
 
   if (!authed) return <KdsLogin onLogin={() => setAuthed(true)} />;
   if (!impressoraId) {
@@ -148,8 +160,36 @@ const RestauranteKdsSetor = () => {
         <h1 className="text-xl font-black text-white uppercase">{setorNome}</h1>
         <button onClick={() => { clearCozinhaToken(); setAuthed(false); }} className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Sair</button>
       </div>
+      <div className="px-4 max-w-5xl mx-auto flex items-center gap-2 mb-2">
+        <button onClick={() => setAba('ativos')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold ${aba === 'ativos' ? 'bg-[#FF441F] text-white' : 'bg-[#111111] text-[#71717A] border border-[#2A2A2A]'}`}>
+          Produção
+        </button>
+        <button onClick={() => setAba('canceladas')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold ${aba === 'canceladas' ? 'bg-[#FF441F] text-white' : 'bg-[#111111] text-[#71717A] border border-[#2A2A2A]'}`}>
+          Canceladas
+          {itensCancelados.length > 0 && (
+            <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${aba === 'canceladas' ? 'bg-white/20' : 'bg-[#2A2A2A]'}`}>{itensCancelados.length}</span>
+          )}
+        </button>
+      </div>
       {erro && <p className="text-sm text-red-400 mb-3 px-4 max-w-5xl mx-auto">{erro}</p>}
 
+      {aba === 'canceladas' ? (
+        <main className="p-5 pt-0 max-w-5xl mx-auto">
+          {itensCancelados.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-[#2A2A2A] p-8 text-center">
+              <Icon name="XCircle" size={32} className="text-[#3A3A3A] mx-auto mb-2" />
+              <p className="text-[#71717A] text-sm">Nenhum item cancelado hoje</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {itensCancelados.map((item) => <ItemCanceladoCard key={item.id} item={item} />)}
+            </div>
+          )}
+        </main>
+      ) : (
+      <>
       <main className="p-5 pt-0 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl mx-auto">
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -225,6 +265,8 @@ const RestauranteKdsSetor = () => {
           <Icon name="UtensilsCrossed" size={48} className="text-[#2A2A2A] mx-auto mb-4" />
           <p className="text-[#71717A] text-lg font-semibold">Nenhum item pendente nesse setor</p>
         </div>
+      )}
+      </>
       )}
     </div>
   );
