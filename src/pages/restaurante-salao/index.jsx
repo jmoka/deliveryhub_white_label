@@ -646,6 +646,11 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
           </button>
         </div>
       )}
+      {item.status === 'cancelado' && (
+        <div className="flex items-center justify-between gap-2 mt-1 pl-11">
+          <span className="text-xs font-bold text-white bg-red-600 rounded-lg px-2 py-0.5">Item Cancelado de Produção</span>
+        </div>
+      )}
     </div>
   );
 

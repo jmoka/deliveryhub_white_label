@@ -884,6 +884,10 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           <span className="text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400">
             {item.status === 'pronto' ? 'Pronto' : 'Em preparo'}
           </span>
+        ) : item.status === 'cancelado' ? (
+          <span className="text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 bg-red-600 text-white">
+            Item Cancelado de Produção
+          </span>
         ) : (
           <span className={`text-xs px-2.5 py-1.5 rounded-full font-bold flex-shrink-0 ${
             item.status === 'enviado' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
