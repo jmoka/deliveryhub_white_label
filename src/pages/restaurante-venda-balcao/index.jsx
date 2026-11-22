@@ -583,6 +583,7 @@ const RestauranteVendaBalcao = () => {
           produto={produtoAtivo}
           onFechar={() => setProdutoAtivo(null)}
           onConfirmar={async (item) => { await adicionar(item); setProdutoAtivo(null); }}
+          permitirNaoEnviarCozinha
         />
       )}
     </div>

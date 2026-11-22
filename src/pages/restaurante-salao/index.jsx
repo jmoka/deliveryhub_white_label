@@ -1389,6 +1389,7 @@ const RestauranteSalao = () => {
   const [reivindicacoes, setReivindicacoes] = useState([]);
   const [comandasDeletadas, setComandasDeletadas] = useState([]);
   const [deletadasAbertas, setDeletadasAbertas] = useState(false);
+  const [filtroDataDeletadas, setFiltroDataDeletadas] = useState(() => new Date().toISOString().slice(0, 10));
   const [busca, setBusca] = useState('');
   const [erroBusca, setErroBusca] = useState(false);
   const [filtroData, setFiltroData] = useState('');
@@ -1518,6 +1519,11 @@ const RestauranteSalao = () => {
   const comandasFiltradas = useMemo(() => comandas.filter(passaNoFiltro), [comandas, busca, filtroTipo, filtroData, filtroValorMin]);
   const comandasFechadasFiltradas = useMemo(() => comandasFechadas.filter(passaNoFiltro), [comandasFechadas, busca, filtroTipo, filtroData, filtroValorMin]);
   const filtroAtivo = !!(busca || filtroData || filtroValorMin);
+
+  const comandasDeletadasFiltradas = useMemo(
+    () => comandasDeletadas.filter((c) => !filtroDataDeletadas || c.excluida_em.slice(0, 10) === filtroDataDeletadas),
+    [comandasDeletadas, filtroDataDeletadas],
+  );
 
   // Enter (leitor de código de barras digita os dígitos e manda Enter igual a um
   // teclado) com número exato abre a comanda direto, igual já fazia antes — texto
@@ -1758,14 +1764,30 @@ const RestauranteSalao = () => {
 
             {comandasDeletadas.length > 0 && (
               <>
-                <button onClick={() => setDeletadasAbertas((v) => !v)}
-                  className="flex items-center gap-1.5 text-sm font-bold text-[#18181B] dark:text-[#F4F4F5] mb-2 mt-6">
-                  <Icon name={deletadasAbertas ? 'ChevronDown' : 'ChevronRight'} size={16} />
-                  Comandas deletadas ({comandasDeletadas.length})
-                </button>
+                <div className="flex items-center justify-between gap-2 mt-6 mb-2">
+                  <button onClick={() => setDeletadasAbertas((v) => !v)}
+                    className="flex items-center gap-1.5 text-sm font-bold text-[#18181B] dark:text-[#F4F4F5]">
+                    <Icon name={deletadasAbertas ? 'ChevronDown' : 'ChevronRight'} size={16} />
+                    Comandas deletadas ({comandasDeletadasFiltradas.length})
+                  </button>
+                  {deletadasAbertas && (
+                    <div className="flex items-center gap-2">
+                      <input type="date" value={filtroDataDeletadas} onChange={(e) => setFiltroDataDeletadas(e.target.value)}
+                        className="border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-[#FF441F]" />
+                      {filtroDataDeletadas && (
+                        <button onClick={() => setFiltroDataDeletadas('')} className="text-xs text-[#FF441F] font-semibold px-1">
+                          Ver todas
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {deletadasAbertas && (
                   <div className="space-y-2">
-                    {comandasDeletadas.map((c) => {
+                    {comandasDeletadasFiltradas.length === 0 && (
+                      <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Nenhuma comanda deletada nessa data.</p>
+                    )}
+                    {comandasDeletadasFiltradas.map((c) => {
                       const r = c.reivindicacao;
                       return (
                         <button key={c.id} onClick={() => setComandaAtiva(c.id)}

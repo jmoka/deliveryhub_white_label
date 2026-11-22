@@ -4,9 +4,8 @@ import Icon from '../AppIcon';
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 
 // Modal de quantidade/observação ao clicar num produto — usado tanto pelo picker da
-// comanda quanto pela venda balcão, pra ficarem sempre idênticos. O checkbox de "não
-// enviar pra cozinha" só faz sentido em comanda (venda balcão só envia pro preparo no
-// pagamento, tem lógica própria) — controlado pela prop `permitirNaoEnviarCozinha`.
+// comanda quanto pela venda balcão, pra ficarem sempre idênticos. Checkbox de "não
+// enviar pra cozinha" é opcional, controlado pela prop `permitirNaoEnviarCozinha`.
 const QuickAddProdutoModal = ({ produto, onFechar, onConfirmar, permitirNaoEnviarCozinha = false }) => {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState('');
