@@ -12,6 +12,7 @@ export function useModulosEmpresa() {
     moduloFaviconPersonalizado: !!data?.empresa?.modulo_favicon_personalizado,
     moduloServicos: !!data?.empresa?.modulo_servicos,
     moduloPagamentoManual: !!data?.empresa?.modulo_pagamento_manual,
+    moduloAssistenteIa: !!data?.empresa?.modulo_assistente_ia,
     autoAtendimentoHabilitado: !!data?.empresa?.auto_atendimento_habilitado,
     tipoRestaurante: !!data?.empresa?.tipo_restaurante,
     // Exceção: esse aqui o próprio dono liga em /restaurante/config, não é admin/plano.

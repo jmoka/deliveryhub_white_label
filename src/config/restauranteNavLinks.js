@@ -59,6 +59,8 @@ const SERVICOS_LINKS = [
   { label: 'Serviços', path: '/restaurante/servicos', icon: 'Wrench' },
 ];
 
+const ASSISTENTE_IA_LINK = { label: 'Assistente IA', path: '/restaurante/assistente-ia', icon: 'Bot' };
+
 // Sempre visível, independente de módulo ativo — é ajuda, não uma feature do plano.
 const ACADEMIA_LINK = { label: 'Academia', path: '/academia?perfil=estabelecimento', icon: 'GraduationCap' };
 
@@ -69,7 +71,7 @@ const PONTOS_PREPARO_CADASTRO = { label: 'Pontos de Preparo', path: '/restaurant
 // Estabelecimento tipo ≠ Restaurante (farmácia, material de construção...) chama
 // o entregador de "Entregadores" no menu, em vez de "Motoboys" (termo mais
 // específico de delivery de comida).
-export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparo = [], tipoRestaurante = true) => {
+export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparo = [], tipoRestaurante = true, moduloAssistenteIa = false) => {
   const temAlgumModulo = moduloDelivery || moduloSalao;
   const temProdutos = moduloDelivery || moduloSalao || moduloGdoor;
   const deliveryLinks = tipoRestaurante
@@ -92,6 +94,7 @@ export const getRestauranteNavLinks = (moduloDelivery, moduloSalao, moduloServic
     ...(temProdutos ? BASE_LINKS.slice(9, 10) : []), // Sessão — idem Produtos
     ...(moduloSalao ? SALAO_LINKS : []), // Salão, Garçons, Mesas...
     ...(moduloServicos ? SERVICOS_LINKS : []), // Serviços (orçamento)
+    ...(moduloAssistenteIa ? [ASSISTENTE_IA_LINK] : []), // Assistente IA (WhatsApp/Telegram próprio)
     ACADEMIA_LINK,
   ], tipoRestaurante);
   // Menu lateral em ordem alfabética (pedido do usuário) — a ordem acima só

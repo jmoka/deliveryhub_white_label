@@ -189,6 +189,18 @@ export const gerarLinkWhatsappEstabelecimento = () =>
   apiFetch('/minha-empresa/whatsapp/link', { method: 'POST' });
 export const getStatusWhatsappEstabelecimento = () => apiFetch('/minha-empresa/whatsapp/status');
 
+// Assistente IA próprio do estabelecimento (WhatsApp/Telegram independentes do
+// Pediuvai) — módulo gated por plano (modulo_assistente_ia).
+export const getAssistenteConfig = () => apiFetch('/assistente');
+export const salvarPromptAssistente = (prompt) =>
+  apiFetch('/assistente/prompt', { method: 'PATCH', body: JSON.stringify({ prompt }) });
+export const conectarTelegramAssistente = (token) =>
+  apiFetch('/assistente/telegram/conectar', { method: 'POST', body: JSON.stringify({ token }) });
+export const desconectarTelegramAssistente = () => apiFetch('/assistente/telegram', { method: 'DELETE' });
+export const conectarWhatsappAssistente = () => apiFetch('/assistente/whatsapp/conectar', { method: 'POST' });
+export const getStatusWhatsappAssistente = () => apiFetch('/assistente/whatsapp/status');
+export const desconectarWhatsappAssistente = () => apiFetch('/assistente/whatsapp', { method: 'DELETE' });
+
 export const getAparencia = () => apiFetch('/aparencia');
 export const updateAparencia = (data) =>
   apiFetch('/aparencia', { method: 'PATCH', body: JSON.stringify(data) });

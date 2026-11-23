@@ -124,9 +124,9 @@ const MenuEstabelecimento = ({ onSair }) => {
   const navigate = useNavigate();
   const [sidebarAberto, setSidebarAberto] = useState(false);
   const slugLoja = useMinhaLojaSlug();
-  const { moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, tipoRestaurante } = useModulosEmpresa();
+  const { moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, tipoRestaurante, moduloAssistenteIa } = useModulosEmpresa();
   const pontosPreparoLinks = usePontosPreparoLinks();
-  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparoLinks, tipoRestaurante);
+  const links = getRestauranteNavLinks(moduloDelivery, moduloSalao, moduloServicos, moduloGdoor, pontosPreparoLinks, tipoRestaurante, moduloAssistenteIa);
 
   return (
     <>

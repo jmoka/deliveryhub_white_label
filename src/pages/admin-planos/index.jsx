@@ -43,7 +43,7 @@ const Badge = ({ status }) => {
 const normalizarNome = (s) =>
   (s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
-const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', limite_servicos: '', piso_faturamento: '', trial_dias: '0', trial_eterno: false, ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, inclui_pagamento_manual: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
+const EMPTY = { nome: '', valor: '', periodicidade: 'mensal', tipo: 'saas', limite_produtos: '', limite_impressoras: '', limite_servicos: '', piso_faturamento: '', trial_dias: '0', trial_eterno: false, ativo: true, inclui_delivery: true, inclui_salao: false, inclui_gdoor: false, inclui_servicos: false, cobra_comissao: false, inclui_favicon_personalizado: false, inclui_pagamento_manual: false, inclui_assistente_ia: false, somente_novos_cadastros: false, pacote_boost_ids: [] };
 
 const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
   const [form, setForm] = useState(
@@ -67,6 +67,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
           cobra_comissao: plano.cobra_comissao ?? false,
           inclui_favicon_personalizado: plano.inclui_favicon_personalizado ?? false,
           inclui_pagamento_manual: plano.inclui_pagamento_manual ?? false,
+          inclui_assistente_ia: plano.inclui_assistente_ia ?? false,
           somente_novos_cadastros: plano.somente_novos_cadastros ?? false,
           pacote_boost_ids: plano.pacote_boost_ids ?? [],
         }
@@ -133,6 +134,7 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
         cobra_comissao: form.cobra_comissao,
         inclui_favicon_personalizado: form.inclui_favicon_personalizado,
         inclui_pagamento_manual: form.inclui_pagamento_manual,
+        inclui_assistente_ia: form.inclui_assistente_ia,
         somente_novos_cadastros: form.somente_novos_cadastros,
         pacote_boost_ids: form.pacote_boost_ids,
       };
@@ -237,6 +239,11 @@ const Modal = ({ plano, planosExistentes, onClose, onSave }) => {
                     <input type="checkbox" checked={form.inclui_pagamento_manual} onChange={(e) => set('inclui_pagamento_manual', e.target.checked)}
                       className="w-4 h-4 shrink-0 rounded accent-blue-600" />
                     <span className="text-sm text-gray-700 dark:text-zinc-300">Pagamento manual</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={form.inclui_assistente_ia} onChange={(e) => set('inclui_assistente_ia', e.target.checked)}
+                      className="w-4 h-4 shrink-0 rounded accent-blue-600" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">Assistente IA (WhatsApp/Telegram próprio)</span>
                   </label>
                 </div>
                 {form.inclui_servicos && (
@@ -578,6 +585,11 @@ const TabPlanos = () => {
                     {plano.inclui_pagamento_manual && (
                       <span className="text-xs font-medium bg-lime-50 dark:bg-lime-950/40 text-lime-700 dark:text-lime-400 px-2 py-0.5 rounded-full">
                         Pagamento manual
+                      </span>
+                    )}
+                    {plano.inclui_assistente_ia && (
+                      <span className="text-xs font-medium bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 px-2 py-0.5 rounded-full">
+                        Assistente IA
                       </span>
                     )}
                     {plano.pacote_boost_ids?.length > 0 && (
