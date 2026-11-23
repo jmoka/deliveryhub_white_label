@@ -788,7 +788,7 @@ const separarNumero = (address) => {
 };
 
 const EnderecoCard = ({ geocodeFalhou }) => {
-  const [form, setForm] = useState({ logradouro: '', numero: '', cep: '', neighborhood: '', city: '', state: '' });
+  const [form, setForm] = useState({ logradouro: '', numero: '', cep: '', neighborhood: '', city: '', state: '', instagram_url: '', facebook_url: '' });
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
@@ -862,6 +862,8 @@ const EnderecoCard = ({ geocodeFalhou }) => {
           neighborhood: e.neighborhood ?? '',
           city: e.city ?? '',
           state: e.state ?? '',
+          instagram_url: e.instagram_url ?? '',
+          facebook_url: e.facebook_url ?? '',
         });
         setLocalizacao({ lat: e.lat ?? null, lng: e.lng ?? null });
         setAjustadoManualmente(!!e.lat_ajustado_manualmente);
@@ -903,6 +905,8 @@ const EnderecoCard = ({ geocodeFalhou }) => {
         neighborhood: form.neighborhood.trim(),
         city: form.city.trim(),
         state: form.state.trim(),
+        instagram_url: form.instagram_url.trim(),
+        facebook_url: form.facebook_url.trim(),
       });
       setSucesso(true);
       setTimeout(() => setSucesso(false), 2500);
@@ -971,6 +975,26 @@ const EnderecoCard = ({ geocodeFalhou }) => {
                 className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
             </div>
           </div>
+
+          <div>
+            <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5] mb-1 mt-2">Redes sociais</p>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">Aparecem na mensagem de "pedido entregue" enviada no Telegram/WhatsApp.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Instagram</label>
+                <input value={form.instagram_url} onChange={(e) => setForm((f) => ({ ...f, instagram_url: e.target.value }))}
+                  placeholder="https://instagram.com/sualoja"
+                  className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">Facebook</label>
+                <input value={form.facebook_url} onChange={(e) => setForm((f) => ({ ...f, facebook_url: e.target.value }))}
+                  placeholder="https://facebook.com/sualoja"
+                  className="w-full mt-1 border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF441F]" />
+              </div>
+            </div>
+          </div>
+
           {erro && <p className="text-xs text-red-600 dark:text-red-400">{erro}</p>}
           <div className="flex items-center gap-3 pt-1">
             <button type="submit" disabled={salvando}
