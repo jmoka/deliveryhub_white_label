@@ -295,7 +295,7 @@ const FecharComandaModal = ({ comanda, onFechar, onFechada }) => {
   );
 };
 
-const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
+const QuickAddModal = ({ produto, onFechar, onConfirmar, podePularCozinha }) => {
   const [quantidade, setQuantidade] = useState(1);
   const [observacao, setObservacao] = useState('');
   const [naoEnviarCozinha, setNaoEnviarCozinha] = useState(false);
@@ -355,11 +355,13 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
           placeholder="Ex: sem cebola, ponto da carne..."
           className="w-full bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl px-3 py-2 text-sm mt-1 mb-3 resize-none" />
 
-        <label className="flex items-center gap-2 mb-4 cursor-pointer">
-          <input type="checkbox" checked={naoEnviarCozinha} onChange={(e) => setNaoEnviarCozinha(e.target.checked)}
-            className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
-          <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Não enviar para a cozinha (item já foi feito)</span>
-        </label>
+        {podePularCozinha && (
+          <label className="flex items-center gap-2 mb-4 cursor-pointer">
+            <input type="checkbox" checked={naoEnviarCozinha} onChange={(e) => setNaoEnviarCozinha(e.target.checked)}
+              className="w-4 h-4 accent-[#FF441F] flex-shrink-0" />
+            <span className="text-xs text-[#71717A] dark:text-[#A1A1AA]">Não enviar para a cozinha (item já foi feito)</span>
+          </label>
+        )}
 
         <div className="flex gap-2">
           <button onClick={onFechar} className="flex-1 py-2.5 text-sm border border-[#E4E4E7] dark:border-[#3F3F46] rounded-xl text-[#71717A] dark:text-[#A1A1AA]">
@@ -375,7 +377,7 @@ const QuickAddModal = ({ produto, onFechar, onConfirmar }) => {
   );
 };
 
-const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
+const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado, podePularCozinha }) => {
   const [busca, setBusca] = useState('');
   const [categoria, setCategoria] = useState('todas');
   const [produtoAtivo, setProdutoAtivo] = useState(null);
@@ -457,6 +459,7 @@ const ProdutoPickerModal = ({ produtos, onFechar, onAdicionado }) => {
           produto={produtoAtivo}
           onFechar={() => setProdutoAtivo(null)}
           onConfirmar={async (item) => { await onAdicionado(item); setProdutoAtivo(null); }}
+          podePularCozinha={podePularCozinha}
         />
       )}
     </div>
@@ -708,7 +711,7 @@ const DividirComandaModal = ({ itens, onFechar, onConfirmar, salvando }) => {
   );
 };
 
-const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
+const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial, podePularCozinha }) => {
   const [comanda, setComanda] = useState(null);
   const [produtos, setProdutos] = useState([]);
   const [mostrarPicker, setMostrarPicker] = useState(false);
@@ -1250,6 +1253,7 @@ const ComandaDetalhe = ({ comandaId, onVoltar, podePagamentoParcial }) => {
           produtos={produtos}
           onFechar={() => setMostrarPicker(false)}
           onAdicionado={adicionarProduto}
+          podePularCozinha={podePularCozinha}
         />
       )}
 
@@ -2008,6 +2012,7 @@ const GarcomHome = () => {
           comandaId={comandaAtivaId}
           onVoltar={() => { setComandaAtivaId(null); carregar(); }}
           podePagamentoParcial={permissoes?.pagamento_parcial !== false}
+          podePularCozinha={!!permissoes?.pular_cozinha}
         />
       </>
     );

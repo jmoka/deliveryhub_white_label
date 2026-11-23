@@ -237,6 +237,12 @@ const GarcomCard = ({ garcom, onMudou }) => {
           }`}>
           Pagamento parcial
         </button>
+        <button onClick={() => togglePermissao('pular_cozinha')}
+          className={`text-[10px] px-2 py-1 rounded-full font-medium border ${
+            garcom.permissoes?.pular_cozinha ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-[#F4F4F5] dark:bg-[#3F3F46] text-[#A1A1AA] border-[#E4E4E7] dark:border-[#3F3F46]'
+          }`}>
+          Inserir item sem cozinha
+        </button>
       </div>
 
       {garcom.sessao_ativa && (
