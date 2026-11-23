@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPerfil, updatePerfil, uploadFoto, listarEnderecos, criarEndereco, editarEndereco, gerarLinkTelegram, getStatusTelegram } from '../../services/perfilService';
+import { getPerfil, updatePerfil, uploadFoto, listarEnderecos, criarEndereco, editarEndereco, gerarLinkTelegram, getStatusTelegram, gerarLinkWhatsapp, getStatusWhatsapp } from '../../services/perfilService';
 import { buscarCep } from '../../utils/viaCep';
 import { reverseGeocode, geocodeEndereco } from '../../utils/reverseGeocode';
 import { useAuth } from '../../contexts/AuthContext';
@@ -330,10 +330,16 @@ const CustomerProfile = () => {
           </button>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           <TelegramLinkCard
             gerarLink={gerarLinkTelegram}
             getStatus={getStatusTelegram}
+            className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3"
+          />
+          <TelegramLinkCard
+            canal="whatsapp"
+            gerarLink={gerarLinkWhatsapp}
+            getStatus={getStatusWhatsapp}
             className="bg-white dark:bg-[#18181B] rounded-2xl border border-[#E4E4E7] dark:border-[#3F3F46] p-4 space-y-3"
           />
         </div>

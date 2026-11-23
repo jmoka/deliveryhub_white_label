@@ -56,6 +56,10 @@ export const selecionarEndereco = (id, coords) =>
 export const gerarLinkTelegram = () => apiFetch({ method: 'POST' }, '/telegram/link');
 export const getStatusTelegram = () => apiFetch({}, '/telegram/status');
 
+// Mesma coisa via WhatsApp (Evolution API).
+export const gerarLinkWhatsapp = () => apiFetch({ method: 'POST' }, '/whatsapp/link');
+export const getStatusWhatsapp = () => apiFetch({}, '/whatsapp/status');
+
 export async function uploadFoto(file) {
   const { data: { session } } = await supabase.auth.getSession().catch(() => ({ data: {} }));
   const token = session?.access_token;

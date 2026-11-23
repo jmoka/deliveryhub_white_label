@@ -184,6 +184,11 @@ export const gerarLinkTelegramEstabelecimento = () =>
   apiFetch('/minha-empresa/telegram/link', { method: 'POST' });
 export const getStatusTelegramEstabelecimento = () => apiFetch('/minha-empresa/telegram/status');
 
+// Mesma coisa via WhatsApp (Evolution API).
+export const gerarLinkWhatsappEstabelecimento = () =>
+  apiFetch('/minha-empresa/whatsapp/link', { method: 'POST' });
+export const getStatusWhatsappEstabelecimento = () => apiFetch('/minha-empresa/whatsapp/status');
+
 export const getAparencia = () => apiFetch('/aparencia');
 export const updateAparencia = (data) =>
   apiFetch('/aparencia', { method: 'PATCH', body: JSON.stringify(data) });

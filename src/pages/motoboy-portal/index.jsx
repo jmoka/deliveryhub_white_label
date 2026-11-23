@@ -6,7 +6,7 @@ import {
   getEstabelecimentosDisponiveis, solicitarAfiliacao, getMinhasAfiliacoes,
   getGanhosResumo, getGanhosHistorico, getGanhosPorDia, solicitarRevisaoPlataforma,
   getSaldoPorEstabelecimento, criarSolicitacaoRepasse, getMinhasSolicitacoesRepasse,
-  gerarLinkTelegram, getStatusTelegram,
+  gerarLinkTelegram, getStatusTelegram, gerarLinkWhatsapp, getStatusWhatsapp,
 } from '../../services/motoboyService';
 import { arquivoParaBase64 } from '../../services/motoboyAuthService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -743,6 +743,7 @@ const AbaPerfil = ({ me, onAtualizado }) => {
 
       {/* Notificações */}
       <TelegramLinkCard gerarLink={gerarLinkTelegram} getStatus={getStatusTelegram} />
+      <TelegramLinkCard canal="whatsapp" gerarLink={gerarLinkWhatsapp} getStatus={getStatusWhatsapp} />
 
       {/* Segurança */}
       <div>

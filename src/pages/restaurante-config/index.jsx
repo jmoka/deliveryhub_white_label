@@ -9,6 +9,7 @@ import {
   getCatalogoClientesGdoor, bloquearSyncClienteGdoor, importarClientesDeGdoor, exportarClientesParaGdoor, getStatusExportacaoClientesGdoor,
   getStripeStatus, gerarLinkOnboardingStripe, desconectarStripe,
   gerarLinkTelegramEstabelecimento, getStatusTelegramEstabelecimento,
+  gerarLinkWhatsappEstabelecimento, getStatusWhatsappEstabelecimento,
 } from '../../services/restauranteService';
 import { AgenteImpressaoPanel } from '../restaurante-impressoras';
 import { buscarCep } from '../../utils/viaCep';
@@ -1470,6 +1471,12 @@ const RestauranteConfig = () => {
                 <TelegramLinkCard
                   gerarLink={gerarLinkTelegramEstabelecimento}
                   getStatus={getStatusTelegramEstabelecimento}
+                  className="bg-white dark:bg-[#27272A] rounded-xl border p-6 mt-4"
+                />
+                <TelegramLinkCard
+                  canal="whatsapp"
+                  gerarLink={gerarLinkWhatsappEstabelecimento}
+                  getStatus={getStatusWhatsappEstabelecimento}
                   className="bg-white dark:bg-[#27272A] rounded-xl border p-6 mt-4"
                 />
               </>

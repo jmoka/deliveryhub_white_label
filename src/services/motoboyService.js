@@ -120,3 +120,7 @@ export const getGanhosPorDia = (filtro) => motoboyFetch(`/ganhos/por-dia${ganhos
 // Notificações via Telegram (pedido pronto) — vínculo por deep-link, opt-in.
 export const gerarLinkTelegram = () => motoboyFetch('/telegram/link', { method: 'POST' });
 export const getStatusTelegram = () => motoboyFetch('/telegram/status');
+
+// Mesma coisa via WhatsApp (Evolution API).
+export const gerarLinkWhatsapp = () => motoboyFetch('/whatsapp/link', { method: 'POST' });
+export const getStatusWhatsapp = () => motoboyFetch('/whatsapp/status');
