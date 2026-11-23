@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   getConfig, updateConfig, listarImpressoras, getMinhaEmpresa, updateEmpresa,
   atualizarLocalizacaoManual,
@@ -1252,7 +1252,8 @@ const RestauranteConfig = () => {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState(null);
   const [sucesso, setSucesso] = useState(false);
-  const [abaAtiva, setAbaAtiva] = useState('banco');
+  const location = useLocation();
+  const [abaAtiva, setAbaAtiva] = useState(() => location.state?.aba || 'banco');
 
   const ABAS = [
     { id: 'banco', label: 'Banco', icon: 'Landmark' },

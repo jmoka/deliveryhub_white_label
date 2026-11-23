@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { getMinhaEmpresa, getStatusTelegramEstabelecimento } from '../services/restauranteService';
+import { getMinhaEmpresa, getStatusTelegramEstabelecimento, getStatusWhatsappEstabelecimento } from '../services/restauranteService';
 
-// Pendência permanente de onboarding do estabelecimento — Telegram não
-// vinculado e/ou pino do endereço nunca confirmado no mapa. Usado pelo aviso
-// fixo em RestauranteHeader (sem botão de fechar, some sozinho quando resolvido).
+// Pendência permanente de onboarding do estabelecimento — nenhum canal de
+// notificação vinculado (Telegram OU WhatsApp já resolve) e/ou pino do
+// endereço nunca confirmado no mapa. Usado pelo aviso fixo em RestauranteHeader
+// (sem botão de fechar, some sozinho quando resolvido).
 export function usePendenciaCadastroEstabelecimento() {
   const [pendencia, setPendencia] = useState(null);
 
@@ -11,11 +12,12 @@ export function usePendenciaCadastroEstabelecimento() {
     let ativo = true;
     Promise.all([
       getStatusTelegramEstabelecimento().catch(() => null),
+      getStatusWhatsappEstabelecimento().catch(() => null),
       getMinhaEmpresa().catch(() => null),
-    ]).then(([telegram, empresa]) => {
+    ]).then(([telegram, whatsapp, empresa]) => {
       if (!ativo) return;
       setPendencia({
-        semTelegram: !telegram?.vinculado,
+        semNotificacao: !telegram?.vinculado && !whatsapp?.vinculado,
         semPino: empresa?.empresa ? (empresa.empresa.lat == null || empresa.empresa.lng == null) : false,
       });
     });

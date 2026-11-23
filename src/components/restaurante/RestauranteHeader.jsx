@@ -185,17 +185,17 @@ const RestauranteHeader = ({ active, title, subtitle, onRefresh, ajudaCategoria 
       )}
 
       {/* Aviso permanente — sem botão de fechar, some sozinho quando a pendência
-          for resolvida (vincular Telegram e/ou confirmar o pino do endereço). */}
-      {pendenciaCadastro && (pendenciaCadastro.semTelegram || pendenciaCadastro.semPino) && (
+          for resolvida (vincular Telegram OU WhatsApp e/ou confirmar o pino do endereço). */}
+      {pendenciaCadastro && (pendenciaCadastro.semNotificacao || pendenciaCadastro.semPino) && (
         <button
-          onClick={() => navigate('/restaurante/config')}
+          onClick={() => navigate('/restaurante/config', { state: { aba: 'endereco' } })}
           className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900 hover:bg-amber-200/70 dark:hover:bg-amber-950/60"
         >
           <Icon name="AlertTriangle" size={14} className="flex-shrink-0" />
-          {pendenciaCadastro.semTelegram && pendenciaCadastro.semPino
-            ? 'Conecte o Telegram do estabelecimento e confirme o pino do endereço no mapa — clique pra resolver.'
-            : pendenciaCadastro.semTelegram
-            ? 'Conecte o Telegram do estabelecimento pra receber os avisos — clique pra resolver.'
+          {pendenciaCadastro.semNotificacao && pendenciaCadastro.semPino
+            ? 'Conecte o Telegram ou WhatsApp do estabelecimento e confirme o pino do endereço no mapa — clique pra resolver.'
+            : pendenciaCadastro.semNotificacao
+            ? 'Conecte o Telegram ou WhatsApp do estabelecimento pra receber os avisos — clique pra resolver.'
             : 'Confirme o pino do endereço no mapa pra garantir a entrega no lugar certo — clique pra resolver.'}
         </button>
       )}
