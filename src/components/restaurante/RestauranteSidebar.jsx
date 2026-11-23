@@ -83,6 +83,14 @@ const RestauranteSidebar = ({ open, onClose, links, activePath, pendentesPorPath
                 )}
               </div>
             )}
+            {/* Sai do painel sem deslogar — só volta pra home pública (/), diferente
+                de "Sair" acima (logout de verdade). */}
+            <div className="px-3 py-3 border-t border-[#E4E4E7] dark:border-[#3F3F46]">
+              <button onClick={() => ir('/')}
+                className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#71717A] dark:text-[#A1A1AA] hover:bg-[#F4F4F5] dark:hover:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] flex items-center gap-2">
+                <Icon name="LogOut" size={14} /> Sair do painel
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
