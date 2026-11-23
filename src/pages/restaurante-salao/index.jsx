@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
   getGarconsOnline, getSalaoMesas, getSalaoComandas, getSalaoComandaDetalhe, getSalaoComandasFechadasHoje,
-  aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
+  aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, cancelarComandaComSenhaSalao, restaurarComandaSalao, pagarComandaSalao,
   adicionarItensComandaSalao, enviarItensComandaSalao, editarItemComandaSalao, incluirMaisUnidadeItemSalao, removerItemComandaSalao, transferirGarcomComanda, getSugestaoGorjeta,
   listarGarcons, getMeusProdutos, getMeusCombos, registrarPagamentoParcialSalao, transferirComandaSalao,
   editarPagamentoParcialSalao, removerPagamentoParcialSalao, alterarTrocoPixComandaSalao, reabrirComandaSalao,
@@ -21,6 +21,7 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 import QuickAddProdutoModal from '../../components/restaurante/QuickAddProdutoModal';
 import PagamentoParcialModal from '../../components/salao/PagamentoParcialModal';
+import ConfirmarSenhaModal from '../../components/restaurante/ConfirmarSenhaModal';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
 const PAGAMENTO_LABEL = { pix: 'PIX', credit_card: 'Cartão crédito', debit_card: 'Cartão débito', cash: 'Dinheiro' };
@@ -335,6 +336,7 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
   const [gorjetaPercentual, setGorjetaPercentual] = useState(0);
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  const [mostrarSenhaCancelar, setMostrarSenhaCancelar] = useState(false);
 
   const [garcons, setGarcons] = useState([]);
   const [garcomSelecionado, setGarcomSelecionado] = useState('');
@@ -449,9 +451,15 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
     }
   };
 
-  const cancelar = () => {
-    if (!window.confirm('Cancelar esta comanda?')) return;
-    acao(async () => { await cancelarComandaSalao(comandaId); onFechar(); });
+  const cancelar = () => setMostrarSenhaCancelar(true);
+
+  // Não usa o helper `acao()` aqui de propósito — ele engole o erro (seta `erro` e
+  // segue), e o modal de senha precisa do throw pra saber que a senha errou.
+  const confirmarCancelarComSenha = async (senha) => {
+    await cancelarComandaComSenhaSalao(comandaId, senha);
+    setMostrarSenhaCancelar(false);
+    onMudou();
+    onFechar();
   };
 
   const reabrir = () => {
@@ -1377,6 +1385,16 @@ const ComandaModal = ({ comandaId, mesas, comandas, onFechar, onMudou }) => {
         </div>
         )}
       </div>
+
+      {mostrarSenhaCancelar && (
+        <ConfirmarSenhaModal
+          titulo="Cancelar comanda"
+          mensagem="Essa comanda será deletada. Confirme sua senha pra continuar."
+          confirmarLabel="Cancelar comanda"
+          onConfirmar={confirmarCancelarComSenha}
+          onFechar={() => setMostrarSenhaCancelar(false)}
+        />
+      )}
     </div>
   );
 };
@@ -1390,6 +1408,7 @@ const RestauranteSalao = () => {
   const [comandasDeletadas, setComandasDeletadas] = useState([]);
   const [deletadasAbertas, setDeletadasAbertas] = useState(false);
   const [filtroDataDeletadas, setFiltroDataDeletadas] = useState(() => new Date().toISOString().slice(0, 10));
+  const [comandaParaRestaurar, setComandaParaRestaurar] = useState(null);
   const [busca, setBusca] = useState('');
   const [erroBusca, setErroBusca] = useState(false);
   const [filtroData, setFiltroData] = useState('');
@@ -1789,25 +1808,37 @@ const RestauranteSalao = () => {
                     )}
                     {comandasDeletadasFiltradas.map((c) => {
                       const r = c.reivindicacao;
+                      const restauracao = c.restauracao;
                       return (
-                        <button key={c.id} onClick={() => setComandaAtiva(c.id)}
-                          className="w-full text-left bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
-                          <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
-                            #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
-                          </p>
-                          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-                            Garçom {c.garcons?.nome ?? '—'} · deletada em {new Date(c.excluida_em).toLocaleString('pt-BR')}
-                          </p>
-                          {r && (
-                            <p className="text-[11px] font-bold mt-1.5 text-amber-600 dark:text-amber-400">
-                              {r.status === 'pendente_reivindicacao'
-                                ? 'Reivindicação aguardando sua decisão'
-                                : r.decisao_reivindicacao === 'recusada'
-                                  ? 'Reivindicação recusada'
-                                  : 'Reivindicação aprovada — comanda reaberta'}
+                        <div key={c.id} className="bg-white dark:bg-[#27272A] rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46] p-3">
+                          <button onClick={() => setComandaAtiva(c.id)} className="w-full text-left">
+                            <p className="text-sm font-medium text-[#18181B] dark:text-[#F4F4F5]">
+                              #{c.numero_comanda ?? c.id}{c.mesas ? ` — Mesa ${c.mesas.numero}` : ''} — {c.cliente_mesa_nome}
                             </p>
+                            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+                              Garçom {c.garcons?.nome ?? '—'} · deletada em {new Date(c.excluida_em).toLocaleString('pt-BR')}
+                            </p>
+                            {r && (
+                              <p className="text-[11px] font-bold mt-1.5 text-amber-600 dark:text-amber-400">
+                                {r.status === 'pendente_reivindicacao'
+                                  ? 'Reivindicação aguardando sua decisão'
+                                  : r.decisao_reivindicacao === 'recusada'
+                                    ? 'Reivindicação recusada'
+                                    : 'Reivindicação aprovada — comanda reaberta'}
+                              </p>
+                            )}
+                          </button>
+                          {restauracao ? (
+                            <p className="text-[11px] font-bold mt-1.5 text-emerald-600 dark:text-emerald-400">
+                              Restaurada — comanda nova #{restauracao.numero_comanda}
+                            </p>
+                          ) : (
+                            <button onClick={() => setComandaParaRestaurar(c)}
+                              className="flex items-center gap-1 text-xs font-bold text-[#FF441F] mt-1.5">
+                              <Icon name="RotateCcw" size={13} /> Restaurar
+                            </button>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -1829,6 +1860,21 @@ const RestauranteSalao = () => {
 
       {comandaAtiva && (
         <ComandaModal comandaId={comandaAtiva} mesas={mesas} comandas={comandas} onFechar={() => setComandaAtiva(null)} onMudou={carregar} />
+      )}
+
+      {comandaParaRestaurar && (
+        <ConfirmarSenhaModal
+          titulo="Restaurar comanda"
+          mensagem={`Cria uma comanda nova com os mesmos dados de #${comandaParaRestaurar.numero_comanda ?? comandaParaRestaurar.id}. Confirme sua senha pra continuar.`}
+          confirmarLabel="Restaurar"
+          onConfirmar={async (senha) => {
+            const nova = await restaurarComandaSalao(comandaParaRestaurar.id, senha);
+            setComandaParaRestaurar(null);
+            await carregar();
+            setComandaAtiva(nova.id);
+          }}
+          onFechar={() => setComandaParaRestaurar(null)}
+        />
       )}
 
       {mesaParaAbrir !== undefined && (

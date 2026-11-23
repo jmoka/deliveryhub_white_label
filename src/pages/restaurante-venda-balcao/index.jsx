@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getSalaoComandaDetalhe, getMeusProdutos, getMeusCombos, abrirVendaBalcao,
   adicionarItensComandaSalao, editarItemComandaSalao, removerItemComandaSalao,
-  aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, pagarComandaSalao,
+  aplicarDescontoComanda, aplicarAcrescimoComanda, cancelarComandaSalao, cancelarComandaComSenhaSalao, pagarComandaSalao,
   registrarPagamentoParcialSalao, alterarTrocoPixComandaSalao, removerPagamentoParcialSalao,
   editarClienteComandaSalao, buscarClientePorTelefoneSalao, getConfig,
 } from '../../services/restauranteService';
@@ -11,6 +11,7 @@ import Icon from '../../components/AppIcon';
 import { printReciboCliente } from '../../utils/printComanda';
 import { agruparItensComanda, quantidadeGrupoCombo } from '../../utils/agruparItensComanda';
 import QuickAddProdutoModal from '../../components/restaurante/QuickAddProdutoModal';
+import ConfirmarSenhaModal from '../../components/restaurante/ConfirmarSenhaModal';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 
 const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
@@ -32,6 +33,7 @@ const RestauranteVendaBalcao = () => {
   const [busca, setBusca] = useState('');
   const [categoria, setCategoria] = useState('todas');
   const [produtoAtivo, setProdutoAtivo] = useState(null);
+  const [mostrarSenhaCancelar, setMostrarSenhaCancelar] = useState(false);
 
   const [descontoInput, setDescontoInput] = useState('');
   const [acrescimoInput, setAcrescimoInput] = useState('');
@@ -215,16 +217,29 @@ const RestauranteVendaBalcao = () => {
     acao(() => removerPagamentoParcialSalao(comandaId, p.id));
   };
 
+  // Nada a perder (carrinho vazio, sem pagamento lançado) não precisa de senha nem
+  // confirmar — só incomoda quando o operador abriu por engano e já quer sair. Com
+  // item/pagamento lançado, exige confirmar a senha antes de deletar de verdade.
   const cancelar = () => {
-    // Nada a perder (carrinho vazio, sem pagamento lançado) não precisa confirmar —
-    // só incomoda quando o operador abriu por engano e já quer sair.
     const temAlgo = (comanda?.itens ?? []).length > 0 || (comanda?.pagamentos ?? []).length > 0;
-    if (temAlgo && !window.confirm('Cancelar esta venda? Os itens/pagamentos lançados serão descartados.')) return;
-    acao(async () => {
-      await cancelarComandaSalao(comandaId);
-      finalizadaRef.current = true;
-      navigate('/restaurante/salao');
-    });
+    if (!temAlgo) {
+      acao(async () => {
+        await cancelarComandaSalao(comandaId);
+        finalizadaRef.current = true;
+        navigate('/restaurante/salao');
+      });
+      return;
+    }
+    setMostrarSenhaCancelar(true);
+  };
+
+  // Não usa o helper `acao()` aqui de propósito — ele engole o erro, e o modal de
+  // senha precisa do throw pra saber que a senha errou.
+  const confirmarCancelarComSenha = async (senha) => {
+    await cancelarComandaComSenhaSalao(comandaId, senha);
+    finalizadaRef.current = true;
+    setMostrarSenhaCancelar(false);
+    navigate('/restaurante/salao');
   };
 
   const finalizar = () => {
@@ -584,6 +599,16 @@ const RestauranteVendaBalcao = () => {
           onFechar={() => setProdutoAtivo(null)}
           onConfirmar={async (item) => { await adicionar(item); setProdutoAtivo(null); }}
           permitirNaoEnviarCozinha
+        />
+      )}
+
+      {mostrarSenhaCancelar && (
+        <ConfirmarSenhaModal
+          titulo="Cancelar venda"
+          mensagem="Essa venda será deletada. Confirme sua senha pra continuar."
+          confirmarLabel="Cancelar venda"
+          onConfirmar={confirmarCancelarComSenha}
+          onFechar={() => setMostrarSenhaCancelar(false)}
         />
       )}
     </div>

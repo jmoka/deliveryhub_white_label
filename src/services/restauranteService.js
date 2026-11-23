@@ -511,6 +511,10 @@ export const aplicarAcrescimoComanda = (id, valor) =>
   apiFetch(`/salao/comandas/${id}/acrescimo`, { method: 'PATCH', body: JSON.stringify({ valor }) });
 export const cancelarComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/cancelar`, { method: 'POST' });
+export const cancelarComandaComSenhaSalao = (id, senha) =>
+  apiFetch(`/salao/comandas/${id}/cancelar-com-senha`, { method: 'POST', body: JSON.stringify({ senha }) });
+export const restaurarComandaSalao = (id, senha) =>
+  apiFetch(`/salao/comandas/${id}/restaurar`, { method: 'POST', body: JSON.stringify({ senha }) });
 export const reabrirComandaSalao = (id) =>
   apiFetch(`/salao/comandas/${id}/reabrir`, { method: 'POST' });
 export const getReivindicacoesPendentes = () => apiFetch('/salao/reivindicacoes');
