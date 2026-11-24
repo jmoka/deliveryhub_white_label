@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { apiPath } from '../../lib/apiUrl';
 import { formatDuracao } from '../../utils/formatDuracao';
@@ -36,9 +36,15 @@ const TIMELINE_RETIRADA = ['pending', 'confirmed', 'preparing', 'ready', 'delive
 const OrderTrackingStatus = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { orderId, restauranteSlug } = location.state ?? {};
+  const { token } = useParams();
+  const { orderId: stateOrderId, restauranteSlug } = location.state ?? {};
+  // Link "acompanhar pedido" mandado por Telegram/WhatsApp (sem login) — token na URL
+  // em vez de orderId no state do router. Esconde ações que exigem sessão de cliente
+  // (cancelar, "Meus pedidos"); id real do pedido só se sabe depois do primeiro fetch.
+  const modoToken = !!token;
 
   const [pedido, setPedido] = useState(null);
+  const orderId = stateOrderId ?? pedido?.id ?? null;
   const [tipoRestaurante, setTipoRestaurante] = useState(true);
   const [pontos, setPontos] = useState({ restaurante: null, cliente: null });
   const [pagamentoPago, setPagamentoPago] = useState(null);
@@ -49,15 +55,19 @@ const OrderTrackingStatus = () => {
   const now = useNowTick();
 
   const buscarPedido = useCallback(async () => {
-    if (!orderId) return;
+    if (!stateOrderId && !token) return;
     try {
-      const sessionResult = await supabase.auth.getSession();
-      const token = sessionResult?.data?.session?.access_token;
-      if (!token) return;
-
-      const res = await fetch(`${apiPath('/api/pedidos')}/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      let res;
+      if (modoToken) {
+        res = await fetch(`${apiPath('/api/pedidos/acompanhar')}/${token}`);
+      } else {
+        const sessionResult = await supabase.auth.getSession();
+        const accessToken = sessionResult?.data?.session?.access_token;
+        if (!accessToken) return;
+        res = await fetch(`${apiPath('/api/pedidos')}/${stateOrderId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       // API returns { pedido:{...}, itens:[], cliente:{...}, empresa:{...}, pagamento_pago }
@@ -73,14 +83,20 @@ const OrderTrackingStatus = () => {
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [stateOrderId, token, modoToken]);
 
   useEffect(() => {
-    if (!orderId) {
+    if (!stateOrderId && !token) {
       navigate('/menu-catalog-product-browse', { replace: true });
       return;
     }
     buscarPedido();
+  }, [buscarPedido, stateOrderId, token]);
+
+  // Realtime/polling só depende do id real do pedido, que em modoToken só se conhece
+  // depois do primeiro fetch acima (ver orderId = stateOrderId ?? pedido?.id).
+  useEffect(() => {
+    if (!orderId) return;
 
     // Realtime: atualiza instantaneamente quando status muda no DB
     const channel = supabase
@@ -95,7 +111,7 @@ const OrderTrackingStatus = () => {
       })
       .subscribe();
 
-    // Fallback polling 30s caso realtime falhe
+    // Fallback polling 30s caso realtime falhe (ou, em modoToken, não tenha permissão)
     const interval = setInterval(() => {
       if (pedido?.status !== 'delivered' && pedido?.status !== 'canceled') {
         buscarPedido();
@@ -161,9 +177,11 @@ const OrderTrackingStatus = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18181B] pb-10">
       <header className="bg-white dark:bg-[#18181B] border-b dark:border-[#3F3F46] px-4 py-4 flex items-center gap-3">
-        <button onClick={() => navigate('/customer-account-order-history')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#27272A]">
-          <Icon name="ArrowLeft" size={20} className="text-gray-600 dark:text-[#A1A1AA]" />
-        </button>
+        {!modoToken && (
+          <button onClick={() => navigate('/customer-account-order-history')} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#27272A]">
+            <Icon name="ArrowLeft" size={20} className="text-gray-600 dark:text-[#A1A1AA]" />
+          </button>
+        )}
         <h1 className="text-lg font-bold text-gray-900 dark:text-[#F4F4F5]">Pedido #{pedido.id}</h1>
         {pagamentoPago && (
           <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2.5 py-1 rounded-full flex-shrink-0">
@@ -334,8 +352,8 @@ const OrderTrackingStatus = () => {
           </div>
         )}
 
-        {/* Cancelar antes do preparo */}
-        {['pending', 'confirmed'].includes(pedido.status) && (
+        {/* Cancelar antes do preparo — exige sessão de cliente, não disponível no link sem login */}
+        {!modoToken && ['pending', 'confirmed'].includes(pedido.status) && (
           <OrderActions
             orderStatus={pedido.status}
             orderId={pedido.id}
@@ -356,12 +374,14 @@ const OrderTrackingStatus = () => {
               Novo pedido
             </button>
           )}
-          <button
-            onClick={() => navigate('/customer-account-order-history')}
-            className="flex-1 py-2.5 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
-          >
-            Meus pedidos
-          </button>
+          {!modoToken && (
+            <button
+              onClick={() => navigate('/customer-account-order-history')}
+              className="flex-1 py-2.5 bg-orange-500 text-white text-sm font-medium rounded-lg hover:bg-orange-600"
+            >
+              Meus pedidos
+            </button>
+          )}
         </div>
 
         <p className="text-center text-xs text-gray-400 dark:text-[#71717A]">Atualização em tempo real</p>

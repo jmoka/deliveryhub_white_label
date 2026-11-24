@@ -112,6 +112,7 @@ const Routes = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/2fa/resetar" element={<ConfirmarReset2FA />} />
         <Route path="/order-tracking-status" element={<OrderTrackingStatus />} />
+        <Route path="/acompanhar/:token" element={<OrderTrackingStatus />} />
         <Route path="/academia" element={<Academia />} />
         <Route path="/termos-de-uso" element={<PaginaLegal slug="termos-de-uso" />} />
         <Route path="/politica-privacidade" element={<PaginaLegal slug="politica-privacidade" />} />
