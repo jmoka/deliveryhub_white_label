@@ -7,6 +7,10 @@ import {
 import Icon from '../../components/AppIcon';
 import RestauranteHeader from '../../components/restaurante/RestauranteHeader';
 
+// Precisa bater com QR_TTL_MS em assistente.service.ts (backend) — aqui só
+// espelha pra mostrar a contagem, o backend é a fonte da verdade da expiração.
+const QR_TTL_MS = 120000;
+
 const RestauranteAssistenteIa = () => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,7 +28,9 @@ const RestauranteAssistenteIa = () => {
   const [qrCode, setQrCode] = useState(null);
   const [statusWhatsapp, setStatusWhatsapp] = useState(null);
   const [erroWhatsapp, setErroWhatsapp] = useState(null);
+  const [segundosRestantes, setSegundosRestantes] = useState(null);
   const pollRef = useRef(null);
+  const countdownRef = useRef(null);
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -35,7 +41,7 @@ const RestauranteAssistenteIa = () => {
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
-  useEffect(() => () => clearInterval(pollRef.current), []);
+  useEffect(() => () => { clearInterval(pollRef.current); clearInterval(countdownRef.current); }, []);
 
   const salvarPrompt = async () => {
     setSalvandoPrompt(true);
@@ -75,13 +81,28 @@ const RestauranteAssistenteIa = () => {
     pollRef.current = setInterval(async () => {
       try {
         const { status } = await getStatusWhatsappAssistente();
+        if (status === 'expirado') {
+          clearInterval(pollRef.current);
+          clearInterval(countdownRef.current);
+          setQrCode(null);
+          setSegundosRestantes(null);
+          setStatusWhatsapp('desconectado');
+          setErroWhatsapp('O QR code expirou. Clique em "Conectar WhatsApp" para gerar um novo.');
+          return;
+        }
         setStatusWhatsapp(status);
         if (status === 'conectado') {
           clearInterval(pollRef.current);
+          clearInterval(countdownRef.current);
           setQrCode(null);
+          setSegundosRestantes(null);
         }
       } catch {
         clearInterval(pollRef.current);
+        clearInterval(countdownRef.current);
+        setQrCode(null);
+        setSegundosRestantes(null);
+        setErroWhatsapp('Não foi possível verificar o status da conexão. Tente novamente.');
       }
     }, 4000);
   }, []);
@@ -89,13 +110,26 @@ const RestauranteAssistenteIa = () => {
   const conectarWhatsapp = async () => {
     setConectandoWhatsapp(true);
     setErroWhatsapp(null);
+    setQrCode(null);
+    setSegundosRestantes(null);
     try {
       const r = await conectarWhatsappAssistente();
       setQrCode(r.qrcode_base64);
       setStatusWhatsapp(r.status);
-      if (r.status !== 'conectado') pollStatusWhatsapp();
+      if (r.status !== 'conectado') {
+        const expiraEm = Date.now() + QR_TTL_MS;
+        setSegundosRestantes(Math.ceil(QR_TTL_MS / 1000));
+        clearInterval(countdownRef.current);
+        countdownRef.current = setInterval(() => {
+          const restante = Math.max(0, Math.ceil((expiraEm - Date.now()) / 1000));
+          setSegundosRestantes(restante);
+          if (restante === 0) clearInterval(countdownRef.current);
+        }, 1000);
+        pollStatusWhatsapp();
+      }
     } catch (e) {
       setErroWhatsapp(e.message);
+      setStatusWhatsapp(null);
     } finally {
       setConectandoWhatsapp(false);
     }
@@ -104,7 +138,9 @@ const RestauranteAssistenteIa = () => {
   const desconectarWhatsapp = async () => {
     if (!window.confirm('Desconectar o WhatsApp desse assistente? A instância é removida.')) return;
     clearInterval(pollRef.current);
+    clearInterval(countdownRef.current);
     setQrCode(null);
+    setSegundosRestantes(null);
     await desconectarWhatsappAssistente();
     await carregar();
   };
@@ -179,31 +215,32 @@ const RestauranteAssistenteIa = () => {
               <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
                 statusWhatsapp === 'conectado' ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400'
               }`}>
-                {statusWhatsapp === 'conectado' ? 'Conectado' : statusWhatsapp === 'aguardando_qr' ? 'Aguardando leitura do QR' : 'Desconectado'}
+                {statusWhatsapp === 'conectado' ? 'Conectado' : statusWhatsapp === 'aguardando_qr' ? 'Aguardando leitura do QR' : statusWhatsapp === 'expirado' ? 'QR expirado' : 'Desconectado'}
               </span>
             )}
           </div>
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mb-3">
             Use um número de WhatsApp próprio (não precisa ser o mesmo do seu celular pessoal). Escaneie o QR code com o WhatsApp &gt; Aparelhos conectados.
           </p>
-          {statusWhatsapp === 'conectado' ? (
-            <button onClick={desconectarWhatsapp}
-              className="px-4 py-2 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40">
-              Desconectar
-            </button>
-          ) : (
-            <>
+          <div className="flex flex-wrap gap-2">
+            {statusWhatsapp !== 'conectado' && (
               <button onClick={conectarWhatsapp} disabled={conectandoWhatsapp}
                 className="px-4 py-2 bg-[#FF441F] text-white text-sm font-bold rounded-lg hover:bg-[#E63A19] disabled:opacity-50">
                 {conectandoWhatsapp ? 'Gerando QR...' : qrCode ? 'Gerar novo QR' : 'Conectar WhatsApp'}
               </button>
-              {qrCode && (
-                <div className="mt-3 flex flex-col items-center">
-                  <img src={qrCode} alt="QR code do WhatsApp" className="w-56 h-56 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46]" />
-                  <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-2">Aguardando leitura...</p>
-                </div>
-              )}
-            </>
+            )}
+            <button onClick={desconectarWhatsapp}
+              className="px-4 py-2 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40">
+              Desconectar
+            </button>
+          </div>
+          {qrCode && statusWhatsapp !== 'conectado' && (
+            <div className="mt-3 flex flex-col items-center">
+              <img src={qrCode} alt="QR code do WhatsApp" className="w-56 h-56 rounded-xl border border-[#E4E4E7] dark:border-[#3F3F46]" />
+              <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-2">
+                Aguardando leitura...{segundosRestantes != null && ` (expira em ${segundosRestantes}s)`}
+              </p>
+            </div>
           )}
           {erroWhatsapp && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{erroWhatsapp}</p>}
         </div>
