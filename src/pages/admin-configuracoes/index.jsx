@@ -51,6 +51,12 @@ const AdminConfiguracoes = () => {
   const [sucessoCadastros, setSucessoCadastros] = useState(false);
   const [erroCadastros, setErroCadastros] = useState(null);
 
+  const [lembretesAtivo, setLembretesAtivo] = useState(false);
+  const [lembretesRegras, setLembretesRegras] = useState([]);
+  const [salvandoLembretes, setSalvandoLembretes] = useState(false);
+  const [sucessoLembretes, setSucessoLembretes] = useState(false);
+  const [erroLembretes, setErroLembretes] = useState(null);
+
   const [abaAtiva, setAbaAtiva] = useState('pagamentos');
   const ABAS = [
     { id: 'pagamentos', label: 'Pagamentos', icon: 'CreditCard' },
@@ -79,6 +85,8 @@ const AdminConfiguracoes = () => {
         setLimiteRevisoesMotoboy(String(d.motoboy_limite_revisoes ?? 2));
         setPermitirCadastroMotoboy(d.permitir_cadastro_motoboy ?? true);
         setPermitirCadastroEstabelecimento(d.permitir_cadastro_estabelecimento ?? true);
+        setLembretesAtivo(d.lembretes_vencimento_ativo ?? false);
+        setLembretesRegras(d.lembretes_vencimento_regras ?? []);
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
@@ -150,6 +158,50 @@ const AdminConfiguracoes = () => {
     } finally {
       setSalvandoCadastros(false);
     }
+  };
+
+  const handleSalvarLembretes = async (e) => {
+    e.preventDefault();
+    setSalvandoLembretes(true);
+    setErroLembretes(null);
+    setSucessoLembretes(false);
+    try {
+      const payload = {
+        lembretes_vencimento_ativo: lembretesAtivo,
+        lembretes_vencimento_regras: lembretesRegras.map((r) => ({
+          dias_offset: parseInt(r.dias_offset, 10) || 0,
+          ativo: !!r.ativo,
+        })),
+      };
+      const updated = await updatePlataformaConfig(payload);
+      setConfig(updated);
+      setLembretesRegras(updated.lembretes_vencimento_regras ?? []);
+      setSucessoLembretes(true);
+      setTimeout(() => setSucessoLembretes(false), 3000);
+    } catch (err) {
+      setErroLembretes(err.message);
+    } finally {
+      setSalvandoLembretes(false);
+    }
+  };
+
+  const adicionarRegraLembrete = () => {
+    setLembretesRegras((regras) => [...regras, { dias_offset: 0, ativo: true }]);
+  };
+
+  const removerRegraLembrete = (index) => {
+    setLembretesRegras((regras) => regras.filter((_, i) => i !== index));
+  };
+
+  const atualizarRegraLembrete = (index, campo, valor) => {
+    setLembretesRegras((regras) => regras.map((r, i) => (i === index ? { ...r, [campo]: valor } : r)));
+  };
+
+  const descricaoRegraLembrete = (diasOffset) => {
+    const n = parseInt(diasOffset, 10) || 0;
+    if (n === 0) return 'no dia do vencimento';
+    if (n < 0) return `${Math.abs(n)} dia${Math.abs(n) > 1 ? 's' : ''} antes do vencimento`;
+    return `${n} dia${n > 1 ? 's' : ''} depois do vencimento`;
   };
 
   const handleSalvarStripe = async (e) => {
@@ -788,6 +840,90 @@ const AdminConfiguracoes = () => {
                   className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
                 >
                   {salvandoCadastros ? 'Salvando...' : 'Salvar cadastros públicos'}
+                </button>
+              </form>
+            </div>
+
+            {/* ── Lembretes de vencimento (planos mensais) ───────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Lembretes de vencimento</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Envia pelo WhatsApp do PediuVai um aviso automático pras empresas com plano mensal
+                sobre a renovação se aproximando. Só chega em quem já vinculou o WhatsApp.
+              </p>
+
+              <form onSubmit={handleSalvarLembretes} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setLembretesAtivo((v) => !v)}
+                    className={`relative w-10 h-6 rounded-full transition-colors ${
+                      lembretesAtivo ? 'bg-orange-500' : 'bg-gray-300 dark:bg-zinc-600'
+                    }`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      lembretesAtivo ? 'left-5' : 'left-1'
+                    }`} />
+                  </button>
+                  <p className="text-sm font-medium text-gray-700 dark:text-zinc-300">
+                    {lembretesAtivo ? 'Lembretes ativados' : 'Lembretes desativados'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  {lembretesRegras.map((regra, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!regra.ativo}
+                        onChange={(e) => atualizarRegraLembrete(index, 'ativo', e.target.checked)}
+                        className="w-4 h-4 rounded accent-orange-500"
+                      />
+                      <input
+                        type="number" step="1"
+                        value={regra.dias_offset}
+                        onChange={(e) => atualizarRegraLembrete(index, 'dias_offset', e.target.value)}
+                        className="w-20 border border-gray-300 dark:border-zinc-700 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                      />
+                      <span className="text-sm text-gray-500 dark:text-zinc-400 flex-1">
+                        {descricaoRegraLembrete(regra.dias_offset)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removerRegraLembrete(index)}
+                        className="text-red-500 hover:text-red-600 p-1"
+                      >
+                        <Icon name="Trash2" size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={adicionarRegraLembrete}
+                    className="text-sm text-orange-600 dark:text-orange-400 font-medium hover:underline"
+                  >
+                    + Adicionar regra
+                  </button>
+                  <p className="text-xs text-gray-400 dark:text-zinc-500">
+                    Dias relativo à renovação: negativo = antes, 0 = no dia, positivo = depois.
+                  </p>
+                </div>
+
+                {erroLembretes && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroLembretes}</div>
+                )}
+                {sucessoLembretes && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoLembretes}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoLembretes ? 'Salvando...' : 'Salvar lembretes de vencimento'}
                 </button>
               </form>
             </div>
