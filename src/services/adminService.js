@@ -117,6 +117,7 @@ export const criarEmpresa = (data) => apiFetch('/empresas', { method: 'POST', bo
 export const atualizarEmpresa = (id, data) => apiFetch(`/empresas/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const bloquearEmpresa = (id, bloqueado) => apiFetch(`/empresas/${id}/bloquear`, { method: 'PATCH', body: JSON.stringify({ bloqueado }) });
 export const removerEmpresa = (id) => apiFetch(`/empresas/${id}`, { method: 'DELETE' });
+export const acessarPainelEmpresa = (id) => apiFetch(`/empresas/${id}/painel`, { method: 'POST' });
 export const atenderSolicitacaoDominio = (id) => apiFetch(`/empresas/${id}/dominio/atender`, { method: 'PATCH' });
 export const recusarSolicitacaoDominio = (id, motivo) =>
   apiFetch(`/empresas/${id}/dominio/recusar`, { method: 'PATCH', body: JSON.stringify({ motivo }) });

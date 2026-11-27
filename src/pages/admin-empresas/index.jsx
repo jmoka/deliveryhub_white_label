@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig, getUsuarios } from '../../services/adminService';
+import { getEmpresas, criarEmpresa, atualizarEmpresa, removerEmpresa, bloquearEmpresa, acessarPainelEmpresa, atenderSolicitacaoDominio, recusarSolicitacaoDominio, getPlataformaConfig, getUsuarios } from '../../services/adminService';
 import { getAssinaturas, getPlanos, atribuirAssinatura, cancelarAssinatura, getFaturas, atualizarFatura, atualizarVigencia } from '../../services/planosService';
 import {
   getPacotesDisponiveisBoostAdmin, getBoostsDaEmpresa, getItensBoostDaEmpresa,
@@ -871,7 +871,7 @@ const ModalEditarVigencia = ({ empresa, assinatura, periodo, onClose, onSalvo })
   );
 };
 
-const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover, onEditarVencimento, onEditarVigencia }) => (
+const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissaoPadrao, isLocalMode, onVer, onEditar, onEditarPlano, onDestaque, onBloquear, onRemover, onPainel, onEditarVencimento, onEditarVigencia }) => (
   <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 p-4 flex flex-col gap-3">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
@@ -931,6 +931,9 @@ const EmpresaCard = ({ empresa: e, assinaturas, faturas, toleranciaDias, comissa
     <div className="flex flex-wrap gap-1.5 pt-1">
       <button onClick={onVer} className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900">
         Ver
+      </button>
+      <button onClick={onPainel} className="px-3 py-1.5 text-xs font-medium text-teal-700 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-lg border border-teal-200 dark:border-teal-900">
+        Painel
       </button>
       <button onClick={onEditar} className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg border border-gray-200 dark:border-zinc-700">
         Editar
@@ -1030,6 +1033,16 @@ const AdminEmpresas = () => {
     try {
       await bloquearEmpresa(empresa.id, !empresa.bloqueado);
       carregar();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const handleAcessarPainel = async (empresa) => {
+    try {
+      const tokens = await acessarPainelEmpresa(empresa.id);
+      const params = new URLSearchParams({ access_token: tokens.access_token, refresh_token: tokens.refresh_token });
+      window.open(`/impersonar-sessao?${params.toString()}`, '_blank');
     } catch (e) {
       alert(e.message);
     }
@@ -1248,6 +1261,7 @@ const AdminEmpresas = () => {
                 onDestaque={() => setModalDestaque(e)}
                 onBloquear={() => handleBloquear(e)}
                 onRemover={() => handleRemover(e)}
+                onPainel={() => handleAcessarPainel(e)}
                 onEditarVencimento={(empresa, fatura) => setModalVencimento({ empresa, fatura })}
                 onEditarVigencia={(empresa, assinatura, periodo) => setModalVigencia({ empresa, assinatura, periodo })}
               />

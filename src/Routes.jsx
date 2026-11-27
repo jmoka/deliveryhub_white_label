@@ -38,6 +38,7 @@ import AdminMeuPerfil from './pages/admin-meu-perfil';
 import RestauranteGuard from './components/RestauranteGuard';
 import MotoboyGuard from './components/MotoboyGuard';
 import RestauranteDashboard from './pages/restaurante-dashboard';
+import ImpersonarSessao from './pages/impersonar-sessao';
 import RestauranteProdutos from './pages/restaurante-produtos';
 import RestauranteServicos from './pages/restaurante-servicos';
 import RestauranteAssistenteIa from './pages/restaurante-assistente-ia';
@@ -144,6 +145,7 @@ const Routes = () => {
         <Route path="/cardapio/:slug" element={<CardapioDigital />} />
 
         {/* Restaurante — requer role=restaurant_owner */}
+        <Route path="/impersonar-sessao" element={<ImpersonarSessao />} />
         <Route path="/restaurante" element={<RestauranteGuard><RestauranteDashboard /></RestauranteGuard>} />
         <Route path="/restaurante/produtos" element={<RestauranteGuard><RestauranteProdutos /></RestauranteGuard>} />
         <Route path="/restaurante/pedidos" element={<RestauranteGuard><RestaurantePedidos /></RestauranteGuard>} />
