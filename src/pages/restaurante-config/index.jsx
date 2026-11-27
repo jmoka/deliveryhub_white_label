@@ -1233,6 +1233,11 @@ const StripeConectarCard = () => {
 
   const s = STRIPE_STATUS_ROTULO[status?.status] ?? STRIPE_STATUS_ROTULO.nao_conectado;
 
+  // Admin nunca configurou Stripe na plataforma (ver GET /stripe/status →
+  // disponivel) e essa loja nunca conectou — esconde a opção inteira. Se já
+  // tinha conectado antes, mantém visível pra não sumir o botão "Desconectar".
+  if (!loading && !status?.disponivel && !status?.conectado) return null;
+
   return (
     <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">

@@ -58,6 +58,17 @@ const AdminConfiguracoes = () => {
   const [erroLembretes, setErroLembretes] = useState(null);
 
   const [abaAtiva, setAbaAtiva] = useState('pagamentos');
+
+  // Sub-abas de "Pagamentos" — um cartão por meio de recebimento do cliente final.
+  // Estrutura pensada pra crescer: cada gateway novo (Asaas, etc.) só precisa de
+  // uma entrada aqui + um bloco `{bancoAtivo === 'id' && (...)}` abaixo, sem
+  // mexer no resto da página.
+  const BANCOS = [
+    { id: 'pagbank', label: 'PagBank', icon: 'Landmark' },
+    { id: 'stripe', label: 'Stripe', icon: 'CreditCard' },
+    { id: 'asaas', label: 'Asaas', icon: 'Banknote', emBreve: true },
+  ];
+  const [bancoAtivo, setBancoAtivo] = useState('pagbank');
   const ABAS = [
     { id: 'pagamentos', label: 'Pagamentos', icon: 'CreditCard' },
     { id: 'regras', label: 'Regras', icon: 'SlidersHorizontal' },
@@ -302,6 +313,95 @@ const AdminConfiguracoes = () => {
 
             {abaAtiva === 'pagamentos' && (
             <>
+            {/* ── Recebimento de fatura (plano/pacote) ─────────────── */}
+            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
+              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Recebimento de fatura (plano/pacote)</h2>
+              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
+                Como a plataforma recebe o pagamento de assinatura/pacote dos restaurantes. Não afeta como o restaurante recebe do cliente final — só a fatura que ele paga pra você.
+              </p>
+
+              <form onSubmit={handleSalvarFaturamento} className="space-y-4">
+                <div className="space-y-2">
+                  <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${
+                    formFaturamento.faturamento_modo === 'pagbank' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-zinc-700'
+                  }`}>
+                    <input type="radio" name="faturamento_modo" checked={formFaturamento.faturamento_modo === 'pagbank'}
+                      onChange={() => setFormFaturamento((f) => ({ ...f, faturamento_modo: 'pagbank' }))}
+                      className="mt-0.5 accent-orange-500" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">
+                      <span className="font-medium block">PagBank</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500">Pix + Cartão via PagBank (aba PagBank abaixo).</span>
+                    </span>
+                  </label>
+                  <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${
+                    formFaturamento.faturamento_modo === 'manual' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-zinc-700'
+                  }`}>
+                    <input type="radio" name="faturamento_modo" checked={formFaturamento.faturamento_modo === 'manual'}
+                      onChange={() => setFormFaturamento((f) => ({ ...f, faturamento_modo: 'manual' }))}
+                      className="mt-0.5 accent-orange-500" />
+                    <span className="text-sm text-gray-700 dark:text-zinc-300">
+                      <span className="font-medium block">Recebimento Manual</span>
+                      <span className="text-xs text-gray-400 dark:text-zinc-500">Só Pix (chave abaixo) — sem PagBank. Você confirma o recebimento à mão em Admin → Planos.</span>
+                    </span>
+                  </label>
+                </div>
+
+                {formFaturamento.faturamento_modo === 'manual' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Chave Pix</label>
+                    <input
+                      type="text"
+                      value={formFaturamento.faturamento_chave_pix}
+                      onChange={(e) => setFormFaturamento((f) => ({ ...f, faturamento_chave_pix: e.target.value }))}
+                      placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                      className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                    />
+                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                      Mostrada pro restaurante gerar o QR Code na hora de pagar a fatura.
+                    </p>
+                  </div>
+                )}
+
+                {erroFaturamento && (
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroFaturamento}</div>
+                )}
+                {sucessoFaturamento && (
+                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
+                    Configuração salva!
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={salvandoFaturamento || (formFaturamento.faturamento_modo === 'manual' && !formFaturamento.faturamento_chave_pix.trim())}
+                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {salvandoFaturamento ? 'Salvando...' : 'Salvar recebimento de fatura'}
+                </button>
+              </form>
+            </div>
+
+            {/* ── Bancos/gateways de pagamento do cliente final ────── */}
+            <div className="flex gap-1.5 bg-gray-100 dark:bg-zinc-800 p-1 rounded-xl w-full sm:w-fit overflow-x-auto scrollbar-none">
+              {BANCOS.map((b) => (
+                <button key={b.id} type="button" onClick={() => setBancoAtivo(b.id)}
+                  disabled={b.emBreve}
+                  className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                    bancoAtivo === b.id
+                      ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm'
+                      : b.emBreve
+                      ? 'text-gray-300 dark:text-zinc-600 cursor-not-allowed'
+                      : 'text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
+                  }`}>
+                  <Icon name={b.icon} size={14} />
+                  {b.label}
+                  {b.emBreve && <span className="text-[10px] opacity-70">(em breve)</span>}
+                </button>
+              ))}
+            </div>
+
+            {bancoAtivo === 'pagbank' && (
+            <>
             {/* Status */}
             <div className={`rounded-xl border p-4 flex items-start gap-3 ${
               config?.configurado ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' : 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-900'
@@ -471,75 +571,11 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+            </>
+            )}
 
-            {/* ── Recebimento de fatura (plano/pacote) ─────────────── */}
-            <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
-              <h2 className="font-semibold text-gray-900 dark:text-zinc-100 mb-1">Recebimento de fatura (plano/pacote)</h2>
-              <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">
-                Como a plataforma recebe o pagamento de assinatura/pacote dos restaurantes. Não afeta como o restaurante recebe do cliente final — só a fatura que ele paga pra você.
-              </p>
-
-              <form onSubmit={handleSalvarFaturamento} className="space-y-4">
-                <div className="space-y-2">
-                  <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${
-                    formFaturamento.faturamento_modo === 'pagbank' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-zinc-700'
-                  }`}>
-                    <input type="radio" name="faturamento_modo" checked={formFaturamento.faturamento_modo === 'pagbank'}
-                      onChange={() => setFormFaturamento((f) => ({ ...f, faturamento_modo: 'pagbank' }))}
-                      className="mt-0.5 accent-orange-500" />
-                    <span className="text-sm text-gray-700 dark:text-zinc-300">
-                      <span className="font-medium block">PagBank</span>
-                      <span className="text-xs text-gray-400 dark:text-zinc-500">Pix + Cartão via PagBank (config acima).</span>
-                    </span>
-                  </label>
-                  <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer ${
-                    formFaturamento.faturamento_modo === 'manual' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-zinc-700'
-                  }`}>
-                    <input type="radio" name="faturamento_modo" checked={formFaturamento.faturamento_modo === 'manual'}
-                      onChange={() => setFormFaturamento((f) => ({ ...f, faturamento_modo: 'manual' }))}
-                      className="mt-0.5 accent-orange-500" />
-                    <span className="text-sm text-gray-700 dark:text-zinc-300">
-                      <span className="font-medium block">Recebimento Manual</span>
-                      <span className="text-xs text-gray-400 dark:text-zinc-500">Só Pix (chave abaixo) — sem PagBank. Você confirma o recebimento à mão em Admin → Planos.</span>
-                    </span>
-                  </label>
-                </div>
-
-                {formFaturamento.faturamento_modo === 'manual' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Chave Pix</label>
-                    <input
-                      type="text"
-                      value={formFaturamento.faturamento_chave_pix}
-                      onChange={(e) => setFormFaturamento((f) => ({ ...f, faturamento_chave_pix: e.target.value }))}
-                      placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                      className="w-full border border-gray-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                    />
-                    <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
-                      Mostrada pro restaurante gerar o QR Code na hora de pagar a fatura.
-                    </p>
-                  </div>
-                )}
-
-                {erroFaturamento && (
-                  <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-sm text-red-600 dark:text-red-400">{erroFaturamento}</div>
-                )}
-                {sucessoFaturamento && (
-                  <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg text-sm text-green-700 dark:text-green-400">
-                    Configuração salva!
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={salvandoFaturamento || (formFaturamento.faturamento_modo === 'manual' && !formFaturamento.faturamento_chave_pix.trim())}
-                  className="w-full py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 disabled:opacity-50"
-                >
-                  {salvandoFaturamento ? 'Salvando...' : 'Salvar recebimento de fatura'}
-                </button>
-              </form>
-            </div>
-
+            {bancoAtivo === 'stripe' && (
+            <>
             {/* ── Stripe Connect ───────────────────────────────────── */}
             <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6">
               <div className={`rounded-xl border p-3 mb-5 flex items-center gap-3 ${
@@ -643,6 +679,16 @@ const AdminConfiguracoes = () => {
                 </button>
               </form>
             </div>
+            </>
+            )}
+
+            {bancoAtivo === 'asaas' && (
+              <div className="bg-white dark:bg-zinc-800 rounded-xl border dark:border-zinc-700 p-6 text-center text-gray-400 dark:text-zinc-500">
+                <Icon name="Banknote" size={28} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">Integração com Asaas ainda não disponível</p>
+                <p className="text-xs mt-1">Essa aba já está preparada — quando a API do Asaas for integrada, o formulário entra aqui, no mesmo lugar do PagBank/Stripe.</p>
+              </div>
+            )}
 
             </>
             )}
