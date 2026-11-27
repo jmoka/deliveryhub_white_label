@@ -1293,6 +1293,16 @@ const RestauranteConfig = () => {
     { id: 'garcom', label: 'Garçom', icon: 'Utensils', somenteSe: moduloSalao },
   ].filter((a) => a.somenteSe === undefined || a.somenteSe);
 
+  // Sub-abas da aba "Banco" — um cartão por meio de recebimento, mesmo padrão
+  // de /admin/configuracoes. Próximo gateway (Asaas, etc.) só precisa de uma
+  // entrada aqui + um bloco `{bancoAtivo === 'id' && (...)}`.
+  const BANCOS = [
+    { id: 'pagbank', label: 'PagBank', icon: 'Landmark' },
+    { id: 'stripe', label: 'Stripe', icon: 'CreditCard' },
+    { id: 'asaas', label: 'Asaas', icon: 'Banknote', emBreve: true },
+  ];
+  const [bancoAtivo, setBancoAtivo] = useState('pagbank');
+
   const [form, setForm] = useState({
     pagbank_token: '',
     pagbank_sandbox: true,
@@ -1446,6 +1456,48 @@ const RestauranteConfig = () => {
 
             {abaAtiva === 'banco' && (
             <>
+            {/* Modo de pagamento — PagBank (API) ou manual (motoboy cobra na
+                entrega). Independe do gateway escolhido abaixo. Só aparece se
+                o plano/admin liberou o módulo (restaurants.modulo_pagamento_manual);
+                sem ele, o checkout sempre cobra via gateway. */}
+            {moduloPagamentoManual && (
+            <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-start gap-3">
+              <button type="button" onClick={() => setForm((f) => ({ ...f, pagamento_manual: !f.pagamento_manual }))}
+                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${form.pagamento_manual ? 'bg-[#FF441F]' : 'bg-[#D4D4D8] dark:bg-[#3F3F46]'}`}>
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.pagamento_manual ? 'left-5' : 'left-1'}`} />
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">Receber pagamento manualmente</p>
+                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+                  {form.pagamento_manual
+                    ? 'Ativado: no checkout, o cliente só informa a forma de pagamento (nenhuma tela de gateway abre). PIX usa a chave cadastrada abaixo e cartão é cobrado pelo motoboy com a maquininha na entrega — em ambos os casos, com foto do comprovante. Você também pode marcar um pedido como pago manualmente no painel.'
+                    : 'Desativado: o checkout cobra automaticamente pelo gateway escolhido abaixo (PIX/cartão).'}
+                </p>
+              </div>
+            </div>
+            )}
+
+            {/* Bancos/gateways de pagamento online */}
+            <div className="flex gap-1.5 bg-[#F4F4F5] dark:bg-[#3F3F46] p-1 rounded-xl w-full sm:w-fit overflow-x-auto scrollbar-none">
+              {BANCOS.map((b) => (
+                <button key={b.id} type="button" onClick={() => setBancoAtivo(b.id)}
+                  disabled={b.emBreve}
+                  className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                    bancoAtivo === b.id
+                      ? 'bg-white dark:bg-[#27272A] text-[#18181B] dark:text-[#F4F4F5] shadow-sm'
+                      : b.emBreve
+                      ? 'text-[#D4D4D8] dark:text-[#52525B] cursor-not-allowed'
+                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#27272A] dark:hover:text-[#F4F4F5]'
+                  }`}>
+                  <Icon name={b.icon} size={14} />
+                  {b.label}
+                  {b.emBreve && <span className="text-[10px] opacity-70">(em breve)</span>}
+                </button>
+              ))}
+            </div>
+
+            {bancoAtivo === 'pagbank' && (
+            <>
             {/* Status */}
             <div className={`rounded-xl border p-4 flex items-center gap-3 ${
               config?.configurado ? 'bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800'
@@ -1465,32 +1517,21 @@ const RestauranteConfig = () => {
               </div>
             </div>
 
-            {/* Stripe — forma alternativa de receber, onboarding hospedado (sem tokens) */}
-            <StripeConectarCard />
-
-            {/* Modo de pagamento — PagBank (API) ou manual (motoboy cobra na
-                entrega). Só aparece se o plano/admin liberou o módulo
-                (restaurants.modulo_pagamento_manual); sem ele, o checkout
-                sempre cobra via PagBank. */}
-            {moduloPagamentoManual && (
-            <div className="bg-white dark:bg-[#27272A] rounded-xl border p-4 flex items-start gap-3">
-              <button type="button" onClick={() => setForm((f) => ({ ...f, pagamento_manual: !f.pagamento_manual }))}
-                className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${form.pagamento_manual ? 'bg-[#FF441F]' : 'bg-[#D4D4D8] dark:bg-[#3F3F46]'}`}>
-                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.pagamento_manual ? 'left-5' : 'left-1'}`} />
-              </button>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-[#18181B] dark:text-[#F4F4F5]">Receber pagamento manualmente</p>
-                <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-                  {form.pagamento_manual
-                    ? 'Ativado: no checkout, o cliente só informa a forma de pagamento (nenhuma tela do PagBank abre). PIX usa a chave cadastrada abaixo e cartão é cobrado pelo motoboy com a maquininha na entrega — em ambos os casos, com foto do comprovante. Você também pode marcar um pedido como pago manualmente no painel.'
-                    : 'Desativado: o checkout cobra automaticamente via PagBank (PIX/cartão), conforme configurado abaixo.'}
-                </p>
-              </div>
-            </div>
-            )}
-
             {/* Guia passo a passo */}
             <Guia />
+            </>
+            )}
+
+            {/* Stripe — forma alternativa de receber, onboarding hospedado (sem tokens) */}
+            {bancoAtivo === 'stripe' && <StripeConectarCard />}
+
+            {bancoAtivo === 'asaas' && (
+              <div className="bg-white dark:bg-[#27272A] rounded-xl border p-6 text-center text-[#A1A1AA]">
+                <Icon name="Banknote" size={28} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">Integração com Asaas ainda não disponível</p>
+                <p className="text-xs mt-1">Essa aba já está preparada — quando a API do Asaas for integrada, o formulário entra aqui.</p>
+              </div>
+            )}
             </>
             )}
 
@@ -1537,6 +1578,23 @@ const RestauranteConfig = () => {
               <form onSubmit={handleSalvar} className="space-y-4">
                 {abaAtiva === 'banco' && (
                 <>
+                {/* Chave PIX — compartilhada, independe do gateway escolhido acima */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
+                    Chave PIX (para pagamentos na entrega)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.chave_pix}
+                    onChange={(e) => setForm((f) => ({ ...f, chave_pix: e.target.value }))}
+                    placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Usada para gerar QR Code PIX quando motoboy precisar cobrar na entrega</p>
+                </div>
+
+                {bancoAtivo === 'pagbank' && (
+                <>
                 {/* Token */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
@@ -1574,21 +1632,8 @@ const RestauranteConfig = () => {
                   />
                   <p className="text-xs text-gray-400 mt-1">Necessário para o repasse automático (Split Payment)</p>
                 </div>
-
-                {/* Chave PIX */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">
-                    Chave PIX (para pagamentos na entrega)
-                  </label>
-                  <input
-                    type="text"
-                    value={form.chave_pix}
-                    onChange={(e) => setForm((f) => ({ ...f, chave_pix: e.target.value }))}
-                    placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                    className="w-full border border-[#E4E4E7] dark:border-[#3F3F46] bg-white dark:bg-[#18181B] text-[#18181B] dark:text-[#F4F4F5] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Usada para gerar QR Code PIX quando motoboy precisar cobrar na entrega</p>
-                </div>
+                </>
+                )}
                 </>
                 )}
 
